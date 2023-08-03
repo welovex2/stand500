@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.cnf.service.CmyMapper">
+
+	<select id="selectListCnt" parameterType="comParam" resultType="int">
+		SELECT
+			count(1)
+		FROM
+			CMPY_TB
+		WHERE
+			1 = 1
+				<if test="searchVO != null">
+			        <foreach collection="searchVO" item="item" separator="">
+			       
+			        	<choose>
+			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
+			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
+			        		<!-- 2	작성자 -->
+							<when test="item.searchCode == 2">and IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+			        		<!-- 12	회사명 -->
+			        		<when test="item.searchCode == 12">AND cmpy_name like concat('%',#{item.searchWord},'%')</when>
+							<!-- 13	회사연락처 -->
+							<when test="item.searchCode == 13">AND cmpy_phone like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<!-- 41	회사종류 -->
+							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
+							<!-- 15	작성일 -->
+			        		<when test="item.searchCode == 15">and date_format(CMPY_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						</choose>
+					</foreach>
+				</if>
+	</select>
+
+	<select id="selectList" parameterType="comParam" resultType="egovMap">
+		set @rownum:=0;
+		
+		SELECT
+			@rownum:=@rownum+1 as no, 
+			lst.*
+		FROM
+			(
+				SELECT
+					CMPY_SEQ,
+					date_format (CMPY_TB.INS_DT, '%Y-%m-%d') insDtStr,
+					lpad (CMPY_TB.cmpy_seq, 4, '0') cmpySeq,
+					CMPY_TB.cmpy_name,
+					ifnull (FN_CODE_NAME (type_code, 'PK'), '') partnerType,
+					ifnull (FN_CODE_NAME (type_code, 'ST'), '') directType,
+					ifnull (FN_CODE_NAME (cntry_code, 'SN'), '') cntry,
+					FN_GET_PHONE_FORMAT (cmpy_phone) cmpy_phone,
+					ifnull (memo, '-') memo,
+					ifnull (FN_MEM_NAME (CMPY_TB.INS_MEM_ID), '') ins_name
+				FROM
+					CMPY_TB
+				WHERE
+					1 = 1
+				<if test="searchVO != null">
+			        <foreach collection="searchVO" item="item" separator="">
+			       
+			        	<choose>
+			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
+			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
+			        		<!-- 2	작성자 -->
+							<when test="item.searchCode == 2">and IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+			        		<!-- 12	회사명 -->
+			        		<when test="item.searchCode == 12">AND cmpy_name like concat('%',#{item.searchWord},'%')</when>
+							<!-- 13	회사연락처 -->
+							<when test="item.searchCode == 13">AND cmpy_phone like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<!-- 41	회사종류 -->
+							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
+							<!-- 15	작성일 -->
+			        		<when test="item.searchCode == 15">and date_format(CMPY_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						</choose>
+					</foreach>
+				</if>
+				order by
+					CMPY_TB.CMPY_SEQ ASC
+			) lst
+		ORDER BY
+			no desc
+		LIMIT #{pageUnit} OFFSET #{firstIndex};
+	</select>
+	
+	<insert id="insert" parameterType="cmpyDTO">
+	    <selectKey resultType="int" keyProperty="cmpySeq" order="AFTER">
+	        SELECT CMPY_SEQ cmpySeq FROM CMPY_TB WHERE CMPY_CODE = #{cmpyCode} AND CMPY_NAME = TRIM(#{cmpyName})
+	    </selectKey>
+	    INSERT INTO CMPY_TB
+	    (
+			CMPY_SEQ,
+			CMPY_CODE,
+			CMPY_NAME,
+			ENG_NAME,
+			TYPE_CODE,
+			APPL_TYPE,
+			CMPY_PHONE,
+			CMPY_FAX,
+			CMPNY_IDNTF,
+			ETC_ID,
+			BSNS_RGNMB,
+			CRPRT_RGNMB,
+			CNTRY_CODE,
+			HOMEPAGE,
+			RPRSN,
+			ENG_RPRSN,
+			RSDNT_RGNMB,
+			ADDR,
+			ENG_ADDR,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+	    )
+	    VALUES
+		(
+	        IF(#{cmpySeq}=0,(SELECT IFNULL(MAX(seq.CMPY_SEQ)+1,1) cmpySeq FROM CMPY_TB seq WHERE CMPY_CODE = #{cmpyCode}), #{cmpySeq}),
+	        #{cmpyCode},
+	        TRIM(#{cmpyName}),
+	        #{engName},
+	        #{typeCode},
+	        #{applType},
+	        #{cmpyPhone},
+	        #{cmpyFax},
+	        #{cmpnyIdntf},
+	        #{etcId},
+	        #{bsnsRgnmb},
+	        #{crprtRgnmb},
+	        #{cntryCode},
+	        #{homepage},
+	        #{rprsn},
+	        #{engRprsn},
+	        #{rsdntRgnmb},
+	        #{addr},
+	        #{engAddr},
+	        #{memo},
+	        #{insMemId},
+	        #{udtMemId}
+		)
+		ON DUPLICATE KEY UPDATE
+			CMPY_NAME = TRIM(#{cmpyName}),
+	        ENG_NAME = #{engName},
+	        TYPE_CODE = #{typeCode},
+	        APPL_TYPE = #{applType},
+	        CMPY_PHONE = #{cmpyPhone},
+	        CMPY_FAX = #{cmpyFax},
+	        CMPNY_IDNTF = #{cmpnyIdntf},
+	        ETC_ID = #{etcId},
+	        BSNS_RGNMB = #{bsnsRgnmb},
+	        CRPRT_RGNMB = #{crprtRgnmb},
+	        CNTRY_CODE = #{cntryCode},
+	        HOMEPAGE = #{homepage},
+	        RPRSN = #{rprsn},
+	        ENG_RPRSN = #{engRprsn},
+	        RSDNT_RGNMB = #{rsdntRgnmb},
+	        ADDR = #{addr},
+	        ENG_ADDR = #{engAddr},
+	        MEMO = #{memo},
+	        UDT_MEM_ID = #{udtMemId},
+	        UDT_DT = NOW(),
+	        STATE = 'U'
+	</insert>
+	
+	<insert id="insertMng">
+		INSERT INTO CMPY_MNG_TB
+		(
+			CMPY_SEQ,
+			NAME,
+			PHONE,
+			FAX,
+			TEL,
+			EMAIL,
+			DEPT,
+			LEVEL,
+			MEMO
+		)
+		VALUES
+		<foreach collection="mngList" item="item" separator=",">
+		(
+			#{cmpySeq},
+			#{item.name},
+			replace(#{item.phone},'-',''),
+			replace(#{item.fax},'-',''),
+			replace(#{item.tel},'-',''),
+			#{item.email},
+			#{item.dept},
+			#{item.level},
+			#{item.memo}
+		)
+		</foreach>
+	</insert>
+	
+	<update id="updateMng">
+		<foreach collection="mngList" item="item" separator=";">
+		UPDATE CMPY_MNG_TB
+		SET
+			NAME = #{item.name},
+			PHONE = replace(#{item.phone},'-',''),
+			FAX = replace(#{item.fax},'-',''),
+			TEL = replace(#{item.tel},'-',''),
+			EMAIL = #{item.email},
+			DEPT = #{item.dept},
+			LEVEL = #{item.level},
+			MEMO = #{item.memo},
+			STATE = #{item.state}
+		WHERE CMPY_MNG_SEQ = #{item.cmpyMngSeq}
+		</foreach>
+	</update>
+	
+	<update id="deleteMng">
+		<foreach collection="mngList" item="item" separator=";">
+		UPDATE CMPY_MNG_TB
+		SET
+			STATE = #{item.state}
+		WHERE CMPY_MNG_SEQ = #{item.cmpyMngSeq}
+		</foreach>
+	</update>
+	
+	<select id="selectMngList" parameterType="int" resultType="egovMap">
+		SELECT 
+			CMPY_MNG_SEQ,
+			NAME,
+			PHONE,
+			FAX,
+			TEL,
+			EMAIL,
+			DEPT,
+			LEVEL,
+			MEMO
+		FROM CMPY_MNG_TB
+		WHERE 1=1
+		AND STATE != 'D'
+		AND CMPY_SEQ = #{cmpySeq}
+	</select>
+	
+	<select id="detail" parameterType="int" resultType="cmpyDTO">
+		SELECT
+			CMPY_SEQ,
+			CMPY_CODE,
+			CMPY_NAME,
+			ENG_NAME,
+			TYPE_CODE,
+			APPL_TYPE,
+			FN_GET_PHONE_FORMAT (CMPY_PHONE) CMPY_PHONE,
+			FN_GET_PHONE_FORMAT (CMPY_FAX) CMPY_FAX,
+			CMPNY_IDNTF,
+			ETC_ID,
+			BSNS_RGNMB,
+			CRPRT_RGNMB,
+			CNTRY_CODE,
+			HOMEPAGE,
+			RPRSN,
+			ENG_RPRSN,
+			RSDNT_RGNMB,
+			ADDR,
+			ENG_ADDR,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		FROM
+			CMPY_TB
+		WHERE CMPY_SEQ = #{cmpySeq}
+	</select>
+	
+	<select id="selectSameName" resultType="egovMap">
+		set @rownum:=0;
+		
+		SELECT
+			@rownum:=@rownum+1 as no, 
+			lst.*
+		FROM
+			(
+			SELECT
+				lpad (CMPY_TB.cmpy_seq, 4, '0') cmpySeq,
+			    cmpy_name,
+			    ifnull (FN_CODE_NAME (type_code, 'PK'), '') type
+			FROM CMPY_TB 
+			WHERE 1=1
+			AND CMPY_CODE = #{cmpyCode}
+			AND CMPY_NAME regexp concat('[',#{cmpyName},']{2}')
+			order by CMPY_TB.cmpy_seq
+			) lst
+		order by no desc
+			
+	</select>
+</mapper>

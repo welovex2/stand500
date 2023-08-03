@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.cns.service.CnsMapper">
+
+	<select id="selectListCnt" parameterType="comParam" resultType="int">
+		select
+			Count(CNS_TB.cns_seq)
+		from CNS_TB
+			INNER JOIN JOB_TB ON CNS_TB.CNS_SEQ = JOB_TB.CNS_SEQ
+            LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+            LEFT JOIN CMPY_MNG_TB ON JOB_TB.CMPY_MNG_SEQ = CMPY_MNG_TB.CMPY_MNG_SEQ
+            AND CMPY_MNG_TB.STATE != 'D'
+		where 1=1
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	       
+	        	<choose>
+	        		<!-- 1-고객유형 -->
+	        		<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+	        		<!-- 2-작성자 -->
+	        		<when test="item.searchCode == 2">and ifnull(FN_MEM_NAME(CNS_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+	        		<!-- 6-제품명 -->
+			        <when test="item.searchCode == 6">and PRDCT_NAME like concat('%',#{item.searchWord},'%')</when>
+			        <!-- 11-문의종류 -->
+			        <when test="item.searchCode == 11">and CRTFC_TYPE like concat('%',#{item.searchWord},'%')</when>
+			        <!-- 12-회사명 -->
+			        <when test="item.searchCode == 12">and IFNULL(CMPY_TB.CMPY_NAME, JOB_TB.CMPY_NAME) like concat('%',#{item.searchWord},'%')</when>
+			        <!-- 13-회사연락처 -->
+			        <when test="item.searchCode == 13">and FN_GET_PHONE_FORMAT(IFNULL(CMPY_TB.CMPY_PHONE, JOB_TB.CMPY_PHONE)) like concat('%',#{item.searchWord},'%')</when>
+			        <!-- 14-담당자연락처 -->
+			        <when test="item.searchCode == 14">and FN_GET_PHONE_FORMAT(IFNULL(CMPY_MNG_TB.PHONE, JOB_TB.MNG_PHONE)) like concat('%',#{item.searchWord},'%')</when>
+	        		<!-- 15-작성일 -->
+			        <when test="item.searchCode == 15">and date_format(CNS_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+	        	</choose>
+	        	
+	        </foreach>
+        </if>
+	</select>
+	<select id="selectList" parameterType="comParam" resultType="egovMap">
+		select 
+			@rownum:=@rownum+1 as no,
+			lst.*
+		from (
+			select
+				#ROW_NUMBER() OVER(ORDER BY CNS_TB.ins_dt) AS no,
+				CNS_TB.CNS_SEQ,
+	            date_format(CNS_TB.INS_DT, '%Y-%m-%d %T') ins_dt_str,
+	            IFNULL(FN_CODE_NAME(CMPY_TB.CMPY_CODE,'PT'), '') cmpy_type,
+	            ifnull(FN_MEM_NAME(CNS_TB.INS_MEM_ID), '') ins_name,
+			    CRTFC_TYPE,
+	            JOB_TB.PRDCT_NAME,
+	            
+	            /* 업체정보 */
+	            IFNULL(CMPY_TB.CMPY_NAME, JOB_TB.CMPY_NAME) CMPY_NAME,
+	            FN_GET_PHONE_FORMAT(IFNULL(CMPY_TB.CMPY_PHONE, JOB_TB.CMPY_PHONE)) CMPY_PHONE,
+	            FN_GET_PHONE_FORMAT(IFNULL(CMPY_MNG_TB.PHONE, JOB_TB.MNG_PHONE)) MNG_PHONE,
+	            
+	            /* 연결문서 정보 */
+	            IFNULL(FN_GET_SEQSTRING('Q',JOB_TB.QUO_YM,'G',JOB_TB.quo_seq),'-') QUO_ID,
+	            IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') SBK_ID,
+	            
+			    FN_LAST_CNS_MENO(CNS_TB.cns_seq) LAST_MEMO
+			FROM CNS_TB
+				INNER JOIN JOB_TB ON CNS_TB.CNS_SEQ = JOB_TB.CNS_SEQ
+	            LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+	            LEFT JOIN CMPY_MNG_TB ON JOB_TB.CMPY_MNG_SEQ = CMPY_MNG_TB.CMPY_MNG_SEQ
+	            AND CMPY_MNG_TB.STATE != 'D'
+	            
+	            INNER JOIN (SELECT @rownum:=0) r
+			WHERE 1=1
+	        <if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		       
+		        	<choose>
+		        		<!-- 1-고객유형 -->
+		        		<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+		        		<!-- 2-작성자 -->
+		        		<when test="item.searchCode == 2">and ifnull(FN_MEM_NAME(CNS_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+		        		<!-- 6-제품명 -->
+			        	<when test="item.searchCode == 6">and PRDCT_NAME like concat('%',#{item.searchWord},'%')</when>
+				        <!-- 11-문의종류 -->
+				        <when test="item.searchCode == 11">and CRTFC_TYPE like concat('%',#{item.searchWord},'%')</when>
+				        <!-- 12-회사명 -->
+				        <when test="item.searchCode == 12">and IFNULL(CMPY_TB.CMPY_NAME, JOB_TB.CMPY_NAME) like concat('%',#{item.searchWord},'%')</when>
+				        <!-- 13-회사연락처 -->
+				        <when test="item.searchCode == 13">and FN_GET_PHONE_FORMAT(IFNULL(CMPY_TB.CMPY_PHONE, JOB_TB.CMPY_PHONE)) like concat('%',#{item.searchWord},'%')</when>
+				        <!-- 14-담당자연락처 -->
+				        <when test="item.searchCode == 14">and FN_GET_PHONE_FORMAT(IFNULL(CMPY_MNG_TB.PHONE, JOB_TB.MNG_PHONE)) like concat('%',#{item.searchWord},'%')</when>
+				        <!-- 15-작성일 -->
+				        <when test="item.searchCode == 15">and date_format(CNS_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+		        	</choose>
+		        	
+		        </foreach>
+	        </if>
+	        
+	        order by cns_seq asc
+	    ) lst
+	    order by no desc
+		LIMIT #{pageUnit} OFFSET #{firstIndex};
+	</select>
+
+	<resultMap type="cnsRes" id="cnsMap">
+		<id column="cns_seq" property="cnsSeq"/>
+		<result column="cns_seq" property="cnsSeq"/>
+		<result column="cmpy_code" property="cmpyCode"/>
+		<result column="cmpy_seq" property="cmpySeq"/>
+		<result column="cmpy_mng_seq" property="cmpyMngSeq"/>
+		<result column="cmpy_name" property="cmpyName"/>
+		<result column="cmpy_phone" property="cmpyPhone"/>
+		<result column="mng_name" property="mngName"/>
+		<result column="mng_phone" property="mngPhone"/>
+		<result column="prdct_name" property="prdctName"/>
+		<result column="crtfc_type" property="crtfcType"/>
+		<collection property="memoList" ofType="cnsHisDTO">
+        	<id column="cns_his_seq" property="cnsHisSeq"/>
+        	<result column="cns_seq" property="cnsSeq"/>
+	        <result column="memo" property="memo"/>
+    	    <result column="insDtStr" property="insDtStr"/>
+       	 	<result column="insMem" property="insMem"/>
+        </collection>
+	</resultMap>
+	<select id="selectDetail" parameterType="int" resultMap="cnsMap">
+		select
+			CNS_TB.CNS_SEQ,
+            /* 업체정보 */
+            ifnull((select cmpy_code from CMPY_TB where cmpy_seq = JOB_TB.CMPY_SEQ),'') cmpy_code,
+            JOB_TB.CMPY_SEQ,
+            JOB_TB.CMPY_MNG_SEQ,
+			
+			/* 회사번호 없는 경우 */
+			JOB_TB.CMPY_NAME,
+			IFNULL(FN_GET_PHONE_FORMAT(JOB_TB.CMPY_PHONE),'') cmpy_phone,
+			JOB_TB.MNG_NAME,
+			IFNULL(FN_GET_PHONE_FORMAT(JOB_TB.MNG_PHONE),'') mng_phone,
+			            
+            CNS_TB.CRTFC_TYPE,
+            JOB_TB.PRDCT_NAME,
+         
+         	CNS_HIS_TB.CNS_HIS_SEQ,
+			CNS_HIS_TB.MEMO,
+            date_format(CNS_HIS_TB.INS_DT, '%Y-%m-%d %T') insDtStr,
+            CONCAT_WS('_', fn_dept_name(CNS_HIS_TB.INS_MEM_ID),fn_mem_name(CNS_HIS_TB.INS_MEM_ID)) insMem
+            
+		FROM CNS_TB
+			INNER JOIN JOB_TB ON CNS_TB.CNS_SEQ = JOB_TB.CNS_SEQ
+			LEFT JOIN CNS_HIS_TB ON CNS_TB.CNS_SEQ = CNS_HIS_TB.CNS_SEQ
+            AND CNS_HIS_TB.STATE != 'D'            
+		WHERE CNS_TB.CNS_SEQ = #{cnsSeq}
+		ORDER BY CNS_HIS_TB.INS_DT DESC
+	</select>
+
+	<select id="checkDetail" parameterType="cnsReq" resultType="int">
+		SELECT
+			IFNULL (CNS_TB.CNS_SEQ, 0)
+            
+		FROM CNS_TB
+			INNER JOIN JOB_TB ON CNS_TB.CNS_SEQ = JOB_TB.CNS_SEQ
+
+		WHERE 1=1
+        <if test="quoId != null and quoId != ''">
+		AND JOB_TB.QUO_YM = SUBSTRING(#{quoId},2,4)
+		AND JOB_TB.QUO_SEQ = SUBSTRING(#{quoId},8,4)
+		</if>
+		<if test="sbkId != null and sbkId != ''">
+		AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND JOB_TB.SBK_REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
+		</if>
+	</select>
+			
+	<insert id="insert" parameterType="cnsReq" useGeneratedKeys="true" keyProperty="cnsSeq">
+		<![CDATA[
+			INSERT INTO CNS_TB
+			(CRTFC_TYPE,
+			INS_MEM_ID,
+			UDT_MEM_ID)
+			VALUES
+			(#{crtfcType},
+			#{insMemId},
+			#{udtMemId});	
+		]]>
+	</insert>
+	
+	<update id="update" parameterType="cnsReq">
+		<![CDATA[
+			UPDATE CNS_TB
+			SET
+				CRTFC_TYPE = #{crtfcType},
+				UDT_MEM_ID = #{udtMemId},
+				UDT_DT = current_timestamp(),
+				STATE = 'U'
+			WHERE CNS_SEQ = #{cnsSeq};
+		]]>
+	</update>
+	
+	<insert id="insertMemo" parameterType="cnsReq" >
+		<![CDATA[
+			INSERT INTO CNS_HIS_TB
+			(CNS_SEQ,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+			)
+			VALUES
+			(#{cnsSeq},
+			#{memo},
+			#{insMemId},
+			#{udtMemId}
+			);
+		]]>
+	</insert>
+	
+	<insert id="insertJob" parameterType="cnsReq" >
+		INSERT INTO JOB_TB
+		(	CNS_SEQ,
+			CMPY_SEQ,
+			CMPY_MNG_SEQ,
+			<if test="cmpySeq == 0">
+			CMPY_NAME,
+			CMPY_PHONE,
+			MNG_NAME,
+			MNG_PHONE,
+			</if>
+			PRDCT_NAME,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		)
+		VALUES
+		(
+		<![CDATA[
+			#{cnsSeq},
+			#{cmpySeq},
+			#{cmpyMngSeq},
+		]]>
+			<if test="cmpySeq == 0">
+		<![CDATA[
+			#{cmpyName},
+			replace(#{cmpyPhone},'-',''),
+			#{mngName},
+			replace(#{mngPhone},'-',''),
+		]]>
+			</if>
+		<![CDATA[
+			#{prdctName},
+			#{insMemId},
+			#{udtMemId}
+		]]>
+		)
+	</insert>
+	
+	<update id="updateJob" parameterType="cnsReq">
+		UPDATE JOB_TB
+		SET
+			CMPY_SEQ = #{cmpySeq},
+			CMPY_MNG_SEQ = #{cmpyMngSeq},
+			<if test="cmpySeq == 0">
+		<![CDATA[
+			CMPY_NAME = #{cmpyName},
+			CMPY_PHONE = replace(#{cmpyPhone},'-',''),
+			MNG_NAME = #{mngName},
+			MNG_PHONE = replace(#{mngPhone},'-',''),
+		]]>
+			</if>
+		<![CDATA[
+			PRDCT_NAME = #{prdctName},
+			UDT_MEM_ID = #{udtMemId},
+			UDT_DT = current_timestamp(),
+			STATE = 'U'
+		WHERE CNS_SEQ = #{cnsSeq};
+		]]>
+	</update>
+	
+	<update id="updateJobCns" parameterType="cnsReq" >
+			UPDATE JOB_TB
+			SET 
+				CNS_SEQ = #{cnsSeq},
+				UDT_MEM_ID = #{udtMemId},
+				UDT_DT = NOW()
+		WHERE 1=1
+        <if test="quoId != null and quoId != ''">
+		AND JOB_TB.QUO_YM = SUBSTRING(#{quoId},2,4)
+		AND JOB_TB.QUO_SEQ = SUBSTRING(#{quoId},8,4)
+		</if>
+		<if test="sbkId != null and sbkId != ''">
+	    AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND JOB_TB.SBK_REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
+		</if>
+	</update>
+</mapper>

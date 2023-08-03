@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.tst.service.DbgMapper">
+	
+	<select id="selectDetail" parameterType="int" resultType="int">
+		SELECT TEST_SEQ
+		FROM DEBUG_TB
+			INNER JOIN TEST_STATE_TB
+		    ON TEST_STATE_TB.TEST_STATE_SEQ = DEBUG_TB.TEST_STATE_SEQ
+		WHERE DEBUG_TB.DEBUG_SEQ = #{debugSeq}
+	</select>
+
+	<insert id="insert" parameterType="debugDTO" useGeneratedKeys="true" keyProperty="debugSeq">
+	  INSERT INTO DEBUG_TB
+	  (TEST_STATE_SEQ, MEMO, INS_MEM_ID, UDT_MEM_ID)
+	  VALUES
+	  (#{testStateSeq}, #{memo}, #{insMemId}, #{udtMemId})
+	</insert>
+
+	<update id="update" parameterType="debugDTO">
+		  UPDATE DEBUG_TB
+		  SET STATE_CODE = #{stateCode},
+		  	  ETC = #{etc},
+		      UDT_MEM_ID = #{udtMemId},
+		      UDT_DT = NOW()
+		  WHERE DEBUG_SEQ = #{debugSeq}
+	</update>
+		
+	<select id="selectListCnt" parameterType="comParam" resultType="int">
+		SELECT 
+			count(DEBUG_TB.debug_seq)
+		FROM
+		    DEBUG_TB
+		    INNER JOIN TEST_STATE_TB ON DEBUG_TB.TEST_STATE_SEQ = TEST_STATE_TB.TEST_STATE_SEQ
+		    INNER JOIN TEST_TB ON TEST_STATE_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+		    INNER JOIN TEST_ITEM_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		    AND TEST_ITEM_TB.STATE != 'D'
+		    INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+   		    LEFT JOIN DEBUG_STATE_TB
+            ON DEBUG_STATE_TB.DEBUG_STATE_SEQ = (
+								SELECT DEBUG_STATE_SEQ
+                                FROM DEBUG_STATE_TB sub
+                                WHERE sub.DEBUG_SEQ = DEBUG_TB.DEBUG_SEQ
+                                order by DEBUG_STATE_SEQ desc
+                                limit 1
+            )
+            WHERE 1=1
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		        	<choose>
+						<!-- 15	작성일 -->
+						<when test="item.searchCode == 15">and DATE_FORMAT(DEBUG_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 20	완료일 -->
+						<when test="item.searchCode == 20">and DATE_FORMAT(DEBUG_TB.UDT_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 31	시험상태 -->
+						<when test="item.searchCode == 31">and DEBUG_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+						<!-- 49	최종결과 -->
+						<when test="item.searchCode == 49">and DEBUG_TB.STATE_CODE = #{item.searchWord}</when>
+						<!-- 50	시험번호 -->
+						<when test="item.searchCode == 50">and CONCAT (
+																        FN_GET_SEQSTRING ('SB', JOB_TB.sbk_ym, 'G', JOB_TB.sbk_seq),
+																        '-',
+																        TEST_TB.TEST_TYPE_CODE,
+																        LPAD (TEST_TB.TEST_NO, 4, 0)
+																    ) like concat('%',#{item.searchWord},'%')</when>
+						<!-- 6	제품명 -->
+						<when test="item.searchCode ==  6">and IFNULL (TEST_ITEM_TB.product, JOB_TB.PRDCT_NAME) like concat('%',#{item.searchWord},'%')</when>
+						<!-- 27	모델명 -->
+						<when test="item.searchCode == 27">and TEST_ITEM_TB.model like concat('%',#{item.searchWord},'%')</when>
+		        	</choose>
+				</foreach>
+			</if>
+        
+	</select>
+		
+	<select id="selectList" parameterType="comParam" resultType="egovMap">
+		set @rownum:=0;
+		
+		select 
+			@rownum:=@rownum+1 as no,
+			lst.*
+		from (
+			SELECT
+			    date_format (DEBUG_TB.ins_dt, '%Y-%m-%d') insDtStr,
+			    concat (
+			        FN_GET_SEQSTRING ('SB', JOB_TB.sbk_ym, 'G', JOB_TB.sbk_seq),
+			        '-',
+			        TEST_TB.TEST_TYPE_CODE,
+			        LPAD (TEST_TB.TEST_NO, 4, 0)
+			    ) testId,
+			    ifnull (TEST_ITEM_TB.product, JOB_TB.PRDCT_NAME) product,
+			    TEST_ITEM_TB.model,
+			    DEBUG_TB.MEMO,
+			    concat (DATEDIFF (now(), DEBUG_TB.ins_dt), '일') runningDay,
+			    DEBUG_TB.debug_seq,
+			    IFNULL (FN_CODE_NAME (DEBUG_STATE_TB.STATE_CODE, 'TD'), '-') debugState,
+			    IFNULL (DEBUG_TB.STATE_CODE, '') STATE_CODE,
+			    IFNULL (date_format (DEBUG_TB.UDT_DT, '%Y-%m-%d'), '') uptDtStr,
+			    concat(FN_DEPT_NAME (DEBUG_TB.UDT_MEM_ID),' ',FN_MEM_NAME (DEBUG_TB.UDT_MEM_ID)) udtMem,
+			    IFNULL (
+			        concat (DATEDIFF (DEBUG_TB.UDT_DT, DEBUG_TB.ins_dt), '일'),
+			        ''
+			    ) endDay,
+			    IFNULL (FN_CODE_NAME (DEBUG_TB.STATE_CODE, 'TR'), '') STATE,
+			    IFNULL (DEBUG_TB.ETC, '') etc
+			FROM
+			    DEBUG_TB
+			    INNER JOIN TEST_STATE_TB ON DEBUG_TB.TEST_STATE_SEQ = TEST_STATE_TB.TEST_STATE_SEQ
+			    INNER JOIN TEST_TB ON TEST_STATE_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+			    INNER JOIN TEST_ITEM_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			    AND TEST_ITEM_TB.STATE != 'D'
+			    INNER JOIN JOB_TB ON JOB_TB.quo_ym = TEST_ITEM_TB.quo_ym
+			    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+    		    LEFT JOIN DEBUG_STATE_TB
+	            ON DEBUG_STATE_TB.DEBUG_STATE_SEQ = (
+									SELECT DEBUG_STATE_SEQ
+	                                FROM DEBUG_STATE_TB sub
+	                                WHERE sub.DEBUG_SEQ = DEBUG_TB.DEBUG_SEQ
+	                                order by DEBUG_STATE_SEQ desc
+	                                limit 1
+	            )
+	        WHERE 1=1
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		        	<choose>
+						<!-- 15	작성일 -->
+						<when test="item.searchCode == 15">and DATE_FORMAT(DEBUG_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 20	완료일 -->
+						<when test="item.searchCode == 20">and DATE_FORMAT(DEBUG_TB.UDT_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 31	시험상태 -->
+						<when test="item.searchCode == 31">and DEBUG_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+						<!-- 49	최종결과 -->
+						<when test="item.searchCode == 49">and DEBUG_TB.STATE_CODE = #{item.searchWord}</when>
+						<!-- 50	시험번호 -->
+						<when test="item.searchCode == 50">and CONCAT (
+																        FN_GET_SEQSTRING ('SB', JOB_TB.sbk_ym, 'G', JOB_TB.sbk_seq),
+																        '-',
+																        TEST_TB.TEST_TYPE_CODE,
+																        LPAD (TEST_TB.TEST_NO, 4, 0)
+																    ) like concat('%',#{item.searchWord},'%')</when>
+						<!-- 6	제품명 -->
+						<when test="item.searchCode ==  6">and IFNULL (TEST_ITEM_TB.product, JOB_TB.PRDCT_NAME) like concat('%',#{item.searchWord},'%')</when>
+						<!-- 27	모델명 -->
+						<when test="item.searchCode == 27">and TEST_ITEM_TB.model like concat('%',#{item.searchWord},'%')</when>
+		        	</choose>
+				</foreach>
+			</if>
+	        order by DEBUG_TB.ins_dt
+	    ) lst
+	    order by no desc
+        LIMIT #{pageUnit} OFFSET #{firstIndex};
+        
+	</select>
+	
+	<select id="debugStateList" parameterType="String" resultType="egovMap">
+		select
+			date_format(DEBUG_STATE_TB.ins_dt, '%Y-%m-%d') instDtStr,
+			ifnull(fn_code_name(DEBUG_STATE_TB.STATE_CODE ,'TS'), '-') state,
+			fn_dept_name(DEBUG_STATE_TB.INS_MEM_ID) insPos,
+		    ins.MEM_NAME insName,
+		    memo
+		    
+		from DEBUG_STATE_TB
+			
+			inner join MEMBER_TB ins
+			on DEBUG_STATE_TB.INS_MEM_ID = ins.id
+		
+		where 1=1
+		and DEBUG_STATE_TB.DEBUG_SEQ = #{debugSeq}
+		order by DEBUG_STATE_SEQ desc
+	</select>
+	
+	<insert id="debugStateInsert" parameterType="debugDTO" >
+		INSERT INTO DEBUG_STATE_TB
+		(
+			DEBUG_SEQ,
+			STATE_CODE,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{debugSeq},
+			#{stateCode},
+			#{memo},
+			#{insMemId},
+			#{udtMemId}
+		);
+	</insert>
+
+	<select id="debugBoardList" parameterType="String" resultType="egovMap">
+		select
+			date_format(DEBUG_MEMO_TB.ins_dt, '%Y-%m-%d %T') instDtStr,
+			fn_dept_name(DEBUG_MEMO_TB.INS_MEM_ID) insPos,
+		    ins.MEM_NAME insName,
+		    memo
+		    
+		from DEBUG_MEMO_TB
+			
+			inner join MEMBER_TB ins
+			on DEBUG_MEMO_TB.INS_MEM_ID = ins.id
+		
+		where 1=1
+		and DEBUG_MEMO_TB.DEBUG_SEQ = #{debugSeq}
+		order by DEBUG_MEMO_SEQ desc
+	</select>
+	
+	<insert id="debugBoardInsert" parameterType="debugMemo" >
+		INSERT INTO DEBUG_MEMO_TB
+		(
+			DEBUG_SEQ,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{debugSeq},
+			#{memo},
+			#{insMemId},
+			#{udtMemId}
+		);
+	</insert>
+	
+</mapper>

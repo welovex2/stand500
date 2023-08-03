@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  apache2:
+    image: httpd:latest
+    container_name: www
+    ports:
+      - "8080:80"
+    volumes:
+      - ./project:/var/www/html
+      - ./apache2/conf:/usr/local/apache2/conf
+
+  mariadb:
+    image: mariadb:10.1
+    container_name: mariadb
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mariadb/conf.d:/etc/mysql/conf.d
+      - ./mariadb/data:/var/lib/mysql
+    environment:
+      #MARIADB_DATABASE: #{사용할 DB}
+      #MARIADB_USER: #{사용자 ID}
+      #MARIADB_PASSWORD: #{사용자 비밀번호}
+      MYSQL_ROOT_PASSWORD: admin #{마리아DB 루트유저의 비밀번호}
+
+  tomcat_erp:
+    image: tomcat:8.5
+    container_name: erp
+    ports:
+      - "8081:8080"
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - ./project/erp/api.war:/usr/local/tomcat/webapps/api.war
+      - ./project/erp/ROOT:/usr/local/tomcat/webapps/ROOT
+      - ./logs/erp:/usr/local/tomcat/logs
+      - ./sbfile/erp:/usr/local/tomcat/webapps/sbfile
+        #- ./tomcat/erp/conf:/usr/local/tomcat/conf
+    
+  tomcat_info:
+    image: tomcat:8.5
+    container_name: info
+    ports:
+      - "8082:8080"
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - ./project/info/api.war:/usr/local/tomcat/webapps/api.war
+      - ./project/info/ROOT:/usr/local/tomcat/webapps/ROOT
+      - ./logs/info:/usr/local/tomcat/logs
+

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+
+	<bean name="propertiesService" class="egovframework.rte.fdl.property.impl.EgovPropertyServiceImpl" destroy-method="destroy">
+		<property name="properties">
+	        <map>
+	        	<entry key="pageUnit" value="15"/>
+	        	<entry key="pageSize" value="10"/>
+	        	<entry key="posblAtchFileSize" value="5242880"/>
+	        	<entry key="Globals.fileStorePath" value="webapps/sbfile/"/>
+	        	<entry key="Globals.addedOptions" value="false"/>
+	        	
+	        	<entry key="ftp.url" value="iup.cdn1.cafe24.com" />
+	        	<entry key="ftp.port" value="21" />
+	        	<entry key="ftp.id" value="stand500admin" />
+	        	<entry key="ftp.password" value="stb9394!@!!" />
+	        	<entry key="ftp.path" value="sbfile/" />
+	        	
+	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
+	        	<entry key="cdn.url" value="http://stand500admin.cdn1.cafe24.com/" />
+	        	
+	        </map>
+		</property>
+	</bean>
+	
+</beans>	

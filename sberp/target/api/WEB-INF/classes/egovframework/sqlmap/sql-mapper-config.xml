@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+	</settings>
+    
+    <typeAliases>
+    	<typeAlias alias="egovMap"		type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    	<typeAlias alias="loginVO"		type="egovframework.cmm.service.LoginVO"/>
+    	<typeAlias alias="fileVO"		type="egovframework.cmm.service.FileVO"/>
+    	
+    	<!-- 상담서 -->
+    	<typeAlias alias="comParam"		type="egovframework.cmm.service.ComParam"/>
+    	<typeAlias alias="cnsHisDTO"	type="egovframework.cns.service.CnsHisDTO"/>
+    	<typeAlias alias="cnsReq"		type="egovframework.cns.service.CnsDTO$Req"/>
+    	<typeAlias alias="cnsRes"		type="egovframework.cns.service.CnsDTO$Res"/>
+    	<typeAlias alias="cmpy"			type="egovframework.cnf.service.Cmpy"/>
+    	
+    	<!-- 견적서 -->
+    	<typeAlias alias="quo"			type="egovframework.quo.service.Quo"/>
+    	<typeAlias alias="tstParam"		type="egovframework.tst.service.TstParam"/>
+    	<typeAlias alias="quoReq"		type="egovframework.quo.service.QuoDTO$Req"/>
+    	<typeAlias alias="quoRes"		type="egovframework.quo.service.QuoDTO$Res"/>
+    	<typeAlias alias="testItemDTO"	type="egovframework.tst.dto.TestItemDTO"/>
+    	<typeAlias alias="quoModReq"	type="egovframework.quo.service.QuoModDTO$Req"/>
+    	<typeAlias alias="quoModRes"	type="egovframework.quo.service.QuoModDTO$Res"/>
+    	<typeAlias alias="chqDTO"		type="egovframework.chq.service.ChqDTO"/>
+    	<typeAlias alias="chqRes"		type="egovframework.chq.service.ChqDTO$Res"/>
+    	<typeAlias alias="chqSub"		type="egovframework.chq.service.ChqDTO$Sub"/>
+    	<typeAlias alias="engQuo"		type="egovframework.quo.dto.EngQuoDTO"/>
+    	<typeAlias alias="engTestItem"	type="egovframework.quo.service.EngTestItem"/>
+    	
+    	<!-- 매출 -->
+    	<typeAlias alias="slsReq"		type="egovframework.sls.service.SlsDTO$Req"/>
+    	<typeAlias alias="slsRes"		type="egovframework.sls.service.SlsDTO$Res"/>
+    	<typeAlias alias="payReq"		type="egovframework.sls.service.PayDTO$Req"/>
+    	<typeAlias alias="payRes"		type="egovframework.sls.service.PayDTO$Res"/>
+     	<typeAlias alias="billReq"		type="egovframework.sls.service.BillDTO$Req"/>
+    	<typeAlias alias="billRes"		type="egovframework.sls.service.BillDTO$Res"/>
+    	   
+    	<!-- 신청서 -->
+    	<typeAlias alias="sbkReq"		type="egovframework.sbk.service.SbkDTO$Req"/>
+    	<typeAlias alias="sbkRes"		type="egovframework.sbk.service.SbkDTO$Res"/>
+    	<typeAlias alias="testItemRejDTO"	type="egovframework.tst.dto.TestItemRejDTO"/>
+    	
+    	<!-- 시료 -->
+    	<typeAlias alias="imDTO"		type="egovframework.sam.dto.ImDTO"/>
+    	
+    	<!-- 시험 -->
+    	<typeAlias alias="testReq"		type="egovframework.tst.dto.TestDTO$Req"/>
+    	<typeAlias alias="testRes"		type="egovframework.tst.dto.TestDTO$Res"/>
+    	<typeAlias alias="debugDTO"		type="egovframework.tst.dto.DebugDTO"/>
+   		<typeAlias alias="debugMemo"	type="egovframework.tst.service.DebugMemo"/>
+    	
+    	<!-- 로데이터 -->
+    	<typeAlias alias="rawSearchDTO"	type="egovframework.raw.dto.RawSearchDTO"/>
+    	<typeAlias alias="infoDTO"		type="egovframework.raw.dto.InfoDTO"/>
+    	<typeAlias alias="rawData"		type="egovframework.raw.service.RawData"/>
+    	<typeAlias alias="rawDTO"		type="egovframework.raw.dto.RawDTO"/>
+    	<typeAlias alias="ceDTO"		type="egovframework.raw.dto.CeDTO"/>
+    	<typeAlias alias="reDTO"		type="egovframework.raw.dto.ReDTO"/>
+    	<typeAlias alias="esdDTO"		type="egovframework.raw.dto.EsdDTO"/>
+    	<typeAlias alias="rsDTO"		type="egovframework.raw.dto.RsDTO"/>
+    	<typeAlias alias="eftDTO"		type="egovframework.raw.dto.EftDTO"/>
+    	<typeAlias alias="surgeDTO"		type="egovframework.raw.dto.SurgeDTO"/>
+    	<typeAlias alias="csDTO"		type="egovframework.raw.dto.CsDTO"/>
+    	<typeAlias alias="mfDTO"		type="egovframework.raw.dto.MfDTO"/>
+    	<typeAlias alias="vdipDTO"		type="egovframework.raw.dto.VdipDTO"/>
+    	<typeAlias alias="ctiDTO"		type="egovframework.raw.dto.CtiDTO"/>
+    	<typeAlias alias="imgDTO"		type="egovframework.raw.dto.ImgDTO"/>
+    	<typeAlias alias="reportDTO"	type="egovframework.raw.dto.ReportDTO"/>
+    	<typeAlias alias="rawMet"		type="egovframework.raw.service.RawMet"/>
+    	<typeAlias alias="fileRaw"		type="egovframework.raw.service.FileRaw"/>
+    	<typeAlias alias="fileRawDTO"	type="egovframework.raw.dto.FileRawDTO"/>
+    	
+    	<!-- 환경설정 -->
+    	<typeAlias alias="cmpyDTO"		type="egovframework.cnf.service.CmpyDTO"/>
+    	<typeAlias alias="member"		type="egovframework.cnf.service.Member"/>
+    	<typeAlias alias="testStndrDTO"	type="egovframework.sys.service.TestStndrDTO"/>
+    	<typeAlias alias="testCateDTO"	type="egovframework.tst.dto.TestCateDTO"/>
+    	<typeAlias alias="dept"			type="egovframework.cmm.service.Dept"/>
+    	<typeAlias alias="pos"			type="egovframework.cmm.service.Pos"/>
+    	<typeAlias alias="machineDTO"	type="egovframework.sys.service.MachineDTO"/>
+    	<typeAlias alias="power"		type="egovframework.sys.service.Power"/>
+    	
+    	<!-- 사진통관 -->
+    	<typeAlias alias="ppDTO"		type="egovframework.ppc.dto.PpDTO"/>
+    	<typeAlias alias="ppHis"		type="egovframework.ppc.service.PpHis"/>
+    </typeAliases>
+</configuration>

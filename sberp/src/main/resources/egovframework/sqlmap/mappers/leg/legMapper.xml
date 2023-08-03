@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.leg.service.LegMapper">
+
+	<select id="selectListCnt" parameterType="comParam" resultType="int">
+		select
+			Count(1)
+		FROM
+		    SBK_TB
+		        
+		        INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+		        AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
+		        AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+		        AND JOB_TB.STATE != 'D'
+		        
+		        INNER JOIN TEST_ITEM_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+		        AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+		        AND TEST_ITEM_TB.STATE != 'D'
+		        
+		        INNER JOIN TEST_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+		        
+		        LEFT JOIN RAW_TB ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
+		        
+		        LEFT JOIN
+			    (
+				    SELECT 
+				        SBK_ID,
+			            IM_YM,
+			            IM_SEQ,
+			            SUM(qty) inCnt,
+			            SUM(IF(CARRY_OUT_CODE IS NOT NULL, qty, 0)) outCnt
+				    FROM
+				        IM_TB
+				        
+					    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
+				    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
+			    ) IM_TB ON CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) = IM_TB.SBK_ID
+		        
+		        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = (SELECT 
+															            IM_SUB_SEQ
+															        FROM
+															            IM_SUB_TB sub
+															        WHERE
+															            FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = sub.IM_ID
+															        ORDER BY sub.IM_SUB_SEQ DESC
+															        LIMIT 1)
+		        AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = in_sub.IM_ID
+		        
+		        LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = (SELECT 
+															            IM_SUB_SEQ
+															        FROM
+															            IM_SUB_TB sub
+															        WHERE
+															            FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = sub.IM_ID
+															                AND CARRY_OUT_CODE IS NOT NULL
+															        ORDER BY sub.IM_SUB_SEQ DESC
+															        LIMIT 1)
+		        AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = out_sub.IM_ID
+				
+				INNER JOIN (SELECT @rownum:=0) r
+
+		WHERE
+		    1 = 1
+		# 재발행 신청서 제외
+		AND SBK_TB.REVISION = 0
+        <if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	       
+	        	<choose>
+			        <!-- 54	시료반출일 -->
+			        <when test="item.searchCode == 54">AND DATE_FORMAT (out_sub.CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        <!-- 21	시료반입일 -->
+			        <when test="item.searchCode == 21">AND DATE_FORMAT (in_sub.CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 12	회사명 -->
+					<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 6	제품명 -->
+					<when test="item.searchCode ==  6">AND IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 27	모델명 -->
+		        	<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+				</choose>
+	        </foreach>
+        </if>
+	</select>
+	
+	<select id="selectList" parameterType="comParam" resultType="egovMap">
+		SELECT 
+			@rownum:=@rownum+1 as no,
+			lst.*
+		FROM (
+			SELECT
+				
+			    FN_GET_SEQSTRING('SB', SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ) sbkId,
+			    DATE_FORMAT(STR_TO_DATE(IFNULL(CONCAT(SBK_TB.APP_YEAR,
+			                                    LPAD(SBK_TB.APP_MON, 2, 0),
+			                                    LPAD(SBK_TB.APP_DAY, 2, 0)),
+			                            ''),
+			                    '%Y%m%d'),
+			            '%Y-%m-%d') RCPT_DT,
+			    IFNULL (DATE_FORMAT(in_sub.CARRY_IN_DATE, '%Y-%m-%d'),
+			            '-') CARRY_IN_DATE,
+			    FN_MEM_NAME (in_sub.CARRY_IN_ID) CARRY_IN_NAME,
+			    DATE_FORMAT (TEST_TB.ins_dt, '%Y-%m-%d') testDtStr,
+			    CONCAT (FN_GET_SEQSTRING('SB', JOB_TB.sbk_ym, 'G', JOB_TB.sbk_seq),
+			            '-',
+			            TEST_TB.test_type_code,
+			            LPAD(TEST_TB.TEST_NO, 4, 0)) testId,
+			    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
+			    JOB_TB.PRDCT_NAME,
+			    JOB_TB.MODEL_NAME,
+			    '' TEST_STNDR,
+			    IFNULL (IM_TB.inCnt, 0) inCnt,
+			    IFNULL (IM_TB.outCnt, 0) outCnt,
+			    IFNULL (DATE_FORMAT(out_sub.CARRY_OUT_DATE, '%Y-%m-%d'),
+			            '-') CARRY_OUT_DATE,
+			    FN_MEM_NAME(out_sub.CARRY_OUT_ID) CARRY_OUT_NAME,
+			    IFNULL (FN_CODE_NAME(out_sub.CARRY_OUT_CODE, 'TC'),
+			            '') CARRY_OUT_TYPE,
+			    IFNULL (out_sub.CARRY_OUT_DLVRY_NAME, '') CARRY_OUT_DLVRY_NAME,
+			    IFNULL (out_sub.CARRY_OUT_DLVRY_INVC, '') CARRY_OUT_DLVRY_INVC,
+			    IFNULL (DATE_FORMAT(IF(TEST_ITEM_TB.TEST_STNDR_SEQ = 10,
+			                        RAW_TB.REPORT_DT,
+			                        TEST_TB.TEST_REPORT_DT),
+			                    '%Y-%m-%d'),
+			            '-') REPORT_DT
+			FROM
+			    SBK_TB
+			        
+			        INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+			        AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
+			        AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+			        AND JOB_TB.STATE != 'D'
+			        
+			        INNER JOIN TEST_ITEM_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			        AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+			        AND TEST_ITEM_TB.STATE != 'D'
+			        
+			        INNER JOIN TEST_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+			        
+			        LEFT JOIN RAW_TB ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
+			        
+			        LEFT JOIN
+				    (
+					    SELECT 
+					        SBK_ID,
+				            IM_YM,
+				            IM_SEQ,
+				            SUM(qty) inCnt,
+				            SUM(IF(CARRY_OUT_CODE IS NOT NULL, qty, 0)) outCnt
+					    FROM
+					        IM_TB
+					        
+						    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
+					    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
+				    ) IM_TB ON CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) = IM_TB.SBK_ID
+			        
+			        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = (SELECT 
+																            IM_SUB_SEQ
+																        FROM
+																            IM_SUB_TB sub
+																        WHERE
+																            FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = sub.IM_ID
+																        ORDER BY sub.IM_SUB_SEQ DESC
+																        LIMIT 1)
+			        AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = in_sub.IM_ID
+			        
+			        LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = (SELECT 
+																            IM_SUB_SEQ
+																        FROM
+																            IM_SUB_TB sub
+																        WHERE
+																            FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = sub.IM_ID
+																                AND CARRY_OUT_CODE IS NOT NULL
+																        ORDER BY sub.IM_SUB_SEQ DESC
+																        LIMIT 1)
+			        AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = out_sub.IM_ID
+					
+					INNER JOIN (SELECT @rownum:=0) r
+
+			WHERE
+			    1 = 1
+			# 재발행 신청서 제외
+			AND SBK_TB.REVISION = 0
+	        <if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		       
+		        	<choose>
+				        <!-- 54	시료반출일 -->
+				        <when test="item.searchCode == 54">AND DATE_FORMAT (out_sub.CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+				        <!-- 21	시료반입일 -->
+				        <when test="item.searchCode == 21">AND DATE_FORMAT (in_sub.CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 12	회사명 -->
+						<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<!-- 6	제품명 -->
+						<when test="item.searchCode ==  6">AND IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<!-- 27	모델명 -->
+			        	<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+		        	</choose>
+		        	
+		        </foreach>
+	        </if>
+	        
+	        order by SBK_TB.INS_DT asc
+	    ) lst
+	    
+	    order by no asc
+		LIMIT #{pageUnit} OFFSET #{firstIndex};
+	</select>
+		
+</mapper>

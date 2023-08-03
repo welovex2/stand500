@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<script>
+//폼 이름/값 가져와서 제이슨 형태로 만들기
+jQuery.fn.serializeObject = function() {
+    var obj = null;
+    try {
+    if ( this[0].tagName && this[0].tagName.toUpperCase() == "FORM" ) {
+    var arr = this.serializeArray();
+    if ( arr ) {
+    obj = {};
+    jQuery.each(arr, function() {
+    obj[this.name] = this.value;
+    }); 
+    }//if ( arr ) {
+    }
+    }
+    catch(e) {alert(e.message);}
+    finally {}
+   
+    return obj;
+};
+
+function go() {
+    const test = $(".es_add_form").serializeObject();
+   
+    $.ajax({
+            url: "http://api.standardbank.co.kr:8081/user/login/login.do", 
+            dataType: 'json',  
+            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify(test),
+            type : 'POST',  
+            beforeSend: function(xhr){
+                xhr.withCredentials = true;
+            },
+            success: function(data){
+                console.log(data);
+                if(data['result'] == true){
+                    alert('저장완료되었습니다.', 'refresh_success_bt');
+                } else {
+                    alert(data['message']);
+                }
+            },
+            error : function(e){
+                console.log(e);
+                console.log('error');
+            }  
+        });
+    } 
+    
+    function info() {
+       
+    
+        $.ajax({
+                url: "http://api.standardbank.co.kr:8081/user/login/info.do", 
+                dataType: 'json',  
+                headers: {'Content-Type': 'application/json'},
+                processData: false,    
+                contentType: false,
+                type : 'GET',  
+                beforeSend: function(xhr){
+                    xhr.withCredentials = true;
+                },
+                success: function(data){
+                    console.log(data);
+                    if(data['result'] == true){
+                        alert(data['data']);
+                    } else {
+                        alert(data['message']);
+                    }
+                },
+                error : function(e){
+                    console.log(e);
+                    console.log('error');
+                }  
+            });
+    }   
+
+</script>
+<body>
+
+    <form class="es_add_form">
+        신청인 : <input type="id" name="id" value="system" />
+        모델명 : <input type="password" name="password" value="akstp!" />
+    </form>
+    <input type="button" value="전송" onclick="go()" />
+    <input type="button" value="로그인정보확인" onclick="info()" /><br/><br/>
+    
+</body>
+</html>

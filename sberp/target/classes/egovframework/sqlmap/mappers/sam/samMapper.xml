@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sam.service.SamMapper">
+	<insert id="insert" parameterType="imDTO">
+		<selectKey keyProperty="imSeq" resultType="int" order="BEFORE">
+	        SELECT ifnull(max(IM_SEQ),0)+1 FROM IM_TB WHERE IM_YM = date_format(now(), '%y')
+	    </selectKey>
+		INSERT INTO IM_TB
+		  (
+		  	IM_YM, IM_SEQ, SBK_ID, MEMO, MNG_ID, PIC_URL, INS_MEM_ID, UDT_MEM_ID
+		  )
+		  VALUES
+		  (
+		  	date_format(now(), '%y'), #{imSeq}, #{sbkId}, #{memo}, #{mngId}, #{picUrl}, #{insMemId}, #{udtMemId}
+		  )
+	</insert>
+
+	<insert id="update" parameterType="imDTO">
+		  UPDATE IM_TB
+		  SET
+		    MEMO = #{memo},
+		    MNG_ID = #{mngId},
+		    PIC_URL = CASE WHEN PIC_URL IS NULL THEN #{picUrl} ELSE PIC_URL END,
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT = NOW()
+		  WHERE
+		  	1= 1 
+		    AND IM_YM = substring(#{imId},3,2) 
+		    AND IM_SEQ = substring(#{imId},7,4)
+	</insert>
+	
+	<select id="detail" resultType="imDTO">
+		SELECT 
+			FN_GET_SEQSTRING('IM',IM_YM,'G',IM_SEQ) imId,
+		    SBK_ID,
+		    MEMO,
+            DEPT_SEQ,
+		    MNG_ID,
+		    FN_DEPT_NAME(MNG_ID) DEPT_NAME,
+            MEM_NAME,
+		    PIC_URL
+		FROM IM_TB
+			LEFT JOIN MEMBER_TB ON MNG_ID = ID
+		WHERE SBK_ID = #{sbkId}
+	</select>
+	
+	<insert id="insertSub">
+		<selectKey resultType="int" keyProperty="imSubSeq" order="BEFORE">
+	        SELECT ifnull(MAX(IM_SUB_SEQ)+1,1) imSubSeq FROM IM_SUB_TB where IM_ID = #{imId}
+	    </selectKey> 
+    
+		  INSERT INTO IM_SUB_TB
+		  (
+		  	IM_SUB_SEQ, IM_ID, DIV_CODE, QTY, MEMO, CARRY_IN_DATE, CARRY_IN_ID, CARRY_IN_CODE, CARRY_IN_DLVRY_NAME, CARRY_IN_DLVRY_PHONE, CARRY_IN_DLVRY_INVC, CARRY_IN_MEMO, INS_MEM_ID, UDT_MEM_ID 
+		  )
+		  VALUES
+		  (
+		  	#{imSubSeq}, #{imId}, #{item.divCode}, #{item.qty}, #{item.memo}, NOW(), #{insMemId}, #{item.carryInCode}, #{item.carryInDlvryName}, #{item.carryInDlvryPhone}, #{item.carryInDlvryInvc}, #{item.carryInMemo}, #{insMemId}, #{insMemId}
+		  )
+	</insert>
+	
+	<update id="updateSub">
+		<foreach collection="itemList" item="item" separator=";">
+		  UPDATE IM_SUB_TB
+		  SET
+		  <if test="item.carryOutCode == null or item.carryOutCode == ''">
+		    DIV_CODE = #{item.divCode},
+		    QTY = #{item.qty},
+		    MEMO = #{item.memo},
+		    CARRY_IN_CODE = #{item.carryInCode},
+		    CARRY_IN_DLVRY_NAME = #{item.carryInDlvryName},
+		    CARRY_IN_DLVRY_PHONE = #{item.carryInDlvryPhone},
+		    CARRY_IN_DLVRY_INVC = #{item.carryInDlvryInvc},
+		    CARRY_IN_MEMO = #{item.carryInMemo},
+		    STATE = #{item.state},
+		  </if>
+		  <if test="item.carryOutCode != null and item.carryOutCode != ''">
+		    CARRY_OUT_DATE = CASE WHEN CARRY_OUT_DATE IS NULL THEN NOW() ELSE CARRY_OUT_DATE END,
+		    CARRY_OUT_ID = CASE WHEN CARRY_OUT_ID IS NULL THEN #{insMemId} ELSE CARRY_OUT_ID END,
+		    CARRY_OUT_CODE = #{item.carryOutCode},
+		    CARRY_OUT_DLVRY_NAME = #{item.carryOutDlvryName},
+		    CARRY_OUT_DLVRY_PHONE = #{item.carryOutDlvryPhone},
+		    CARRY_OUT_DLVRY_INVC = #{item.carryOutDlvryInvc},
+		    CARRY_OUT_MEMO = #{item.carryOutMemo},
+		  </if>
+		  	STATE = #{item.state},
+		    UDT_MEM_ID = #{insMemId},
+		    UDT_DT = NOW()
+		  WHERE
+		    IM_SUB_SEQ = #{item.imSubSeq}
+		    AND IM_ID = #{imId}
+		</foreach>
+	</update>
+	
+	<update id="deleteSub">
+		<foreach collection="itemList" item="item" separator=";">
+		  UPDATE IM_SUB_TB
+		  SET
+		    STATE = #{item.state},
+		    UDT_MEM_ID = #{insMemId},
+		    UDT_DT = NOW()
+		  WHERE
+		    IM_SUB_SEQ = #{item.imSubSeq}
+		  AND IM_ID = #{imId}
+		</foreach>
+	</update>
+	
+	<select id="subList" parameterType="String" resultType="egovMap">
+		SELECT 
+			IM_SUB_SEQ,
+		    CONCAT (IM_TB.SBK_ID, '-M', LPAD (IM_SUB_SEQ, 2, 0)) IM_ID,
+		    DIV_CODE,
+		    QTY,
+		    IM_SUB_TB.MEMO,
+			DATE_FORMAT (CARRY_IN_DATE,'%Y-%m-%d') CARRY_IN_DATE,
+		    FN_MEM_NAME (CARRY_IN_ID) CARRY_IN_ID,
+		    CARRY_IN_CODE,
+		    CARRY_IN_DLVRY_NAME,
+		    CARRY_IN_DLVRY_PHONE,
+		    CARRY_IN_DLVRY_INVC,
+		    CARRY_IN_MEMO,
+		    DATE_FORMAT (CARRY_OUT_DATE,'%Y-%m-%d') CARRY_OUT_DATE,
+		    FN_MEM_NAME (CARRY_OUT_ID) CARRY_OUT_ID,
+		    IFNULL (CARRY_OUT_CODE, '') CARRY_OUT_CODE,
+		    CARRY_OUT_DLVRY_NAME,
+		    CARRY_OUT_DLVRY_PHONE,
+		    CARRY_OUT_DLVRY_INVC,
+		    CARRY_OUT_MEMO
+		FROM IM_SUB_TB
+			INNER JOIN IM_TB on FN_GET_SEQSTRING ('IM', IM_YM, 'G', IM_SEQ) = IM_SUB_TB.IM_ID
+		    AND IM_SUB_TB.state != 'D'
+		    INNER JOIN SBK_TB on IM_TB.SBK_ID = CONCAT ('SB', SBK_TB.SBK_YM, '-' , TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), ''))
+		WHERE 1=1
+		AND IM_SUB_TB.STATE != 'D'
+		AND IM_ID = #{imId}
+	</select>
+
+	<select id="selectListCnt" parameterType="comParam" resultType="int">
+		select
+			Count(1)
+		FROM
+		    IM_TB
+		    INNER JOIN IM_SUB_TB on FN_GET_SEQSTRING ('IM', IM_YM, 'G', IM_SEQ) = IM_SUB_TB.IM_ID
+		    AND IM_SUB_TB.state != 'D'
+		    INNER JOIN SBK_TB ON IM_TB.SBK_ID = FN_GET_SEQSTRING ('SB', SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ) AND REVISION = 0
+		    INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+		    AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+		    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+		WHERE
+		    1 = 1
+        <if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	       
+	        	<choose>
+			        <!-- 54	시료반출일 -->
+			        <when test="item.searchCode == 54">AND DATE_FORMAT (CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        <!-- 21	시료반입일 -->
+			        <when test="item.searchCode == 21">AND DATE_FORMAT (CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 4	컨설팅명 -->
+					<when test="item.searchCode ==  4">AND IFNULL (CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 12	회사명 -->
+					<when test="item.searchCode == 12">AND IFNULL (JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 6	제품명 -->
+					<when test="item.searchCode ==  6">AND IFNULL (JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 27	모델명 -->
+		        	<when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+		        	<!-- 55	시료담당자 -->
+					<when test="item.searchCode == 55">AND FN_MEM_NAME (IM_TB.MNG_ID) like concat('%',#{item.searchWord},'%')</when>
+				</choose>
+	        </foreach>
+        </if>
+	</select>
+	<select id="selectList" parameterType="comParam" resultType="egovMap">
+		SELECT 
+			@rownum:=@rownum+1 as no,
+			lst.*
+		FROM (
+			SELECT
+				
+			    SBK_ID,
+			    CONCAT (IM_TB.SBK_ID, '-M', LPAD (IM_SUB_SEQ, 2, 0)) IM_SUB_ID,
+			    DATE_FORMAT(STR_TO_DATE (
+                    concat (SBK_TB.APP_YEAR, LPAD (SBK_TB.APP_MON, 2, 0), LPAD (SBK_TB.APP_DAY, 2, 0)),
+                    '%Y%m%d'
+                ),'%Y-%m-%d') RCPT_DT,
+			    DATE_FORMAT (CARRY_IN_DATE, '%Y-%m-%d') CARRY_IN_DATE,
+			    if (CARRY_OUT_CODE is null, '반입', '반출') CARRY_STATE,
+			    IFNULL (DATE_FORMAT (CARRY_OUT_DATE, '%Y-%m-%d'), '-') CARRY_OUT_DATE,
+			    QTY,
+			    CARRY_IN_DLVRY_NAME,
+			    FN_MEM_NAME (CARRY_IN_ID) CARRY_IN_NAME,
+			    FN_CODE_NAME (CARRY_IN_CODE, 'TC') CARRY_IN_TYPE,
+			    IFNULL (CARRY_OUT_DLVRY_NAME, '') CARRY_OUT_DLVRY_NAME,
+			    FN_MEM_NAME (CARRY_OUT_ID) CARRY_OUT_NAME,
+			    IFNULL (FN_CODE_NAME (CARRY_OUT_CODE, 'TC'), '') CARRY_OUT_TYPE,
+			    JOB_TB.CMPY_NAME,
+			    JOB_TB.PRDCT_NAME,
+			    JOB_TB.MODEL_NAME,
+			    IFNULL (CMPY_TB.CMPY_NAME, '') CMPY_TITLE,
+			    FN_MEM_NAME(IM_TB.MNG_ID) MNG_NAME
+			FROM
+			    IM_TB
+			    INNER JOIN IM_SUB_TB on FN_GET_SEQSTRING ('IM', IM_YM, 'G', IM_SEQ) = IM_SUB_TB.IM_ID
+			    AND IM_SUB_TB.STATE != 'D'
+			    INNER JOIN SBK_TB ON IM_TB.SBK_ID = FN_GET_SEQSTRING ('SB', SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ) AND REVISION = 0
+			    INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+			    AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+			    INNER JOIN (SELECT @rownum:=0) r
+			WHERE
+			    1 = 1
+	        <if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		       
+		        	<choose>
+				        <!-- 54	시료반출일 -->
+				        <when test="item.searchCode == 54">AND DATE_FORMAT (CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+				        <!-- 21	시료반입일 -->
+				        <when test="item.searchCode == 21">AND DATE_FORMAT (CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 4	컨설팅명 -->
+						<when test="item.searchCode ==  4">AND IFNULL (CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<!-- 12	회사명 -->
+						<when test="item.searchCode == 12">AND IFNULL (JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<!-- 6	제품명 -->
+						<when test="item.searchCode ==  6">AND IFNULL (JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<!-- 27	모델명 -->
+			        	<when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+			        	<!-- 55	시료담당자 -->
+						<when test="item.searchCode == 55">AND FN_MEM_NAME (IM_TB.MNG_ID) like concat('%',#{item.searchWord},'%')</when>
+		        	</choose>
+		        	
+		        </foreach>
+	        </if>
+	        
+	        ORDER BY IM_TB.INS_DT ASC
+	    ) lst
+	    ORDER BY NO DESC
+		LIMIT #{pageUnit} OFFSET #{firstIndex};
+	</select>
+		
+</mapper>

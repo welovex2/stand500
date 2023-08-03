@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %5p [%c] %m%n" />
+        </Console>
+        
+        <!-- 쿼리로그 -->
+        <RollingFile name="FILE_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/dailyLog.log"
+        						 filePattern="logs/${date:yyyy}/${date:MM}/dailyLog_%d{yyyyMMdd}.log">
+	       	<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="10MB" /> <!-- 10MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
+				<TimeBasedTriggeringPolicy interval="1" /><!-- 일별 로그 파일 생성-->
+			</Policies>
+   		</RollingFile>
+   		
+   		<!-- 에러로그 -->
+        <RollingFile name="ERROR_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/errorLog.log"
+        						 filePattern="logs/${date:yyyy}/${date:MM}/errorLog_%d{yyyyMMdd}.log">
+	       	<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %method - %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="10MB" /> <!-- 10MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
+				<TimeBasedTriggeringPolicy interval="1" /><!-- 일별 로그 파일 생성-->
+			</Policies>
+   		</RollingFile>
+   		
+    </Appenders>
+    
+    <Loggers>
+        <Root level="DEBUG" >
+            <appender-ref ref="console" />
+        </Root>
+		<!-- Query Loggers -->
+		<!-- SQL문과 해당 SQL을 실행시키는데 수행된 시간 정보(milliseconds)를 포함한다. -->
+		<logger name="jdbc.sqltiming" level="WARN" additivity="false">
+			<appender-ref ref="FILE_APPENDER"/>
+		</logger>
+		<!-- SQL문만을 로그로 남기며, PreparedStatement일 경우 관련된 argument 값으로 대체된 SQL문이 보여진다. -->
+		<logger name="jdbc.sqlonly" level="INFO" additivity="false">
+			<appender-ref ref="FILE_APPENDER"/>
+		</logger>
+		<!-- ResultSet을 포함한 모든 JDBC 호출 정보를 로그로 남기므로 매우 방대한 양의 로그가 생성된다. -->
+		<logger name="jdbc.resultset" level="WARN" additivity="false">
+			<appender-ref ref="FILE_APPENDER"/>
+		</logger>
+		<!-- SQL 결과 조회된 데이터의 table을 로그로 남긴다. -->
+		<logger name="jdbc.resultsettable" level="INFO" additivity="false">
+			<appender-ref ref="FILE_APPENDER"/>
+		</logger>
+		<!--  ResultSet을 제외한 모든 JDBC 호출 정보를 로그로 남긴다. 많은 양의 로그가 생성되므로 특별히 JDBC 문제를 추적해야 할 필요가 있는 경우를 제외하고는 사용을 권장하지 않는다. -->
+		<logger name="jdbc.audit" level="FATAL" additivity="false">
+			<appender-ref ref="FILE_APPENDER"/>
+		</logger>
+		<!-- 열려있는 모든 번호와 연결 수립 및 해제 이벤트를 기록. 이는 연결 문제를 찾아내는데 매우 유용 (Connection Pool 설정) -->
+		<logger name="jdbc.connection" level="INFO" additivity="false">
+			<appender-ref ref="FILE_APPENDER"/>
+		</logger>
+		
+		<!-- 프로젝트 로그 -->
+		<logger name="egovframework" level="WARN" additivity="false">
+			<appender-ref ref="ERROR_APPENDER"/>
+		</logger>
+		
+    </Loggers>
+</Configuration>
