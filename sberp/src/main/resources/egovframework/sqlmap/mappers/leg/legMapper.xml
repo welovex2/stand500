@@ -133,7 +133,8 @@
 			        INNER JOIN TEST_ITEM_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
 			        AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
 			        AND TEST_ITEM_TB.STATE != 'D'
-			        
+
+					/* 테스트가 시작된 내역만 */			        
 			        INNER JOIN TEST_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
 			        
 			        LEFT JOIN RAW_TB ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
