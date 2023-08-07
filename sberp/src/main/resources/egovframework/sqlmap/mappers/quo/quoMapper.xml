@@ -411,8 +411,8 @@
 			QUO_SEQ,
 			CMPY_SEQ,
 			CMPY_NAME,
-			CMPY_PHONE,
-			CMPY_FAX,
+			MNG_PHONE,
+			MNG_FAX,
 			MNG_NAME,
 			PRDCT_NAME,
 			MODEL_NAME,
@@ -426,8 +426,8 @@
 			#{cmpySeq},
 		<![CDATA[
 			#{cmpyName},
-			REPLACE(#{cmpyPhone},'-',''),
-			REPLACE(#{cmpyFax},'-',''),
+			#{mngPhone},
+			#{mngFax},
 			#{mngName},
 			(select ifnull(nullif(group_concat(DISTINCT  product), ''), #{prdctName}) 
 			from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D'),
@@ -445,8 +445,8 @@
 				CMPY_SEQ = #{cmpySeq},
 		<![CDATA[
 				CMPY_NAME = #{cmpyName},
-				CMPY_PHONE = replace(#{cmpyPhone},'-',''),
-				CMPY_FAX = replace(#{cmpyFax},'-',''),
+				MNG_PHONE = #{mngPhone},
+				MNG_FAX = #{mngFax},
 				MNG_NAME = #{mngName},
 				PRDCT_NAME = (select ifnull(nullif(group_concat(DISTINCT  product), ''), #{prdctName}) 
 								from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D' order by TEST_ITEM_SEQ),
