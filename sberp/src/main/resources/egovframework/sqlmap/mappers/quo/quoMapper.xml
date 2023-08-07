@@ -480,6 +480,7 @@
 		<result column="cmpyCode" property="cmpyCode"/>
 		<result column="cmpyType" property="cmpyType"/>
 		<result column="cmpy_seq" property="cmpySeq"/>
+		<result column="cmpyTitle" property="cmpyTitle"/>
 		<result column="est_cmp_dt" property="estCmpDt"/>
 		<result column="version" property="version"/>
 		<result column="cmpyName" property="cmpyName"/>
