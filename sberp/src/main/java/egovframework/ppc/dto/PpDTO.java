@@ -23,4 +23,8 @@ public class PpDTO extends Pp {
   @ApiModelProperty(value="고객유형 코드", example = "회사타입 0000 협력사(컨설팅) 1000 직접고객" )
   @Column
   private String cmpyCode;
+  
+  @ApiModelProperty(value = "컨설팅명 ", example = "")
+  @Column
+  private String cmpyTitle;
 }

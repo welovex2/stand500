@@ -116,11 +116,12 @@
 		SELECT 
 			PP_SEQ,
 		    QUO_ID,
-		    IFNULL ((SELECT cmpy.CMPY_CODE FROM CMPY_TB cmpy WHERE cmpy.CMPY_SEQ = pp.CMPY_SEQ),'') cmpy_code,
-		    CMPY_SEQ,
+		    IFNULL ((SELECT cmpy.CMPY_CODE FROM CMPY_TB cmpy WHERE cmpy.CMPY_SEQ = PP_TB.CMPY_SEQ),'') cmpy_code,
+		    PP_TB.CMPY_SEQ,
+		    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 		    CMPY_MNG_SEQ,
 		    CMPNY_NAME,
-		    RPRSN,
+		    PP_TB.RPRSN,
 		    IFNULL(FN_GET_PHONE_FORMAT(RPRSN_PHONE),'') RPRSN_PHONE,
 		    RPRSN_EMAIL,
 		    CONTACT,
@@ -136,8 +137,9 @@
 		    IM_QTY,
 		    UNIPASS,
 		    REQ_NUMBER,
-		    MEMO
-		FROM PP_TB pp
+		    PP_TB.MEMO
+		FROM PP_TB
+			LEFT JOIN CMPY_TB ON PP_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
 		WHERE
 		  	PP_YM = SUBSTRING(#{ppId},3,2)
 		  AND 
