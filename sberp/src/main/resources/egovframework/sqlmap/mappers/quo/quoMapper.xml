@@ -426,8 +426,8 @@
 			#{cmpySeq},
 		<![CDATA[
 			#{cmpyName},
-			#{mngPhone},
-			#{mngFax},
+			#{cmpyPhone},
+			#{cmpyFax},
 			#{mngName},
 			(select ifnull(nullif(group_concat(DISTINCT  product), ''), #{prdctName}) 
 			from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D'),
@@ -445,8 +445,8 @@
 				CMPY_SEQ = #{cmpySeq},
 		<![CDATA[
 				CMPY_NAME = #{cmpyName},
-				MNG_PHONE = #{mngPhone},
-				MNG_FAX = #{mngFax},
+				MNG_PHONE = #{cmpyPhone},
+				MNG_FAX = #{cmpyFax},
 				MNG_NAME = #{mngName},
 				PRDCT_NAME = (select ifnull(nullif(group_concat(DISTINCT  product), ''), #{prdctName}) 
 								from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D' order by TEST_ITEM_SEQ),
@@ -553,8 +553,8 @@
 			,JOB_TB.CMPY_SEQ
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
             ,IFNULL (JOB_TB.MNG_NAME, '') MNGNAME
-			,FN_GET_PHONE_FORMAT (IFNULL(JOB_TB.CMPY_PHONE, '')) CMPYPHONE
-			,FN_GET_PHONE_FORMAT (IFNULL(JOB_TB.CMPY_FAX, '')) CMPYFAX
+			,IFNULL (JOB_TB.MNG_PHONE, '') CMPYPHONE
+			,IFNULL (JOB_TB.MNG_FAX, '') CMPYFAX
 			,MEMBER_TB.MEM_NAME
             
 			,DATE_FORMAT (QUO_TB.EST_CMP_DT, '%Y-%m-%d') est_cmp_dt
