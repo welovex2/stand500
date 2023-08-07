@@ -107,7 +107,7 @@
 			    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
 			    JOB_TB.PRDCT_NAME,
 			    JOB_TB.MODEL_NAME,
-			    '' TEST_STNDR,
+			    TEST_STNDR_TB.TEST_STNDR TEST_STNDR,
 			    IFNULL (IM_TB.inCnt, 0) inCnt,
 			    IFNULL (IM_TB.outCnt, 0) outCnt,
 			    IFNULL (DATE_FORMAT(out_sub.CARRY_OUT_DATE, '%Y-%m-%d'),
@@ -137,6 +137,8 @@
 			        LEFT JOIN TEST_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
 			        
 			        LEFT JOIN RAW_TB ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
+			        
+			        LEFT JOIN TEST_STNDR_TB ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
 			        
 			        LEFT JOIN
 				    (
