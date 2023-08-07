@@ -29,7 +29,7 @@
 							<!-- 43	직위 -->
 			        		<when test="item.searchCode == 43">AND FN_POS_NAME (id) like concat('%',#{item.searchWord},'%')</when>
 							<!-- 44	연락처 -->
-							<when test="item.searchCode == 44">AND PHONE like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 44">AND REPLACE(PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
 						</choose>
 					</foreach>
 				</if>
@@ -109,7 +109,7 @@
 							<!-- 43	직위 -->
 			        		<when test="item.searchCode == 43">AND FN_POS_NAME (id) like concat('%',#{item.searchWord},'%')</when>
 							<!-- 44	연락처 -->
-							<when test="item.searchCode == 44">AND PHONE like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 44">AND REPLACE(PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
 						</choose>
 					</foreach>
 				</if>
@@ -158,7 +158,7 @@
 			#{posSeq},
 			#{revYn},
 			#{email},
-			replace(#{phone},'-',''),
+			#{phone},
 			#{authCode},
 			#{workState},
 			<if test="leaveSDt != null and leaveSDt != ''">#{leaveSDt},</if>
@@ -176,7 +176,7 @@
 		    POS_SEQ = #{posSeq},
 		    REV_YN = #{revYn},
 		    EMAIL = #{email},
-		    PHONE = replace(#{phone},'-',''),
+		    PHONE = #{phone},
 		    AUTH_CODE = #{authCode},
 		    WORK_STATE = #{workState},
 		    <if test="leaveSDt != null and leaveSDt != ''">LEAVE_S_DT = #{leaveSDt},</if>

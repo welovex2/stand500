@@ -249,8 +249,8 @@
 		<![CDATA[
 			#{cmpyName},
 			#{mngName},
-			replace(#{mngPhone},'-',''),
-			replace(#{mngFax},'-',''),
+			#{mngPhone},
+			#{mngFax},
 			#{prdctName},
 			#{modelName},
 			#{insMemId},
@@ -265,8 +265,8 @@
 			CMPY_SEQ = #{cmpySeq},
 			CMPY_NAME = #{cmpyName},
 			MNG_NAME = #{mngName},
-			MNG_PHONE = replace(#{mngPhone},'-',''),
-			MNG_FAX = REPLACE(#{mngFax},'-',''),
+			MNG_PHONE = #{mngPhone},
+			MNG_FAX = #{mngFax},
 			PRDCT_NAME = (select ifnull(group_concat(DISTINCT  product), #{prdctName}) 
 								from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D' order by TEST_ITEM_SEQ),
 			MODEL_NAME = (select ifnull(group_concat(DISTINCT  model), #{modelName})
@@ -566,7 +566,7 @@
 				#{indstMfYn},
 				#{indstSlYn},
 				#{indstIpYn},
-				replace(#{mngTel},'-',''),
+				#{mngTel},
 				#{mngEmail},
 				#{extendModel},
 				#{cmpnyIdntf},

@@ -235,9 +235,9 @@
 			<if test="cmpySeq == 0">
 		<![CDATA[
 			#{cmpyName},
-			replace(#{cmpyPhone},'-',''),
+			#{cmpyPhone},
 			#{mngName},
-			replace(#{mngPhone},'-',''),
+			#{mngPhone},
 		]]>
 			</if>
 		<![CDATA[
@@ -256,9 +256,9 @@
 			<if test="cmpySeq == 0">
 		<![CDATA[
 			CMPY_NAME = #{cmpyName},
-			CMPY_PHONE = replace(#{cmpyPhone},'-',''),
+			CMPY_PHONE = #{cmpyPhone},
 			MNG_NAME = #{mngName},
-			MNG_PHONE = replace(#{mngPhone},'-',''),
+			MNG_PHONE = #{mngPhone},
 		]]>
 			</if>
 		<![CDATA[

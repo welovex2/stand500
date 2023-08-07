@@ -16,11 +16,11 @@
 			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
 			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
 			        		<!-- 2	작성자 -->
-							<when test="item.searchCode == 2">and IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
-			        		<when test="item.searchCode == 12">AND cmpy_name like concat('%',#{item.searchWord},'%')</when>
+			        		<when test="item.searchCode == 12">AND CMPY_NAME like concat('%',#{item.searchWord},'%')</when>
 							<!-- 13	회사연락처 -->
-							<when test="item.searchCode == 13">AND cmpy_phone like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 13">AND REPLACE(CMPY_PHONE,'-','') like concat('%',REPLACE(#{item.searchWord},'-',''),'%')</when>
 							<!-- 41	회사종류 -->
 							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
 							<!-- 15	작성일 -->
@@ -60,11 +60,11 @@
 			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
 			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
 			        		<!-- 2	작성자 -->
-							<when test="item.searchCode == 2">and IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
-			        		<when test="item.searchCode == 12">AND cmpy_name like concat('%',#{item.searchWord},'%')</when>
+			        		<when test="item.searchCode == 12">AND CMPY_NAME like concat('%',#{item.searchWord},'%')</when>
 							<!-- 13	회사연락처 -->
-							<when test="item.searchCode == 13">AND cmpy_phone like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 13">AND REPLACE(CMPY_PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
 							<!-- 41	회사종류 -->
 							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
 							<!-- 15	작성일 -->
@@ -176,9 +176,9 @@
 		(
 			#{cmpySeq},
 			#{item.name},
-			replace(#{item.phone},'-',''),
-			replace(#{item.fax},'-',''),
-			replace(#{item.tel},'-',''),
+			#{item.phone},
+			#{item.fax},
+			#{item.tel},
 			#{item.email},
 			#{item.dept},
 			#{item.level},
@@ -192,9 +192,9 @@
 		UPDATE CMPY_MNG_TB
 		SET
 			NAME = #{item.name},
-			PHONE = replace(#{item.phone},'-',''),
-			FAX = replace(#{item.fax},'-',''),
-			TEL = replace(#{item.tel},'-',''),
+			PHONE = #{item.phone},
+			FAX = #{item.fax},
+			TEL = #{item.tel},
 			EMAIL = #{item.email},
 			DEPT = #{item.dept},
 			LEVEL = #{item.level},
