@@ -551,6 +551,7 @@
             ,IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ),'') CMPY_CODE
 			,FN_CUST_TYPE(JOB_TB.CMPY_SEQ) CMPYTYPE
 			,JOB_TB.CMPY_SEQ
+			,IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
             ,IFNULL (JOB_TB.MNG_NAME, '') MNGNAME
 			,IFNULL (JOB_TB.MNG_PHONE, '') CMPYPHONE
@@ -659,6 +660,8 @@
             ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
 			AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
 			AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+            
+            LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
             
         WHERE 1=1
         <if test="quoId != null and quoId != ''">
