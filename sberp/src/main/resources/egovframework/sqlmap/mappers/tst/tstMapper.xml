@@ -149,6 +149,7 @@
 			SELECT
 				#ROW_NUMBER() OVER(ORDER BY TEST_TB.ins_dt) AS no,
 			    TEST_TB.TEST_SEQ,
+			    IFNULL (MEMO_CNT, 0) MEMO_CNT,
 			    CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
 			    DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
 			    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
@@ -219,6 +220,10 @@
 	            LEFT JOIN RAW_TB
 	            ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
 	            
+	            /* 게시판 게시글 갯수 */
+                LEFT JOIN (SELECT TEST_SEQ, COUNT(1) MEMO_CNT FROM TEST_MEMO_TB GROUP BY TEST_MEMO_TB.TEST_SEQ) TEST_MEMO_TB
+                ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
+                
 	            INNER JOIN (SELECT @rownum:=0) r
 			WHERE 1=1
 			AND TEST_ITEM_TB.STATE != 'D'
