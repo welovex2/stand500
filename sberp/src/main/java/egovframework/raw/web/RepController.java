@@ -143,6 +143,7 @@ public class RepController {
               break;
             //   9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험
             case 2:
+              ce = null;
               if (ObjectUtils.isEmpty(ce))
                 ce = rawService.ceDetail(rawSeq);
               if (ce != null) {
@@ -152,6 +153,7 @@ public class RepController {
               break;
             //   9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험
             case 3:
+              ce = null;
               if (ObjectUtils.isEmpty(ce))
                 ce = rawService.ceDetail(rawSeq);
               if (ce != null) {
@@ -169,6 +171,7 @@ public class RepController {
               detail.setRe1(re);
               break;
             case 5:
+              re = null;
               //   9.6 방사성 방해 시험 (1GHz 초과 대역)
               if (ObjectUtils.isEmpty(re))
                 re = rawService.reDetail(rawSeq);
