@@ -107,6 +107,7 @@ public class ExcelView extends AbstractView {
       
       String[] columnArr = (String[]) dataMap.get("columnArr"); // 각 컬럼 이름
       String[] columnVarArr = (String[]) dataMap.get("columnVarArr"); // 각 컬럼의 변수 이름
+      int[] columnWidth = (int[]) dataMap.get("columnWidth"); // 각 컬럼의 길이
       
       List<EgovMap> dataList = (List<EgovMap>) dataMap.get("list"); // 데이터가 담긴 리스트 
       
@@ -145,9 +146,9 @@ public class ExcelView extends AbstractView {
       for(int i=0; i<columnArr.length; i++){
           setText(getCell(sheet, 0, i), columnArr[i]);
           getCell(sheet, 0, i).setCellStyle(cellStyle);
-          sheet.autoSizeColumn(i);
-          int columnWidth = (sheet.getColumnWidth(i))*2;
-          sheet.setColumnWidth(i, columnWidth);
+//          sheet.autoSizeColumn(i);
+//          int columnWidth = (sheet.getColumnWidth(i))*2;
+          sheet.setColumnWidth(i, columnWidth[i]);
           
           if(dataList.size() < 1){
               cell = getCell(sheet, 1, i);
