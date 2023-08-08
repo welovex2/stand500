@@ -869,7 +869,8 @@
 					    FN_MEM_NAME (SBK_TB.INS_MEM_ID) memName,
 					    IFNULL (JOB_TB.CNS_SEQ, '') CNS_SEQ,
 					    IFNULL (FN_LAST_CNS_MENO (JOB_TB.CNS_SEQ), '') lastMemo,
-					    IFNULL (DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-') carryInDt,
+					    /* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
+					    IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-')) carryInDt,
 					    
 					    /* 시험항목 및 비용 */
 					    TEST_ITEM_TB.TEST_ITEM_SEQ,

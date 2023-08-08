@@ -96,8 +96,8 @@
 			                            ''),
 			                    '%Y%m%d'),
 			            '%Y-%m-%d') RCPT_DT,
-			    IFNULL (DATE_FORMAT(in_sub.CARRY_IN_DATE, '%Y-%m-%d'),
-			            '-') CARRY_IN_DATE,
+			    /* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
+			    IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT (in_sub.CARRY_IN_DATE, '%Y-%m-%d'),'-')) CARRY_IN_DATE,
 			    FN_MEM_NAME (in_sub.CARRY_IN_ID) CARRY_IN_NAME,
 			    IFNULL (DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d'), '-') testDtStr,
 			    IFNULL (CONCAT (FN_GET_SEQSTRING('SB', JOB_TB.SBK_YM, 'G', JOB_TB.SBK_SEQ),
