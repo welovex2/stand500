@@ -117,7 +117,7 @@ public class SbkController {
     List<SbkDTO.Res> list = new ArrayList<SbkDTO.Res>();
 
     // 페이징
-    param.setPageUnit(param.getPageUnit() == 0 ? propertyService.getInt("pageUnit") : param.getPageUnit());
+    param.setPageUnit(param.getPageUnit() == 0 ? propertyService.getInt("pageBigUnit") : param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
 
     PagingVO pagingVO = new PagingVO();
