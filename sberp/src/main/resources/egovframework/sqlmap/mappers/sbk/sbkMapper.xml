@@ -884,12 +884,12 @@
 					    IFNULL (cate4.NAME, '') crtfc4Name,
 					    TEST_ITEM_TB.TEST_TYPE_CODE,
 					    TEST_STNDR_TB.TEST_STNDR_SEQ,
-					    IFNULL (TEST_STNDR_TB.TEST_STNDR, '-') TEST_STNDR,
+					    IFNULL (TEST_STNDR_TB.TEST_STNDR, '') TEST_STNDR,
 					    IFNULL (
 					        FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE, 'TT'),
-					        '-'
+					        ''
 					    ) TEST_TYPE,
-					    IFNULL (TEST_ITEM_TB.model, '-') model,
+					    IFNULL (TEST_ITEM_TB.model, '') model,
 					    SIGN_STATE_CODE,
 					    if (
 					        TEST_ITEM_TB.REV_SIGN_URL IS NULL,
