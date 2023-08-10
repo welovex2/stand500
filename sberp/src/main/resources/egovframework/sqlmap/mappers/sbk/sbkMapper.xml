@@ -881,7 +881,7 @@
 					    cate1.NAME crtfc1Name,
 					    IFNULL (cate2.NAME, '') crtfc2Name,
 					    IFNULL (cate3.NAME, '') crtfc3Name,
-					    cate4.NAME crtfc4Name,
+					    IFNULL (cate4.NAME, '') crtfc4Name,
 					    TEST_ITEM_TB.TEST_TYPE_CODE,
 					    TEST_STNDR_TB.TEST_STNDR_SEQ,
 					    IFNULL (TEST_STNDR_TB.TEST_STNDR, '-') TEST_STNDR,
