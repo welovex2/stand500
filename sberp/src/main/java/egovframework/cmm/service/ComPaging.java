@@ -11,7 +11,7 @@ public class ComPaging {
     private int pageIndex = 1;
     
 	@ApiModelProperty(value="페이지갯수 ", example = "10")
-    private int pageUnit = 10;
+    private int pageUnit = 0;
 
 	@ApiModelProperty(value="페이지사이즈 ", example = "10", hidden = true)
     private int pageSize = 10;
