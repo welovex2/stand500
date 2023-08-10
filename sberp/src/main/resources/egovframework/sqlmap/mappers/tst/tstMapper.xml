@@ -159,6 +159,7 @@
 			    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 			    '미반입' imPoint,
 			    '0' imSeq,
+			    CMPY_NAME,
 			    TEST_ITEM_TB.PRODUCT,
 				CONCAT_WS(',', IF(SG_NEW_YN=1,'신규',NULL),IF(SG_GB_YN=1,'기술기준 변경',NULL),IF(SG_DG_YN=1,'동일기자재',NULL),IF(SG_ETC_YN=1,'기술기준외 변경',NULL)) sgText,
 				cate1.NAME crtfc1Name,
