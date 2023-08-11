@@ -103,7 +103,7 @@ public class LegController {
 
     PagingVO pagingVO = new PagingVO();
 
-    pagingVO.setCurrentPageNo(param.getPageIndex());
+    pagingVO.setCurrentPageNo(1);
     pagingVO.setDisplayRow(param.getPageUnit());
     pagingVO.setDisplayPage(param.getPageSize());
 
