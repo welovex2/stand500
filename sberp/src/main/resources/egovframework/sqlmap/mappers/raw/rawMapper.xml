@@ -490,19 +490,7 @@
 		    REPORT_NO,
 		    REPORT_DT,
 		    REPORT_MEMO,
-		    (
-		        select
-		            date_format (ins_dt, '%Y-%m-%d')
-		        from
-		            TEST_STATE_TB
-		        where
-		            TEST_SEQ = RAW_TB.TEST_SEQ
-		            and state_code = 2
-		        order by
-		            ins_dt desc
-		        limit
-		            1
-		    ) TEST_S_DT,
+		    TEST_S_DT,
 		    TEST_E_DT,
 		    TEST_BY,
 		    FN_GET_IMAGE (RAW_TB.TEST_SIGN_URL, 0) TEST_SIGN_URL,
@@ -755,19 +743,7 @@
 		        '%Y%m%d'
 		    ), '%Y년 %m월 %d일') RCPT_DT,
 		    /* 3	시험기간 */
-		    (
-		        SELECT
-		            DATE_FORMAT (INS_DT, '%Y년 %m월 %d일')
-		        FROM
-		            TEST_STATE_TB
-		        WHERE
-		            TEST_SEQ = RAW_TB.TEST_SEQ
-		            AND STATE_CODE = 2
-		        ORDER BY
-		            INS_DT DESC
-		        LIMIT
-		            1
-		    ) TEST_S_DT,
+		    date_format (TEST_S_DT, '%Y년 %m월 %d일') TEST_S_DT,
 		    date_format (TEST_E_DT, '%Y년 %m월 %d일') TEST_E_DT,
 		    /* 4	고정 > 신청인(상호명) */
 		    JOB_TB.CMPY_NAME APLCN,
