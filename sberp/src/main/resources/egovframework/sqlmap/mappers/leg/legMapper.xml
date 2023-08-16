@@ -107,14 +107,12 @@
 			    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
 			    JOB_TB.PRDCT_NAME,
 			    JOB_TB.MODEL_NAME,
-			    TEST_STNDR_TB.TEST_STNDR TEST_STNDR,
-			    IFNULL (IM_TB.inCnt, 0) inCnt,
-			    IFNULL (IM_TB.outCnt, 0) outCnt,
-			    IFNULL (DATE_FORMAT(out_sub.CARRY_OUT_DATE, '%Y-%m-%d'),
-			            '-') CARRY_OUT_DATE,
+			    IFNULL (TEST_STNDR_TB.TEST_STNDR, '') TEST_STNDR,
+			    IFNULL (IM_TOTAL_V.IN_CNT, 0) inCnt,
+			    IFNULL (IM_TOTAL_V.OUT_CNT, 0) outCnt,
+			    IFNULL (DATE_FORMAT(out_sub.CARRY_OUT_DATE, '%Y-%m-%d'), '-') CARRY_OUT_DATE,
 			    FN_MEM_NAME(out_sub.CARRY_OUT_ID) CARRY_OUT_NAME,
-			    IFNULL (FN_CODE_NAME(out_sub.CARRY_OUT_CODE, 'TC'),
-			            '') CARRY_OUT_TYPE,
+			    IFNULL (FN_CODE_NAME(out_sub.CARRY_OUT_CODE, 'TC'), '') CARRY_OUT_TYPE,
 			    IFNULL (out_sub.CARRY_OUT_DLVRY_NAME, '') CARRY_OUT_DLVRY_NAME,
 			    IFNULL (out_sub.CARRY_OUT_DLVRY_INVC, '') CARRY_OUT_DLVRY_INVC,
 			    IFNULL (DATE_FORMAT(IF(TEST_ITEM_TB.TEST_STNDR_SEQ = 10,
@@ -140,41 +138,12 @@
 			        
 			        LEFT JOIN TEST_STNDR_TB ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
 			        
-			        LEFT JOIN
-				    (
-					    SELECT 
-					        SBK_ID,
-				            IM_YM,
-				            IM_SEQ,
-				            SUM(qty) inCnt,
-				            SUM(IF(CARRY_OUT_CODE IS NOT NULL, qty, 0)) outCnt
-					    FROM
-					        IM_TB
-					        
-						    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
-					    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
-				    ) IM_TB ON CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) = IM_TB.SBK_ID
-			        
-			        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = (SELECT 
-																            IM_SUB_SEQ
-																        FROM
-																            IM_SUB_TB sub
-																        WHERE
-																            FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = sub.IM_ID
-																        ORDER BY sub.IM_SUB_SEQ DESC
-																        LIMIT 1)
-			        AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = in_sub.IM_ID
-			        
-			        LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = (SELECT 
-																            IM_SUB_SEQ
-																        FROM
-																            IM_SUB_TB sub
-																        WHERE
-																            FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = sub.IM_ID
-																                AND CARRY_OUT_CODE IS NOT NULL
-																        ORDER BY sub.IM_SUB_SEQ DESC
-																        LIMIT 1)
-			        AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = out_sub.IM_ID
+			        /* 시료정보 - 총 갯수, 반입 반출의 최신 SEQ */
+			        LEFT JOIN IM_TOTAL_V ON CONCAT ('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) = IM_TOTAL_V.SBK_ID
+					
+                    /* 반입 반출의 최신 정보 */
+			        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = in_sub.IM_ID 
+					LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = out_sub.IM_ID
 					
 					INNER JOIN (SELECT @rownum:=0) r
 
