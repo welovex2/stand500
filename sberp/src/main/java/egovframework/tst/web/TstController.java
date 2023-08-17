@@ -112,7 +112,7 @@ public class TstController {
     	List<TestDTO.Res> list = new ArrayList<TestDTO.Res>();
 
     	//페이징
-    	param.setPageUnit(param.getPageUnit() == 0 ? propertyService.getInt("pageBigUnit") : param.getPageUnit());
+    	param.setPageUnit(param.getPageUnit());
     	param.setPageSize(propertyService.getInt("pageSize"));
 		
     	PagingVO pagingVO = new PagingVO();

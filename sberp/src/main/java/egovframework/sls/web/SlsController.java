@@ -50,7 +50,7 @@ public class SlsController {
     List<SlsDTO.Res> list = new ArrayList<SlsDTO.Res>();
 
     // 페이징
-    param.setPageUnit(10);
+    param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
 
     PagingVO pagingVO = new PagingVO();
@@ -208,7 +208,7 @@ public class SlsController {
     List<SlsDTO.Res> list = new ArrayList<SlsDTO.Res>();
 
     // 페이징
-    param.setPageUnit(propertyService.getInt("pageUnit"));
+    param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
 
     PagingVO pagingVO = new PagingVO();

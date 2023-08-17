@@ -37,7 +37,6 @@ import egovframework.sbk.service.SbkDTO;
 import egovframework.sbk.service.SbkService;
 import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItemRej;
-import egovframework.tst.web.TstController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -117,7 +116,7 @@ public class SbkController {
     List<SbkDTO.Res> list = new ArrayList<SbkDTO.Res>();
 
     // 페이징
-    param.setPageUnit(param.getPageUnit() == 0 ? propertyService.getInt("pageBigUnit") : param.getPageUnit());
+    param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
 
     PagingVO pagingVO = new PagingVO();

@@ -71,7 +71,7 @@ public class CmyController {
     }
 
     // 페이징
-    param.setPageUnit(propertyService.getInt("pageUnit"));
+    param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
 
     PagingVO pagingVO = new PagingVO();
