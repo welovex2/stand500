@@ -126,7 +126,7 @@ public class CnsController {
       result = cnsService.insert(cns);
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).build();
+    BasicResponse res = BasicResponse.builder().result(result).data(cns.getCnsSeq()).build();
 
     return res;
   }

@@ -276,6 +276,11 @@ public class RawData {
 	private int modCheck2Yn;
 
 
+	@ApiModelProperty(value="10. System Configuration (시스템구성) 제조번호에 해당하는 헤드 이름 ", example = "")
+	@Column
+	private String sysHead;
+	   
+	   
 	@ApiModelProperty(value="시험배치_FLOOR ", example = "0")
 	@Column
 	private int testFloorYn;
