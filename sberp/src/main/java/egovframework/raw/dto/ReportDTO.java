@@ -236,7 +236,12 @@ public class ReportDTO {
   @Column
   private int modCheck2Yn;
 
-
+  
+  @ApiModelProperty(value="10. System Configuration (시스템구성) 제조번호에 해당하는 헤드 이름 ", example = "")
+  @Column
+  private String sysHead;
+  
+  
   @ApiModelProperty(value = "3.3 피시험기기의 보완내용  ", example = "")
   @Column
   private String modMemo;

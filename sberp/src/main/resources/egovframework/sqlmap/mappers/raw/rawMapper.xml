@@ -446,12 +446,12 @@
 	<select id="detail" parameterType="int" resultType="rawData">
 		SELECT
 		    RAW_SEQ,
-		    concat (
+		    CONCAT (
 		        SBK_ID,
 		        '-',
 		        (
 		            select
-		                concat (TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
+		                CONCAT (TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
 		            from
 		                TEST_TB
 		            where
@@ -530,6 +530,7 @@
 		    MOD_MEMO,
 		    RAW_TB.MOD_CHECK1_YN,
 		    RAW_TB.MOD_CHECK2_YN,
+		    RAW_TB.SYS_HEAD,
 		    TEST_FLOOR_YN,
 		    TEST_TABLE_YN,
 		    TEST_FSTT_YN,
@@ -805,6 +806,7 @@
 		    MOD_MEMO,
 		    RAW_TB.MOD_CHECK1_YN,
 		    RAW_TB.MOD_CHECK2_YN,
+		    RAW_TB.SYS_HEAD,
 		    /* 4.1 제품 개요 */
 		    PRD_EXPLN,
 		    PRD_USES,
