@@ -60,7 +60,7 @@ public class ErrorController {
           DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM");
           String ym = date.format(formatter);
           
-          byte[] bytes = Files.readAllBytes(Paths.get(ym+"/errorLog.log"));
+          byte[] bytes = Files.readAllBytes(Paths.get("logs/"+ym+"/errorLog.log"));
           
           Collections.reverse(Arrays.asList(bytes));
           
