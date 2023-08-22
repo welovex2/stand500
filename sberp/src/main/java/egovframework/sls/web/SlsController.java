@@ -1,7 +1,10 @@
 package egovframework.sls.web;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,6 +24,7 @@ import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sls.service.BillDTO;
 import egovframework.sls.service.SlsDTO;
 import egovframework.sls.service.SlsService;
+import egovframework.sls.service.SlsSummary;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -72,9 +76,22 @@ public class SlsController {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
-
+    
+    /*
+     * 미수금액총합 / 순매출총합 / 청구액총합
+     * 미수금 총합 = 미수금이 없는 수
+     * 순매출, 청구액 총합 = 화면리스트 수
+     */
+    SlsSummary summ = new SlsSummary();
+    summ.setTotal(list.stream().mapToInt(SlsDTO.Res::getChrgs).sum());
+    summ.setTotalCnt(list.size());
+    summ.setTotalArrears(list.stream().mapToInt(SlsDTO.Res::getArrears).sum());
+    summ.setArrearsCnt((int) list.stream().filter(t -> t.getArrears() > 0).count());
+    summ.setTotalNetSales(list.stream().mapToInt(SlsDTO.Res::getNetSales).sum());
+    summ.setNetSalesCnt(list.size());
+    
     BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+        BasicResponse.builder().result(result).message(msg).summary(summ).data(list).paging(pagingVO).build();
 
     return res;
   }
@@ -230,8 +247,18 @@ public class SlsController {
       msg = ResponseMessage.NO_DATA;
     }
 
+    /*
+     * 시험비총합 / 순매출액총합
+     * 시험비, 순매출액 총합 = 화면리스트 수
+     */
+    SlsSummary summ = new SlsSummary();
+    summ.setTotalTestFee(list.stream().mapToInt(SlsDTO.Res::getTestFee).sum());
+    summ.setTestFeeCnt(list.size());
+    summ.setTotalNetSales(list.stream().mapToInt(SlsDTO.Res::getNetSales).sum());
+    summ.setNetSalesCnt(list.size());
+    
     BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+        BasicResponse.builder().result(result).message(msg).summary(summ).data(list).paging(pagingVO).build();
 
     return res;
   }

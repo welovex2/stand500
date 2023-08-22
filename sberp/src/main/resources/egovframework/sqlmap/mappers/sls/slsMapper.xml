@@ -200,9 +200,9 @@
 				    JOB_TB.PRDCT_NAME,
 				    SLS_TOTAL CHRGS,
 				    /* 견적서 수정 바로 연동되야할때 사용 */
-				    IFNULL(TOTAL_VAT, 0) QUO_CHRGS,
-				    IFNULL(items.NET_SALES, 0) NET_SALES,
-				    ifnull (ARREARS, items.NET_SALES) ARREARS,
+				    IFNULL (TOTAL_VAT, 0) QUO_CHRGS,
+				    IFNULL (items.NET_SALES, 0) NET_SALES,
+				    IFNULL (ARREARS, items.NET_SALES) ARREARS,
 				    IF (SLS_TB.SLS_TOTAL=SLS_TB.ARREARS,'Y','N') canDelete,
 				    BILL_SEQ,
 				    BILL_TB.BILL,
@@ -483,93 +483,63 @@
 	</update>
 	
 	<select id="selectByTestListCnt" parameterType="comParam" resultType="int">
-		select
+		SELECT
 			Count(SLS_TB.sls_seq)
-		from SLS_TB
-          
-			inner join QUO_TB
-            on (SLS_TB.quo_ym = QUO_TB.quo_ym and SLS_TB.quo_seq = QUO_TB.quo_seq)
-            or (SLS_TB.chq_ym = QUO_TB.chq_ym and SLS_TB.chq_seq = QUO_TB.chq_seq)
-
-           	INNER JOIN JOB_TB ON SLS_TB.QUO_YM = JOB_TB.QUO_YM
-		    AND SLS_TB.QUO_SEQ = JOB_TB.QUO_SEQ
-		    AND JOB_TB.STATE != 'D'
-            
-            inner JOIN TEST_ITEM_TB
-		    ON QUO_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
-		    AND QUO_TB.quo_seq = TEST_ITEM_TB.QUO_SEQ
-            and TEST_ITEM_TB.state != 'D'
-            
-            inner join TEST_STNDR_TB
-		    on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
-		    
-		    inner join TEST_CATE_TB A
-		    on TEST_ITEM_TB.CRTF_TYPE_SEQ = A.test_cate_seq
-		    
-			inner join TEST_CATE_TB B
-		    on A.TOP_DEPTH_SEQ = B.test_cate_seq
-            
-            inner join MEMBER_TB
-            on SLS_TB.cnfrm_id = MEMBER_TB.id
+		FROM SLS_TB
+         
+			INNER join QUO_TB
+			ON (
+				(SLS_TB.quo_ym = QUO_TB.quo_ym and SLS_TB.quo_seq = QUO_TB.quo_seq)
+				OR (SLS_TB.chq_ym = QUO_TB.chq_ym and SLS_TB.chq_seq = QUO_TB.chq_seq)
+				)
 			
-            LEFT JOIN CMPY_TB
+			INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			AND JOB_TB.STATE != 'D'
+			      
+			INNER JOIN TEST_ITEM_TB
+			ON QUO_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			AND QUO_TB.quo_seq = TEST_ITEM_TB.QUO_SEQ
+			AND TEST_ITEM_TB.state != 'D'
+			      
+			INNER JOIN TEST_STNDR_TB
+			ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+			
+			LEFT JOIN TEST_CATE_TB cate4 ON TEST_ITEM_TB.CRTF_TYPE_SEQ = cate4.TEST_CATE_SEQ
+			LEFT JOIN TEST_CATE_TB cate3 ON cate4.TOP_DEPTH_SEQ = cate3.TEST_CATE_SEQ
+			LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
+			LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
+			      
+			INNER JOIN MEMBER_TB
+			ON SLS_TB.cnfrm_id = MEMBER_TB.id
+			
+			LEFT JOIN CMPY_TB
 			ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-            
-            left join PAY_STATUS_TB
-            on PAY_STATUS_TB.PAY_STATUS_SEQ = (
-								select PAY_STATUS_SEQ
-                                from PAY_STATUS_TB sub
-                                where sub.sls_ym = SLS_TB.sls_ym
-                                and sub.sls_seq = SLS_TB.sls_seq
-                                order by PAY_STATUS_SEQ desc
-                                limit 1
-            )
-            
-            left join BILL_STATUS_TB
-            on BILL_STATUS_TB.BILL_STATUS_SEQ = (
-								select BILL_STATUS_SEQ
-                                from BILL_STATUS_TB sub
-                                where sub.sls_ym = SLS_TB.sls_ym
-                                and sub.sls_seq = SLS_TB.sls_seq
-                                order by BILL_STATUS_SEQ desc
-                                limit 1
-            )
-            
-            left join QUO_MOD_TB
-            on QUO_MOD_TB.QUO_MOD_SEQ = (
-								select QUO_MOD_SEQ
-                                from QUO_MOD_TB sub
-                                where sub.quo_ym = QUO_TB.quo_ym
-                                and sub.quo_seq = QUO_TB.quo_seq
-                                order by QUO_MOD_SEQ desc
-                                limit 1
-            )
-            
-		where 1=1
-		<if test="searchVO != null">
-	        <foreach collection="searchVO" item="item" separator="">
-	        	<choose>
-	        		<!-- 1	고객유형 -->
-					<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-					<!-- 4	컨설팅명 -->
-					<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-					<!-- 6	제품명 -->
-					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-					<!-- 12	회사명 -->
-					<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-					<!-- 16	매출확정일 -->
-					<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-					<!-- 19	매출확정자 -->
-					<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-					<!-- 23	시험부 -->
-					<when test="item.searchCode == 23">and IFNULL(TEST_ITEM_TB.TEST_TYPE_CODE,'') = #{item.searchWord}</when>
-					<!-- 28	납부상태 -->
-					<when test="item.searchCode == 28">and if(PAY_STATUS_TB.STATE_CODE is null,'0','1') = #{item.searchWord}</when>
-	        	</choose>
-			</foreach>
-		</if>
+           
+		WHERE 1=1
+		AND SLS_TB.state != 'D'
+	<if test="searchVO != null">
+        <foreach collection="searchVO" item="item" separator="">
+        	<choose>
+        		<!-- 1	고객유형 -->
+				<when test="item.searchCode == 1">and IFNULL (CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+				<!-- 4	컨설팅명 -->
+				<when test="item.searchCode == 4">and IFNULL (CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+				<!-- 6	제품명 -->
+				<when test="item.searchCode == 6">and IFNULL (JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+				<!-- 12	회사명 -->
+				<when test="item.searchCode == 12">and IFNULL (JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+				<!-- 16	매출확정일 -->
+				<when test="item.searchCode == 16">and DATE_FORMAT (SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+				<!-- 19	매출확정자 -->
+				<when test="item.searchCode == 19">and IFNULL (MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+				<!-- 23	시험부 -->
+				<when test="item.searchCode == 23">and IFNULL (TEST_ITEM_TB.TEST_TYPE_CODE,'') = #{item.searchWord}</when>
+        	</choose>
+		</foreach>
+	</if>
 	</select>
-	<select id="selectByTestList" parameterType="comParam" resultType="egovMap">
+	<select id="selectByTestList" parameterType="comParam" resultType="slsRes">
 		select 
 			@rownum:=@rownum+1 as no,
 			lst.*
@@ -594,12 +564,12 @@
 	            concat(cate3.name,'-',cate4.name) testCate,
 				fn_code_name(TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
 	            
-	            (FEE+LCNS_TAX+SPCL_DSCNT+TEST_FEE) COST_TOTAL,
-	            TEST_FEE,
-				NET_SALES
+	            IFNULL (FEE+LCNS_TAX+SPCL_DSCNT+TEST_FEE, 0) COST_TOTAL,
+	            IFNULL (TEST_FEE, 0) TEST_FEE,
+				IFNULL (NET_SALES, 0) NET_SALES
 	           
 				
-			from SLS_TB
+			FROM SLS_TB
 	          
 				inner join QUO_TB
 	            on (SLS_TB.quo_ym = QUO_TB.quo_ym and SLS_TB.quo_seq = QUO_TB.quo_seq)
@@ -636,25 +606,22 @@
 		        <foreach collection="searchVO" item="item" separator="">
 		        	<choose>
 		        		<!-- 1	고객유형 -->
-						<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+						<when test="item.searchCode == 1">and IFNULL (CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
 						<!-- 4	컨설팅명 -->
-						<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 4">and IFNULL (CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 6	제품명 -->
-						<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 6">and IFNULL (JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 12	회사명 -->
-						<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 12">and IFNULL (JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 16	매출확정일 -->
-						<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 16">and DATE_FORMAT (SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 19	매출확정자 -->
-						<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 19">and IFNULL (MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 23	시험부 -->
-						<when test="item.searchCode == 23">and IFNULL(TEST_ITEM_TB.TEST_TYPE_CODE,'') = #{item.searchWord}</when>
-						<!-- 28	납부상태 -->
-						<when test="item.searchCode == 28">and if(PAY_STATUS_TB.STATE_CODE is null,'0','1') = #{item.searchWord}</when>
+						<when test="item.searchCode == 23">and IFNULL (TEST_ITEM_TB.TEST_TYPE_CODE,'') = #{item.searchWord}</when>
 		        	</choose>
 				</foreach>
 			</if>
-	
 	        
 	        order by SLS_TB.ins_dt asc
 	    ) lst

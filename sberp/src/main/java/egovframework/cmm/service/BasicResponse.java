@@ -25,4 +25,6 @@ public class BasicResponse<T> {
 	@ApiModelProperty(value="결과데이터", example = "", required = true)
     private T data;
 
+	@ApiModelProperty(value="결과데이터 요약", example = "", required = true)
+    private T summary;
 }

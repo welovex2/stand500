@@ -95,46 +95,62 @@ public class SlsDTO {
     @Column
     private String cmpyType;
 
-    @ApiModelProperty(value = "컨설팅명 ", example = "", required = true)
+    @ApiModelProperty(value = "컨설팅명 ", example = "")
     @Column
     private String cmpyTitle;
 
-    @ApiModelProperty(value = "업체명 ", example = "", required = true)
+    @ApiModelProperty(value = "업체명 ", example = "")
     @Column
     private String cmpyName;
 
-    @ApiModelProperty(value = "제품명 ", example = "", required = true)
+    @ApiModelProperty(value = "제품명 ", example = "")
     @Column
     private String prdctName;
 
-    @ApiModelProperty(value = "청구액 ", example = "", required = true)
+    @ApiModelProperty(value = "모델명 ", example = "")
+    @Column
+    private String modelName;
+    
+    @ApiModelProperty(value = "청구액 ", example = "0")
     @Column
     private int chrgs;
 
-    @ApiModelProperty(value = "순매출 ", example = "", required = true)
+    @ApiModelProperty(value = "순매출 ", example = "0")
     @Column
     private int netSales;
+    
+    @ApiModelProperty(value = "시험비 ", example = "0")
+    @Column
+    private int testFee;
 
-    @ApiModelProperty(value = "정상총합 ", example = "3000000", required = true)
+    @ApiModelProperty(value = "정상총합 ", example = "3000000")
     @Column
     private String CostTotal;
-
-    @ApiModelProperty(value = "계산서발행액총합 ", example = "3300000", required = true)
+    
+    @ApiModelProperty(value = "계산서발행액총합 ", example = "3300000")
     @Column
     private String TotalVat;
 
-    @ApiModelProperty(value = "계산서발행내역 ", required = true)
+    @ApiModelProperty(value = "시험항목 ", example = "")
+    @Column
+    private String testCate;
+    
+    @ApiModelProperty(value = "시험부 ", example = "")
+    @Column
+    private String testType;
+    
+    @ApiModelProperty(value = "계산서발행내역 ")
     private List<Bill> billList;
     
-    @ApiModelProperty(value = "수정요청상태 ", example = "", required = true)
+    @ApiModelProperty(value = "수정요청상태 ", example = "")
     @Column
     private String quoState;
 
-    @ApiModelProperty(value = "수정요청상태(일) ", example = "", required = true)
+    @ApiModelProperty(value = "수정요청상태(일) ", example = "")
     @Column
     private String prmsDtStr;
 
-    @ApiModelProperty(value = "수정요청상태(이름) ", example = "", required = true)
+    @ApiModelProperty(value = "수정요청상태(이름) ", example = "")
     @Column
     private String prmsName;
     
