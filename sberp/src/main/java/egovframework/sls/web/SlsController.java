@@ -336,7 +336,7 @@ public class SlsController {
   }
 
   @ApiOperation(value = "계산서 상태 변경",
-      notes = "계산서 발행여부 : slsId, billSeq, billYn=1 필수\n계산서 발행 작성일 : slsId, billSeq, otherBillDt\n납부상태 변경 : slsId, billSeq, payCode(MP)")
+      notes = "계산서 발행여부 : slsId, billSeq, billYn=1 필수\n계산서 발행 작성일 : slsId, billSeq, otherBillDt\n납부상태 변경 : slsId, billSeq, payCode(MP), payDt")
   @PostMapping(value = "/billInsert.do")
   public BasicResponse billInsert(@RequestBody SlsDTO.Req req) throws Exception {
 

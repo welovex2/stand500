@@ -207,8 +207,8 @@
 				    BILL_SEQ,
 				    BILL_TB.BILL,
 				    IF (BILL_YN=1, '발행완료', '미발행') BILL_YN,
-				    ifnull (date_format (OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
-				    IFNULL(fn_code_name(PAY_CODE, 'MP'), '미납') PAY_CODE,
+				    IFNULL (date_format (OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
+				    IFNULL (CONCAT('납부완료 (',date_format (PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
 				    IFNULL (fn_code_name (QUO_MOD_TB.STATE_CODE, 'MM'), '-') quoState,
 				    IFNULL (date_format (QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), date_format (QUO_MOD_TB.INS_DT, '%Y-%m-%d')) prmsDtStr,
 				    IFNULL (FN_MEM_NAME (QUO_MOD_TB.PRMS_ID), FN_MEM_NAME (QUO_MOD_TB.INS_MEM_ID)) prmsName
@@ -310,7 +310,7 @@
 				    BILL_TB.BILL,
 				    IF (BILL_YN=1, '발행완료', '미발행') BILL_YN,
 				    ifnull (date_format (OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
-				    IFNULL(fn_code_name(PAY_CODE, 'MP'), '미납') PAY_CODE,
+				    IFNULL(CONCAT('납부완료 (',date_format (PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
 				    '-' quoState,
 				    '-' prmsDtStr,
 				    '-' prmsName
@@ -728,7 +728,7 @@
 			</if>
 			<if test="payCode != null and payCode != ''">
 			PAY_CODE = #{payCode},
-			PAY_DT = NOW(),
+			PAY_DT = #{payDt},
 			PAY_ID = #{udtMemId},
 			</if>
 			<if test="otherBillDt != null and otherBillDt != ''">

@@ -1,6 +1,5 @@
 package egovframework.sls.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.Column;
 import org.springmodules.validation.bean.conf.loader.annotation.handler.NotNull;
@@ -30,8 +29,7 @@ public class SlsDTO {
     @Column
     private String chqId;
 
-    @ApiModelProperty(value = "견적서상태 :1 매출확정, 2 수정요청, 3 수정허가, 4 수정완료 ", example = "1",
-        required = true)
+    @ApiModelProperty(value = "견적서상태 :1 매출확정, 2 수정요청, 3 수정허가, 4 수정완료 ", example = "1", required = true)
     @Column
     private String quoStateCode;
     
@@ -59,6 +57,10 @@ public class SlsDTO {
     @ApiModelProperty(value="OTHER_BILL_DT ", example = "")
     @Column
     private String otherBillDt;
+    
+    @ApiModelProperty(value="납부완료일 ", example = "")
+    @Column
+    private String payDt;
     
   }
 
