@@ -449,15 +449,7 @@
 		    CONCAT (
 		        SBK_ID,
 		        '-',
-		        (
-		            select
-		                CONCAT (TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
-		            from
-		                TEST_TB
-		            where
-		                TEST_SEQ = RAW_TB.TEST_SEQ
-		        ),
-		        '-RD'
+		        CONCAT (TEST_TB.TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
 		    ) rawId,
 		    SBK_NO,
 		    SBK_ID,
