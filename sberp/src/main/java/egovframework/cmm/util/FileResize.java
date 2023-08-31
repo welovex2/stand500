@@ -4,8 +4,11 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,16 +60,21 @@ public class FileResize {
 
 
   // 이미지 크기 줄이기
-  public static MultipartFile resizeImageFile(String fileName, String fileFormatName,
-      MultipartFile originalImage)
+  public static MultipartFile resizeImageFile(String fileName, String fileFormatName, MultipartFile originalImage)
 
       throws Exception {
 
-    // 사진이 2MB(2,097,152 Byte) 이상일 경우에만 진행
-    if (originalImage.getSize() < 2097152) {
+    // 사진이 1.5MB(1,572,864 Byte) 이상일 경우에만 진행
+    System.out.println("원본파일크기");
+    System.out.println(originalImage.getSize());
+    if (originalImage.getSize() < 1572864) {
       return originalImage;
     }
 
+    // jpg 확장자만 가능
+    if (!"jpg".equals(fileFormatName)) return originalImage;
+    
+    System.out.println("jpg니까 진행");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     // 이미지 읽어 오기
@@ -79,6 +87,7 @@ public class FileResize {
     int newWidth = (int) (originWidth * 0.8);
 
     if (originWidth > newWidth) {
+      System.out.println("줄이기");
       // 기존 이미지 비율을 유지하여 세로 길이 설정
       int newHeight = (originHeight * newWidth) / originWidth;
       // 이미지 품질 설정
@@ -116,6 +125,39 @@ public class FileResize {
     }
     return new MockMultipartFile(fileName, baos.toByteArray());
   }
+  
+  
+  public static MultipartFile compressImage(MultipartFile inputFile, String fileExt) throws IOException {
+    
+    // 사진이 1.5MB(1,572,864 Byte) 이상일 경우에만 진행
+    System.out.println("원본파일크기");
+    System.out.println(inputFile.getSize());
+    if (inputFile.getSize() < 1572864) {
+      return inputFile;
+    }
+    
+    // jpg 확장자만 가능
+    if (!"jpg".equals(fileExt)) return inputFile;
+    
+    float quality = 0.4f;
+    BufferedImage bufferedImage = ImageIO.read(inputFile.getInputStream());
+
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    ImageIO.write(compressImage(bufferedImage, quality), "jpg", outputStream);
+
+    return new MockMultipartFile(inputFile.getOriginalFilename(), new ByteArrayInputStream(outputStream.toByteArray()));
+}
+  
+  private static BufferedImage compressImage(BufferedImage image, float quality) {
+    BufferedImage compressedImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+    // Compress the image
+    Graphics2D g = compressedImage.createGraphics();
+    g.drawImage(image, 0, 0, null);
+    g.dispose();
+
+    return compressedImage;
+}
 
 
 }

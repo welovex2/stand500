@@ -127,12 +127,15 @@ public class EgovFileMngUtil {
 		
 			    int index = orginFileName.lastIndexOf(".");
 			    fileExt = orginFileName.substring(index + 1);
-			    newName = EgovStringUtil.getTimeStamp() + fileKey;
-			    _size = file.getSize();
+			    newName = EgovStringUtil.getTimeStamp() + fileKey + "." + fileExt;
+			    
 		
 			    if (!"".equals(orginFileName)) {
 					filePath = storePathString + File.separator + newName;
-					file.transferTo(new File(filePath));
+					MultipartFile reFile = FileResize.compressImage(file, fileExt);
+					_size = reFile.getSize();
+					reFile.transferTo(new File(filePath));
+					System.out.println("리사이즈완료");
 			    }
 		    }
 		    
