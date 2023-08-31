@@ -18,7 +18,7 @@
 			        		<!-- 2	작성자 -->
 							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
-			        		<when test="item.searchCode == 12">AND CMPY_NAME like concat('%',#{item.searchWord},'%')</when>
+			        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) like concat('%',LOWER (#{item.searchWord}),'%')</when>
 							<!-- 13	회사연락처 -->
 							<when test="item.searchCode == 13">AND REPLACE(CMPY_PHONE,'-','') like concat('%',REPLACE(#{item.searchWord},'-',''),'%')</when>
 							<!-- 41	회사종류 -->
@@ -62,7 +62,7 @@
 			        		<!-- 2	작성자 -->
 							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
-			        		<when test="item.searchCode == 12">AND CMPY_NAME like concat('%',#{item.searchWord},'%')</when>
+			        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) like concat('%',LOWER (#{item.searchWord}),'%')</when>
 							<!-- 13	회사연락처 -->
 							<when test="item.searchCode == 13">AND REPLACE(CMPY_PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
 							<!-- 41	회사종류 -->

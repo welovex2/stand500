@@ -33,6 +33,10 @@ public class QuoDTO {
     @Column
     private int cmpySeq;
 
+    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @Column
+    private int cmpyMngSeq;
+    
     @ApiModelProperty(value = "담당자 이름 ", example = "김담당")
     @Column
     private String mngName;
@@ -183,11 +187,19 @@ public class QuoDTO {
     @ApiModelProperty(value = "CMPY_SEQ ", example = "")
     @Column
     private int cmpySeq;
-
+    
+    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @Column
+    private int cmpyMngSeq;
+    
     @ApiModelProperty(value = "컨설팅명 ", example = "")
     @Column
     private String cmpyTitle;
-
+    
+    @ApiModelProperty(value = "컨설팅 담당자명 ", example = "")
+    @Column
+    private String cmpyMngName;
+    
     @ApiModelProperty(value = "업체명 ", example = "")
     @Column
     private String cmpyName;
