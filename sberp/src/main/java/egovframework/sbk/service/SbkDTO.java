@@ -31,6 +31,10 @@ public class SbkDTO {
     @Column
     private int cmpySeq;
 
+    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @Column
+    private int cmpyMngSeq;
+    
     @ApiModelProperty(value = "담당자 이름 ", example = "김담당")
     @Column
     private String mngName;
@@ -90,6 +94,10 @@ public class SbkDTO {
     @Column
     private int cmpySeq;
 
+    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @Column
+    private int cmpyMngSeq;
+    
     @ApiModelProperty(value = "담당자 이름 ", example = "김담당")
     @Column
     private String mngName;
@@ -134,6 +142,10 @@ public class SbkDTO {
     @Column
     private String cmpyTitle;
 
+    @ApiModelProperty(value = "컨설팅 담당자명 ", example = "")
+    @Column
+    private String cmpyMngName;
+    
     @ApiModelProperty(value = "작성자", example = "김정미")
     @Column
     private String memName;

@@ -26,9 +26,11 @@
   		select
 			CMPY_SEQ,
 		    CMPY_NAME,
+		    CMPNY_IDNTF,
 		    BSNS_RGNMB,
 		    CRPRT_RGNMB,
 		    RPRSN,
+		    RSDNT_RGNMB,
 		    CMPY_PHONE,
 		    ADDR,
             ENG_ADDR

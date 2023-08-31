@@ -227,11 +227,9 @@
 		)
 		VALUES
 		(
-		<![CDATA[
 			#{cnsSeq},
 			#{cmpySeq},
 			#{cmpyMngSeq},
-		]]>
 			<if test="cmpySeq == 0">
 		<![CDATA[
 			#{cmpyName},
