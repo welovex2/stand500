@@ -53,13 +53,13 @@
 	<!-- MULTIPART RESOLVERS -->
     <!-- regular spring resolver -->    
     <bean id="spring.RegularCommonsMultipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-        <property name="maxUploadSize" value="200000000" />
-        <property name="maxInMemorySize" value="200000000" />
+        <property name="maxUploadSize"   value="200000000" />
+        <property name="maxInMemorySize" value="1000000000" />
     </bean>
     <!-- custom multi file resolver -->    
     <bean id="local.MultiCommonsMultipartResolver" class="egovframework.cmm.web.EgovMultipartResolver">
-        <property name="maxUploadSize" value="200000000" />
-        <property name="maxInMemorySize" value="200000000" />
+        <property name="maxUploadSize"   value="200000000" />
+        <property name="maxInMemorySize" value="1000000000" />
     </bean>
     <!-- choose one from above and alias it to the name Spring expects -->
     <!-- alias name="local.MultiCommonsMultipartResolver" alias="multipartResolver" /-->
