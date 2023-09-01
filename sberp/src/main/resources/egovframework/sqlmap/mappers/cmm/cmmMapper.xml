@@ -53,6 +53,18 @@
 		and STATE != 'D';
 	</select>
 
+	<select id="comcodeSearchList" parameterType="String" resultType="egovMap">
+		SELECT 
+			TOP_CD,
+            IFNULL ((SELECT sub.TYPE_NAME FROM COMCODE_TB sub WHERE sub.TOP_CD = '00' AND sub.TYPE_CD = COMCODE_TB.TOP_CD), '최상위코드') TOP_NAME,
+			TYPE_CD,
+			TYPE_NAME
+		FROM COMCODE_TB
+		WHERE 1=1
+        AND TYPE_NAME LIKE CONCAT ('%',#{code},'%')
+        ORDER BY TOP_CD
+	</select>
+	
 	<select id="comcodeList" parameterType="String" resultType="egovMap">
 		SELECT 
 			type_cd,
@@ -96,5 +108,13 @@
 		and work_state = '1'
 		and dept_seq = #{deptSeq};
 	</select>
+	
+	<update id="jobStateUpdate" parameterType="job">
+		UPDATE JOB_TB
+		SET
+			STATE_CODE = #{stateCode},
+			STATE_UDT_DT = NOW()
+		WHERE JOB_SEQ = #{jobSeq}
+	</update>
 	
 </mapper>

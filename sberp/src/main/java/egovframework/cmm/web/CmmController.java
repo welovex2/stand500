@@ -72,6 +72,16 @@ public class CmmController {
         return map;
     }
     
+    @ApiOperation(value = "공통코드명 검색")
+    @GetMapping(value="/comcode/searchList.do")
+    public List<Comcode> searchList(@ApiParam(value = "코드분류이름", required = true, example = "상태") @RequestParam(value="name") String name) throws Exception{
+        List<Comcode> list = new ArrayList<Comcode>();
+        
+        list = cmmService.comcodeSearchList(name);
+        
+        return list;
+    }
+    
     @ApiOperation(value = "공통코드 리스트")
     @GetMapping(value="/comcode/list.do")
     public List<Comcode> comcodeList(@ApiParam(value = "코드분류값", required = true, example = "00") @RequestParam(value="code") String code) throws Exception{
