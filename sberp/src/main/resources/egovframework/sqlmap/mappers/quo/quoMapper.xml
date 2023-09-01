@@ -50,6 +50,10 @@
 					<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 19 매출확정자 -->
 					<when test="item.searchCode == 19">and IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') like concat('%',#{item.searchWord},'%')</when>
+			   		<!-- 57	프로젝트상태 -->
+	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+	        		<!-- 58	프로젝트상태변경일 -->
+	        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
 	        	</choose>
 	        </foreach>
 		</if>
@@ -62,6 +66,7 @@
 		from (
 			SELECT 
 				#ROW_NUMBER() OVER(ORDER BY QUO_TB.ins_dt) AS no,
+				JOB_TB.JOB_SEQ,
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
 			    FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, TYPE, QUO_TB.QUO_SEQ) quoId, 
 				FN_MEM_NAME (QUO_TB.INS_MEM_ID) memName,
@@ -81,6 +86,8 @@
 			    IFNULL (items.NET_SALES, 0) NET_SALES,
 			    IFNULL (JOB_TB.CNS_SEQ, '') CNS_SEQ,
 			    IFNULL (FN_LAST_CNS_MENO(JOB_TB.CNS_SEQ), '') lastMemo,
+			    IFNULL (FN_CODE_NAME (JOB_TB.STATE_CODE, 'CP'), '변경') stateCode,
+			    IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
 			    IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') sbkId
 			    
 			FROM QUO_TB
@@ -135,6 +142,10 @@
 						<when test="item.searchCode == 16">AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 19 매출확정자 -->
 						<when test="item.searchCode == 19">AND IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 57	프로젝트상태 -->
+		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+		        		<!-- 58	프로젝트상태변경일 -->
+		        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
 		        	</choose>
 		        </foreach>
 			</if>

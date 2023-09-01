@@ -783,13 +783,13 @@
 	        			</choose>
 	        		</when>
 	        		<!-- 23	시험부 -->
-	        		<when test="item.searchCode == 23">
-	        			AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}
-	        		</when>
+	        		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
 	        		<!-- 24	기책서명 -->
-	        		<when test="item.searchCode == 24">
-	        			AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '3') = #{item.searchWord}
-	        		</when>
+	        		<when test="item.searchCode == 24">AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '3') = #{item.searchWord}</when>
+	        		<!-- 57	프로젝트상태 -->
+	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+	        		<!-- 58	프로젝트상태변경일 -->
+	        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
 	        	</choose>
 	        	
 	        </foreach>
@@ -802,6 +802,9 @@
 	<resultMap type="sbkRes" id="sbkMap">
 		<id column="sbkId" property="sbkId"/>
 		<result column="no" property="no"/>
+		<result column="job_seq" property="jobSeq"/>
+		<result column="stateCode" property="stateCode"/>
+		<result column="stateUdtDt" property="stateUdtDt"/>
 		<result column="revision" property="revision"/>
 		<result column="insDtStr" property="insDtStr"/>
 		<result column="estCmpDt" property="estCmpDt"/>
@@ -855,6 +858,9 @@
 			    (
 			        SELECT
 			            #DENSE_RANK() OVER(ORDER BY SBK_TB.ins_dt) AS no,
+			            JOB_TB.JOB_SEQ,
+			            IFNULL (FN_CODE_NAME (JOB_TB.STATE_CODE, 'CP'), '변경') stateCode,
+			    		IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
 					    SBK_TB.INS_DT,
 					    DATE_FORMAT (SBK_TB.INS_DT, '%Y-%m-%d') insDtStr,
 					    CONCAT ('SB', SBK_TB.SBK_YM, '-' , TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) sbkId,
@@ -1006,13 +1012,13 @@
 			        			</choose>
 			        		</when>
 			        		<!-- 23	시험부 -->
-			        		<when test="item.searchCode == 23">
-			        			AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}
-			        		</when>
+			        		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
 			        		<!-- 24	기책서명 -->
-			        		<when test="item.searchCode == 24">
-			        			AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '3') = #{item.searchWord}
-			        		</when>
+			        		<when test="item.searchCode == 24">AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '3') = #{item.searchWord}</when>
+			        		<!-- 57	프로젝트상태 -->
+			        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+			        		<!-- 58	프로젝트상태변경일 -->
+			        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
 			        	</choose>
 			        	
 			        </foreach>

@@ -74,6 +74,18 @@ public class SbkDTO {
     @Column
     private int no;
 
+    @ApiModelProperty(value = "프로젝트번호", example = "1")
+    @Column
+    private int jobSeq;
+    
+    @ApiModelProperty(value = "프로젝트상태코드", example = "공통코드:CP")
+    @Column
+    private String stateCode;
+    
+    @ApiModelProperty(value = "프로젝트상태변경일", example = "")
+    @Column
+    private String stateUdtDt;
+    
     @ApiModelProperty(value = "신청서번호", example = "SB23-G0005")
     @Column
     private String sbkId;

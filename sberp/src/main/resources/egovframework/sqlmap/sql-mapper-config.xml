@@ -11,6 +11,7 @@
     	<typeAlias alias="egovMap"		type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
     	<typeAlias alias="loginVO"		type="egovframework.cmm.service.LoginVO"/>
     	<typeAlias alias="fileVO"		type="egovframework.cmm.service.FileVO"/>
+    	<typeAlias alias="job"			type="egovframework.cmm.service.Job"/>
     	
     	<!-- 상담서 -->
     	<typeAlias alias="comParam"		type="egovframework.cmm.service.ComParam"/>
