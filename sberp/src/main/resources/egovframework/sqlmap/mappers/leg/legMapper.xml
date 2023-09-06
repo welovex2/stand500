@@ -150,7 +150,7 @@
 		        </foreach>
 	        </if>
 	        
-	        order by SBK_TB.INS_DT asc
+	        ORDER BY SBK_TB.INS_DT ASC, TEST_TB.INS_DT ASC
 	    ) lst
 	    
 	    order by no asc
