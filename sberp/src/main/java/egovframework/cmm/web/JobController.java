@@ -26,7 +26,7 @@ public class JobController {
   
   
   @ApiOperation(value = "프로젝트상태 변경", notes="jobSeq:프로젝트고유항목, 시험상태:공통코드(CP)")
-  @PostMapping(value="/testStateInsert.do")
+  @PostMapping(value="/stateUpdate.do")
   public BasicResponse testStateInsert(@RequestBody Job req) throws Exception{
       LoginVO user = (LoginVO)EgovUserDetailsHelper.getAuthenticatedUser();
       

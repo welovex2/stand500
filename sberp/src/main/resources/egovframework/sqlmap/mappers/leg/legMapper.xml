@@ -38,6 +38,8 @@
 	        <foreach collection="searchVO" item="item" separator="">
 	       
 	        	<choose>
+	        		<!-- 15	작성일 -->
+					<when test="item.searchCode == 15">AND DATE_FORMAT (SBK_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 			        <!-- 54	시료반출일 -->
 			        <when test="item.searchCode == 54">AND DATE_FORMAT (out_sub.CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 			        <!-- 21	시료반입일 -->
@@ -61,12 +63,7 @@
 			SELECT
 				
 			    FN_GET_SEQSTRING('SB', SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ) sbkId,
-			    DATE_FORMAT(STR_TO_DATE(IFNULL(CONCAT(SBK_TB.APP_YEAR,
-			                                    LPAD(SBK_TB.APP_MON, 2, 0),
-			                                    LPAD(SBK_TB.APP_DAY, 2, 0)),
-			                            ''),
-			                    '%Y%m%d'),
-			            '%Y-%m-%d') RCPT_DT,
+			    DATE_FORMAT (SBK_TB.INS_DT, '%Y-%m-%d') RCPT_DT,
 			    /* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
 			    IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT (in_sub.CARRY_IN_DATE, '%Y-%m-%d'),'-')) CARRY_IN_DATE,
 			    FN_MEM_NAME (in_sub.CARRY_IN_ID) CARRY_IN_NAME,
@@ -136,6 +133,8 @@
 		        <foreach collection="searchVO" item="item" separator="">
 		       
 		        	<choose>
+		        		<!-- 15	작성일 -->
+						<when test="item.searchCode == 15">AND DATE_FORMAT (SBK_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 54	시료반출일 -->
 				        <when test="item.searchCode == 54">AND DATE_FORMAT (out_sub.CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 21	시료반입일 -->
