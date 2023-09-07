@@ -727,7 +727,7 @@
 			    FROM
 			        IM_TB
 			        
-				    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
+				    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = CONCAT ('IM', IM_TB.IM_YM, '-', 'G', LPAD(IM_TB.IM_SEQ,4,0))
 			    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
 		    ) IM_TB ON IM_TB.SBK_ID = CONCAT ('SB', SBK_TB.SBK_YM, '-' , TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), ''))
                                    
@@ -954,7 +954,7 @@
 						    FROM
 						        IM_TB
 						        
-							    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
+							    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = CONCAT ('IM', IM_TB.IM_YM, '-', 'G', LPAD(IM_TB.IM_SEQ,4,0))
 						    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
 					    ) IM_TB ON IM_TB.SBK_ID = CONCAT ('SB', SBK_TB.SBK_YM, '-' , TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), ''))
                         
