@@ -27,8 +27,8 @@
 		        LEFT JOIN IM_TOTAL_V ON CONCAT ('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) = IM_TOTAL_V.SBK_ID
 				
                 /* 반입 반출의 최신 정보 */
-		        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = in_sub.IM_ID 
-				LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = out_sub.IM_ID
+		        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = in_sub.IM_ID 
+				LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = out_sub.IM_ID
 				
 		WHERE
 		    1 = 1
@@ -120,8 +120,8 @@
 			        LEFT JOIN IM_TOTAL_V ON CONCAT ('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) = IM_TOTAL_V.SBK_ID
 					
                     /* 반입 반출의 최신 정보 */
-			        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = in_sub.IM_ID 
-					LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND FN_GET_SEQSTRING('IM', IM_YM, 'G', IM_SEQ) = out_sub.IM_ID
+			        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = in_sub.IM_ID 
+					LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = out_sub.IM_ID
 					
 					INNER JOIN (SELECT @rownum:=0) r
 
