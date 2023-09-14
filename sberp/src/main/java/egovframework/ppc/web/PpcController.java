@@ -22,9 +22,15 @@ import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cnf.service.CmpyDTO;
+import egovframework.cnf.service.CmpyMng;
+import egovframework.cnf.service.CmyService;
 import egovframework.ppc.dto.PpDTO;
 import egovframework.ppc.service.PpcService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.rte.psl.dataaccess.util.EgovMap;
+import egovframework.sbk.service.SbkDTO;
+import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -40,7 +46,12 @@ public class PpcController {
   @Resource(name = "PpcService")
   private PpcService ppcService;
 
-
+  @Resource(name = "SbkService")
+  private SbkService sbkService;
+  
+  @Resource(name = "CmyService")
+  private CmyService cmyService;
+  
   @ApiOperation(value = "사전통관 리스트", notes = "검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n1-고객유형(PT), 5-접수번호, "
       + "4-컨설팅/직고객명, 12-회사명, 6-제품명, 27-모델명, 7-고지부담당자, 15-작성일")
   @GetMapping(value = "/list.do")
@@ -82,7 +93,7 @@ public class PpcController {
 
   @ApiOperation(value = "사전통관 저장")
   @PostMapping(value = "insert.do")
-  public BasicResponse ppAdd(@ApiParam(value = "상세조회후 메모추가시 사전통관고유번호(ppId) 필수", required = true,
+  public BasicResponse ppAdd(@ApiParam(value = "수정시 사전통관고유번호(ppId) 필수", required = true,
       example = "") @RequestBody PpDTO pp) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -142,5 +153,142 @@ public class PpcController {
 
     return res;
   }
+  
+  @ApiOperation(value = "프로젝트상태 변경", notes="ppId:사전통관 고유번호, 상태:공통코드(CK)")
+  @PostMapping(value="/stateInsert.do")
+  public BasicResponse testStateInsert(@RequestBody PpDTO req) throws Exception{
+      LoginVO user = (LoginVO)EgovUserDetailsHelper.getAuthenticatedUser();
+      
+      // 로그인정보
+      req.setInsMemId(user.getId());
+      req.setUdtMemId(user.getId());
+      
+      boolean result = false;
+      String msg = "";
+      
+      Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+      
+      if (isAuthenticated) {
+          result = ppcService.stateUpdate(req);
+      } else {
+          result = false;
+          msg = ResponseMessage.UNAUTHORIZED;
+      }
+      
+      BasicResponse res = BasicResponse.builder().result(result)
+              .message(msg)
+              .build();
+      
+      return res;
+  }
+  
+  @ApiOperation(value = "본건 신청서 작성")
+  @PostMapping(value = "/makeSbk.do")
+  public BasicResponse makePpSbk(@ApiParam(value = "ppId 값만 전송") @RequestBody String ppId)
+      throws Exception {
 
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+    SbkDTO.Req req = new SbkDTO.Req();
+    SbkDTO.Res detail = new SbkDTO.Res();
+    PpDTO pp = new PpDTO();
+
+    // 로그인정보
+    pp.setInsMemId(user.getId());
+    pp.setUdtMemId(user.getId());
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      // 이미 연결된 신청서가 있는지 확인
+      pp = ppcService.selectDetail(ppId);
+      if (pp != null && !StringUtils.isEmpty(pp.getSbkId())) {
+        result = false;
+        msg = ResponseMessage.DUPLICATE_SBK;
+      } else {
+
+        /**
+         * 사전통관에 등록된 정보를 토대로 신청서를 새로 작성한다.
+         */
+        // 1
+        req.setCmpySeq(pp.getCmpySeq());
+        req.setCmpyMngSeq(pp.getCmpyMngSeq());
+        // 2
+        req.setCmpyName(pp.getCmpnyName());
+        // 3
+        req.setRprsn(pp.getRprsn());
+        // 4
+        req.setMngName(pp.getContact());
+        // 5
+        req.setMngPhone(pp.getContactPhone());
+        // 6
+        req.setMngEmail(pp.getContactEmail());
+        // 7
+        req.setPrdctName(pp.getPrdctName());
+        // 8
+        req.setModelName(pp.getModelName());
+        // 9
+        req.setMnfctCmpny(pp.getMnfctCmpny());
+        
+        // 직고객일 경우 신청인 정보 다시 셋팅
+        if (pp.getCmpySeq() >= 1000) {
+          CmpyDTO cmpyDetail = new CmpyDTO();
+          cmpyDetail = cmyService.detail(pp.getCmpySeq());
+          // 10 사업자등록번호 cmpy 테이블에서..
+          req.setBsnsRgnmb(cmpyDetail.getBsnsRgnmb());
+          // 11 법인등록번호 cmpy 테이블에서..
+          req.setCrprtRgnmb(cmpyDetail.getCrprtRgnmb());
+          // 12 회사명 cmpy 테이블에서..
+          req.setCmpyName(cmpyDetail.getCmpyName());
+          // 대표자
+          req.setRprsn(cmpyDetail.getRprsn());
+          
+          for (CmpyMng mng : cmpyDetail.getMngList()) {
+            if (req.getCmpyMngSeq() == mng.getCmpyMngSeq()) {
+              // 담당자이름
+              req.setMngName(mng.getName());
+              // 담당자핸드폰
+              req.setMngPhone(mng.getPhone());
+              // 담당자이메일
+              req.setMngEmail(mng.getEmail());
+            }
+          }
+        }
+        
+        // 13
+        req.setPpBl(pp.getBl());
+        // 14
+        req.setPpCnt(Integer.toString(pp.getImQty()));
+        // 15
+        req.setPpYn(1);
+        req.setPpName("스탠다드뱅크");
+        req.setPpNum(ppId);
+        
+        // 신청서 생성
+        result = sbkService.insert(req);
+
+        // 신청서 정보 보내주기
+        detail = sbkService.selectDetail(req);
+
+        if (detail == null) {
+          result = false;
+          msg = ResponseMessage.NO_DATA;
+        }
+
+        // 사전통관에 연결된 신청서 정보 저장
+        pp.setPpId(ppId);
+        pp.setSbkId(detail.getSbkId());
+        ppcService.sbkIdUpdate(pp);
+        
+
+      }
+
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+
+    return res;
+
+  }
 }

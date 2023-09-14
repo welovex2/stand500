@@ -275,7 +275,6 @@
 	    ) lst
 	    order by no desc
         LIMIT #{pageUnit} OFFSET #{firstIndex};
-        
 	</select>
 	
 	<select id="testMemList" parameterType="String" resultType="egovMap">
@@ -435,4 +434,211 @@
 		WHERE TEST_SEQ = #{testSeq}
 	</update>
 	
+	
+	<select id="selectSaleListCnt" parameterType="comParam" resultType="int">
+		SELECT COUNT(1) FROM (		
+			SELECT 
+				count(1)
+			FROM
+			    SBK_TB
+				
+				INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+				AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ 
+				AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+				AND JOB_TB.STATE != 'D'
+			   
+				INNER JOIN QUO_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+				AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+                     
+                INNER JOIN TEST_ITEM_TB on JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ and TEST_ITEM_TB.STATE != 'D'
+                
+                INNER JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+			    INNER JOIN TEST_STNDR_TB on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+                      
+			WHERE 1 = 1
+			
+			GROUP BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.REVISION
+        
+        ) cnt
+	</select>
+			
+	<resultMap type="testRes" id="sbkMap">
+		<id column="sbkId" property="sbkId"/>
+		<result column="no" property="no"/>
+		<result column="sbkInsDtStr" property="sbkInsDtStr"/>
+		<result column="quoId" property="quoId"/>
+		<result column="quoInsDtStr" property="quoInsDtStr"/>
+		<result column="carryInDt" property="carryInDt"/>
+		<result column="estCmpDt" property="estCmpDt"/>
+		<result column="cmpyTitle" property="cmpyTitle"/>
+		<result column="cmpyName" property="cmpyName"/>
+		<result column="prdctName" property="prdctName"/>
+      	<result column="modelName" property="modelName"/>
+		<result column="sgText" property="sgText"/>
+		<result column="mngName" property="mngName"/>
+		<result column="job_seq" property="jobSeq"/>
+		<result column="stateCode" property="stateCode"/>
+		<result column="stateUdtDt" property="stateUdtDt"/>
+		<collection property="items" ofType="testItemDTO">
+        	<id column="test_item_seq" property="testItemSeq"/>
+        	<result column="test_seq" property="testSeq"/>
+        	<result column="crtfc1" property="crtfc1"/>
+	        <result column="crtfc1Name" property="crtfc1Name"/>
+    	    <result column="crtfc2" property="crtfc2"/>
+       	 	<result column="crtfc2Name" property="crtfc2Name"/>
+       	 	<result column="crtfc3" property="crtfc3"/>
+       	 	<result column="crtfc3Name" property="crtfc3Name"/>
+       	 	<result column="crtfc4" property="crtfc4"/>
+       	 	<result column="crtfc4Name" property="crtfc4Name"/>
+       	 	<result column="test_stndr_seq" property="testStndrSeq"/>
+       	 	<result column="test_stndr" property="testStndr"/>
+       	 	<result column="test_type" property="testType"/>
+       	 	<result column="testMem" property="testMem"/>
+       	 	<result column="testInDt" property="testInDt"/>
+       	 	<result column="testState" property="testState"/>
+       	 	<result column="netSales" property="netSales"/>
+       	 	<result column="memoCnt" property="memoCnt"/>
+        </collection>
+	</resultMap>
+	<select id="selectSaleList" parameterType="comParam" resultMap="sbkMap">
+		set @prev_value:=null;
+		select * from (
+			select
+			    if(
+			        @prev_value = sbkId,
+			        @dense_rank,
+			        @dense_rank := @dense_rank + 1
+			    ) AS no,
+			    @prev_value := sbkId,
+			    lst.*
+			from
+			    (
+			        SELECT
+                       
+                        CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) quoId, 
+						DATE_FORMAT (QUO_TB.INS_DT, '%Y-%m-%d') quoInsDtStr,
+                          
+					    CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) sbkId,
+					    DATE_FORMAT (SBK_TB.INS_DT, '%Y-%m-%d') sbkInsDtStr,
+
+						/* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
+						IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-')) carryInDt,
+						IFNULL (DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d'), '') testInDt,
+					    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
+					    
+                        JOB_TB.CMPY_SEQ,
+					    IFNULL (FN_CODE_NAME (CMPY_TB.CMPY_CODE, 'PT'), '미등록') cmpyType,
+					    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
+					    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
+					    JOB_TB.PRDCT_NAME prdctName,
+                        JOB_TB.MODEL_NAME modelName,
+                        
+					    CONCAT_WS (
+					        ',',
+					        IF (SG_NEW_YN = 1, '신규', null),
+					        IF (SG_GB_YN = 1, '기술기준 변경', null),
+					        IF (SG_DG_YN = 1, '동일기자재', null),
+					        IF (SG_ETC_YN = 1, '기술기준외 변경', null)
+					    ) sgText,
+					    
+					    /* 시험항목 및 비용 */
+					    TEST_TB.TEST_SEQ,
+					    TEST_ITEM_TB.TEST_ITEM_SEQ,
+					    cate1.TEST_CATE_SEQ crtfc1,
+					    cate2.TEST_CATE_SEQ crtfc2,
+					    cate3.TEST_CATE_SEQ crtfc3,
+					    cate4.TEST_CATE_SEQ crtfc4,
+					    cate1.NAME crtfc1Name,
+					    IFNULL (cate2.NAME, '') crtfc2Name,
+					    IFNULL (cate3.NAME, '') crtfc3Name,
+					    IFNULL (cate4.NAME, '') crtfc4Name,
+                        
+					    TEST_STNDR_TB.TEST_STNDR_SEQ,
+					    IFNULL (TEST_STNDR_TB.TEST_STNDR, '') TEST_STNDR,
+					    IFNULL (FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE, 'TT'), '') TEST_TYPE,
+					   
+					
+					    IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) testMem,
+                         FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
+                         
+					    IFNULL (FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') testState,
+						TEST_ITEM_TB.NET_SALES netSales,
+
+						IFNULL (MEMO_CNT, 0) memoCnt,
+			            JOB_TB.JOB_SEQ,
+			            IFNULL (FN_CODE_NAME (JOB_TB.STATE_CODE, 'CP'), '변경') stateCode,
+			    		IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt
+                        
+					FROM
+					    SBK_TB
+						
+						INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+						AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ 
+						AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+						AND JOB_TB.STATE != 'D'
+					   
+						INNER JOIN QUO_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+						AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+                       
+                      	LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+					    
+                        INNER JOIN TEST_ITEM_TB on JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+					    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ and TEST_ITEM_TB.STATE != 'D'
+                        INNER JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+					    INNER JOIN TEST_STNDR_TB on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+                        
+					    LEFT JOIN TEST_CATE_TB cate4 ON TEST_ITEM_TB.CRTF_TYPE_SEQ = cate4.TEST_CATE_SEQ
+					    LEFT JOIN TEST_CATE_TB cate3 ON cate4.TOP_DEPTH_SEQ = cate3.TEST_CATE_SEQ
+					    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
+					    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
+					    
+					    LEFT JOIN TEST_STATE_TB
+			            ON TEST_STATE_TB.TEST_STATE_SEQ = (
+											SELECT TEST_STATE_SEQ
+			                                FROM TEST_STATE_TB sub
+			                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
+			                                ORDER BY TEST_STATE_SEQ DESC
+			                                LIMIT 1
+			            )
+                        
+                        LEFT JOIN TEST_MNGR_TB
+						ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
+											SELECT TEST_MNGR_SEQ
+											FROM TEST_MNGR_TB SUB
+											WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
+											ORDER BY TEST_MNGR_SEQ DESC
+											LIMIT 1
+						)
+                        
+			            LEFT JOIN 
+			            (
+						    SELECT 
+						        SBK_ID,
+					            IM_YM,
+					            IM_SEQ,
+					            CARRY_IN_DATE
+						    FROM
+						        IM_TB
+						        
+							    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = CONCAT ('IM', IM_TB.IM_YM, '-', 'G', LPAD(IM_TB.IM_SEQ,4,0))
+						    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
+					    ) IM_TB ON IM_TB.SBK_ID = CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), ''))
+                        
+                        /* 게시판 게시글 갯수 */
+						LEFT JOIN (SELECT TEST_SEQ, COUNT(1) MEMO_CNT FROM TEST_MEMO_TB GROUP BY TEST_MEMO_TB.TEST_SEQ) TEST_MEMO_TB
+						ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
+                
+                        INNER JOIN (SELECT @dense_rank:=0) r
+					WHERE
+					    1 = 1
+			
+		        ORDER BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, REVISION DESC
+	        ) lst
+	        WHERE 1=1
+	        ORDER BY NO DESC
+        ) paging
+        WHERE 1=1
+        AND no BETWEEN #{totalCount}+1-#{pageUnit}-#{firstIndex} AND #{totalCount}-#{firstIndex}
+	</select>
 </mapper>

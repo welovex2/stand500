@@ -1,7 +1,6 @@
 package egovframework.sbk.service;
 
 import java.util.List;
-
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
@@ -39,4 +38,5 @@ public interface SbkMapper {
 	boolean signRejectInsert(TestItemRej req);
 	
 	List<HisDTO> hisList(String sbkId);
+
 }

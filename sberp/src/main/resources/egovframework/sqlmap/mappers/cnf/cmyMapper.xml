@@ -213,7 +213,7 @@
 		</foreach>
 	</update>
 	
-	<select id="selectMngList" parameterType="int" resultType="egovMap">
+	<select id="selectMngList" parameterType="int" resultType="cmpyMng">
 		SELECT 
 			CMPY_MNG_SEQ,
 			NAME,

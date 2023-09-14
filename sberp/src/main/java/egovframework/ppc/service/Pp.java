@@ -23,9 +23,9 @@ public class Pp {
   private int ppSeq;
 
 
-  @ApiModelProperty(value="해당견적서번호 ", example = "")
+  @ApiModelProperty(value="해당신청서번호 ", example = "")
   @Column
-  private String quoId;
+  private String sbkId;
 
 
   @ApiModelProperty(value="CMPY_SEQ ", example = "")
@@ -49,7 +49,6 @@ public class Pp {
 
 
   @ApiModelProperty(value="대표자연락처 ", example = "")
-//  @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.") 
   @Column
   private String rprsnPhone;
 
@@ -65,7 +64,6 @@ public class Pp {
 
 
   @ApiModelProperty(value="담당자연락처 ", example = "")
-//  @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.") 
   @Column
   private String contactPhone;
 
@@ -87,7 +85,7 @@ public class Pp {
 
   @ApiModelProperty(value="제조자주소 ", example = "")
   @Column
-  private String mnfctAdres;
+  private String appDt;
 
 
   @ApiModelProperty(value="제품명 ", example = "", required = true)
@@ -154,5 +152,12 @@ public class Pp {
   @Column
   private String state;
 
+  @ApiModelProperty(value="프로젝트상태코드(공통코드:CK) ", example = "")
+  @Column
+  private String stateCode;
+
+  @ApiModelProperty(value="프로젝트상태 변경일 ", example = "")
+  @Column
+  private String stateUdtDt;
 
 }

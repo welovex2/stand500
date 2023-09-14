@@ -8,18 +8,22 @@ import egovframework.rte.psl.dataaccess.mapper.Mapper;
 @Mapper("PpcMapper")
 public interface PpcMapper {
 
-	public List<PpDTO> selectList(ComParam parma) throws Exception;
-	
-	public boolean insert(PpDTO pp);
+  public List<PpDTO> selectList(ComParam parma) throws Exception;
 
-	public boolean insertMemo(PpHis pp);
+  public boolean insert(PpDTO pp);
 
-	public PpDTO selectDetail(String ppId);
+  public boolean insertMemo(PpHis pp);
 
-	public List<PpHis> selectMemoList(String ppId) throws Exception;
-	
-	public void update(PpDTO pp);
+  public PpDTO selectDetail(String ppId);
 
-	public int selectListCnt(ComParam param);
+  public List<PpHis> selectMemoList(String ppId) throws Exception;
+
+  public void update(PpDTO pp);
+
+  public int selectListCnt(ComParam param);
+
+  public boolean stateUpdate(PpDTO req);
+  
+  public boolean sbkIdUpdate(PpDTO req);
 
 }

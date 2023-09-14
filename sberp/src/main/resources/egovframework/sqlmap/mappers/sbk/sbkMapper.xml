@@ -716,7 +716,14 @@
 		    
 		    LEFT JOIN TEST_TB
 		    ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
-		    
+		    LEFT JOIN TEST_STATE_TB
+            ON TEST_STATE_TB.TEST_STATE_SEQ = (
+								SELECT TEST_STATE_SEQ
+                                FROM TEST_STATE_TB sub
+                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
+                                ORDER BY TEST_STATE_SEQ DESC
+                                LIMIT 1
+            )
 		    LEFT JOIN 
             (
 			    SELECT 

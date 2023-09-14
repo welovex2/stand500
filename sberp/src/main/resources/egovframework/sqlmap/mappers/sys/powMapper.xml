@@ -6,7 +6,7 @@
 		
 		select lst.*
 		from (
-			select
+			SELECT
 			    MENU_SEQ,
 			    MENU_NAME,
 			    P01_R_YN,
@@ -38,13 +38,14 @@
 			    P14_R_YN,
 			    P14_W_YN,
 			    P15_R_YN,
-			    P15_W_YN
-			from POWER_TB
-			where 1=1
+			    P15_W_YN,
+			    DIS_ORDR
+			FROM POWER_TB
+			WHERE 1=1
 			AND STATE != 'D'
-			order by MENU_SEQ DESC
+			ORDER BY DIS_ORDR DESC
 		) lst
-		order by MENU_SEQ asc
+		ORDER BY DIS_ORDR ASC
 	</select>
 	
 	<insert id="insert" parameterType="List">
