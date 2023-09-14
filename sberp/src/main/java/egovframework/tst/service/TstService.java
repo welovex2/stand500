@@ -37,4 +37,8 @@ public interface TstService {
 
   boolean update(Req req);
 
+  List<Res> selectSaleList(ComParam param);
+
+  int selectSaleListCnt(ComParam param);
+
 }

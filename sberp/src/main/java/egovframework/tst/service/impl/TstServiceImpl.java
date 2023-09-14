@@ -111,4 +111,14 @@ public class TstServiceImpl implements TstService {
     return tstMapper.update(req);
   }
 
+  @Override
+  public List<Res> selectSaleList(ComParam param) {
+    return tstMapper.selectSaleList(param);
+  }
+
+  @Override
+  public int selectSaleListCnt(ComParam param) {
+    return tstMapper.selectSaleListCnt(param);
+  }
+
 }

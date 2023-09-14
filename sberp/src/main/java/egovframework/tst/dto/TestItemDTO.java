@@ -72,7 +72,7 @@ public class TestItemDTO extends TestItem {
   @Column
   private int testSeq;
 
-  @ApiModelProperty(value = "시험상태 ", example = "EMC")
+  @ApiModelProperty(value = "시험상태 ", example = "")
   @Column
   private String testState;
   
@@ -87,4 +87,8 @@ public class TestItemDTO extends TestItem {
   @ApiModelProperty(value = "시험신청일 ", example = "")
   @Column
   private String testInDt;
+  
+  @ApiModelProperty(value = "게시판글수 ", example = "")
+  @Column
+  private int memoCnt;
 }

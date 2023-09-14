@@ -39,4 +39,7 @@ public interface TstMapper {
 
   public boolean update(Req req);
 
+  public List<Res> selectSaleList(ComParam param);
+
+  public int selectSaleListCnt(ComParam param);
 }
