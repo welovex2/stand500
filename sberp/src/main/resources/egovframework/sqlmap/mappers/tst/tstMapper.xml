@@ -449,14 +449,105 @@
 			   
 				INNER JOIN QUO_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
 				AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
-                     
+                
+                LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+                
                 INNER JOIN TEST_ITEM_TB on JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
 			    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ and TEST_ITEM_TB.STATE != 'D'
                 
                 INNER JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
 			    INNER JOIN TEST_STNDR_TB on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+                  
+                LEFT JOIN TEST_STATE_TB
+	            ON TEST_STATE_TB.TEST_STATE_SEQ = (
+									SELECT TEST_STATE_SEQ
+	                                FROM TEST_STATE_TB sub
+	                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
+	                                ORDER BY TEST_STATE_SEQ DESC
+	                                LIMIT 1
+	            )
                       
+                LEFT JOIN TEST_MNGR_TB
+				ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
+									SELECT TEST_MNGR_SEQ
+									FROM TEST_MNGR_TB SUB
+									WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
+									ORDER BY TEST_MNGR_SEQ DESC
+									LIMIT 1
+				)
+                      
+	            LEFT JOIN 
+	            (
+				    SELECT 
+				        SBK_ID,
+			            IM_YM,
+			            IM_SEQ,
+			            CARRY_IN_DATE
+				    FROM
+				        IM_TB
+				        
+					    LEFT JOIN IM_SUB_TB ON IM_SUB_TB.im_id = CONCAT ('IM', IM_TB.IM_YM, '-', 'G', LPAD(IM_TB.IM_SEQ,4,0))
+				    WHERE DIV_CODE = 1 AND IM_SUB_TB.STATE != 'D' GROUP BY SBK_ID
+			    ) IM_TB ON IM_TB.SBK_ID = CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), ''))
+					        
 			WHERE 1 = 1
+			
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		        	<choose>
+		        		<!-- 15 작성일 -->
+				        <when test="item.searchCode == 15">AND DATE_FORMAT (QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <!-- 59 신청일 -->
+				        <when test="item.searchCode == 59">AND DATE_FORMAT (SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <!-- 20	완료요청일 -->
+						<when test="item.searchCode == 20">AND DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 21	시료반입일 -->
+						<when test="item.searchCode == 21">AND DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<!-- 58	프로젝트상태변경일 -->
+	        			<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<!-- 56	신청서구분 -->
+		        		<when test="item.searchCode == 56">
+		        			<choose>
+		        				<when test="item.searchWord == 1">AND REVISION = 0</when>
+		        				<when test="item.searchWord == 2">AND REVISION != 0</when>
+		        			</choose>
+		        		</when>
+		        		<!-- 1	고객유형 -->
+						<when test="item.searchCode == 1">AND IFNULL (CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+						<!-- 22	신청구분 -->
+						<when test="item.searchCode == 22">
+							<choose>
+								<when test="item.searchWord == 1">AND SG_NEW_YN=1</when>
+								<when test="item.searchWord == 2">AND SG_GB_YN=1</when>
+								<when test="item.searchWord == 3">AND SG_DG_YN=1</when>
+								<when test="item.searchWord == 4">AND SG_ETC_YN=1</when>
+							</choose>
+						</when>
+						<!-- 23	시험부 -->
+						<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+						<!-- 31	시험상태 -->
+						<when test="item.searchCode == 31">AND TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+						<!-- 57	프로젝트상태 -->
+		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+		        		<!-- 5	견적서번호 -->
+						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+						<!-- 61	신청서번호 -->
+						<when test="item.searchCode == 61">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+						<!-- 4	컨설팅명 -->
+						<when test="item.searchCode == 4">AND IFNULL (CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 12	회사명 -->
+						<when test="item.searchCode == 12">AND IFNULL (JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 6	제품명 -->
+						<when test="item.searchCode == 6">AND IFNULL (JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 27-모델명 -->
+				        <when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">AND FN_MEM_NAME (SBK_TB.INS_MEM_ID) like CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 9	시험담당자 -->
+						<when test="item.searchCode == 9">AND IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+		        	</choose>
+				</foreach>
+			</if>
 			
 			GROUP BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.REVISION
         
@@ -560,7 +651,7 @@
 					   
 					
 					    IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) testMem,
-                         FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
+                        FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
                          
 					    IFNULL (FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') testState,
 						TEST_ITEM_TB.NET_SALES netSales,
@@ -632,7 +723,64 @@
                         INNER JOIN (SELECT @dense_rank:=0) r
 					WHERE
 					    1 = 1
-			
+					    
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		        	<choose>
+		        		<!-- 15 작성일 -->
+				        <when test="item.searchCode == 15">AND DATE_FORMAT (QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <!-- 59 신청일 -->
+				        <when test="item.searchCode == 59">AND DATE_FORMAT (SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <!-- 20	완료요청일 -->
+						<when test="item.searchCode == 20">AND DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+						<!-- 21	시료반입일 -->
+						<when test="item.searchCode == 21">AND DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<!-- 58	프로젝트상태변경일 -->
+	        			<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<!-- 56	신청서구분 -->
+		        		<when test="item.searchCode == 56">
+		        			<choose>
+		        				<when test="item.searchWord == 1">AND REVISION = 0</when>
+		        				<when test="item.searchWord == 2">AND REVISION != 0</when>
+		        			</choose>
+		        		</when>
+		        		<!-- 1	고객유형 -->
+						<when test="item.searchCode == 1">AND IFNULL (CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+						<!-- 22	신청구분 -->
+						<when test="item.searchCode == 22">
+							<choose>
+								<when test="item.searchWord == 1">AND SG_NEW_YN=1</when>
+								<when test="item.searchWord == 2">AND SG_GB_YN=1</when>
+								<when test="item.searchWord == 3">AND SG_DG_YN=1</when>
+								<when test="item.searchWord == 4">AND SG_ETC_YN=1</when>
+							</choose>
+						</when>
+						<!-- 23	시험부 -->
+						<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+						<!-- 31	시험상태 -->
+						<when test="item.searchCode == 31">AND TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+						<!-- 57	프로젝트상태 -->
+		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+		        		<!-- 5	견적서번호 -->
+						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+						<!-- 61	신청서번호 -->
+						<when test="item.searchCode == 61">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+						<!-- 4	컨설팅명 -->
+						<when test="item.searchCode == 4">AND IFNULL (CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 12	회사명 -->
+						<when test="item.searchCode == 12">AND IFNULL (JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 6	제품명 -->
+						<when test="item.searchCode == 6">AND IFNULL (JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 27-모델명 -->
+				        <when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">AND FN_MEM_NAME (SBK_TB.INS_MEM_ID) like CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 9	시험담당자 -->
+						<when test="item.searchCode == 9">AND IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+		        	</choose>
+				</foreach>
+			</if>	
+					
 		        ORDER BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, REVISION DESC
 	        ) lst
 	        WHERE 1=1
