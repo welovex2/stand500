@@ -221,7 +221,7 @@ public class PpcController {
         // 4
         req.setMngName(pp.getContact());
         // 5
-        req.setMngPhone(pp.getContactPhone());
+        req.setMngTel(pp.getContactPhone());
         // 6
         req.setMngEmail(pp.getContactEmail());
         // 7
