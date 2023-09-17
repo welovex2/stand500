@@ -10,6 +10,7 @@
     <typeAliases>
     	<typeAlias alias="egovMap"		type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
     	<typeAlias alias="loginVO"		type="egovframework.cmm.service.LoginVO"/>
+    	<typeAlias alias="powerDTO"		type="egovframework.sys.dto.PowerDTO"/>
     	<typeAlias alias="fileVO"		type="egovframework.cmm.service.FileVO"/>
     	<typeAlias alias="job"			type="egovframework.cmm.service.Job"/>
     	

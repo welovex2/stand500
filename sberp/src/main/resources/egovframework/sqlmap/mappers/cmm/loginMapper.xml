@@ -78,10 +78,11 @@
 	</update>
 	
 	<!-- 메뉴별 권한 얻기 -->
-	<select id="getAuthList" parameterType="String" resultType="egovMap">
+	<select id="getAuthList" parameterType="String" resultType="powerDTO">
 		select
 			menu_seq,
 			menu_name,
+			menu_code,
 			${authCode}_r_yn rYn,
 			${authCode}_w_yn wYn
 		from POWER_TB

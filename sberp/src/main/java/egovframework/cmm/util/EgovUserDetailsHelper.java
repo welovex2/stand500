@@ -2,12 +2,13 @@ package egovframework.cmm.util;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
-
+import org.springframework.web.context.request.ServletRequestAttributes;
 import egovframework.cmm.service.LoginVO;
 import egovframework.rte.fdl.string.EgovObjectUtil;
+import egovframework.sys.dto.PowerDTO;
 
 /**
  * EgovUserDetails Helper 클래스
@@ -65,12 +66,31 @@ public class EgovUserDetailsHelper {
    * @return Boolean - 인증된 사용자 여부(TRUE / FALSE)
    */
   public static Boolean isAuthenticated() {
+    
+    LoginVO loginVO = (LoginVO) RequestContextHolder.getRequestAttributes().getAttribute("LoginVO", RequestAttributes.SCOPE_SESSION);
+    
+    HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+    String thisUrl = req.getRequestURI();
+    
+    System.out.println("///////////////////////////////////////////");
+    System.out.println(req.getRequestURI());
 
-    if (EgovObjectUtil.isNull((LoginVO) RequestContextHolder.getRequestAttributes()
-        .getAttribute("LoginVO", RequestAttributes.SCOPE_SESSION))) {
-      // log.debug("## authentication object is null!!");
+    if (EgovObjectUtil.isNull(loginVO)) {
       return Boolean.FALSE;
     }
+    
+    List<PowerDTO> power = loginVO.getPower();
+    
+    for (PowerDTO p : power) {
+      
+      // 현재 나의 페이지의 권한 확인
+      if (thisUrl.indexOf(p.getMenuCode()) > -1) {
+        System.out.println("읽기권한="+p.isRYn());
+        System.out.println("쓰기권한="+p.isWYn());
+        System.out.println("///////////////////////////////////////////");
+      }
+    }
+    
     return Boolean.TRUE;
   }
 }
