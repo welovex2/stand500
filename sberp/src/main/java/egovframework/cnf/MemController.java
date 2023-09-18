@@ -57,6 +57,17 @@ public class MemController {
     String msg = "";
     List<Member> list = new ArrayList<Member>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -154,6 +165,17 @@ public class MemController {
     String msg = "";
     Member detail = new Member();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     detail = memService.detail(memSeq);
 
     if (detail == null) {
@@ -206,6 +228,17 @@ public class MemController {
     String msg = "";
     List<Dept> list = new ArrayList<Dept>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     list = memService.selectDeptList(param);
 
     if (list == null) {
@@ -267,6 +300,17 @@ public class MemController {
     String msg = "";
     List<Pos> list = new ArrayList<Pos>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     list = memService.selectPosList(param);
 
     if (list == null) {

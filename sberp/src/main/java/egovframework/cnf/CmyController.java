@@ -53,6 +53,17 @@ public class CmyController {
     String msg = "";
     List<CmpyDTO> list = new ArrayList<CmpyDTO>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 내부검색 데이터
     SearchVO vo = new SearchVO();
     vo.setSearchCode("99");
@@ -154,6 +165,17 @@ public class CmyController {
     String msg = "";
     CmpyDTO detail = new CmpyDTO();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     detail = cmyService.detail(cmpySeq);
 
     if (detail == null) {

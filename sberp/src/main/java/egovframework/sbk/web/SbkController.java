@@ -103,7 +103,7 @@ public class SbkController {
     return res;
 
   }
-  
+
   @ApiOperation(value = "신청서리스트",
       notes = "1.결과값은 StbDTO.Res 참고\n" + "2.검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n" + " 고객유형(PT)\n"
           + " 신청구분:신규-1,기술기준변경-2,동일기자재-3,기술기준외변경-4\n" + " 시험배정(TT), 미배정-9999")
@@ -114,6 +114,16 @@ public class SbkController {
     boolean result = true;
     String msg = "";
     List<SbkDTO.Res> list = new ArrayList<SbkDTO.Res>();
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
 
     // 페이징
     param.setPageUnit(param.getPageUnit());
@@ -127,7 +137,7 @@ public class SbkController {
 
     param.setFirstIndex(pagingVO.getFirstRecordIndex());
     int cnt = sbkService.selectListCnt(param);
-    
+
     pagingVO.setTotalCount(cnt);
     param.setTotalCount(cnt);
     pagingVO.setTotalPage(
@@ -145,7 +155,8 @@ public class SbkController {
     return res;
   }
 
-  @ApiOperation(value = "신청서 저장", notes = "appFile=신청인서명, agreeFile=동의서명, workFile=업무상담자 서명\nsendFile=제출서류, delFileList=제출서류삭제")
+  @ApiOperation(value = "신청서 저장",
+      notes = "appFile=신청인서명, agreeFile=동의서명, workFile=업무상담자 서명\nsendFile=제출서류, delFileList=제출서류삭제")
   @PostMapping(value = "/insert.do",
       consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE,
           MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
@@ -195,21 +206,21 @@ public class SbkController {
         atchFileId = fileMngService.insertFileInf(FileResult);
         req.setAppSignUrl(atchFileId);
       }
-      
+
       // 신청인 동의 서명
       if (!ObjectUtils.isEmpty(agreeFile)) {
         FileResult = fileUtil.parseFile(agreeFile, "SBK", 0, "", "");
         atchFileId = fileMngService.insertFileInf(FileResult);
         req.setAppAgreeSignUrl(atchFileId);
       }
-      
+
       // 업무자 서명
       if (!ObjectUtils.isEmpty(workFile)) {
         FileResult = fileUtil.parseFile(workFile, "SBK", 0, "", "");
         atchFileId = fileMngService.insertFileInf(FileResult);
         req.setWorkSignUrl(atchFileId);
       }
-      
+
       // 신청서류
       if (!ObjectUtils.isEmpty(sendFile)) {
 
@@ -227,12 +238,11 @@ public class SbkController {
           int cnt = fileMngService.getMaxFileSN(fvo);
 
           // 추가 파일 등록
-          List<FileVO> _result =
-              fileUtil.parseFile(sendFile, "SBK/DOC", cnt, req.getDocUrl(), "");
+          List<FileVO> _result = fileUtil.parseFile(sendFile, "SBK/DOC", cnt, req.getDocUrl(), "");
           fileMngService.updateFileInfs(_result);
         }
       }
-      
+
       // 파일삭제
       FileVO delFile = null;
       if (!ObjectUtils.isEmpty(delFileList)) {
@@ -243,21 +253,21 @@ public class SbkController {
           fileMngService.deleteFileInf(delFile);
         }
       }
-      
+
       try {
         if (StringUtils.isEmpty(req.getSbkId()))
           result = sbkService.insert(req);
         else
           result = sbkService.update(req);
       } catch (Exception e) {
-        
+
         msg = ResponseMessage.RETRY;
         log.warn(user.getId() + " :: " + e.toString());
         log.warn(req.toString());
         log.warn("");
-        
+
       }
-      
+
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
@@ -268,7 +278,7 @@ public class SbkController {
     return res;
   }
 
-  @ApiOperation(value = "신청서 상세보기", notes="신청서류 파일 다운로드 : data > docFileList > fileStreCours")
+  @ApiOperation(value = "신청서 상세보기", notes = "신청서류 파일 다운로드 : data > docFileList > fileStreCours")
   @GetMapping(value = "/{sbkId}/detail.do")
   public BasicResponse sbkDetail(@ApiParam(value = "신청서 고유번호", required = true,
       example = "SB23-G0003") @PathVariable(name = "sbkId") String sbkId) throws Exception {
@@ -276,6 +286,16 @@ public class SbkController {
     String msg = "";
     SbkDTO.Res detail = new SbkDTO.Res();
     SbkDTO.Req req = new SbkDTO.Req();
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
 
     req.setSbkId(sbkId);
     detail = sbkService.selectDetail(req);
@@ -289,9 +309,13 @@ public class SbkController {
     FileVO fileVO = new FileVO();
     fileVO.setAtchFileId(detail.getDocUrl());
     List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
-    docResult.stream().map(doc -> {doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId()).concat("&fileSn=").concat(doc.getFileSn())); return doc;}).collect(Collectors.toList());
+    docResult.stream().map(doc -> {
+      doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
+          .concat("&fileSn=").concat(doc.getFileSn()));
+      return doc;
+    }).collect(Collectors.toList());
     detail.setDocFileList(docResult);
-    
+
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
@@ -438,6 +462,6 @@ public class SbkController {
 
     return res;
   }
-  
-  
+
+
 }

@@ -49,6 +49,17 @@ public class PowController {
     String msg = "";
     List<Power> list = new ArrayList<Power>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     list = powService.selectDetail();
 
     if (list == null) {
@@ -69,7 +80,19 @@ public class PowController {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
+    boolean result = false;
+    
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
 
+      return res;
+    }
+    
     for (Power req : list) {
 
       // 로그인정보
@@ -94,9 +117,6 @@ public class PowController {
         return res;
       }
     }
-
-
-    boolean result = false;
 
     result = powService.insert(list);
     BasicResponse res = BasicResponse.builder().result(result).build();

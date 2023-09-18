@@ -57,9 +57,16 @@ public class CnsController {
 
     List<CnsDTO.Res> list = new ArrayList<CnsDTO.Res>();
 
-    System.out.println("================");
-    System.out.println(param.toString());
-    System.out.println("================");
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
 
     // 페이징
     param.setPageUnit(param.getPageUnit());
@@ -96,7 +103,19 @@ public class CnsController {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
+    boolean result = false;
+    
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
 
+      return res;
+    }
+    
     // 로그인정보
     cns.setInsMemId(user.getId());
     cns.setUdtMemId(user.getId());
@@ -114,8 +133,6 @@ public class CnsController {
 
       return res;
     }
-
-    boolean result = false;
 
     // 상담서 번호가 있으면, 회사정보 update, 상담내역 insert
     if (cns.getCnsSeq() > 0) {
@@ -142,6 +159,17 @@ public class CnsController {
 
     CnsDTO.Res detail = new CnsDTO.Res();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     detail = cnsService.selectDetail(cnsSeq);
     if (detail == null) {
       result = false;

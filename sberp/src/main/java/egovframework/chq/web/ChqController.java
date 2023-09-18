@@ -45,6 +45,17 @@ public class ChqController {
     String msg = "";
     List<ChqDTO.Res> list = new ArrayList<ChqDTO.Res>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -140,6 +151,17 @@ public class ChqController {
     Res detail = new Res();
     ChqDTO req = new ChqDTO();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     req.setChqId(chqId);
     detail = chqService.selectDetail(req);
 
@@ -163,25 +185,37 @@ public class ChqController {
     boolean result = true;
     String msg = "";
 
-    // 매출확정일이 있는 데이터가 있는지 확인
-    for (String id : chqIds) {
-      Res detail = new Res();
-      ChqDTO req = new ChqDTO();
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
-      req.setChqId(id);
-      detail = chqService.selectDetail(req);
-
-      if (!StringUtils.isEmpty(detail.getCnfrmDtStr())) {
-        result = false;
-        msg = ResponseMessage.DUPLICATE_CNFRMED;
-        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
-
-        return res;
+    if (isAuthenticated) {
+      
+      // 매출확정일이 있는 데이터가 있는지 확인
+      for (String id : chqIds) {
+        Res detail = new Res();
+        ChqDTO req = new ChqDTO();
+  
+        req.setChqId(id);
+        detail = chqService.selectDetail(req);
+  
+        if (!StringUtils.isEmpty(detail.getCnfrmDtStr())) {
+          result = false;
+          msg = ResponseMessage.DUPLICATE_CNFRMED;
+          BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+  
+          return res;
+        }
       }
+  
+      result = chqService.delete(user.getId(), chqIds);
+    } else {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
     }
-
-    result = chqService.delete(user.getId(), chqIds);
-
+    
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
     return res;

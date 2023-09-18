@@ -85,9 +85,23 @@ public class EgovUserDetailsHelper {
       
       // 현재 나의 페이지의 권한 확인
       if (thisUrl.indexOf(p.getMenuCode()) > -1) {
+        
+        System.out.println("누구="+loginVO.getEmpName());
+        System.out.println("체크URL="+p.getMenuCode());
         System.out.println("읽기권한="+p.isRYn());
         System.out.println("쓰기권한="+p.isWYn());
         System.out.println("///////////////////////////////////////////");
+
+        if (!p.isRYn() && (thisUrl.toLowerCase().indexOf("list") > -1 
+                            || thisUrl.toLowerCase().indexOf("detail") > -1)
+                            || thisUrl.toLowerCase().indexOf("excel") > -1) {
+          System.out.println("R 권한없음");
+          return Boolean.FALSE;
+        }
+        else if (!p.isWYn() && thisUrl.toLowerCase().indexOf("insert") > -1) {
+          System.out.println("W 권한없음");
+          return Boolean.FALSE;
+        }
       }
     }
     

@@ -72,6 +72,17 @@ public class QuoController {
     String msg = "";
     List<QuoDTO.Res> list = new ArrayList<QuoDTO.Res>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -111,6 +122,17 @@ public class QuoController {
     QuoDTO.Res detail = new QuoDTO.Res();
     QuoDTO.Req req = new QuoDTO.Req();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     req.setQuoId(quoId);
     detail = quoService.selectDetail(req);
 

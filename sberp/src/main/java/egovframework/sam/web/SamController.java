@@ -176,6 +176,17 @@ public class SamController {
     String msg = "";
     ImDTO detail = new ImDTO();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     detail = samService.detail(sbkId);
 
     if (detail == null) {
@@ -205,10 +216,17 @@ public class SamController {
     String msg = "";
 
     List<ImSubDTO> list = new ArrayList<ImSubDTO>();
+    
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
 
-    System.out.println("================");
-    System.out.println(param.toString());
-    System.out.println("================");
+      return res;
+    }
 
     // 페이징
     param.setPageUnit(param.getPageUnit());

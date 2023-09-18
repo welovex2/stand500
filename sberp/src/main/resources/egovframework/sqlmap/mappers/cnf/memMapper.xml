@@ -13,7 +13,7 @@
 			        <foreach collection="searchVO" item="item" separator="">
 			        	<choose>
 							<!-- 15	입사일 -->
-			        		<when test="item.searchCode == 15">and date_format(MEMBER_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        		<when test="item.searchCode == 15">AND DATE_FORMAT(MEMBER_TB.IN_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 			        		<!-- 51	부서명 -->
 			        		<when test="item.searchCode == 51">AND DEPT_SEQ = #{item.searchWord}</when>
 							<!-- 52	재직상태 -->
@@ -23,13 +23,13 @@
 							<!-- 8	기술책임자 -->
 							<when test="item.searchCode ==  8">AND REV_YN = #{item.searchWord}</when>
 							<!-- 53	아이디 -->
-							<when test="item.searchCode == 53">and id like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 53">AND ID LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			        		<!-- 42	이름 -->
-							<when test="item.searchCode == 42">and mem_name like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 42">AND MEM_NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 43	직위 -->
-			        		<when test="item.searchCode == 43">AND FN_POS_NAME (id) like concat('%',#{item.searchWord},'%')</when>
+			        		<when test="item.searchCode == 43">AND FN_POS_NAME (ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 44	연락처 -->
-							<when test="item.searchCode == 44">AND REPLACE(PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 44">AND REPLACE(PHONE,'-','') LIKE CONCAT('%',replace(#{item.searchWord},'-',''),'%')</when>
 						</choose>
 					</foreach>
 				</if>
@@ -93,7 +93,7 @@
 			        <foreach collection="searchVO" item="item" separator="">
 			        	<choose>
 							<!-- 15	입사일 -->
-			        		<when test="item.searchCode == 15">and date_format(MEMBER_TB.IN_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        		<when test="item.searchCode == 15">AND DATE_FORMAT(MEMBER_TB.IN_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 			        		<!-- 51	부서명 -->
 			        		<when test="item.searchCode == 51">AND DEPT_SEQ = #{item.searchWord}</when>
 							<!-- 52	재직상태 -->
@@ -103,17 +103,17 @@
 							<!-- 8	기술책임자 -->
 							<when test="item.searchCode ==  8">AND REV_YN = #{item.searchWord}</when>
 							<!-- 53	아이디 -->
-							<when test="item.searchCode == 53">and id like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 53">AND ID LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			        		<!-- 42	이름 -->
-							<when test="item.searchCode == 42">and mem_name like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 42">AND MEM_NAME like CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 43	직위 -->
-			        		<when test="item.searchCode == 43">AND FN_POS_NAME (id) like concat('%',#{item.searchWord},'%')</when>
+			        		<when test="item.searchCode == 43">AND FN_POS_NAME (ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 44	연락처 -->
-							<when test="item.searchCode == 44">AND REPLACE(PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 44">AND REPLACE(PHONE,'-','') LIKE CONCAT('%',replace(#{item.searchWord},'-',''),'%')</when>
 						</choose>
 					</foreach>
 				</if>
-				order by
+				ORDER BY
 					MEMBER_TB.IN_DT ASC
 			) lst
 		ORDER BY

@@ -61,6 +61,17 @@ public class PpcController {
     boolean result = true;
     String msg = "";
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     List<PpDTO> list = new ArrayList<PpDTO>();
 
     // 페이징
@@ -98,7 +109,19 @@ public class PpcController {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
+    boolean result = false;
+    
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
 
+      return res;
+    }
+    
     // 로그인정보
     pp.setInsMemId(user.getId());
     pp.setUdtMemId(user.getId());
@@ -117,7 +140,6 @@ public class PpcController {
       return res;
     }
 
-    boolean result = false;
 
     // 사전통관 번호가 있으면, 회사정보 update, 상담내역 insert
     if (!StringUtils.isEmpty(pp.getPpId())) {
@@ -142,6 +164,17 @@ public class PpcController {
     String msg = "";
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     PpDTO detail = new PpDTO();
 
     detail = ppcService.selectDetail(ppId);
@@ -266,6 +299,8 @@ public class PpcController {
         req.setPpNum(ppId);
         
         // 신청서 생성
+        req.setInsMemId(user.getId());
+        req.setUdtMemId(user.getId());
         result = sbkService.insert(req);
 
         // 신청서 정보 보내주기

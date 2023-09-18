@@ -114,6 +114,17 @@ public class TstController {
     String msg = "";
     List<TestDTO.Res> list = new ArrayList<TestDTO.Res>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -154,6 +165,17 @@ public class TstController {
     String msg = "";
     List<Res> list = new ArrayList<Res>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));

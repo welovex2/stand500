@@ -53,6 +53,17 @@ public class SlsController {
     String msg = "";
     List<SlsDTO.Res> list = new ArrayList<SlsDTO.Res>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -224,6 +235,17 @@ public class SlsController {
     String msg = "";
     List<SlsDTO.Res> list = new ArrayList<SlsDTO.Res>();
 
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -262,55 +284,6 @@ public class SlsController {
 
     return res;
   }
-
-//  @ApiOperation(value = "납부상태 리스트", notes = "결과값은 PayDTO.Res 참고")
-//  @GetMapping(value = "/payList.do")
-//  public BasicResponse payList(@ApiParam(value = "매출 고유번호", required = true,
-//      example = "M2303-0002") @RequestParam(value = "slsSeq") String slsSeq) throws Exception {
-//
-//    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
-//    boolean result = true;
-//    String msg = "";
-//    List<PayDTO.Res> list = new ArrayList<PayDTO.Res>();
-//
-//    list = slsService.selectPayList(slsSeq);
-//
-//    if (list == null) {
-//      result = false;
-//      msg = ResponseMessage.NO_DATA;
-//    }
-//
-//    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
-//
-//    return res;
-//  }
-
-//  @ApiOperation(value = "납부상태 변경", notes = "납부상태 공통코드 : MP")
-//  @PostMapping(value = "/payInsert.do")
-//  public BasicResponse payInsert(@RequestBody PayDTO.Req req) throws Exception {
-//
-//    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
-//
-//    // 로그인정보
-//    req.setInsMemId(user.getId());
-//    req.setUdtMemId(user.getId());
-//
-//    boolean result = false;
-//    String msg = "";
-//
-//    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
-//
-//    if (isAuthenticated) {
-//      result = slsService.payInsert(req);
-//    } else {
-//      result = false;
-//      msg = ResponseMessage.UNAUTHORIZED;
-//    }
-//
-//    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
-//
-//    return res;
-//  }
 
 
   @ApiOperation(value = "계산서 상태 리스트", notes = "결과값은 BillDTO.Res 참고")
