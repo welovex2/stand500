@@ -35,22 +35,24 @@
 	       
 	        	<choose>
 					<!-- 1	고객유형 -->
-					<when test="item.searchCode == 1">and IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+					<when test="item.searchCode == 1">AND IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
 					<!-- 2	작성자 -->
-					<when test="item.searchCode == 2">and IFNULL(FN_MEM_NAME(QUO_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(QUO_TB.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 4	컨설팅명 -->
-					<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 6	제품명 -->
-					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 27	모델명 -->
+					<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 12	회사명 -->
-					<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 15	작성일 -->
-					<when test="item.searchCode == 15">and date_format(QUO_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 16	매출확정일 -->
-					<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 16">AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 19 매출확정자 -->
-					<when test="item.searchCode == 19">and IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') like concat('%',#{item.searchWord},'%')</when>
-			   		<!-- 57	프로젝트상태 -->
+					<when test="item.searchCode == 19">AND IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 57	프로젝트상태 -->
 	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 	        		<!-- 58	프로젝트상태변경일 -->
 	        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
@@ -82,13 +84,14 @@
 			    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
 			    JOB_TB.PRDCT_NAME,
+			    IFNULL (JOB_TB.MODEL_NAME, '') MODEL_NAME,
 			    IFNULL (TOTAL_VAT, 0) CHRGS,
 			    IFNULL (items.NET_SALES, 0) NET_SALES,
 			    IFNULL (JOB_TB.CNS_SEQ, '') CNS_SEQ,
 			    IFNULL (FN_LAST_CNS_MENO(JOB_TB.CNS_SEQ), '') lastMemo,
 			    IFNULL (FN_CODE_NAME (JOB_TB.STATE_CODE, 'CP'), '변경') stateCode,
 			    IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
-			    IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') sbkId
+			    IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') sbkId
 			    
 			FROM QUO_TB
 				
@@ -134,6 +137,8 @@
 						<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 6	제품명 -->
 						<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 27	모델명 -->
+						<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 12	회사명 -->
 						<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 15	작성일 -->
@@ -482,6 +487,7 @@
 				UDT_DT = now()
 		WHERE 1=1
 		AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 		AND JOB_TB.SBK_REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
 	</update>
@@ -677,6 +683,7 @@
             
             LEFT JOIN SBK_TB
             ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+            AND SBK_TB.TYPE = JOB_TB.SBK_TYPE
 			AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
 			AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
             
@@ -690,6 +697,7 @@
 		</if>
 		<if test="sbkId != null and sbkId != ''">
 	    AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+	    AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 		AND JOB_TB.SBK_REVISION = SUBSTRING(#{sbkId},12,1)
 		</if>

@@ -100,7 +100,10 @@ public class LegController {
 
     ModelAndView mav = new ModelAndView("excelView");
     List<LedgerDTO> list = new ArrayList<LedgerDTO>();
-
+    String[] columnArr = {"No.", "신청서 접수번호", "신청서 접수일", "시료 반입일","시료 접수자","시험 접수일","시험 접수번호","업체명","제품명","모델명","인증종류1","적용규격","시료반입","시료반출","시료 반출일","시료 반출자","시료 반출형태","수거인","송장번호","성적서발급일"};
+    String[] columnVarArr = {"no", "sbkId", "rcptDt", "carryInDate","carryInName","testDtStr","testId","cmpyName","prdctName","modelName","crtfc2Name","testStndr","inCnt","outCnt","carryOutDate","carryOutName","carryOutType","carryOutDlvryName","carryOutDlvryInvc","reportDt"};
+    int[] columnWidth = {1500, 4000, 3500, 3500, 3000, 3500, 5500, 6000, 12000, 8000, 5000, 15000, 1500, 1500, 3500, 3000, 3500, 3000, 3000, 3500};
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (isAuthenticated) {
 
@@ -124,16 +127,12 @@ public class LegController {
   
       String filename = "시험접수관리대장_"+DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss").format(LocalDateTime.now());;
       Map<String, Object> dataMap = new HashMap<String, Object>();
-      String[] columnArr = {"No.", "신청서 접수번호", "신청서 접수일", "시료 반입일","시료 접수자","시험 접수일","시험 접수번호","업체명","제품명","모델명","인증종류1","적용규격","시료반입","시료반출","시료 반출일","시료 반출자","시료 반출형태","수거인","송장번호","성적서발급일"};
-      String[] columnVarArr = {"no", "sbkId", "rcptDt", "carryInDate","carryInName","testDtStr","testId","cmpyName","prdctName","modelName","crtfc2Name","testStndr","inCnt","outCnt","carryOutDate","carryOutName","carryOutType","carryOutDlvryName","carryOutDlvryInvc","reportDt"};
-      int[] columnWidth = {1500, 4000, 3500, 3500, 3000, 3500, 5500, 6000, 12000, 8000, 5000, 15000, 1500, 1500, 3500, 3000, 3500, 3000, 3000, 3500};
       
       dataMap.put("columnArr", columnArr);
       dataMap.put("columnVarArr", columnVarArr);
       dataMap.put("columnWidth", columnWidth);
       dataMap.put("sheetNm", "시험접수 관리대장");    
       dataMap.put("list", list);
-      
   
       mav.addObject("dataMap", dataMap);
       mav.addObject("filename", filename);
@@ -148,6 +147,17 @@ public class LegController {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
 
+      Map<String, Object> dataMap = new HashMap<String, Object>();
+      
+      dataMap.put("columnArr", columnArr);
+      dataMap.put("columnVarArr", columnVarArr);
+      dataMap.put("columnWidth", columnWidth);
+      dataMap.put("sheetNm", "시험접수 관리대장");    
+      dataMap.put("list", list);
+      
+      mav.addObject("dataMap", dataMap);
+      mav.addObject("filename", ResponseMessage.UNAUTHORIZED);
+      
     }
     
     return mav;

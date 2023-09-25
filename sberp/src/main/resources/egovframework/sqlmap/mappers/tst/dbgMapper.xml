@@ -59,7 +59,7 @@
 						<when test="item.searchCode == 49">and DEBUG_TB.STATE_CODE = #{item.searchWord}</when>
 						<!-- 50	시험번호 -->
 						<when test="item.searchCode == 50">and CONCAT (
-																        CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
+																        CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
 																        '-',
 																        TEST_TB.TEST_TYPE_CODE,
 																        LPAD (TEST_TB.TEST_NO, 4, 0)
@@ -84,7 +84,7 @@
 			SELECT
 			    date_format (DEBUG_TB.ins_dt, '%Y-%m-%d') insDtStr,
 			    concat (
-			        CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
+			        CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
 			        '-',
 			        TEST_TB.TEST_TYPE_CODE,
 			        LPAD (TEST_TB.TEST_NO, 4, 0)
@@ -134,7 +134,7 @@
 						<when test="item.searchCode == 49">and DEBUG_TB.STATE_CODE = #{item.searchWord}</when>
 						<!-- 50	시험번호 -->
 						<when test="item.searchCode == 50">and CONCAT (
-																        CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
+																        CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
 																        '-',
 																        TEST_TB.TEST_TYPE_CODE,
 																        LPAD (TEST_TB.TEST_NO, 4, 0)

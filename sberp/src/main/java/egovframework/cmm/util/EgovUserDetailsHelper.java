@@ -93,8 +93,8 @@ public class EgovUserDetailsHelper {
         System.out.println("///////////////////////////////////////////");
 
         if (!p.isRYn() && (thisUrl.toLowerCase().indexOf("list") > -1 
-                            || thisUrl.toLowerCase().indexOf("detail") > -1)
-                            || thisUrl.toLowerCase().indexOf("excel") > -1) {
+                            || thisUrl.toLowerCase().indexOf("detail") > -1
+                            || thisUrl.toLowerCase().indexOf("excel") > -1)) {
           System.out.println("R 권한없음");
           return Boolean.FALSE;
         }

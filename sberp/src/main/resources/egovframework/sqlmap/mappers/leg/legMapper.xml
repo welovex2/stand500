@@ -9,6 +9,7 @@
 		    SBK_TB
 		        
 		        INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+		        AND SBK_TB.TYPE = JOB_TB.SBK_TYPE
 		        AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
 		        AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
 		        AND JOB_TB.STATE != 'D'
@@ -96,6 +97,7 @@
 			    SBK_TB
 			        
 			        INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
+			        AND SBK_TB.TYPE = JOB_TB.SBK_TYPE
 			        AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
 			        AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
 			        AND JOB_TB.STATE != 'D'

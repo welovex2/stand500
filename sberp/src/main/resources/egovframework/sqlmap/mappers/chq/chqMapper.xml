@@ -197,6 +197,7 @@
 			<id column="test_item_seq" property="testItemSeq"/>
 			<result column="testCate" property="testCate"/>
 			<result column="model" property="model"/>
+			<result column="memo" property="memo"/>
 			<result column="TEST_TYPE" property="testType"/>
 			<result column="FEE" property="fee"/>
        	 	<result column="LCNS_TAX" property="lcnsTax"/>
@@ -206,7 +207,7 @@
 	<select id ="selectDetail" parameterType="String" resultMap="chqMap">
 		SELECT
 			FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, type, QUO_TB.quo_seq) quoId,
-			CONCAT ('SB', JOB_TB.SBK_YM, '-' , TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')) sbkId,
+			CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')) sbkId,
 			IFNULL (date_format (SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			IFNULL (JOB_TB.CMPY_NAME, '') CMPY_NAME,
@@ -215,6 +216,7 @@
 			TEST_ITEM_TB.TEST_ITEM_SEQ,
 			CONCAT (B.NAME, '-', A.NAME) testCate,
 			IFNULL (TEST_ITEM_TB.MODEL, '-') model,
+			IFNULL (TEST_ITEM_TB.MEMO, '') memo,
 			IFNULL (
 				FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE, 'TT'),
 				'-'
@@ -224,14 +226,18 @@
 			TEST_FEE
 		FROM
 			CHQ_TB
+			
 			INNER JOIN QUO_TB ON QUO_TB.CHQ_YM = CHQ_TB.CHQ_YM
 			AND QUO_TB.CHQ_SEQ = CHQ_TB.CHQ_SEQ
+			
 			INNER JOIN TEST_ITEM_TB ON QUO_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
 			AND QUO_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
-			AND TEST_ITEM_TB.state != 'D'
+			AND TEST_ITEM_TB.STATE != 'D'
+			
 			INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
 			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 			AND JOB_TB.STATE != 'D'
+			
 			LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
 			LEFT JOIN TEST_STNDR_TB ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
 			LEFT JOIN TEST_CATE_TB A ON TEST_ITEM_TB.CRTF_TYPE_SEQ = A.TEST_CATE_SEQ

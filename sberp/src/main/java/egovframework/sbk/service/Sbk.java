@@ -32,7 +32,7 @@ public class Sbk {
   
   @ApiModelProperty(value = "신청서타입(G:일반,M:의료) ", example = "G", hidden = true)
   @Column
-  private String type;
+  private String type = "G";
 
 
   @ApiModelProperty(value = "예상완료일 ", example = "2023-05-21")

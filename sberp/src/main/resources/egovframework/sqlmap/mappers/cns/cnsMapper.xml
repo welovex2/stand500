@@ -57,7 +57,7 @@
 	            
 	            /* 연결문서 정보 */
 	            IFNULL(FN_GET_SEQSTRING('Q',JOB_TB.QUO_YM,'G',JOB_TB.quo_seq),'-') QUO_ID,
-	            IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , 'G', LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') SBK_ID,
+	            IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') SBK_ID,
 	            
 			    FN_LAST_CNS_MENO(CNS_TB.cns_seq) LAST_MEMO
 			FROM CNS_TB
@@ -163,6 +163,7 @@
 		</if>
 		<if test="sbkId != null and sbkId != ''">
 		AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 		AND JOB_TB.SBK_REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
 		</if>
@@ -281,6 +282,7 @@
 		</if>
 		<if test="sbkId != null and sbkId != ''">
 	    AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+	    AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 		AND JOB_TB.SBK_REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
 		</if>

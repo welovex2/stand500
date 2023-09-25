@@ -3,12 +3,12 @@
 <mapper namespace="egovframework.rsb.service.RsbMapper">
 	
 	<select id="selectMaxRevision" resultType="int">
-		SELECT MAX(REVISION) FROM SBK_TB WHERE SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2) AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		SELECT MAX(REVISION) FROM SBK_TB WHERE SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2) AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1) AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 	</select>
 		
 	<insert id="copySbk">
 	    <selectKey keyProperty="revision" resultType="int" order="BEFORE">
-	        SELECT MAX(REVISION)+1 FROM SBK_TB WHERE SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2) AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+	        SELECT MAX(REVISION)+1 FROM SBK_TB WHERE SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2) AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1) AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 	    </selectKey>
 		INSERT INTO SBK_TB
 		(
@@ -62,6 +62,7 @@
 		WHERE 1=1
 		AND REVISION = 0
 		AND SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1)
 		AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 	</insert>
 	
@@ -87,26 +88,28 @@
 			INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
 			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 		WHERE 1=1
-		and JOB_TB.SBK_REVISION = 0
+		AND JOB_TB.SBK_REVISION = 0
 		AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 	</insert>
 	
 	<insert id="copyJob">
 		INSERT INTO JOB_TB
 		(
-			CMPY_SEQ, CMPY_MNG_SEQ, SBK_YM, SBK_SEQ, SBK_REVISION, QUO_YM, QUO_SEQ, 
+			CMPY_SEQ, CMPY_MNG_SEQ, SBK_YM, SBK_TYPE, SBK_SEQ, SBK_REVISION, QUO_YM, QUO_SEQ, 
 			CMPY_NAME, CMPY_PHONE, CMPY_FAX, MNG_NAME, MNG_PHONE, MNG_FAX, PRDCT_NAME, MODEL_NAME,
 			INS_MEM_ID, UDT_MEM_ID
 		)
 		SELECT
-			CMPY_SEQ, CMPY_MNG_SEQ, SBK_YM, SBK_SEQ, #{revision}, DATE_FORMAT (NOW(), '%y%m'), #{quoSeq}, 
+			CMPY_SEQ, CMPY_MNG_SEQ, SBK_YM, SBK_TYPE, SBK_SEQ, #{revision}, DATE_FORMAT (NOW(), '%y%m'), #{quoSeq}, 
 			CMPY_NAME, CMPY_PHONE, CMPY_FAX, MNG_NAME, MNG_PHONE, MNG_FAX, PRDCT_NAME, MODEL_NAME,
 			#{insMemId}, #{udtMemId}
 		FROM JOB_TB
 		WHERE 1=1
 		AND SBK_REVISION = 0
 		AND SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 	</insert>
 	
@@ -130,6 +133,7 @@
 		WHERE 1=1
 		
 		AND JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
 		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 		
 		AND TEST_ITEM_TB.STATE != 'D'
