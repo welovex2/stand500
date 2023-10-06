@@ -3,6 +3,7 @@ package egovframework.tst.web;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -89,6 +90,11 @@ public class TstController {
       if (tstService.selectDetail(req) != null) {
         result = false;
         msg = ResponseMessage.DUPLICATE_TEST;
+      } 
+      // 값이 제대로 넘어왔는지 확인
+      else if (req.getTestItemSeq() == 0 || StringUtils.isEmpty(req.getTestTypeCode())) {
+        result = false;
+        msg = ResponseMessage.CHECK_DATA;
       } else {
         // 시험 생성
         result = tstService.insert(req);

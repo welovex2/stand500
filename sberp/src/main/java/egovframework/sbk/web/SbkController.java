@@ -1,14 +1,21 @@
 package egovframework.sbk.web;
 
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.apache.poi.xssf.usermodel.XSSFFormulaEvaluator;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.MediaType;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -461,6 +468,97 @@ public class SbkController {
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
 
     return res;
+  }
+
+
+  @ApiOperation(value = "신청서 엑셀 폼 다운")
+  @GetMapping(value = "/{sbkId}/excelDown.do")
+  public void excelDown(@ApiParam(value = "신청서 고유번호", required = true,example = "SB23-G0044") @PathVariable(name = "sbkId") String sbkId
+      , HttpServletResponse response) throws Exception {
+
+//    String filePath = "C:\\Users\\김정미\\Desktop\\STB_FORM.xlsx"; // 불러올 파일
+    String filePath = propertyService.getString("Globals.fileStorePath").concat("STB_FORM.xlsx"); // 불러올 파일
+    
+    SbkDTO.Req req = new SbkDTO.Req();
+    SbkDTO.Res detail = new SbkDTO.Res();
+    
+    req.setSbkId(sbkId);
+    detail = sbkService.selectDetail(req);
+
+    // 1. FileInputStream 으로 파일 읽기
+    FileInputStream inputStream = new FileInputStream(filePath);
+    
+    // 2. XSSFWorkbook 객체 생성하기
+    XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
+    
+    // 3. XSSFSheet 객체 생성 - 첫번째 시트를 가져온다
+    XSSFSheet sheet = workbook.getSheetAt(0);
+
+    if (detail != null) {
+  
+      // 4. XSSFRow 첫번째 Row 가져와서 수정하기
+      XSSFRow row = sheet.getRow(2); // 시트의 첫번째 Row 를 가져온다
+      row.getCell(3).setCellValue(detail.getCmpyName().trim());               // 회사명
+      row.getCell(10).setCellValue(detail.getBsnsRgnmb().trim());      // 사업자등록번호
+      
+      row = sheet.getRow(3);
+      row.getCell(3).setCellValue(detail.getRprsn().trim());               // 대표자
+      
+      row = sheet.getRow(4);
+      row.getCell(3).setCellValue(detail.getAddress().trim());                 // 주소
+      
+      row = sheet.getRow(6);
+      row.getCell(4).setCellValue(detail.getMngName().trim());          // 담당자 이름
+      row.getCell(10).setCellValue(detail.getMngEmail().trim());       // 담당자 이메일
+      
+      row = sheet.getRow(7);
+      row.getCell(4).setCellValue(detail.getMngPhone().trim());          // 담당자 전화
+      row.getCell(7).setCellValue(detail.getMngTel().trim());        // 담당자 핸드폰
+      row.getCell(11).setCellValue(detail.getMngFax().trim());         // 담당자 팩스
+      
+      row = sheet.getRow(8);
+      row.getCell(3).setCellValue(detail.getPrdctName().trim());               // 제품명
+      
+      row = sheet.getRow(9);
+      row.getCell(3).setCellValue(detail.getModelName().trim());               // 모델명
+      row.getCell(10).setCellValue(detail.getAthntNmbr().trim());            // 인증번호
+      
+      row = sheet.getRow(15);
+      row.getCell(3).setCellValue(detail.getMnfctCmpny().trim());               // 회사명
+      row.getCell(10).setCellValue(detail.getMnfctCntry().trim());              // 제조국
+      
+  //    int lastColNum = row.getLastCellNum(); // 마지막 칼럼의 index 를 구한다
+  //    row.createCell(lastColNum).setCellValue("메뉴4"); // 칼럼을 생성한다
+  
+      // 5. 2번째 Row 부터 데이터 삽입
+  //    for (int i = 0; i < 2; i++) {
+  //      row = sheet.createRow(i + 1); // row 를 새로 생성한다
+  //      row.createCell(3).setCellValue((10 * i) + (i + 4));
+  //    }
+  
+  //    // 6. FileOutputStream 으로 파일 저장하기
+  //    FileOutputStream out = new FileOutputStream(filePath);
+  //    workbook.write(out);
+    }
+    
+    // 6. 파일다운로드로 저장하기
+    response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    // 응답이 파일 타입이라는 것을 명시
+    response.setHeader("Content-Disposition", "attachment;filename=" + sbkId + ".xlsx");
+    ServletOutputStream servletOutputStream = response.getOutputStream();
+//    XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
+    workbook.setForceFormulaRecalculation(true);
+    workbook.write(servletOutputStream);
+    
+    // 7. 자원 반환
+//    out.close();
+    servletOutputStream.close();
+    workbook.close();
+    inputStream.close();
+
+//    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+
+//    return res;
   }
 
 

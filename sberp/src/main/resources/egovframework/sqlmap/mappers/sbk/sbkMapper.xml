@@ -53,6 +53,7 @@
 			/* 제조자 */
 			MNFCT_CMPNY,
 			MNFCT_CNTRY_CODE,
+			IFNULL (FN_CODE_NAME (MNFCT_CNTRY_CODE, 'SN'), '') MNFCT_CNTRY,
 			MNFCT_ADRES,
 			ADD_MNFCT_CMPNY,
 			ADD_MNFCT_CNTRY,
@@ -811,7 +812,7 @@
 	        	
 	        </foreach>
         </if>
-        GROUP BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.REVISION
+        GROUP BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.TYPE, SBK_TB.REVISION
         
         ) cnt
 	</select>

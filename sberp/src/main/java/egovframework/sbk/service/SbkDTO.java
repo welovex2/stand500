@@ -196,6 +196,10 @@ public class SbkDTO {
     @Column
     private List<FileVO> docFileList;
 
+    @ApiModelProperty(value = "제조국", example = "루마니아")
+    @Column
+    private String mnfctCntry;
+    
   }
 
 }
