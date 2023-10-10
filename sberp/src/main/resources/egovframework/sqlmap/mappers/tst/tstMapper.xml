@@ -100,17 +100,17 @@
 	        <foreach collection="searchVO" item="item" separator="">
 	        	<choose>
 					<!-- 6	제품명 -->
-					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 7	고지부담당자 -->
-					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.ins_mem_id) like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.ins_mem_id) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 8	기술책임자 -->
-					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 9	시험담당자 -->
-					<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 18	시험배정일 -->
-					<when test="item.searchCode == 18">and date_format(TEST_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 18">and DATE_FORMAT(TEST_TB.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 20	예상완료일 -->
-					<when test="item.searchCode == 20">and date_format(SBK_TB.est_cmp_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 20">and DATE_FORMAT(SBK_TB.est_cmp_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 22	신청구분 -->
 					<when test="item.searchCode == 22">
 						<choose>
@@ -133,9 +133,12 @@
 					<!-- 26	로데이터 -->
 					<when test="item.searchCode == 26"></when>
 					<!-- 27	모델명 -->
-					<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') like concat('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 31	시험상태 -->
-					<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+					<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+					<!-- 50	시험번호 -->
+					<when test="item.searchCode == 50">and CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
+			    													,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
 	        	</choose>
 			</foreach>
 		</if>
@@ -235,17 +238,17 @@
 		        <foreach collection="searchVO" item="item" separator="">
 		        	<choose>
 						<!-- 6	제품명 -->
-						<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 7	고지부담당자 -->
-						<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.ins_mem_id) like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.ins_mem_id) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 8	기술책임자 -->
-						<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 9	시험담당자 -->
-						<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 18	시험배정일 -->
-						<when test="item.searchCode == 18">and date_format(TEST_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 18">and DATE_FORMAT(TEST_TB.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 20	예상완료일 -->
-						<when test="item.searchCode == 20">and date_format(SBK_TB.est_cmp_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 20">and DATE_FORMAT(SBK_TB.est_cmp_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 22	신청구분 -->
 						<when test="item.searchCode == 22">
 							<choose>
@@ -268,9 +271,12 @@
 						<!-- 26	로데이터 -->
 						<when test="item.searchCode == 26"></when>
 						<!-- 27	모델명 -->
-						<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') like concat('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 31	시험상태 -->
-						<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+						<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+						<!-- 50	시험번호 -->
+						<when test="item.searchCode == 50">and CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
+			    														,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
 		        	</choose>
 				</foreach>
 			</if>
