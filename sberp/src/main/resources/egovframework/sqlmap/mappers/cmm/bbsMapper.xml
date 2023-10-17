@@ -169,6 +169,7 @@
 			SET 
 				NTT_SJ = #{nttSj},
 				NTT_CN = #{nttCn}, 
+				ATCH_FILE_ID = #{atchFileId},
 				UDT_MEM_ID = #{udtMemId},
 		        UDT_DT = NOW(),
 		        STATE = 'U'
