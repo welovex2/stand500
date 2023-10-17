@@ -13,6 +13,7 @@
     	<typeAlias alias="powerDTO"		type="egovframework.sys.dto.PowerDTO"/>
     	<typeAlias alias="fileVO"		type="egovframework.cmm.service.FileVO"/>
     	<typeAlias alias="job"			type="egovframework.cmm.service.Job"/>
+    	<typeAlias alias="boardVO"		type="egovframework.cmm.service.BoardVO"/>
     	
     	<!-- 상담서 -->
     	<typeAlias alias="comParam"		type="egovframework.cmm.service.ComParam"/>

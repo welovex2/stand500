@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.cmm.service.BbsMapper">
+
+	<select id="selectMaxNttId" parameterType="String" resultType="Integer">
+ 		<![CDATA[
+			SELECT IFNULL(MAX(NTT_ID),0)+1 AS NTT_ID  FROM BBS_TB WHERE BBS_ID = #{bbsId}
+ 		]]>
+ 	</select>
+ 	
+	<insert id="insertBoardArticle" parameterType="boardVO" >
+		<selectKey resultType="Integer" keyProperty="sortOrdr" order="BEFORE">
+			SELECT IFNULL(MAX(SORT_ORDR),0)+1 AS SORT_ORDR  FROM BBS_TB
+			WHERE BBS_ID = #{bbsId}
+		</selectKey>
+		<![CDATA[
+			INSERT INTO BBS_TB
+			(NTT_ID, BBS_ID, NTT_SJ, NTT_CN, NTT_NO, SORT_ORDR,  ATCH_FILE_ID,
+			 INS_MEM_ID, UDT_MEM_ID
+			)
+			VALUES
+			( #{nttId}, #{bbsId}, #{nttSj}, #{nttCn}, 1, #{sortOrdr}, #{atchFileId},
+			  #{insMemId}, #{udtMemId}
+			)			
+		]]>
+	</insert>
+	
+<!-- 	<insert id="replyBoardArticle" parameterType="boardVO" > -->
+<!-- 		<selectKey resultType="java.lang.Long" keyProperty="nttNo"> -->
+<!-- 			SELECT IFNULL(MAX(NTT_NO),0)+1 AS NTT_NO  FROM BBS_TB -->
+<!-- 			WHERE BBS_ID = #{bbsId} AND SORT_ORDR = #{sortOrdr} -->
+<!-- 		</selectKey>			 -->
+<!-- 		<![CDATA[ -->
+<!-- 			INSERT INTO BBS_TB -->
+<!-- 			( -->
+<!-- 				NTT_ID, BBS_ID, NTT_SJ, NTT_CN, SORT_ORDR,  -->
+<!-- 			 	NTCR_ID, NTCR_NM, SECRET_YN, PASSWORD, RDCNT,  -->
+<!-- 			 	PRODUCT_TYPE, PRODUCT_NAME, COMPANY, PHONE, EMAIL,  -->
+<!-- 			 	NTCE_BGNDE, NTCE_ENDDE, ANSWER_AT,  			    -->
+<!-- 			 	PARNTSCTT_NO, NTT_NO, ANSWER_LC, ATCH_FILE_ID, -->
+<!-- 			 	FRST_REGISTER_ID, FRST_REGIST_PNTTM, STATE -->
+<!-- 			 ) -->
+<!-- 			VALUES -->
+<!-- 			( #{nttId}, #{bbsId}, #{nttSj}, #{nttCn}, #{sortOrdr},  -->
+<!-- 			  #{ntcrId}, #{ntcrNm}, #{secretYn}, (SELECT sub.PASSWORD FROM BBS_TB sub -->
+<!-- 												 WHERE sub.BBS_ID = #{bbsId} AND sub.NTT_ID = #{parnts}), #{inqireCo},  -->
+<!-- 			  #{productType}, #{productName}, #company#, #{phone}, #email},   -->
+<!-- 			  #{ntceBgnde}, #{ntceEndde}, #replyAt#,  -->
+<!-- 			  #{parnts}, 1, #replyLc#, #{atchFileId}, -->
+<!-- 			  #frstRegisterId}, SYSDATE(), 'Y'  -->
+<!-- 			 )			 -->
+<!-- 		]]> -->
+<!-- 	</insert>	 -->
+	
+<!-- 	<select id="selectNoticeListForSort" parameterType="boardVO" resultMap="sortList"> -->
+<!-- 		<![CDATA[			 -->
+<!-- 			SELECT -->
+<!-- 				a.BBS_ID, a.NTT_ID, a.SORT_ORDR, a.PARNTSCTT_NO, a.NTT_NO, a.ANSWER_LC -->
+<!-- 			FROM -->
+<!-- 				BBS_TB a	 -->
+<!-- 			WHERE -->
+<!-- 				a.BBS_ID = #{bbsId} -->
+<!-- 			AND -->
+<!-- 				a.SORT_ORDR = #{sortOrdr} -->
+<!-- 			ORDER BY  a.SORT_ORDR DESC, a.NTT_NO ASC	 -->
+<!-- 		]]>						 -->
+<!-- 	</select> -->
+
+			
+	<select id="selectBoardArticleList" parameterType="boardVO" resultType="egovMap" >
+		<![CDATA[
+ 			SELECT 
+ 				a.NTT_ID, a.NTT_SJ, 
+ 				IFNULL (FN_MEM_NAME (a.INS_MEM_ID), '') ins_name,
+ 				DATE_FORMAT (a.INS_DT, '%Y-%m-%d') insDtStr, 
+ 				IFNULL (RDCNT, 0) RDCNT,
+ 				(SELECT IF(COUNT(1) > 0,1,0) FROM FILE_DETAIL_TB WHERE ATCH_FILE_ID = a.ATCH_FILE_ID AND STATE != 'D') attchYn,
+ 				a.RDCNT, IF(DATE_SUB(NOW(), INTERVAL 3 DAY) <= a.INS_DT, 'Y', 'D') AS newYn 
+ 			FROM 
+ 				BBS_TB a 
+ 			WHERE a.STATE != 'D' 
+ 			AND 
+ 				a.BBS_ID = #{searchCode} 
+		]]>
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		       
+		        	<choose>
+		        		<!-- 2	작성자 -->
+						<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(a.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+		        		<!-- 33 제목 -->
+		        		<when test="item.searchCode == 33">AND a.NTT_SJ LIKE CONCAT('%',LOWER (#{item.searchWord}),'%')</when>
+						<!-- 15	작성일 -->
+		        		<when test="item.searchCode == 15">AND DATE_FORMAT(a.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					</choose>
+					
+				</foreach>
+			</if>
+			ORDER BY a.SORT_ORDR DESC, NTT_NO ASC
+			LIMIT #{pageUnit} OFFSET #{firstIndex}
+	</select>	
+	
+	<select id="selectBoardArticleListCnt" parameterType="comParam" resultType="Integer" >
+		<![CDATA[
+ 			SELECT 
+ 				COUNT(a.NTT_ID) 
+ 			FROM 
+ 				BBS_TB a 
+ 			WHERE a.STATE != 'D' 
+ 			AND 
+ 				a.BBS_ID = #{searchCode} 
+		]]>
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		       
+		        	<choose>
+		        		<!-- 2	작성자 -->
+						<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(a.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+		        		<!-- 33 제목 -->
+		        		<when test="item.searchCode == 33">AND a.NTT_SJ LIKE CONCAT('%',LOWER (#{item.searchWord}),'%')</when>
+						<!-- 15	작성일 -->
+		        		<when test="item.searchCode == 15">AND DATE_FORMAT(a.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					</choose>
+					
+				</foreach>
+			</if>
+	</select>	
+ 
+	<select id="selectBoardArticle" parameterType="boardVO" resultType="boardVO" >
+		<![CDATA[
+			SELECT
+                a.BBS_ID, a.NTT_ID,
+				a.NTT_NO, a.NTT_SJ, a.NTT_CN,
+                DATE_FORMAT (a.INS_DT, '%Y-%m-%d') insDtStr,
+				IFNULL (a.RDCNT, 0) RDCNT, a.ATCH_FILE_ID 
+			FROM
+				BBS_TB a
+			
+			WHERE
+				a.BBS_ID = #{bbsId}
+			AND
+				a.NTT_ID = #{nttId}	
+			AND a.STATE != 'D'
+		]]>				
+	</select> 
+
+	<select id="selectBoardMovePN" parameterType="boardVO" resultType="boardVO" >
+		<![CDATA[
+			SELECT
+				a.NTT_ID nttId
+				, if(a.BBS_ID = 'BBSMSTR_B' AND a.NTT_SJ = '', CONCAT('[',a.PRODUCT_TYPE,'] ',a.PRODUCT_NAME), a.NTT_SJ) nttSj
+			FROM
+				BBS_TB a
+			LEFT OUTER JOIN 
+				COMVNUSERMASTER b
+			ON a.FRST_REGISTER_ID = b.ESNTL_ID 
+			WHERE 
+				a.NTT_ID IN (
+				    (SELECT NTT_ID FROM BBS_TB WHERE BBS_ID = #{bbsId} and NTT_ID < #{nttId} AND STATE = 'Y' ORDER BY NTT_ID DESC LIMIT 1),
+				    (SELECT NTT_ID FROM BBS_TB WHERE BBS_ID = #{bbsId} and NTT_ID > #{nttId} AND STATE = 'Y' ORDER BY NTT_ID LIMIT 1)
+			   )
+			AND a.BBS_ID = #{bbsId}
+		]]>
+</select> 
+	 
+ 	<update id="updateBoardArticle" parameterType="boardVO">
+ 		<![CDATA[
+			UPDATE BBS_TB 
+			SET 
+				NTT_SJ = #{nttSj},
+				NTT_CN = #{nttCn}, 
+				UDT_MEM_ID = #{udtMemId},
+		        UDT_DT = NOW(),
+		        STATE = 'U'
+			WHERE BBS_ID = #{bbsId}
+			AND NTT_ID = #{nttId}
+ 		]]>
+ 	</update>
+
+ 	<update id="deleteBoardArticle" parameterType="boardVO">
+ 		<![CDATA[
+			UPDATE BBS_TB 
+			SET 
+				UDT_MEM_ID = #{udtMemId},
+		        UDT_DT = NOW(),
+		        STATE = 'D'
+			WHERE BBS_ID = #{bbsId}
+			AND NTT_ID = #{nttId}
+ 		]]>
+ 	</update>
+
+<!--  	<select id="selectMaxInqireCo" resultType="java.lang.Integer" parameterType="boardVO"> -->
+<!--  		<![CDATA[ -->
+<!-- 			SELECT IFNULL(MAX(RDCNT),0)+1 AS RDCNT FROM BBS_TB -->
+<!-- 			WHERE BBS_ID = #{bbsId} -->
+<!-- 			AND NTT_ID = #{nttId} -->
+<!--  		]]> -->
+<!--  	</select> -->
+ 	
+<!--  	<select id="selectNoticeItemForSort" resultType="java.lang.Long" parameterType="boardVO"> -->
+<!--  		<![CDATA[ -->
+<!-- 			SELECT -->
+<!-- 				IFNULL(MAX(NTT_NO),0)+1 AS NTT_NO -->
+<!-- 			FROM -->
+<!-- 				BBS_TB	 -->
+<!-- 			WHERE -->
+<!-- 				BBS_ID = #{bbsId} -->
+<!-- 			AND -->
+<!-- 				SORT_ORDR = #{sortOrdr} -->
+<!-- 			AND  -->
+<!-- 				NTT_ID = #{nttId}	 -->
+<!--  		]]> -->
+<!--  	</select> 	 -->
+
+ 	<update id="updateInqireCo" parameterType="boardVO">
+ 		<![CDATA[
+			UPDATE BBS_TB 
+			SET 
+				RDCNT = RDCNT+1
+			WHERE BBS_ID = #{bbsId}
+			AND NTT_ID = #{nttId}
+ 		]]>
+ 	</update>
+
+<!-- 	<update id="updateSortOrder" parameterType="boardVO"> -->
+<!--  		<![CDATA[ -->
+<!-- 			UPDATE BBS_TB SET  -->
+<!-- 				NTT_NO = #{nttNo} -->
+<!-- 			WHERE NTT_ID = #{nttId} -->
+<!--  		]]>	 -->
+<!-- 	</update> -->
+
+<!-- 	<select id="selectGuestList" parameterType="boardVO" resultMap="guestList" > -->
+<!-- 		<![CDATA[ -->
+<!-- 			SELECT -->
+<!-- 				a.NTT_ID, a.NTT_SJ, a.NTCR_NM, a.PASSWORD,  -->
+<!-- 				DATE_FORMAT(a.FRST_REGIST_PNTTM, '%Y-%m-%d %H:%i:%S')  -->
+<!-- 				as FRST_REGIST_PNTTM, -->
+<!-- 				a.NTT_CN, a.STATE, a.BBS_ID, b.USER_NM as FRST_REGISTER_NM, a.FRST_REGISTER_ID -->
+<!-- 			FROM -->
+<!-- 				BBS_TB a, COMVNUSERMASTER b -->
+<!-- 			WHERE -->
+<!-- 				a.BBS_ID = #{bbsId} -->
+<!-- 			AND  -->
+<!-- 				a.FRST_REGISTER_ID = b.ESNTL_ID -->
+<!-- 			AND -->
+<!-- 				a.STATE = 'Y' -->
+<!-- 			ORDER BY a.SORT_ORDR DESC, a.NTT_NO ASC -->
+<!-- 			LIMIT #recordCountPerPage} OFFSET #firstIndex# -->
+<!-- 		]]>				 -->
+<!-- 	</select>	 -->
+	
+<!-- 	<select id="selectGuestListCnt" parameterType="boardVO" resultType="java.lang.Integer" > -->
+<!-- 		<![CDATA[ -->
+<!-- 			SELECT -->
+<!-- 				COUNT(NTT_ID) -->
+<!-- 			FROM -->
+<!-- 				BBS_TB  -->
+<!-- 			WHERE -->
+<!-- 				BBS_ID = #{bbsId}	 -->
+<!-- 			AND -->
+<!-- 				STATE = 'Y' -->
+<!-- 		]]>			 -->
+<!-- 	</select>	 -->
+
+	<update id="deleteGuestList" parameterType="boardVO">
+		<![CDATA[
+			UPDATE BBS_TB
+			SET STATE = 'D'
+			WHERE BBS_ID = #{bbsId}
+			AND NTT_ID = #{nttId}
+		]]>			
+	</update>	
+	
+	<select id="getPasswordInf" parameterType="boardVO" resultType="java.lang.String">
+		<![CDATA[
+			SELECT
+				PASSWORD
+			FROM
+				BBS_TB	
+			WHERE BBS_ID = #{bbsId}
+			AND NTT_ID = #{nttId}				
+		]]>
+	</select>
+
+<!-- 	<select id="getParentNttNo" parameterType="boardVO" resultType="java.lang.Long"> -->
+<!-- 		<![CDATA[ -->
+<!-- 			SELECT NTT_NO FROM BBS_TB -->
+<!-- 			WHERE BBS_ID = #{bbsId} AND NTT_ID = #{parnts}			 -->
+<!-- 		]]> -->
+<!-- 	</select> -->
+	
+<!--  	<update id="updateOtherNttNo" parameterType="boardVO"> -->
+<!--  		<![CDATA[ -->
+<!-- 			UPDATE BBS_TB SET  -->
+<!-- 				NTT_NO = NTT_NO + 1 -->
+<!-- 			WHERE BBS_ID = #{bbsId} AND SORT_ORDR = #{sortOrdr} -->
+<!-- 			AND NTT_NO > #{nttNo} -->
+<!--  		]]> -->
+<!--  	</update> -->
+ 	
+<!--  	 	<update id="updateNttNo" parameterType="boardVO"> -->
+<!--  		<![CDATA[ -->
+<!-- 			UPDATE BBS_TB SET  -->
+<!-- 				NTT_NO = #{nttNo} -->
+<!-- 			WHERE BBS_ID = #{bbsId}  -->
+<!-- 			AND NTT_ID = #{nttId} -->
+<!--  		]]> -->
+<!--  	</update> -->
+	
+</mapper>

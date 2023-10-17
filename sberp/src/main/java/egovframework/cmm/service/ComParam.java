@@ -18,10 +18,10 @@ public class ComParam extends ComPaging {
 	@ApiModelProperty(value="검색종료날짜-삭제예정", example = "2023-05-30", hidden = true)
 	private String endDate;
 
-	@ApiModelProperty(value="검색종류(공통코드:CS)-삭제예정", example = "00", hidden = true)
+	@ApiModelProperty(value="검색종류(내부처리)", example = "00", hidden = true)
 	private String searchCode;
 	
-	@ApiModelProperty(value="검색어-삭제예정", example = "", hidden = true)
+	@ApiModelProperty(value="검색어", example = "", hidden = true)
 	private String searchWord;
 	
 	@ApiModelProperty(value="검색 ", example = "")
