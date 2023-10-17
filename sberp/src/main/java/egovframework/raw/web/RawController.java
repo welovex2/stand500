@@ -1668,14 +1668,14 @@ public class RawController {
         // 현재 날짜 구하기
         LocalDate now = LocalDate.now();
         // 포맷 정의
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMM");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM");
         // 포맷 적용
         String formatedNow = now.format(formatter);
 
         // 신규등록
         FileResult = fileUtil.parseFile(files, "", 0, "",
-            propertyService.getString("Globals.fileStorePath").concat("FILE").concat("/")
-                .concat(formatedNow).concat("/").concat(Integer.toString(req.getTestSeq())));
+            propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/").concat("FILE").concat("/")
+                .concat(Integer.toString(req.getTestSeq())));
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
 

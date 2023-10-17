@@ -40,7 +40,8 @@
 			AND 
 				a.ATCH_FILE_ID = b.ATCH_FILE_ID
 			AND 
-				a.USE_AT = 'Y'				
+				a.USE_AT = 'Y'
+			AND b.STATE != 'D'			
 			ORDER BY b.FILE_SN	
  		]]>
  	</select>
@@ -76,7 +77,8 @@
 	
 	<delete id="deleteFileDetail" parameterType="fileVO" >
 		<![CDATA[
-			DELETE FROM FILE_DETAIL_TB
+			UPDATE FILE_DETAIL_TB
+			SET STATE = 'D'
 			WHERE
 				ATCH_FILE_ID = #{atchFileId}
 			AND	
@@ -138,6 +140,7 @@
 				a.ATCH_FILE_ID = b.ATCH_FILE_ID
 			AND 
 				a.USE_AT = 'Y'
+			AND b.STATE != 'D'
  		]]>
 <!-- 			<isEqual prepend="AND" property="searchCnd" compareValue="streFileNm"> -->
 <!-- 				<![CDATA[	b.STRE_FILE_NM LIKE CONCAT ('%', #{searchWrd},'%') 		]]> -->
@@ -160,7 +163,8 @@
 			WHERE
 				a.ATCH_FILE_ID = b.ATCH_FILE_ID
 			AND 
-				a.USE_AT = 'Y'				
+				a.USE_AT = 'Y'		
+			AND b.STATE != 'D'		
  		]]>
 <!-- 			<isEqual prepend="AND" property="searchCnd" compareValue="streFileNm"> -->
 <!-- 				<![CDATA[	b.STRE_FILE_NM LIKE CONCAT ('%', #{searchWrd},'%') 		]]> -->
@@ -184,7 +188,8 @@
 			AND
 				UPPER(b.FILE_EXTSN) IN ('GIF','JPG','JPEG','BMP','PNG')
 			AND 
-				a.USE_AT = 'Y'				
+				a.USE_AT = 'Y'	
+			AND b.STATE != 'D'			
 			ORDER BY b.FILE_SN	
  		]]>
  	</select>	

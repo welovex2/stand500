@@ -76,12 +76,12 @@ public class EgovFileMngUtil {
 		// 현재 날짜 구하기
 		LocalDate now = LocalDate.now();
 		// 포맷 정의
-	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMM");
+	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM");
 	    // 포맷 적용
 	    String formatedNow = now.format(formatter);
 	    
 		if ("".equals(storePath) || storePath == null) {
-		    storePathString = propertyService.getString("Globals.fileStorePath").concat(KeyStr).concat("/").concat(formatedNow);
+		    storePathString = propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/").concat(KeyStr);
 		} else {
 		    storePathString = propertyService.getString(storePath);
 		}
@@ -173,12 +173,12 @@ public class EgovFileMngUtil {
 		// 현재 날짜 구하기
 		LocalDate now = LocalDate.now();
 		// 포맷 정의
-	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMM");
+	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM");
 	    // 포맷 적용
 	    String formatedNow = now.format(formatter);
 	    
 		if ("".equals(storePath) || storePath == null) {
-		    storePathString = propertyService.getString("Globals.fileStorePath").concat(KeyStr).concat("/").concat(formatedNow);
+		    storePathString = propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/").concat(KeyStr);
 		} else {
 		    storePathString = storePath;
 		}
@@ -259,12 +259,12 @@ public class EgovFileMngUtil {
 	// 현재 날짜 구하기
 	LocalDate now = LocalDate.now();
 	// 포맷 정의
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMM");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM");
     // 포맷 적용
     String formatedNow = now.format(formatter);
     
 	if ("".equals(storePath) || storePath == null) {
-	    storePathString = propertyService.getString("Globals.fileStorePath").concat(KeyStr).concat("/").concat(formatedNow);
+	    storePathString = propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/").concat(KeyStr);
 	} else {
 	    storePathString = propertyService.getString(storePath);
 	}
