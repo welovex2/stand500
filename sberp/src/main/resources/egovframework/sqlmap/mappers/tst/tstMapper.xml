@@ -416,11 +416,17 @@
 			MDL_IDNTF,
 			ADD_DEV,
 			
-			/* 23-10-12 : 내용추가*/
+			/* 23-10-12 : 내용추가 */
             CMPNY_MEMO,
             CLASS_A_YN,
             CLASS_B_YN,
             IFNULL (CMPY_TB.CMPY_NAME, '') CMPY_TITLE,
+            
+            /* 23-10-20 : 내용추가 */
+            JOB_TB.CMPY_NAME,
+            ADDRESS,
+            MNFCT_CMPNY,
+            MNFCT_ADRES,
             
 			TEST_RPRT_K_YN,
 			TEST_RPRT_N_YN,
