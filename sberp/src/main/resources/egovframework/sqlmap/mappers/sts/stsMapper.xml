@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.StsMapper">
+
+	<select id="selectInList" parameterType="comParam" resultType="stsTestType">
+		SELECT
+			DATE_FORMAT(TEST_TB.INS_DT, '%Y-%m-%d') stsDt,
+			FN_CODE_NAME(TYPE_CD, 'TT') TEST_TYPE, 
+			SUM(IF (TEST_SEQ IS NULL, 0, 1)) inCnt,
+			SUM(IF (TEST_SEQ IS NULL, 0, NET_SALES)) inAmt
+		FROM COMCODE_TB
+		
+			LEFT JOIN TEST_TB
+		    ON TYPE_CD = TEST_TB.TEST_TYPE_CODE
+			AND DATE_FORMAT(TEST_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
+		    
+		    LEFT JOIN TEST_ITEM_TB
+    		ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+     		AND TEST_ITEM_TB.STATE != 'D'
+     
+		WHERE TOP_CD= 'TT'
+		AND COMCODE_TB.STATE != 'D'
+		    
+		GROUP BY DATE_FORMAT(TEST_TB.INS_DT, '%Y%m%d'), TYPE_CD
+		ORDER BY DATE_FORMAT(TEST_TB.INS_DT, '%Y%m%d'), 
+		CASE 
+			WHEN TYPE_CD = 'EM' THEN 1
+		    WHEN TYPE_CD = 'RF' THEN 2
+		    WHEN TYPE_CD = 'SR' THEN 3
+		    WHEN TYPE_CD = 'SF' THEN 4
+		    WHEN TYPE_CD = 'MD' THEN 5
+		END
+	</select>
+
+	<select id="selectTodayStateList" parameterType="comParam" resultType="stsTestType">
+		SELECT
+		
+			FN_CODE_NAME(TYPE_CD, 'TT') TEST_TYPE, 
+			SUM(IF (A.STATE_CODE='2',1,0)) ingCnt,
+			SUM(IF (A.STATE_CODE='2',NET_SALES,0)) ingAmt,
+			SUM(IF (A.STATE_CODE='3',1,0)) debCnt,
+			SUM(IF (A.STATE_CODE='3',NET_SALES,0)) debAmt,
+			SUM(IF (A.STATE_CODE='4',1,0)) holCnt,
+			SUM(IF (A.STATE_CODE='4',NET_SALES,0)) holAmt,
+			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),1,0)) endCnt,
+			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),NET_SALES,0)) endAmt,
+			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),1,0)) repCnt,
+			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),NET_SALES,0)) repAmt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),1,0)) etcCnt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),NET_SALES,0)) etcAmt,
+			SUM(IF (A.STATE_CODE IS NOT NULL,1,0)) cnt,
+			SUM(IF (A.STATE_CODE IS NOT NULL,NET_SALES,0)) amt
+			
+		FROM COMCODE_TB
+		
+			LEFT JOIN (
+				SELECT
+					TEST_STATE_TB.TEST_SEQ,
+					TEST_STATE_TB.TEST_STATE_SEQ, 
+					STATE_CODE,
+					TEST_TB.TEST_TYPE_CODE,
+					NET_SALES
+				FROM TEST_STATE_TB
+				
+					INNER JOIN TEST_TB
+				    ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
+				    
+				    INNER JOIN TEST_ITEM_TB
+				    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+				    AND TEST_ITEM_TB.STATE != 'D'
+				    
+				WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') = DATE_FORMAT(NOW(), '%Y%m%d')
+				AND TEST_STATE_SEQ IN (SELECT MAX(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY TEST_SEQ)
+			) A ON COMCODE_TB.TYPE_CD = A.TEST_TYPE_CODE
+		
+		WHERE COMCODE_TB.TOP_CD= 'TT'
+		AND COMCODE_TB.STATE != 'D'
+		
+		GROUP BY TYPE_CD
+		ORDER BY 
+		CASE 
+			WHEN TYPE_CD = 'EM' THEN 1
+		    WHEN TYPE_CD = 'RF' THEN 2
+		    WHEN TYPE_CD = 'SR' THEN 3
+		    WHEN TYPE_CD = 'SF' THEN 4
+		    WHEN TYPE_CD = 'MD' THEN 5
+		END
+	</select>
+	
+	<select id="selectTotalStateList" parameterType="comParam" resultType="stsTestType">
+		SELECT
+		
+			FN_CODE_NAME(TYPE_CD, 'TT') TEST_TYPE, 
+			SUM(IF (A.STATE_CODE='2',1,0)) ingCnt,
+			SUM(IF (A.STATE_CODE='2',NET_SALES,0)) ingAmt,
+			SUM(IF (A.STATE_CODE='3',1,0)) debCnt,
+			SUM(IF (A.STATE_CODE='3',NET_SALES,0)) debAmt,
+			SUM(IF (A.STATE_CODE='4',1,0)) holCnt,
+			SUM(IF (A.STATE_CODE='4',NET_SALES,0)) holAmt,
+			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),1,0)) endCnt,
+			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),NET_SALES,0)) endAmt,
+			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),1,0)) repCnt,
+			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),NET_SALES,0)) repAmt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),1,0)) etcCnt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),NET_SALES,0)) etcAmt,
+			SUM(IF (A.STATE_CODE IS NOT NULL,1,0)) cnt,
+			SUM(IF (A.STATE_CODE IS NOT NULL,NET_SALES,0)) amt
+			
+		FROM COMCODE_TB
+		
+			LEFT JOIN (
+				SELECT
+					TEST_STATE_TB.TEST_SEQ,
+					TEST_STATE_TB.TEST_STATE_SEQ, 
+					STATE_CODE,
+					TEST_TB.TEST_TYPE_CODE,
+					NET_SALES
+				FROM TEST_STATE_TB
+				
+					INNER JOIN TEST_TB
+				    ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
+				    
+				    INNER JOIN TEST_ITEM_TB
+				    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+				    AND TEST_ITEM_TB.STATE != 'D'
+				    
+				WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
+				AND TEST_STATE_SEQ IN (SELECT MAX(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_SEQ, STATE_CODE)
+			) A ON COMCODE_TB.TYPE_CD = A.TEST_TYPE_CODE
+		
+		WHERE COMCODE_TB.TOP_CD= 'TT'
+		AND COMCODE_TB.STATE != 'D'
+		
+		GROUP BY TYPE_CD
+		ORDER BY 
+		CASE 
+			WHEN TYPE_CD = 'EM' THEN 1
+		    WHEN TYPE_CD = 'RF' THEN 2
+		    WHEN TYPE_CD = 'SR' THEN 3
+		    WHEN TYPE_CD = 'SF' THEN 4
+		    WHEN TYPE_CD = 'MD' THEN 5
+		END
+	</select>
+	
+	<select id="selectBillSum" parameterType="comParam" resultType="stsDTO">
+		SELECT
+			DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%Y-%m-%d') stsDt,
+			IFNULL(SUM(BILL), 0) billAmt
+		FROM BILL_TB
+		WHERE 1=1
+		AND DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
+		GROUP BY DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%Y%m%d')
+	</select>	
+
+	<select id="selectPaySum" parameterType="comParam" resultType="stsDTO">
+		SELECT
+			DATE_FORMAT(PAY_DT, '%Y-%m-%d') stsDt,
+			IFNULL(SUM(BILL), 0) payAmt
+		FROM BILL_TB
+		WHERE 1=1
+		AND DATE_FORMAT(PAY_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
+		GROUP BY DATE_FORMAT(PAY_DT, '%Y%m%d')
+	</select>
+	
+	<resultMap type="stsDTO" id="stsMap">
+		<id column="stsDt" property="stsDt" />
+		<collection property="testTypeList" ofType="stsTestType">
+			<id column="TEST_TYPE" property="testType" />
+			<result column="ingCnt" property="ingCnt"/>
+			<result column="ingAmt" property="ingAmt"/>
+			<result column="debCnt" property="debCnt"/>
+			<result column="debAmt" property="debAmt"/>
+			<result column="holCnt" property="holCnt"/>
+			<result column="holAmt" property="holAmt"/>
+			<result column="endCnt" property="endCnt"/>
+			<result column="endAmt" property="endAmt"/>
+			<result column="repCnt" property="repCnt"/>
+			<result column="repAmt" property="repAmt"/>
+		</collection>
+	</resultMap>
+	
+	<select id="selectStateList" parameterType="comParam" resultMap="stsMap">
+		<![CDATA[	
+		SELECT
+			T.baseDt stsDt,
+		    FN_CODE_NAME(COMCODE_TB.TYPE_CD, 'TT') TEST_TYPE,
+					
+            SUM(IF (A.STATE_CODE='2',1,0)) ingCnt,
+			SUM(IF (A.STATE_CODE='2',NET_SALES,0)) ingAmt,
+			SUM(IF (A.STATE_CODE='3',1,0)) debCnt,
+			SUM(IF (A.STATE_CODE='3',NET_SALES,0)) debAmt,
+			SUM(IF (A.STATE_CODE='4',1,0)) holCnt,
+			SUM(IF (A.STATE_CODE='4',NET_SALES,0)) holAmt,
+			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),1,0)) endCnt,
+			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),NET_SALES,0)) endAmt,
+			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),1,0)) repCnt,
+			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),NET_SALES,0)) repAmt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),1,0)) etcCnt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),NET_SALES,0)) etcAmt,
+			SUM(IF (A.STATE_CODE IS NOT NULL,1,0)) cnt,
+			SUM(IF (A.STATE_CODE IS NOT NULL,NET_SALES,0)) amt
+			
+		FROM (
+			/* 날짜 테이블 */
+			SELECT 
+				DATE_FORMAT(DATE_ADD(#{startDate}, INTERVAL seq - 1 DAY), '%Y-%m-%d') AS baseDt
+			FROM (SELECT @num := @num + 1 AS seq
+				  FROM information_schema.tables a
+					 , information_schema.tables b
+					 , (SELECT @num := 0) c
+				 ) T
+			WHERE 1=1
+		    AND seq <=  DATEDIFF(DATE_FORMAT(#{endDate}, '%Y%m%d'), DATE_FORMAT(#{startDate}, '%Y%m%d')) + 1
+			 
+		) T
+			
+			/* 시험부서 리스트 테이블 */
+			LEFT JOIN COMCODE_TB ON 1=1 AND COMCODE_TB.TOP_CD= 'TT' AND COMCODE_TB.STATE != 'D'
+		    
+		    /* 해당 날짜별 시험상태 테이블 */
+			LEFT JOIN (
+			          
+					SELECT 
+					DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y-%m-%d') INS_DT,
+					TEST_STATE_TB.TEST_SEQ,
+					STATE_CODE,
+					TEST_TB.TEST_TYPE_CODE,
+					NET_SALES
+								
+					FROM TEST_STATE_TB
+						
+						INNER JOIN TEST_TB
+						ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
+						
+						INNER JOIN TEST_ITEM_TB
+						ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+						AND TEST_ITEM_TB.STATE != 'D'
+										
+					WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
+					GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_STATE_TB.TEST_SEQ, STATE_CODE
+			   
+			) A ON A.INS_DT = T.baseDt AND A.TEST_TYPE_CODE = COMCODE_TB.TYPE_CD
+		
+		GROUP BY T.baseDt, COMCODE_TB.TYPE_CD
+		ORDER BY T.baseDt, 
+		CASE 
+			WHEN TYPE_CD = 'EM' THEN 1
+			WHEN TYPE_CD = 'RF' THEN 2
+			WHEN TYPE_CD = 'SR' THEN 3
+			WHEN TYPE_CD = 'SF' THEN 4
+			WHEN TYPE_CD = 'MD' THEN 5
+		END
+		]]>
+	</select>
+			
+</mapper>

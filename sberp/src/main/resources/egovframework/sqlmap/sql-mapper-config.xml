@@ -93,5 +93,10 @@
     	<!-- 사진통관 -->
     	<typeAlias alias="ppDTO"		type="egovframework.ppc.dto.PpDTO"/>
     	<typeAlias alias="ppHis"		type="egovframework.ppc.service.PpHis"/>
+    	
+    	<!-- 통계 -->
+    	<typeAlias alias="stsDTO"		type="egovframework.sts.dto.StsDTO"/>
+    	<typeAlias alias="stsTestType"	type="egovframework.sts.dto.StsDTO$TestTypeList"/>
+    	
     </typeAliases>
 </configuration>

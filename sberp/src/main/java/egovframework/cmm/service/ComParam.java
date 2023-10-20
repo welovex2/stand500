@@ -12,10 +12,10 @@ import lombok.ToString;
 @Getter @Setter @ToString
 public class ComParam extends ComPaging {
     
-	@ApiModelProperty(value="검색시작날짜-삭제예정", example = "2023-02-02", hidden = true)
+	@ApiModelProperty(value="검색시작날짜", example = "2023-10-17")
 	private String startDate;
 	
-	@ApiModelProperty(value="검색종료날짜-삭제예정", example = "2023-05-30", hidden = true)
+	@ApiModelProperty(value="검색종료날짜", example = "2023-10-19")
 	private String endDate;
 
 	@ApiModelProperty(value="검색종류(내부처리)", example = "00", hidden = true)
