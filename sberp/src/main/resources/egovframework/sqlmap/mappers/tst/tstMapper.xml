@@ -102,11 +102,13 @@
 					<!-- 6	제품명 -->
 					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 7	고지부담당자 -->
-					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.ins_mem_id) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 8	기술책임자 -->
-					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 9	시험담당자 -->
 					<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 12	업체명 -->
+					<when test="item.searchCode == 12">and IFNULL(CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 18	시험배정일 -->
 					<when test="item.searchCode == 18">and DATE_FORMAT(TEST_TB.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 20	예상완료일 -->
@@ -240,11 +242,13 @@
 						<!-- 6	제품명 -->
 						<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 7	고지부담당자 -->
-						<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.ins_mem_id) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 8	기술책임자 -->
-						<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 9	시험담당자 -->
 						<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 12	업체명 -->
+						<when test="item.searchCode == 12">and IFNULL(CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 18	시험배정일 -->
 						<when test="item.searchCode == 18">and DATE_FORMAT(TEST_TB.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 20	예상완료일 -->
@@ -453,7 +457,9 @@
 	<update id="update" parameterType="testReq">
 		UPDATE TEST_TB
 		SET
+			<if test="reportDt != ''">
 			TEST_REPORT_DT = #{reportDt},
+			</if>
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE TEST_SEQ = #{testSeq}
