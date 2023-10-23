@@ -125,7 +125,12 @@
 				    AND TEST_ITEM_TB.STATE != 'D'
 				    
 				WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
-				AND TEST_STATE_SEQ IN (SELECT MAX(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_SEQ, STATE_CODE)
+				AND TEST_STATE_SEQ IN (SELECT MAX(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_SEQ, 
+											CASE 
+												WHEN STATE_CODE IN ('5','6','7','8','10','11','12','13','15') THEN '5' 
+							                    WHEN STATE_CODE IN ('14','16','17','18') THEN '14' 
+							                ELSE STATE_CODE END
+										)
 			) A ON COMCODE_TB.TYPE_CD = A.TEST_TYPE_CODE
 		
 		WHERE COMCODE_TB.TOP_CD= 'TT'
@@ -237,7 +242,11 @@
 						AND TEST_ITEM_TB.STATE != 'D'
 										
 					WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
-					GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_STATE_TB.TEST_SEQ, STATE_CODE
+					GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_STATE_TB.TEST_SEQ, 										 
+											CASE												
+												WHEN STATE_CODE IN ('5','6','7','8','10','11','12','13','15') THEN '5' 
+							                    WHEN STATE_CODE IN ('14','16','17','18') THEN '14' 
+							                ELSE STATE_CODE END
 			   
 			) A ON A.INS_DT = T.baseDt AND A.TEST_TYPE_CODE = COMCODE_TB.TYPE_CD
 		
