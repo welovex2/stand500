@@ -134,6 +134,7 @@ public class RepController {
               break;
             //   9.2 비대칭모드 전도성 방해 시험
             case 1:
+              ce = null;
               if (ObjectUtils.isEmpty(ce))
                 ce = rawService.ceDetail(rawSeq);
               if (ce != null) {
