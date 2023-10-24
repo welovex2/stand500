@@ -460,6 +460,9 @@
 			<if test="reportDt != ''">
 			TEST_REPORT_DT = #{reportDt},
 			</if>
+			<if test="reportDt == ''">
+			TEST_REPORT_DT = NULL,
+			</if>
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE TEST_SEQ = #{testSeq}
