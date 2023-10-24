@@ -42,6 +42,7 @@
 			SUM(IF (A.STATE_CODE='3',NET_SALES,0)) debAmt,
 			SUM(IF (A.STATE_CODE='4',1,0)) holCnt,
 			SUM(IF (A.STATE_CODE='4',NET_SALES,0)) holAmt,
+			/* 실시간 현황은 상태가 중복되지 않기 때문에 여러상태를 시험완료로 보는것 유지 */
 			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),1,0)) endCnt,
 			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),NET_SALES,0)) endAmt,
 			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),1,0)) repCnt,
@@ -70,6 +71,7 @@
 				    AND TEST_ITEM_TB.STATE != 'D'
 				    
 				WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') = DATE_FORMAT(NOW(), '%Y%m%d')
+				/* 해당 시험의 최신 상태 1개만 카운팅 */
 				AND TEST_STATE_SEQ IN (SELECT MAX(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY TEST_SEQ)
 			) A ON COMCODE_TB.TYPE_CD = A.TEST_TYPE_CODE
 		
@@ -97,12 +99,12 @@
 			SUM(IF (A.STATE_CODE='3',NET_SALES,0)) debAmt,
 			SUM(IF (A.STATE_CODE='4',1,0)) holCnt,
 			SUM(IF (A.STATE_CODE='4',NET_SALES,0)) holAmt,
-			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),1,0)) endCnt,
-			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),NET_SALES,0)) endAmt,
-			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),1,0)) repCnt,
-			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),NET_SALES,0)) repAmt,
-			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),1,0)) etcCnt,
-			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),NET_SALES,0)) etcAmt,
+			SUM(IF (A.STATE_CODE='6',1,0)) endCnt,
+			SUM(IF (A.STATE_CODE='6',NET_SALES,0)) endAmt,
+			SUM(IF (A.STATE_CODE='14',1,0)) repCnt,
+			SUM(IF (A.STATE_CODE='14',NET_SALES,0)) repAmt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','6','14'),1,0)) etcCnt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','6','14'),NET_SALES,0)) etcAmt,
 			SUM(IF (A.STATE_CODE IS NOT NULL,1,0)) cnt,
 			SUM(IF (A.STATE_CODE IS NOT NULL,NET_SALES,0)) amt
 			
@@ -124,13 +126,10 @@
 				    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
 				    AND TEST_ITEM_TB.STATE != 'D'
 				    
-				WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
-				AND TEST_STATE_SEQ IN (SELECT MAX(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_SEQ, 
-											CASE 
-												WHEN STATE_CODE IN ('5','6','7','8','10','11','12','13','15') THEN '5' 
-							                    WHEN STATE_CODE IN ('14','16','17','18') THEN '14' 
-							                ELSE STATE_CODE END
-										)
+				WHERE 1=1
+				AND TEST_STATE_SEQ IN (SELECT MIN(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY TEST_SEQ, STATE_CODE)
+				AND DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
+										
 			) A ON COMCODE_TB.TYPE_CD = A.TEST_TYPE_CODE
 		
 		WHERE COMCODE_TB.TOP_CD= 'TT'
@@ -196,12 +195,12 @@
 			SUM(IF (A.STATE_CODE='3',NET_SALES,0)) debAmt,
 			SUM(IF (A.STATE_CODE='4',1,0)) holCnt,
 			SUM(IF (A.STATE_CODE='4',NET_SALES,0)) holAmt,
-			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),1,0)) endCnt,
-			SUM(IF (A.STATE_CODE IN ('5','6','7','8','10','11','12','13','15'),NET_SALES,0)) endAmt,
-			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),1,0)) repCnt,
-			SUM(IF (A.STATE_CODE IN ('14','16','17','18'),NET_SALES,0)) repAmt,
-			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),1,0)) etcCnt,
-			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','5','6','7','8','10','11','12','13','15','14','16','17','18'),NET_SALES,0)) etcAmt,
+			SUM(IF (A.STATE_CODE='6',1,0)) endCnt,
+			SUM(IF (A.STATE_CODE='6',NET_SALES,0)) endAmt,
+			SUM(IF (A.STATE_CODE='14',1,0)) repCnt,
+			SUM(IF (A.STATE_CODE='14',NET_SALES,0)) repAmt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','6','14'),1,0)) etcCnt,
+			SUM(IF (A.STATE_CODE NOT IN ('2','3','4','6','14'),NET_SALES,0)) etcAmt,
 			SUM(IF (A.STATE_CODE IS NOT NULL,1,0)) cnt,
 			SUM(IF (A.STATE_CODE IS NOT NULL,NET_SALES,0)) amt
 			
@@ -222,7 +221,7 @@
 			/* 시험부서 리스트 테이블 */
 			LEFT JOIN COMCODE_TB ON 1=1 AND COMCODE_TB.TOP_CD= 'TT' AND COMCODE_TB.STATE != 'D'
 		    
-		    /* 해당 날짜별 시험상태 테이블 */
+		    /* 해당 날짜별 시험상태 테이블 (처음상태 1번만 카운팅) */
 			LEFT JOIN (
 			          
 					SELECT 
@@ -241,12 +240,9 @@
 						ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
 						AND TEST_ITEM_TB.STATE != 'D'
 										
-					WHERE DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
-					GROUP BY DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d'), TEST_STATE_TB.TEST_SEQ, 										 
-											CASE												
-												WHEN STATE_CODE IN ('5','6','7','8','10','11','12','13','15') THEN '5' 
-							                    WHEN STATE_CODE IN ('14','16','17','18') THEN '14' 
-							                ELSE STATE_CODE END
+					WHERE 1=1
+					AND TEST_STATE_SEQ IN (SELECT MIN(TEST_STATE_SEQ) FROM TEST_STATE_TB GROUP BY TEST_SEQ, STATE_CODE)
+					AND DATE_FORMAT(TEST_STATE_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{startDate}, '%Y%m%d') AND DATE_FORMAT(#{endDate}, '%Y%m%d')
 			   
 			) A ON A.INS_DT = T.baseDt AND A.TEST_TYPE_CODE = COMCODE_TB.TYPE_CD
 		
