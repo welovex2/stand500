@@ -240,7 +240,8 @@ public class SamController {
 
     param.setFirstIndex(pagingVO.getFirstRecordIndex());
     int cnt = samService.selectListCnt(param);
-
+    
+    param.setTotalCount(cnt);
     pagingVO.setTotalCount(cnt);
     pagingVO.setTotalPage(
         (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));

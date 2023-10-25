@@ -2,6 +2,7 @@ package egovframework.sam.service.impl;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,7 +96,14 @@ public class SamServiceImpl implements SamService {
 
   @Override
   public List<ImSubDTO> selectList(ComParam param) {
-    return samMapper.selectList(param);
+    List<ImSubDTO> result = samMapper.selectList(param);
+    
+    // 번호 매기기
+    for (int i=0; i<result.size(); i++) {
+      result.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    
+    return result;
   }
   
 }

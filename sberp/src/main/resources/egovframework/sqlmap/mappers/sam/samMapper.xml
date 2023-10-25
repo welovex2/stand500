@@ -170,9 +170,9 @@
 	        </foreach>
         </if>
 	</select>
-	<select id="selectList" parameterType="comParam" resultType="egovMap">
+	<select id="selectList" parameterType="comParam" resultType="imSubDTO">
 		SELECT 
-			@rownum:=@rownum+1 as no,
+			#@rownum:=@rownum+1 as no,
 			lst.*
 		FROM (
 			SELECT
@@ -206,7 +206,7 @@
 			    INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
 			    AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
 			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-			    INNER JOIN (SELECT @rownum:=0) r
+			    #INNER JOIN (SELECT @rownum:=0) r
 			WHERE
 			    1 = 1
 	        <if test="searchVO != null">
@@ -234,7 +234,7 @@
 	        
 	        ORDER BY IM_TB.INS_DT ASC
 	    ) lst
-	    ORDER BY NO DESC
+	    #ORDER BY NO DESC
 		LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
 		

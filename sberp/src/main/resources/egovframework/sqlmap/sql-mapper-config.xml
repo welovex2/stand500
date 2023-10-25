@@ -51,6 +51,7 @@
     	
     	<!-- 시료 -->
     	<typeAlias alias="imDTO"		type="egovframework.sam.dto.ImDTO"/>
+    	<typeAlias alias="imSubDTO"		type="egovframework.sam.dto.ImSubDTO"/>
     	
     	<!-- 시험 -->
     	<typeAlias alias="testReq"		type="egovframework.tst.dto.TestDTO$Req"/>
