@@ -130,6 +130,13 @@
 			<version>3.5</version>
 		</dependency>
 
+		<!-- 썸네일 -->
+		<dependency>
+		    <groupId>net.coobird</groupId>
+		    <artifactId>thumbnailator</artifactId>
+		    <version>0.4.20</version>
+		</dependency>
+
 		<!-- <dependency> -->
 		<!-- <groupId>org.hsqldb</groupId> -->
 		<!-- <artifactId>hsqldb</artifactId> -->

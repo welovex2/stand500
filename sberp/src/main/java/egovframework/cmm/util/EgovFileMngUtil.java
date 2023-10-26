@@ -1,5 +1,6 @@
 package egovframework.cmm.util;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -13,11 +14,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.Resource;
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,11 +25,11 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 //import java.util.HashMap;
-
 import egovframework.cmm.service.FileVO;
 import egovframework.raw.dto.PicDTO;
 import egovframework.rte.fdl.idgnr.EgovIdGnrService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import net.coobird.thumbnailator.Thumbnailator;
 
 /**
  * @Class Name  : EgovFileMngUtil.java
@@ -132,9 +132,43 @@ public class EgovFileMngUtil {
 		
 			    if (!"".equals(orginFileName)) {
 					filePath = storePathString + File.separator + newName;
-					MultipartFile reFile = FileResize.compressImage(file, fileExt);
-					_size = reFile.getSize();
-					reFile.transferTo(new File(filePath));
+//					MultipartFile reFile = FileResize.compressImage(file, fileExt);
+//					_size = reFile.getSize();
+					//원본 파일 저장
+//					reFile.transferTo(new File(filePath));
+					//원본파일.transferTo(저장할파일);
+					
+	                //섬네일 생성 (섬네일 파일 이름은 중간에 "s_"로 시작하도록)
+	                File thumbnailFile = new File(filePath);
+
+	                BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
+	                int newWidth = bufferedImage.getWidth();
+	                int newHeight = bufferedImage.getHeight();
+	                
+	                if (file.getSize() >= 2097152) {
+	                  // 변경할 가로 길이
+	                  newWidth = (int) (bufferedImage.getWidth() * 0.3);
+	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
+	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+	                }
+	                else if (file.getSize() >= 512000) {
+	                  // 변경할 가로 길이
+	                  newWidth = (int) (bufferedImage.getWidth() * 0.4);
+	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
+	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+	                }
+	                else if (file.getSize() >= 204800) {
+	                  // 변경할 가로 길이
+                      newWidth = (int) (bufferedImage.getWidth() * 0.5);
+                      // 기존 이미지 비율을 유지하여 세로 길이 설정
+                      newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+	                }
+	                
+	                File orgFile = new File(orginFileName);
+	                file.transferTo(orgFile);
+	                
+	                Thumbnailator.createThumbnail(orgFile, thumbnailFile, newWidth, newHeight);
+
 					System.out.println("리사이즈완료");
 			    }
 		    }
