@@ -145,31 +145,40 @@ public class EgovFileMngUtil {
 	                int newWidth = bufferedImage.getWidth();
 	                int newHeight = bufferedImage.getHeight();
 	                
-	                if (file.getSize() >= 2097152) {
-	                  // 변경할 가로 길이
-	                  newWidth = (int) (bufferedImage.getWidth() * 0.3);
-	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
-	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+	                // 350키로바이트 이하는 변환하지 않음
+	                if (file.getSize() <= 358400) {
+	                  
+	                  // 사진이 작으면 원본 그대로 저장
+	                  file.transferTo(new File(filePath));
+	                  
+	                } else {
+	                  
+    	                if (file.getSize() < 512000) {
+    	                  // 변경할 가로 길이
+    	                  newWidth = (int) (bufferedImage.getWidth() * 0.3);
+    	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
+    	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+    	                }
+    	                else if (file.getSize() < 2097152) {
+    	                  // 변경할 가로 길이
+    	                  newWidth = (int) (bufferedImage.getWidth() * 0.4);
+    	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
+    	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+    	                }
+    	                else {
+    	                  // 변경할 가로 길이
+                          newWidth = (int) (bufferedImage.getWidth() * 0.5);
+                          // 기존 이미지 비율을 유지하여 세로 길이 설정
+                          newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+    	                }
+    	                
+    	                File orgFile = new File(orginFileName);
+    	                file.transferTo(orgFile);
+    	                
+    	                Thumbnailator.createThumbnail(orgFile, thumbnailFile, newWidth, newHeight);
+    
+    					System.out.println("리사이즈완료");
 	                }
-	                else if (file.getSize() >= 512000) {
-	                  // 변경할 가로 길이
-	                  newWidth = (int) (bufferedImage.getWidth() * 0.4);
-	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
-	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
-	                }
-	                else if (file.getSize() >= 204800) {
-	                  // 변경할 가로 길이
-                      newWidth = (int) (bufferedImage.getWidth() * 0.5);
-                      // 기존 이미지 비율을 유지하여 세로 길이 설정
-                      newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
-	                }
-	                
-	                File orgFile = new File(orginFileName);
-	                file.transferTo(orgFile);
-	                
-	                Thumbnailator.createThumbnail(orgFile, thumbnailFile, newWidth, newHeight);
-
-					System.out.println("리사이즈완료");
 			    }
 		    }
 		    
