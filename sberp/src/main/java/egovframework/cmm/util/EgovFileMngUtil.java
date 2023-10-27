@@ -155,7 +155,7 @@ public class EgovFileMngUtil {
 	                  
     	                if (file.getSize() < 512000) {
     	                  // 변경할 가로 길이
-    	                  newWidth = (int) (bufferedImage.getWidth() * 0.3);
+    	                  newWidth = (int) (bufferedImage.getWidth() * 0.5);
     	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
     	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
     	                }
@@ -167,9 +167,9 @@ public class EgovFileMngUtil {
     	                }
     	                else {
     	                  // 변경할 가로 길이
-                          newWidth = (int) (bufferedImage.getWidth() * 0.5);
-                          // 기존 이미지 비율을 유지하여 세로 길이 설정
-                          newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
+    	                  newWidth = (int) (bufferedImage.getWidth() * 0.3);
+    	                  // 기존 이미지 비율을 유지하여 세로 길이 설정
+    	                  newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
     	                }
     	                
     	                File orgFile = new File(orginFileName);
