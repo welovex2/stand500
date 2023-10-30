@@ -78,7 +78,7 @@
     
     <session-config>
     	<!-- 60 = 1시간 , 600 = 10시간 -->
-        <session-timeout>60</session-timeout>
+        <session-timeout>120</session-timeout>
     </session-config>
     
 	<login-config>
