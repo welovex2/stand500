@@ -148,146 +148,144 @@
 	</select>
 		
 	<select id="selectList" parameterType="testReq" resultType="egovMap">
-		SELECT 
-			@rownum:=@rownum+1 as no,
-			lst.*
-		FROM (
-			SELECT
-				#ROW_NUMBER() OVER(ORDER BY TEST_TB.ins_dt) AS no,
-			    TEST_TB.TEST_SEQ,
-			    IFNULL (MEMO_CNT, 0) MEMO_CNT,
-			    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
-			    DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
-			    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
-			    			,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testId,
-			    IFNULL (FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') test_state,
-			    IFNULL (TEST_STATE_TB.STATE_CODE, '') STATE_CODE,
-			    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
-			    '미반입' imPoint,
-			    '0' imSeq,
-			    CMPY_NAME,
-			    TEST_ITEM_TB.PRODUCT,
-				CONCAT_WS(',', IF(SG_NEW_YN=1,'신규',NULL),IF(SG_GB_YN=1,'기술기준 변경',NULL),IF(SG_DG_YN=1,'동일기자재',NULL),IF(SG_ETC_YN=1,'기술기준외 변경',NULL)) sgText,
-				cate1.NAME crtfc1Name,
-			    cate2.NAME crtfc2Name,
-			    cate3.NAME crtfc3Name,
-			    cate4.NAME crtfc4Name,
-			    FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
-			    TEST_STNDR_TB.TEST_STNDR_SEQ,
-			    TEST_STNDR_TB.TEST_STNDR,
-			    TEST_ITEM_TB.MEMO,
-			    TEST_ITEM_TB.MODEL,
-			    IFNULL (FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '-') RevName,
-				IFNULL (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '미배정') TestMngName,
-				IFNULL (FN_POS_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') TestMngPos,
-				IFNULL (TEST_MNGR_TB.TEST_MNG_ID, '') TEST_MNG_ID,
-			    FN_MEM_NAME (SBK_TB.INS_MEM_ID) memName,
-			    IFNULL (RAW_TB.RAW_SEQ, '') raw_Seq,
-			    IFNULL (DATE_FORMAT (IF (TEST_ITEM_TB.TEST_STNDR_SEQ = 10, RAW_TB.REPORT_DT, TEST_TB.TEST_REPORT_DT), '%Y-%m-%d'), '-') REPORT_DT,
-			    IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', CONCAT (FN_DEPT_NAME(TEST_TB.UDT_MEM_ID),' ',FN_MEM_NAME(TEST_TB.UDT_MEM_ID))) REPORT_DT_INS_NAME,
-				IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', DATE_FORMAT (TEST_TB.UDT_DT, '%Y-%m-%d')) REPORT_DT_INS_DT,
-			    '-' rawState
-			    
-			FROM TEST_ITEM_TB
+		SELECT
+		
+		    TEST_TB.TEST_SEQ,
+		    IFNULL (MEMO_CNT, 0) MEMO_CNT,
+		    IFNULL (FILE_CNT, 0) FILE_CNT,
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
+		    DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
+		    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
+		    			,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testId,
+		    IFNULL (FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') test_state,
+		    IFNULL (TEST_STATE_TB.STATE_CODE, '') STATE_CODE,
+		    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
+		    '미반입' imPoint,
+		    '0' imSeq,
+		    CMPY_NAME,
+		    TEST_ITEM_TB.PRODUCT,
+			CONCAT_WS(',', IF(SG_NEW_YN=1,'신규',NULL),IF(SG_GB_YN=1,'기술기준 변경',NULL),IF(SG_DG_YN=1,'동일기자재',NULL),IF(SG_ETC_YN=1,'기술기준외 변경',NULL)) sgText,
+			cate1.NAME crtfc1Name,
+		    cate2.NAME crtfc2Name,
+		    cate3.NAME crtfc3Name,
+		    cate4.NAME crtfc4Name,
+		    FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
+		    TEST_STNDR_TB.TEST_STNDR_SEQ,
+		    TEST_STNDR_TB.TEST_STNDR,
+		    TEST_ITEM_TB.MEMO,
+		    TEST_ITEM_TB.MODEL,
+		    IFNULL (FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '-') RevName,
+			IFNULL (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '미배정') TestMngName,
+			IFNULL (FN_POS_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') TestMngPos,
+			IFNULL (TEST_MNGR_TB.TEST_MNG_ID, '') TEST_MNG_ID,
+		    FN_MEM_NAME (SBK_TB.INS_MEM_ID) memName,
+		    IFNULL (RAW_TB.RAW_SEQ, '') raw_Seq,
+		    IFNULL (DATE_FORMAT (IF (TEST_ITEM_TB.TEST_STNDR_SEQ = 10, RAW_TB.REPORT_DT, TEST_TB.TEST_REPORT_DT), '%Y-%m-%d'), '-') REPORT_DT,
+		    IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', CONCAT (FN_DEPT_NAME(TEST_TB.UDT_MEM_ID),' ',FN_MEM_NAME(TEST_TB.UDT_MEM_ID))) REPORT_DT_INS_NAME,
+			IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', DATE_FORMAT (TEST_TB.UDT_DT, '%Y-%m-%d')) REPORT_DT_INS_DT,
+		    '-' rawState
+		    
+		FROM TEST_ITEM_TB
+		
+			INNER JOIN TEST_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		    
+		    INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+		    
+		    INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM
+		    AND JOB_TB.SBK_TYPE = SBK_TB.TYPE
+		    AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ
+		    AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+		     
+			INNER JOIN TEST_STNDR_TB
+			ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+		            
+		    LEFT JOIN TEST_CATE_TB cate4 ON TEST_ITEM_TB.CRTF_TYPE_SEQ = cate4.TEST_CATE_SEQ
+		    LEFT JOIN TEST_CATE_TB cate3 ON cate4.TOP_DEPTH_SEQ = cate3.TEST_CATE_SEQ
+		    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
+		    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
 			
-				INNER JOIN TEST_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
-			    
-			    INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
-			    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
-			    
-			    INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM
-			    AND JOB_TB.SBK_TYPE = SBK_TB.TYPE
-			    AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ
-			    AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
-			     
-				INNER JOIN TEST_STNDR_TB
-				ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
-			            
-			    LEFT JOIN TEST_CATE_TB cate4 ON TEST_ITEM_TB.CRTF_TYPE_SEQ = cate4.TEST_CATE_SEQ
-			    LEFT JOIN TEST_CATE_TB cate3 ON cate4.TOP_DEPTH_SEQ = cate3.TEST_CATE_SEQ
-			    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
-			    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
-				
-			    LEFT JOIN TEST_STATE_TB
-	            ON TEST_STATE_TB.TEST_STATE_SEQ = (
-									SELECT TEST_STATE_SEQ
-	                                FROM TEST_STATE_TB SUB
-	                                WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
-	                                ORDER BY TEST_STATE_SEQ DESC
-	                                LIMIT 1
-	            )
-	            
-			    LEFT JOIN TEST_MNGR_TB
-	            ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
-									SELECT TEST_MNGR_SEQ
-	                                FROM TEST_MNGR_TB SUB
-	                                WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
-	                                ORDER BY TEST_MNGR_SEQ DESC
-	                                LIMIT 1
-	            )
-	            
-	            LEFT JOIN RAW_TB
-	            ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
-	            
-	            /* 게시판 게시글 갯수 */
-                LEFT JOIN (SELECT TEST_SEQ, COUNT(1) MEMO_CNT FROM TEST_MEMO_TB GROUP BY TEST_MEMO_TB.TEST_SEQ) TEST_MEMO_TB
-                ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
-                
-	            INNER JOIN (SELECT @rownum:=0) r
-			WHERE 1=1
-			AND TEST_ITEM_TB.STATE != 'D'
-			<if test="searchVO != null">
-		        <foreach collection="searchVO" item="item" separator="">
-		        	<choose>
-						<!-- 6	제품명 -->
-						<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 7	고지부담당자 -->
-						<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 8	기술책임자 -->
-						<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 9	시험담당자 -->
-						<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 12	업체명 -->
-						<when test="item.searchCode == 12">and IFNULL(CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 18	시험배정일 -->
-						<when test="item.searchCode == 18">and DATE_FORMAT(TEST_TB.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-						<!-- 20	예상완료일 -->
-						<when test="item.searchCode == 20">and DATE_FORMAT(SBK_TB.est_cmp_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-						<!-- 22	신청구분 -->
-						<when test="item.searchCode == 22">
-							<choose>
-								<when test="item.searchWord == 1">and SG_NEW_YN=1</when>
-								<when test="item.searchWord == 2">and SG_GB_YN=1</when>
-								<when test="item.searchWord == 3">and SG_DG_YN=1</when>
-								<when test="item.searchWord == 4">and SG_ETC_YN=1</when>
-							</choose>
-						</when>
-						<!-- 35	국가-->
-						<when test="item.searchCode == 35">and cate1.TEST_CATE_SEQ = #{item.searchWord}</when>
-						<!-- 36	인증종류1 -->
-						<when test="item.searchCode == 36">and cate2.TEST_CATE_SEQ = #{item.searchWord}</when>
-						<!-- 37	인증종류2 -->
-						<when test="item.searchCode == 37">and cate3.TEST_CATE_SEQ = #{item.searchWord}</when>
-						<!-- 38	인증종류3 -->
-						<when test="item.searchCode == 38">and cate4.TEST_CATE_SEQ = #{item.searchWord}</when>
-						<!-- 23	시험부 -->
-						<when test="item.searchCode == 23">and if(TEST_TB.TEST_SEQ is null, '9999', TEST_ITEM_TB.TEST_TYPE_CODE) = #{item.searchWord}</when>
-						<!-- 26	로데이터 -->
-						<when test="item.searchCode == 26"></when>
-						<!-- 27	모델명 -->
-						<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 31	시험상태 -->
-						<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when>
-						<!-- 50	시험번호 -->
-						<when test="item.searchCode == 50">and CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
-			    														,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
-		        	</choose>
-				</foreach>
-			</if>
-	        ORDER BY TEST_TB.INS_DT
-	    ) lst
-	    order by no desc
-        LIMIT #{pageUnit} OFFSET #{firstIndex};
+		    LEFT JOIN TEST_STATE_TB
+            ON TEST_STATE_TB.TEST_STATE_SEQ = (
+								SELECT TEST_STATE_SEQ
+                                FROM TEST_STATE_TB SUB
+                                WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
+                                ORDER BY TEST_STATE_SEQ DESC
+                                LIMIT 1
+            )
+            
+		    LEFT JOIN TEST_MNGR_TB
+            ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
+								SELECT TEST_MNGR_SEQ
+                                FROM TEST_MNGR_TB SUB
+                                WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
+                                ORDER BY TEST_MNGR_SEQ DESC
+                                LIMIT 1
+            )
+            
+            LEFT JOIN RAW_TB
+            ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
+            
+            /* 게시판 게시글 갯수 */
+            LEFT JOIN (SELECT TEST_SEQ, COUNT(1) MEMO_CNT FROM TEST_MEMO_TB GROUP BY TEST_MEMO_TB.TEST_SEQ) TEST_MEMO_TB
+            ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
+               
+           	/* 첨부파일 갯수 */
+            LEFT JOIN (SELECT TEST_SEQ, COUNT(1) FILE_CNT FROM FILE_RAW_TB GROUP BY FILE_RAW_TB.TEST_SEQ) FILE_RAW_TB
+            ON TEST_TB.TEST_SEQ = FILE_RAW_TB.TEST_SEQ
+               
+		WHERE 1=1
+		AND TEST_ITEM_TB.STATE != 'D'
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	        	<choose>
+					<!-- 6	제품명 -->
+					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 7	고지부담당자 -->
+					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 8	기술책임자 -->
+					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 9	시험담당자 -->
+					<when test="item.searchCode == 9">and IFNULL(FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 12	업체명 -->
+					<when test="item.searchCode == 12">and IFNULL(CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 18	시험배정일 -->
+					<when test="item.searchCode == 18">and DATE_FORMAT(TEST_TB.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 20	예상완료일 -->
+					<when test="item.searchCode == 20">and DATE_FORMAT(SBK_TB.est_cmp_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 22	신청구분 -->
+					<when test="item.searchCode == 22">
+						<choose>
+							<when test="item.searchWord == 1">and SG_NEW_YN=1</when>
+							<when test="item.searchWord == 2">and SG_GB_YN=1</when>
+							<when test="item.searchWord == 3">and SG_DG_YN=1</when>
+							<when test="item.searchWord == 4">and SG_ETC_YN=1</when>
+						</choose>
+					</when>
+					<!-- 35	국가-->
+					<when test="item.searchCode == 35">and cate1.TEST_CATE_SEQ = #{item.searchWord}</when>
+					<!-- 36	인증종류1 -->
+					<when test="item.searchCode == 36">and cate2.TEST_CATE_SEQ = #{item.searchWord}</when>
+					<!-- 37	인증종류2 -->
+					<when test="item.searchCode == 37">and cate3.TEST_CATE_SEQ = #{item.searchWord}</when>
+					<!-- 38	인증종류3 -->
+					<when test="item.searchCode == 38">and cate4.TEST_CATE_SEQ = #{item.searchWord}</when>
+					<!-- 23	시험부 -->
+					<when test="item.searchCode == 23">and if(TEST_TB.TEST_SEQ is null, '9999', TEST_ITEM_TB.TEST_TYPE_CODE) = #{item.searchWord}</when>
+					<!-- 26	로데이터 -->
+					<when test="item.searchCode == 26"></when>
+					<!-- 27	모델명 -->
+					<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 31	시험상태 -->
+					<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+					<!-- 50	시험번호 -->
+					<when test="item.searchCode == 50">and CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
+		    														,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
+	        	</choose>
+			</foreach>
+		</if>
+        ORDER BY TEST_TB.TEST_SEQ DESC
+      		LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
 	
 	<select id="testMemList" parameterType="String" resultType="egovMap">
