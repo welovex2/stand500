@@ -117,6 +117,9 @@ public class Cmpy {
   @Column
   private String memo;
 
+  @ApiModelProperty(value="게시물 첨부파일 아이디 ", example = "")
+  @Column
+  private String atchFileId;
 
   @ApiModelProperty(value = "등록자 아이디 ", example = "")
   @Column

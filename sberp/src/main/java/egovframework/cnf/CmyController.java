@@ -3,11 +3,15 @@ package egovframework.cnf;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.apache.poi.util.StringUtil;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,13 +19,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.EgovFileMngService;
+import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
+import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmyService;
@@ -38,6 +47,12 @@ public class CmyController {
   @Resource(name = "CmyService")
   private CmyService cmyService;
 
+  @Resource(name = "EgovFileMngUtil")
+  private EgovFileMngUtil fileUtil;
+
+  @Resource(name = "EgovFileMngService")
+  private EgovFileMngService fileMngService;
+  
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
@@ -112,10 +127,10 @@ public class CmyController {
   @ApiOperation(value = "협력사/직접고객 등록")
   @PostMapping(value = "/{type}/insert.do")
   public BasicResponse insert(
-      @ApiParam(value = "partner(협력사)/direct(직접고객)", required = true,
-          example = "partner") @PathVariable(name = "type") String type,
-      @ApiParam(value = "typeCode=협력사 공통코드(PK), 직고객 공통코드(ST)", required = true,
-          example = "") @RequestBody CmpyDTO req)
+      @ApiParam(value = "partner(협력사)/direct(직접고객)", required = true, example = "partner") @PathVariable(name = "type") String type,
+      @ApiParam(value = "typeCode=협력사 공통코드(PK), 직고객 공통코드(ST)", required = true, example = "") @RequestPart CmpyDTO req,
+      @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
+      @RequestPart(value = "files", required = false) final List<MultipartFile> files)
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -150,6 +165,43 @@ public class CmyController {
 
     boolean result = false;
 
+    // 파일처리
+    List<FileVO> FileResult = null;
+    String atchFileId = "";
+    if (!ObjectUtils.isEmpty(files)) {
+      
+      // 신규
+      if (StringUtils.isEmpty(req.getAtchFileId())) {
+        FileResult = fileUtil.parseFile(files, "CMY", 0, "", "");
+        atchFileId = fileMngService.insertFileInfs(FileResult);
+        req.setAtchFileId(atchFileId);
+      }
+      // 수정
+      else {
+        // 현재 등록된 파일 수 가져오기
+        FileVO fvo = new FileVO();
+        fvo.setAtchFileId(req.getAtchFileId());
+        int cnt = fileMngService.getMaxFileSN(fvo);
+        
+        // 추가파일 등록
+        List<FileVO> _result = fileUtil.parseFile(files, "CMY", cnt, req.getAtchFileId(), "");
+        fileMngService.updateFileInfs(_result);
+      }
+      
+    }
+    
+    // 파일삭제
+    FileVO delFile = null;
+    if (!ObjectUtils.isEmpty(delFileList)) {
+      for (FileVO del : delFileList) {
+        delFile = new FileVO();
+        delFile.setAtchFileId(del.getAtchFileId());
+        delFile.setFileSn(del.getFileSn());
+        fileMngService.deleteFileInf(delFile);
+      }
+    }
+    //-- END 파일처리
+    
     result = cmyService.insert(req);
 
     BasicResponse res = BasicResponse.builder().result(result).build();
@@ -183,6 +235,17 @@ public class CmyController {
       msg = ResponseMessage.NO_DATA;
     }
 
+    // 파일리스트
+    FileVO fileVO = new FileVO();
+    fileVO.setAtchFileId(detail.getAtchFileId());
+    List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
+    docResult.stream().map(doc -> {
+      doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
+          .concat("&fileSn=").concat(doc.getFileSn()));
+      return doc;
+    }).collect(Collectors.toList());
+    detail.setFileList(docResult);
+    
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
