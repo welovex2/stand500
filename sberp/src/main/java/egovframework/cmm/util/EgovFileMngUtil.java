@@ -148,6 +148,7 @@ public class EgovFileMngUtil {
 	                // 350키로바이트 이하는 변환하지 않음
 	                if (file.getSize() <= 358400) {
 	                  
+	                  _size = file.getSize();
 	                  // 사진이 작으면 원본 그대로 저장
 	                  file.transferTo(new File(filePath));
 	                  
@@ -176,7 +177,8 @@ public class EgovFileMngUtil {
     	                file.transferTo(orgFile);
     	                
     	                Thumbnailator.createThumbnail(orgFile, thumbnailFile, newWidth, newHeight);
-    
+    	                _size = thumbnailFile.length();
+    	                
     					System.out.println("리사이즈완료");
 	                }
 			    }
