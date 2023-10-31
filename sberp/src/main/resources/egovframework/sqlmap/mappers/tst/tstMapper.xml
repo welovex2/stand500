@@ -150,6 +150,7 @@
 	<select id="selectList" parameterType="testReq" resultType="egovMap">
 		SELECT
 		
+			TEST_TB.TEST_SEQ NO,
 		    TEST_TB.TEST_SEQ,
 		    IFNULL (MEMO_CNT, 0) MEMO_CNT,
 		    IFNULL (FILE_CNT, 0) FILE_CNT,
