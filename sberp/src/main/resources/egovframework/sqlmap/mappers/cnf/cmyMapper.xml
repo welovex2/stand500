@@ -42,7 +42,7 @@
 					CMPY_SEQ,
 					date_format (CMPY_TB.INS_DT, '%Y-%m-%d') insDtStr,
 					lpad (CMPY_TB.cmpy_seq, 4, '0') cmpySeq,
-					CMPY_TB.cmpy_name,
+					CMPY_TB.CMPY_NAME,
 					ifnull (FN_CODE_NAME (type_code, 'PK'), '') partnerType,
 					ifnull (FN_CODE_NAME (type_code, 'ST'), '') directType,
 					ifnull (FN_CODE_NAME (cntry_code, 'SN'), '') cntry,
@@ -64,7 +64,7 @@
 			        		<!-- 12	회사명 -->
 			        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) like concat('%',LOWER (#{item.searchWord}),'%')</when>
 							<!-- 13	회사연락처 -->
-							<when test="item.searchCode == 13">AND REPLACE(CMPY_PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 13">AND replace(CMPY_PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
 							<!-- 41	회사종류 -->
 							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
 							<!-- 15	작성일 -->
@@ -274,12 +274,14 @@
 			SELECT
 				lpad (CMPY_TB.cmpy_seq, 4, '0') cmpySeq,
 			    cmpy_name,
-			    ifnull (FN_CODE_NAME (type_code, 'PK'), '') type
+			    <if test="cmpyCode == '0000'">ifnull (FN_CODE_NAME (type_code, 'PK'), '') type</if>
+			    <if test="cmpyCode == '1000'">ifnull (FN_CODE_NAME (type_code, 'ST'), '') type</if>
 			FROM CMPY_TB 
 			WHERE 1=1
 			AND CMPY_CODE = #{cmpyCode}
-			AND CMPY_NAME regexp concat('[',#{cmpyName},']{2}')
-			order by CMPY_TB.cmpy_seq
+			#AND CMPY_NAME regexp concat('[','',']{2}')
+			AND replace(CMPY_NAME, ' ', '') like CONCAT('%',replace(#{cmpyName}, ' ', ''),'%')
+			ORDER BY CMPY_TB.CMPY_SEQ
 			) lst
 		order by no desc
 			
