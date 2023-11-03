@@ -3,6 +3,7 @@ package egovframework.raw.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,7 @@ public class RawServiceImpl implements RawService {
 
   @Autowired
   EgovPropertyService propertyService;
+
   
   @Override
   @Transactional
@@ -335,8 +337,82 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
-  public RawData detail(int testSeq) {
-    return rawMapper.detail(testSeq);
+  public int getTestSeq(String testId) {
+    return rawMapper.getTestSeq(testId);
+  }
+  
+  @Override
+  public RawData detail(int testSeq) throws Exception {
+    
+    RawData detail = new RawData();
+
+    detail = rawMapper.detail(testSeq);
+    
+    if (detail != null) {
+      /* 세부데이터 추가로 가지고 오기 */
+      // 4-1. Technical Requirements (기술적 요구항목)
+      detail.setRawTchnList(tchnList(detail.getRawSeq()));
+      // 4-2. method (시험방법)
+      detail.setMethodList(methodList(detail.getRawSeq()));
+      // 6. Technical specifications (기술제원)
+      detail.setRawSpecList(specList(detail.getRawSeq()));
+      // 8. EUT Modifications (보완사항) - 파일리스트
+      FileVO fileVO = new FileVO();
+      fileVO.setAtchFileId(detail.getModUrl());
+      List<FileVO> modResult = fileMngService.selectImageFileList(fileVO);
+      // detail.setModFileList(modReulst.stream().map(FileVO::getFileSn).collect(Collectors.toList()));
+      List<PicDTO> modList = new ArrayList<PicDTO>();
+      if (modResult != null) {
+        for (FileVO item : modResult) {
+          PicDTO map = new PicDTO();
+          
+          if ("CDN".contentEquals(item.getFileLoc())) {
+            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+          } else {
+            map.setImageUrl(propertyService.getString("img.url").concat(detail.getModUrl()).concat("&fileSn=")
+                .concat(item.getFileSn()));
+          }
+          map.setFileSn(item.getFileSn());
+          
+          modList.add(map);
+        }
+      }
+      detail.setModFileList(modList);
+      // 9. Assistance Device and Cable(시험기기 전체구성)
+      detail.setRawAsstnList(asstnList(detail.getRawSeq()));
+      // 10. System Configuration (시스템구성)
+      detail.setRawSysList(sysList(detail.getRawSeq()));
+      // 11. Type of Cable Used (접속 케이블)
+      detail.setRawCableList(cableList(detail.getRawSeq()));
+      // 14. Test Set-up Configuraiotn for EUT - 타이틀&파일 리스트
+      fileVO = new FileVO();
+      fileVO.setAtchFileId(detail.getSetupUrl());
+      List<FileVO> setupReulst = fileMngService.selectImageFileList(fileVO);
+      List<PicDTO> setupList = new ArrayList<PicDTO>();
+      if (setupReulst != null) {
+        for (FileVO item : setupReulst) {
+          PicDTO map = new PicDTO();
+          map.setTitle(item.getFileCn());
+          
+          if ("CDN".contentEquals(item.getFileLoc())) {
+            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+          } else {
+            map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
+                .concat("&fileSn=").concat(item.getFileSn()));
+          }
+          map.setFileSn(item.getFileSn());
+          
+          setupList.add(map);
+
+        }
+      }
+      detail.setSetupList(setupList);
+
+    }
+  
+    return detail;
   }
 
   @Override

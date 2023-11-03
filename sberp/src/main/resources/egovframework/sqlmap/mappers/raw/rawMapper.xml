@@ -442,7 +442,24 @@
 			UDT_DT = NOW()
 		WHERE RAW_SEQ = #{rawSeq}
 	</update>
-	
+
+	<select id="getTestSeq" parameterType="String" resultType="int">
+		SELECT
+		    RAW_TB.TEST_SEQ
+		FROM
+		    RAW_TB
+		    INNER JOIN TEST_TB ON RAW_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+		WHERE
+		    1 = 1
+            
+        AND CONCAT (
+			      SBK_ID,
+			      '-',
+			      CONCAT (TEST_TB.TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
+			  ) = #{testId}
+		    
+	</select>
+		
 	<select id="detail" parameterType="int" resultType="rawData">
 		SELECT
 		    RAW_SEQ,

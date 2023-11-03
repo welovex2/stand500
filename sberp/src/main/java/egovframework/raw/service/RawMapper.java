@@ -50,6 +50,8 @@ public interface RawMapper {
 	
 	public boolean update(RawData req);
 
+	public int getTestSeq(String testId);
+	
 	public RawData detail(int testSeq);
 
 	public List<RawTchn> tchnList(int rawSeq);

@@ -39,7 +39,9 @@ public interface RawService {
 	
 	EsdDTO esdDetail(int rawSeq) throws Exception;
 
-	RawData detail(int testSeq);
+	int getTestSeq(String testId);
+	
+	RawData detail(int testSeq) throws Exception;
 
 	RsDTO rsDetail(int rawSeq);
 
