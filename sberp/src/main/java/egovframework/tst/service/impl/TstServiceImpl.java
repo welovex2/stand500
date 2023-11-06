@@ -54,7 +54,14 @@ public class TstServiceImpl implements TstService {
 
   @Override
   public List<Res> selectList(ComParam param) {
-    return tstMapper.selectList(param);
+    List<Res> result = tstMapper.selectList(param);
+    
+    // 번호 매기기
+    for (int i=0; i<result.size(); i++) {
+      result.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    
+    return result; 
   }
 
   @Override

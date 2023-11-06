@@ -106,5 +106,64 @@ public class TestDTO {
     @Column
     private String stateUdtDt;
     
+    @ApiModelProperty(value = "게시판 글갯수", example = "1")
+    private int memoCnt;
+    
+    @ApiModelProperty(value = "첨부파일 갯수", example = "1")
+    private int fileCnt;
+    
+    @ApiModelProperty(value = "시험배정일", example = "")
+    private String insDtStr;
+    
+    @ApiModelProperty(value = "시험번호", example = "")
+    private String testId;
+    
+    @ApiModelProperty(value = "시험상태", example = "")
+    private String testState;
+    
+    @ApiModelProperty(value = "제품명", example = "")
+    private String product;
+    
+    @ApiModelProperty(value = "모델명", example = "")
+    private String model;
+    
+    @ApiModelProperty(value = "인증종류1", example = "")
+    private String crtfc1Name;
+    
+    @ApiModelProperty(value = "인증종류2", example = "")
+    private String crtfc2Name;
+    
+    @ApiModelProperty(value = "인증종류3", example = "")
+    private String crtfc3Name;
+    
+    @ApiModelProperty(value = "인증종류4", example = "")
+    private String crtfc4Name;
+    
+    @ApiModelProperty(value = "시험부", example = "")
+    private String testType;
+    
+    @ApiModelProperty(value = "시험규격", example = "")
+    private String testStndr;
+    
+    @ApiModelProperty(value = "시험규격번호", example = "")
+    private String testStndrSeq;
+    
+    @ApiModelProperty(value = "기술책임자", example = "")
+    private String revname;
+    
+    @ApiModelProperty(value = "시험담당자", example = "")
+    private String testmngname;
+    
+    @ApiModelProperty(value = "시험담당자 직위", example = "")
+    private String testmngpos;
+    
+    @ApiModelProperty(value = "고지부담당자", example = "")
+    private String memName;
+    
+    @ApiModelProperty(value = "로데이터번호", example = "")
+    private int rawSeq;
+     
+    @ApiModelProperty(value = "참고메모", example = "")
+    private String memo;
   }
 }

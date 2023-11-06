@@ -144,6 +144,7 @@ public class TstController {
     param.setFirstIndex(pagingVO.getFirstRecordIndex());
     int cnt = tstService.selectListCnt(param);
 
+    param.setTotalCount(cnt);
     pagingVO.setTotalCount(cnt);
     pagingVO.setTotalPage(
         (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
