@@ -820,6 +820,8 @@
 	        		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
 	        		<!-- 24	기책서명 -->
 	        		<when test="item.searchCode == 24">AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '3') = #{item.searchWord}</when>
+	        		<!-- 40	시험규격 -->
+	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 	        		<!-- 57	프로젝트상태 -->
 	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 	        		<!-- 58	프로젝트상태변경일 -->
@@ -1054,6 +1056,8 @@
 			        		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
 			        		<!-- 24	기책서명 -->
 			        		<when test="item.searchCode == 24">AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '3') = #{item.searchWord}</when>
+			        		<!-- 40	시험규격 -->
+	        				<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 			        		<!-- 57	프로젝트상태 -->
 			        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 			        		<!-- 58	프로젝트상태변경일 -->

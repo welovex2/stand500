@@ -51,6 +51,8 @@
 					<when test="item.searchCode ==  6">AND IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 					<!-- 27	모델명 -->
 		        	<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+		        	<!-- 40	시험규격 -->
+	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 				</choose>
 	        </foreach>
         </if>
@@ -147,6 +149,8 @@
 						<when test="item.searchCode ==  6">AND IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 27	모델명 -->
 			        	<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+			        	<!-- 40	시험규격 -->
+	        			<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 		        	</choose>
 		        	
 		        </foreach>
