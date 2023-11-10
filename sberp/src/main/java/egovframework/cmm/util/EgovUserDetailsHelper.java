@@ -92,7 +92,12 @@ public class EgovUserDetailsHelper {
         System.out.println("쓰기권한="+p.isWYn());
         System.out.println("///////////////////////////////////////////");
 
-        if (!p.isRYn() && (thisUrl.toLowerCase().indexOf("list") > -1 
+        // 신청서 디테일은 권한 없이 볼수 있게 함.
+        if ("sbk".equals(p.getMenuCode())
+              && thisUrl.toLowerCase().indexOf("detail") > -1) {
+          return Boolean.TRUE;
+        }
+        else if (!p.isRYn() && (thisUrl.toLowerCase().indexOf("list") > -1 
                             || thisUrl.toLowerCase().indexOf("detail") > -1
                             || thisUrl.toLowerCase().indexOf("excel") > -1)) {
           System.out.println("R 권한없음");

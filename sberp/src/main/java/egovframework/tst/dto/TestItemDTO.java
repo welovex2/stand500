@@ -12,6 +12,10 @@ import lombok.Setter;
 @ApiModel(description = "시험항목 및 비용")
 public class TestItemDTO extends TestItem {
 
+  @ApiModelProperty(value = "시험번호", example = "")
+  @Column
+  private String testId;
+  
   @ApiModelProperty(value = "인증종류(국가)", example = "")
   @Column
   private String crtfc1;

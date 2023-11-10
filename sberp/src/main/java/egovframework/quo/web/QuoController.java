@@ -362,6 +362,7 @@ public class QuoController {
       } else {
 
         // 견적서 생성
+        req.setVatYn(1);
         result = quoService.insert(req);
 
         // 견적서 정보 보내주기

@@ -76,15 +76,6 @@
 		    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
 		    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
 		    
-		    left join TEST_STATE_TB
-            on TEST_STATE_TB.TEST_STATE_SEQ = (
-								select TEST_STATE_SEQ
-                                from TEST_STATE_TB sub
-                                where sub.TEST_SEQ = TEST_TB.TEST_SEQ
-                                order by TEST_STATE_SEQ desc
-                                limit 1
-            )
-            
             left join TEST_MNGR_TB
             on TEST_MNGR_TB.TEST_MNGR_SEQ = (
 								select TEST_MNGR_SEQ
@@ -137,7 +128,7 @@
 					<!-- 27	모델명 -->
 					<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 31	시험상태 -->
-					<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+					<when test="item.searchCode == 31">and TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when>
 					<!-- 40	시험규격 -->
 	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 50	시험번호 -->
@@ -159,8 +150,8 @@
 		    DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
 		    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
 		    			,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testId,
-		    IFNULL (FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') test_state,
-		    IFNULL (TEST_STATE_TB.STATE_CODE, '') STATE_CODE,
+		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
+		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
 		    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 		    '미반입' imPoint,
 		    '0' imSeq,
@@ -207,15 +198,6 @@
 		    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
 		    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
 			
-		    LEFT JOIN TEST_STATE_TB
-            ON TEST_STATE_TB.TEST_STATE_SEQ = (
-								SELECT TEST_STATE_SEQ
-                                FROM TEST_STATE_TB SUB
-                                WHERE SUB.TEST_SEQ = TEST_TB.TEST_SEQ
-                                ORDER BY TEST_STATE_SEQ DESC
-                                LIMIT 1
-            )
-            
 		    LEFT JOIN TEST_MNGR_TB
             ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
 								SELECT TEST_MNGR_SEQ
@@ -279,7 +261,7 @@
 					<!-- 27	모델명 -->
 					<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 31	시험상태 -->
-					<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when>
+					<when test="item.searchCode == 31">and TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when>
 					<!-- 40	시험규격 -->
 	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 50	시험번호 -->
@@ -369,6 +351,15 @@
 		);
 	</insert>
 
+	<update id="testStateUpdate" parameterType="testReq">
+		UPDATE TEST_TB
+		SET
+			TEST_STATE_CODE = #{stateCode},
+			UDT_MEM_ID = #{udtMemId},
+			UDT_DT = NOW()
+		WHERE TEST_SEQ = #{testSeq}
+	</update>
+	
 	<select id="testBoardList" parameterType="String" resultType="egovMap">
 		select
 			date_format(TEST_MEMO_TB.ins_dt, '%Y-%m-%d %T') instDtStr,
@@ -495,15 +486,6 @@
                 INNER JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
 			    INNER JOIN TEST_STNDR_TB on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
                   
-                LEFT JOIN TEST_STATE_TB
-	            ON TEST_STATE_TB.TEST_STATE_SEQ = (
-									SELECT TEST_STATE_SEQ
-	                                FROM TEST_STATE_TB sub
-	                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
-	                                ORDER BY TEST_STATE_SEQ DESC
-	                                LIMIT 1
-	            )
-                      
                 LEFT JOIN TEST_MNGR_TB
 				ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
 									SELECT TEST_MNGR_SEQ
@@ -563,7 +545,7 @@
 						<!-- 23	시험부 -->
 						<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
 						<!-- 31	시험상태 -->
-						<when test="item.searchCode == 31">AND TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+						<when test="item.searchCode == 31">AND TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when> 
 						<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 5	견적서번호 -->
@@ -615,6 +597,7 @@
 		<collection property="items" ofType="testItemDTO">
         	<id column="test_item_seq" property="testItemSeq"/>
         	<result column="test_seq" property="testSeq"/>
+        	<result column="testId" property="testId"/>
         	<result column="crtfc1" property="crtfc1"/>
 	        <result column="crtfc1Name" property="crtfc1Name"/>
     	    <result column="crtfc2" property="crtfc2"/>
@@ -677,6 +660,8 @@
 					    
 					    /* 시험항목 및 비용 */
 					    TEST_TB.TEST_SEQ,
+					    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
+		    					,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testId,
 					    TEST_ITEM_TB.TEST_ITEM_SEQ,
 					    cate1.TEST_CATE_SEQ crtfc1,
 					    cate2.TEST_CATE_SEQ crtfc2,
@@ -696,7 +681,7 @@
 					    IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) testMem,
                         FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
                          
-					    IFNULL (FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') testState,
+					    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') testState,
 						TEST_ITEM_TB.NET_SALES netSales,
 
 						IFNULL (MEMO_CNT, 0) memoCnt,
@@ -728,15 +713,6 @@
 					    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
 					    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
 					    
-					    LEFT JOIN TEST_STATE_TB
-			            ON TEST_STATE_TB.TEST_STATE_SEQ = (
-											SELECT TEST_STATE_SEQ
-			                                FROM TEST_STATE_TB sub
-			                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
-			                                ORDER BY TEST_STATE_SEQ DESC
-			                                LIMIT 1
-			            )
-                        
                         LEFT JOIN TEST_MNGR_TB
 						ON TEST_MNGR_TB.TEST_MNGR_SEQ = (
 											SELECT TEST_MNGR_SEQ
@@ -802,7 +778,7 @@
 						<!-- 23	시험부 -->
 						<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
 						<!-- 31	시험상태 -->
-						<when test="item.searchCode == 31">AND TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+						<when test="item.searchCode == 31">AND TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when> 
 						<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 5	견적서번호 -->

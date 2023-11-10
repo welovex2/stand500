@@ -42,4 +42,6 @@ public interface TstMapper {
   public List<Res> selectSaleList(ComParam param);
 
   public int selectSaleListCnt(ComParam param);
+
+  public boolean testStateUpdate(Req req);
 }

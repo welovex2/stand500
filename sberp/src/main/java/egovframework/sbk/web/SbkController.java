@@ -523,9 +523,15 @@ public class SbkController {
       row.getCell(3).setCellValue(detail.getModelName().trim());               // 모델명
       row.getCell(10).setCellValue(detail.getAthntNmbr().trim());            // 인증번호
       
+      // 신청서 엑셀 다운로드 기능 (#18) 파생모델란 추가
+      row = sheet.getRow(10);
+      row.getCell(10).setCellValue(detail.getExtendModel().trim());               // 파생모델
+      
       row = sheet.getRow(15);
       row.getCell(3).setCellValue(detail.getMnfctCmpny().trim());               // 회사명
       row.getCell(10).setCellValue(detail.getMnfctCntry().trim());              // 제조국
+      
+      
       
   //    int lastColNum = row.getLastCellNum(); // 마지막 칼럼의 index 를 구한다
   //    row.createCell(lastColNum).setCellValue("메뉴4"); // 칼럼을 생성한다

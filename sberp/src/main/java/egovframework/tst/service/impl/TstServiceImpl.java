@@ -89,6 +89,9 @@ public class TstServiceImpl implements TstService {
       dto.setInsMemId(req.getInsMemId());
       dbgMapper.insert(dto);
     }
+    
+    // (#18) 시험상태 변경시, 시험테이블에 최신상태 SEQ 업데이트
+    tstMapper.testStateUpdate(req);
 
     return result;
   }

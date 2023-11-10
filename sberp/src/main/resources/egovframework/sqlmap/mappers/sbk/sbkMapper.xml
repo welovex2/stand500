@@ -741,14 +741,6 @@
 		    
 		    LEFT JOIN TEST_TB
 		    ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
-		    LEFT JOIN TEST_STATE_TB
-            ON TEST_STATE_TB.TEST_STATE_SEQ = (
-								SELECT TEST_STATE_SEQ
-                                FROM TEST_STATE_TB sub
-                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
-                                ORDER BY TEST_STATE_SEQ DESC
-                                LIMIT 1
-            )
 		    LEFT JOIN 
             (
 			    SELECT 
@@ -806,7 +798,7 @@
 					<!-- 25	시험배정 -->
 					<when test="item.searchCode == 25">and if(TEST_TB.TEST_SEQ is null, '9999', TEST_ITEM_TB.TEST_TYPE_CODE) = #{item.searchWord}</when>
 					<!-- 31	시험상태 -->
-					<when test="item.searchCode == 31">and TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+					<when test="item.searchCode == 31">and TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when> 
 					<!-- 27	모델명 -->
 	        		<when test="item.searchCode == 27">and IFNULL(TEST_ITEM_TB.model, '') like concat('%',#{item.searchWord},'%')</when>
        				<!-- 56	신청서구분 -->
@@ -952,7 +944,7 @@
 					    IFNULL (FN_DEPT_NAME(TEST_TB.INS_MEM_ID), '') testMemDept,
 					    CONCAT(FN_POS_NAME(TEST_TB.INS_MEM_ID), ' ',FN_MEM_NAME (TEST_TB.INS_MEM_ID)) testMem,
                         IFNULL (DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d'), '') testInDt,
-					    IFNULL(FN_CODE_NAME(TEST_STATE_TB.STATE_CODE,'TS'), '-') rawYn,
+					    IFNULL(FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') rawYn,
 					    IFNULL (TEST_TB.TEST_SEQ, 0) TEST_SEQ,
 					    if (
 					        TEST_TB.TEST_SEQ IS NULL,
@@ -975,14 +967,6 @@
 					    LEFT JOIN TEST_CATE_TB cate2 ON cate3.TOP_DEPTH_SEQ = cate2.TEST_CATE_SEQ
 					    LEFT JOIN TEST_CATE_TB cate1 ON cate2.TOP_DEPTH_SEQ = cate1.TEST_CATE_SEQ
 					    LEFT JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
-					    LEFT JOIN TEST_STATE_TB
-			            ON TEST_STATE_TB.TEST_STATE_SEQ = (
-											SELECT TEST_STATE_SEQ
-			                                FROM TEST_STATE_TB sub
-			                                WHERE sub.TEST_SEQ = TEST_TB.TEST_SEQ
-			                                ORDER BY TEST_STATE_SEQ DESC
-			                                LIMIT 1
-			            )
 			            LEFT JOIN 
 			            (
 						    SELECT 
@@ -1042,7 +1026,7 @@
 							<!-- 25	시험배정 -->
 							<when test="item.searchCode == 25">AND IF (TEST_TB.TEST_SEQ IS NULL, '9999', TEST_ITEM_TB.TEST_TYPE_CODE) = #{item.searchWord}</when>
 							<!-- 31	시험상태 -->
-							<when test="item.searchCode == 31">AND TEST_STATE_TB.STATE_CODE = #{item.searchWord}</when> 
+							<when test="item.searchCode == 31">AND TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when> 
 							<!-- 27	모델명 -->
 			        		<when test="item.searchCode == 27">AND IFNULL(TEST_ITEM_TB.MODEL, '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 56	신청서구분 -->
