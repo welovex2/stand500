@@ -12,7 +12,6 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import org.apache.poi.xssf.usermodel.XSSFFormulaEvaluator;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -37,6 +36,7 @@ import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -132,6 +132,50 @@ public class SbkController {
       return res;
     }
 
+    /**
+     * OR 조건 검색 처리
+     */
+    List<String> new25 = new ArrayList<String>();
+    List<String> new22 = new ArrayList<String>();
+    boolean new25Yn = false, new22Yn = false;
+    for (SearchVO search : param.getSearchVO()) {
+      // 1. 시험배정부(25)
+      if ("25".equals(search.getSearchCode())) {
+        new25Yn = true;
+        new25.add(search.getSearchWord());
+      }
+      // 2. 신청구분(22)
+      else if ("22".equals(search.getSearchCode())) {
+        new22Yn = true;
+        if ("1".equals(search.getSearchWord())) new22.add("SG_NEW_YN");
+        else if ("2".equals(search.getSearchWord())) new22.add("SG_GB_YN");
+        else if ("3".equals(search.getSearchWord())) new22.add("SG_DG_YN");
+        else if ("4".equals(search.getSearchWord())) new22.add("SG_ETC_YN");
+        
+      }
+    }
+    // 받은 searchCode 삭제 후 다시 생성
+    param.getSearchVO().stream().filter(x -> "25".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    
+    SearchVO newSearch = new SearchVO();
+    if (new25Yn) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("25");
+      System.out.println(new25);
+      newSearch.setSearchWords(new25);
+      param.getSearchVO().add(newSearch);
+    }
+    
+    if (new22Yn) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("22");
+      newSearch.setSearchWords(new22);
+      param.getSearchVO().add(newSearch);
+    }
+    /**
+     * -- END OR 조건 검색 처리
+     */
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -568,4 +612,40 @@ public class SbkController {
   }
 
 
+  @ApiOperation(value = "신청서 엑셀 업로드")
+  @PostMapping(value = "/excelUpload.do")
+  public void excelUpload(@RequestPart(value = "excelFile", required = true) MultipartFile excelFile,
+      HttpServletResponse response) throws Exception {
+    
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      FileVO FileResult = null;
+      List<FileVO> FileResults = null;
+      String atchFileId = "";
+
+      if (!ObjectUtils.isEmpty(excelFile)) {
+//        FileResult = fileUtil.parseFile(excelFile, "SBK", 0, "", "");
+//        atchFileId = fileMngService.insertFileInf(FileResult);
+        
+        // 1. FileInputStream 으로 파일 읽기
+        
+        // 2. XSSFWorkbook 객체 생성하기
+        XSSFWorkbook workbook = new XSSFWorkbook(excelFile.getInputStream());
+        
+        // 3. XSSFSheet 객체 생성 - 첫번째 시트를 가져온다
+        XSSFSheet sheet = workbook.getSheetAt(0);
+        
+        // 4. XSSFRow 첫번째 Row 가져와서 수정하기
+        XSSFRow row = sheet.getRow(4); // 시트의 첫번째 Row 를 가져온다
+        System.out.println(row.getCell(8).getBooleanCellValue());
+
+        
+        row = sheet.getRow(5); // 시트의 첫번째 Row 를 가져온다
+        System.out.println(row.getCell(12).getBooleanCellValue());
+        
+      }
+    }
+    
+  }
 }

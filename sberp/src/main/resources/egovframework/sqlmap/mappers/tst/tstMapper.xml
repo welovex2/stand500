@@ -424,6 +424,7 @@
             ADDRESS,
             MNFCT_CMPNY,
             MNFCT_ADRES,
+            IFNULL (FN_CODE_NAME (MNFCT_CNTRY_CODE, 'SN'), '') MNFCT_CNTRY,
             
 			TEST_RPRT_K_YN,
 			TEST_RPRT_N_YN,

@@ -1,5 +1,6 @@
 package egovframework.cmm.service;
 
+import java.util.List;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,6 +15,9 @@ public class SearchVO {
 	@ApiModelProperty(value="검색어", example = "")
 	private String searchWord;
 	
+	@ApiModelProperty(value="검색어", example = "")
+	private List<String> searchWords;
+	   
 	@ApiModelProperty(value="검색시작날짜(검색종류가 날짜일 경우)", example = "2023-02-02")
 	private String startDate;
 	
