@@ -20,7 +20,7 @@
 		  SET
 		    MEMO = #{memo},
 		    MNG_ID = #{mngId},
-		    PIC_URL = CASE WHEN PIC_URL IS NULL THEN #{picUrl} ELSE PIC_URL END,
+		    PIC_URL = CASE WHEN IFNULL(PIC_URL, '') = '' THEN #{picUrl} ELSE PIC_URL END,
 		    UDT_MEM_ID = #{udtMemId},
 		    UDT_DT = NOW()
 		  WHERE
