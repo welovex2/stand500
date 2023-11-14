@@ -118,7 +118,7 @@
 						SELECT SBK_ID, sum(qty) inCnt, SUM(IF (CARRY_OUT_CODE IS NOT NULL, QTY, 0)) outCnt 
 						FROM IM_TB 
 							LEFT JOIN IM_SUB_TB 
-							ON IM_SUB_TB.im_id = FN_GET_SEQSTRING ('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ) 
+							ON IM_SUB_TB.IM_ID = CONCAT ('IM', IM_TB.IM_YM, '-', 'G', LPAD(IM_TB.IM_SEQ,4,0))
 						WHERE DIV_CODE = 1 
 						AND IM_SUB_TB.STATE != 'D' 
 						GROUP BY SBK_ID) im
