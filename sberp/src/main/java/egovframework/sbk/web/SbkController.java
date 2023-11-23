@@ -161,7 +161,6 @@ public class SbkController {
     if (new25Yn) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("25");
-      System.out.println(new25);
       newSearch.setSearchWords(new25);
       param.getSearchVO().add(newSearch);
     }
