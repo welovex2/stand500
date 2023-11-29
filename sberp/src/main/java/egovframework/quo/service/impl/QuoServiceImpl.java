@@ -40,6 +40,10 @@ public class QuoServiceImpl implements QuoService {
 
     // 견적서 시험항목
     if (!ObjectUtils.isEmpty(quo.getTestItems())) {
+//      List<TestItem> iItems = quo.getTestItems().stream().filter(t -> "DH".equals(t.getTestTypeCode())).map(item -> {
+//        item.setSignStateCode("3");
+//        return item;
+//      }).collect(Collectors.toList());
       quoMapper.insertTestItem(quo.getQuoId(), quo.getInsMemId(), quo.getTestItems());
     }
 
@@ -80,7 +84,6 @@ public class QuoServiceImpl implements QuoService {
     // 견적서 시험항목
     List<TestItem> iItems = quo.getTestItems().stream().filter(t -> "I".equals(t.getState()))
         .collect(Collectors.toList());
-    System.out.println(iItems.toString());
     if (!ObjectUtils.isEmpty(iItems))
       quoMapper.insertTestItem(quo.getQuoId(), quo.getInsMemId(), iItems);
 
@@ -164,7 +167,6 @@ public class QuoServiceImpl implements QuoService {
     // 견적서 시험항목
     List<EngTestItem> iItems = quo.getEngTestItems().stream().filter(t -> "I".equals(t.getState()))
         .collect(Collectors.toList());
-    System.out.println(iItems.toString());
     if (!ObjectUtils.isEmpty(iItems))
       quoMapper.insertEngTestItem(quo.getQuoId(), quo.getInsMemId(), iItems);
 

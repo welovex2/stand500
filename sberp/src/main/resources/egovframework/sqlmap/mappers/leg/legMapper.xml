@@ -82,7 +82,7 @@
 			    IFNULL (cate2.NAME, '') crtfc2Name,
 			    IFNULL (cate3.NAME, '') crtfc3Name,
 			    IFNULL (cate4.NAME, '') crtfc4Name,
-			    IFNULL (TEST_STNDR_TB.TEST_STNDR, '') TEST_STNDR,
+			    IF (TEST_ITEM_TB.TEST_STNDR_SEQ=0, TEST_ITEM_TB.TEST_STNDR_TEXT, IFNULL (TEST_STNDR_TB.TEST_STNDR, '')) TEST_STNDR,
 			    IFNULL (IM_TOTAL_V.IN_CNT, 0) inCnt,
 			    IFNULL (IM_TOTAL_V.OUT_CNT, 0) outCnt,
 			    IFNULL (DATE_FORMAT(out_sub.CARRY_OUT_DATE, '%Y-%m-%d'), '-') CARRY_OUT_DATE,

@@ -39,7 +39,11 @@ public class TestItem {
   @NotNull
   private int testStndrSeq;
 
-
+  @ApiModelProperty(value = "시험규격텍스트", example = "")
+  @Column
+  @NotNull
+  private String testStndrText;
+  
   @ApiModelProperty(value = "인증종류3 번호", example = "")
   @Column
   @NotNull

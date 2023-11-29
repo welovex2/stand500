@@ -156,8 +156,9 @@
 				,A.name crtfc2Name
 				,TEST_ITEM_TB.TEST_TYPE_CODE
 				,TEST_STNDR_TB.TEST_STNDR_SEQ
-				,TEST_STNDR_TB.TEST_STNDR
-				,concat(B.name,'-',A.name) testCate
+				,IF (TEST_ITEM_TB.TEST_STNDR_SEQ=0, TEST_ITEM_TB.TEST_STNDR_TEXT, IFNULL (TEST_STNDR_TB.TEST_STNDR, '')) TEST_STNDR
+				,TEST_ITEM_TB.TEST_STNDR_TEXT
+				,CONCAT(B.name,'-',A.name) testCate
 				,fn_code_name(TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE
 				,TEST_ITEM_TB.product
 				,TEST_ITEM_TB.model
@@ -197,28 +198,28 @@
 				, IFNULL(date_format(TEST_ITEM_REJ_TB.ins_dt, '%Y-%m-%d'),'') rejDtStr
 				, fn_code_name(TEST_ITEM_REJ_TB.TOPIC_CODE,'SR') rejType
 				, IFNULL(TEST_ITEM_REJ_TB.memo, '') rejMemo
-			from JOB_TB    
+			FROM JOB_TB    
 			
-				inner join TEST_ITEM_TB
-			    on JOB_TB.quo_ym = TEST_ITEM_TB.quo_ym
-			    and JOB_TB.quo_seq = TEST_ITEM_TB.quo_seq
-			    and TEST_ITEM_TB.STATE != 'D'
+				INNER JOIN TEST_ITEM_TB
+			    ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+			    AND TEST_ITEM_TB.STATE != 'D'
 			    
-			    inner join TEST_STNDR_TB
-			    on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+			    LEFT JOIN TEST_STNDR_TB
+			    ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
 			    
-			    inner join TEST_CATE_TB A
-			    on TEST_ITEM_TB.CRTF_TYPE_SEQ = A.test_cate_seq
+			    INNER JOIN TEST_CATE_TB A
+			    ON TEST_ITEM_TB.CRTF_TYPE_SEQ = A.TEST_CATE_SEQ
 			    
-				inner join TEST_CATE_TB B
-			    on A.TOP_DEPTH_SEQ = B.test_cate_seq	
+				INNER JOIN TEST_CATE_TB B
+			    ON A.TOP_DEPTH_SEQ = B.TEST_CATE_SEQ	
 			    
-			    left join TEST_TB
-			    on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+			    LEFT JOIN TEST_TB
+			    ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
 			    
 			    /* 반려메모현황 */ 
-			    left join TEST_ITEM_REJ_TB
-	            on TEST_ITEM_REJ_TB.TEST_ITEM_REJ_SEQ = (
+			    LEFT JOIN TEST_ITEM_REJ_TB
+	            ON TEST_ITEM_REJ_TB.TEST_ITEM_REJ_SEQ = (
 									select TEST_ITEM_REJ_SEQ
 	                                from TEST_ITEM_REJ_TB sub
 	                                where sub.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
@@ -226,8 +227,8 @@
 	                                limit 1
 	            )
 	            
-	            left join MEMBER_TB
-	            on TEST_ITEM_TB.rev_id = MEMBER_TB.id
+	            LEFT JOIN MEMBER_TB
+	            ON TEST_ITEM_TB.rev_id = MEMBER_TB.id
 	            
 			where 1=1
 			
