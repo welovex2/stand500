@@ -165,5 +165,11 @@ public class TestDTO {
      
     @ApiModelProperty(value = "참고메모", example = "")
     private String memo;
+    
+    @ApiModelProperty(value = "성적서발급일작성일", example = "")
+    private String reportDtInsDt;
+    
+    @ApiModelProperty(value = "성적서발급일작성자", example = "")
+    private String reportDtInsName;
   }
 }

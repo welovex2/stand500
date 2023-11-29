@@ -9,6 +9,7 @@
 			CMPY_TB
 		WHERE
 			1 = 1
+		AND STATE != 'D'
 				<if test="searchVO != null">
 			        <foreach collection="searchVO" item="item" separator="">
 			       
@@ -53,6 +54,7 @@
 					CMPY_TB
 				WHERE
 					1 = 1
+				AND STATE != 'D'
 				<if test="searchVO != null">
 			        <foreach collection="searchVO" item="item" separator="">
 			       

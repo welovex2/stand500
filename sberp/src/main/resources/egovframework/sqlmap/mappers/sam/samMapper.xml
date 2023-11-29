@@ -37,7 +37,7 @@
             DEPT_SEQ,
 		    MNG_ID,
 		    FN_DEPT_NAME(MNG_ID) DEPT_NAME,
-            MEM_NAME,
+            MEM_NAME mngName,
 		    PIC_URL
 		FROM IM_TB
 			LEFT JOIN MEMBER_TB ON MNG_ID = ID
@@ -55,7 +55,7 @@
 		  )
 		  VALUES
 		  (
-		  	#{imSubSeq}, #{imId}, #{item.divCode}, #{item.qty}, #{item.memo}, NOW(), #{insMemId}, #{item.carryInCode}, #{item.carryInDlvryName}, #{item.carryInDlvryPhone}, #{item.carryInDlvryInvc}, #{item.carryInMemo}, #{insMemId}, #{insMemId}
+		  	#{imSubSeq}, #{imId}, #{item.divCode}, #{item.qty}, #{item.memo}, #{item.carryInDate}, #{insMemId}, #{item.carryInCode}, #{item.carryInDlvryName}, #{item.carryInDlvryPhone}, #{item.carryInDlvryInvc}, #{item.carryInMemo}, #{insMemId}, #{insMemId}
 		  )
 	</insert>
 	
@@ -68,6 +68,7 @@
 		    QTY = #{item.qty},
 		    MEMO = #{item.memo},
 		    CARRY_IN_CODE = #{item.carryInCode},
+		    CARRY_IN_DATE = #{item.carryInDate},
 		    CARRY_IN_DLVRY_NAME = #{item.carryInDlvryName},
 		    CARRY_IN_DLVRY_PHONE = #{item.carryInDlvryPhone},
 		    CARRY_IN_DLVRY_INVC = #{item.carryInDlvryInvc},
@@ -75,7 +76,7 @@
 		    STATE = #{item.state},
 		  </if>
 		  <if test="item.carryOutCode != null and item.carryOutCode != ''">
-		    CARRY_OUT_DATE = CASE WHEN CARRY_OUT_DATE IS NULL THEN NOW() ELSE CARRY_OUT_DATE END,
+		    CARRY_OUT_DATE = #{item.carryOutDate},
 		    CARRY_OUT_ID = CASE WHEN CARRY_OUT_ID IS NULL THEN #{insMemId} ELSE CARRY_OUT_ID END,
 		    CARRY_OUT_CODE = #{item.carryOutCode},
 		    CARRY_OUT_DLVRY_NAME = #{item.carryOutDlvryName},
