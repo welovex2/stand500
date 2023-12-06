@@ -280,6 +280,7 @@
 			    <if test="cmpyCode == '1000'">ifnull (FN_CODE_NAME (type_code, 'ST'), '') type</if>
 			FROM CMPY_TB 
 			WHERE 1=1
+			AND STATE != 'D'
 			AND CMPY_CODE = #{cmpyCode}
 			#AND CMPY_NAME regexp concat('[','',']{2}')
 			AND replace(CMPY_NAME, ' ', '') like CONCAT('%',replace(#{cmpyName}, ' ', ''),'%')
