@@ -375,6 +375,21 @@
 			</foreach>
 	</update>
 	
+	<update id="updateTestItemModel">
+		<foreach collection="testItems" item="item" separator=";">
+			<if test="item.testItemSeq > 0">
+			UPDATE TEST_ITEM_TB
+			SET
+		<![CDATA[
+				PRODUCT = #{item.product},
+				MODEL = #{item.model},
+		]]>
+				UDT_MEM_ID = #{item.udtMemId}
+			WHERE TEST_ITEM_SEQ = #{item.testItemSeq}
+				</if>
+			</foreach>
+	</update>
+	
 	<update id="deleteTestItem">
 		<foreach collection="testItems" item="item" separator=";">
 			<if test="item.testItemSeq > 0">

@@ -65,5 +65,7 @@ public interface QuoMapper {
   public List<EngTestItem> selectEngTestItem(String quoId);
 
   public int checkTestStartItem(@Param("testItems") List<TestItem> testItems);
+  
+  public boolean updateTestItemModel(@Param("testItems") List<TestItem> testItems) throws Exception;
 
 }

@@ -156,6 +156,44 @@ public class QuoController {
   // return req;
   // }
 
+  @ApiOperation(value = "시험규격만 수정", notes = "testItemSeq, product, model에만 값넣어서 전송")
+  @PostMapping(value = "/item/update.do")
+  public BasicResponse quoItemUpdate(@RequestBody List<TestItem> req) throws Exception {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    String msg = "";
+    boolean result = false;
+
+    // 로그인정보
+//    req.setInsMemId(user.getId());
+//    req.setUdtMemId(user.getId());
+
+    System.out.println("=-===========");
+    System.out.println(req.toString());
+    System.out.println("=-===========");
+    
+    try {
+      
+      List<TestItem> iItems = req.stream().map(item -> {
+                                                          item.setUdtMemId(user.getId());
+                                                          return item;
+                                                          }).collect(Collectors.toList());
+      
+        result = quoService.updateTestItemModel(req);
+    } catch (Exception e) {
+      
+      msg = ResponseMessage.RETRY;
+      log.warn(user.getId() + " :: " + e.toString());
+      log.warn(req.toString());
+      log.warn("");
+      
+    }
+    
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+    
+  }
+  
   @ApiOperation(value = "견적서 등록", notes = "견적서 수정시 고유번호(quoSeq) 필수")
   @PostMapping(value = "/insert.do",
       consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})

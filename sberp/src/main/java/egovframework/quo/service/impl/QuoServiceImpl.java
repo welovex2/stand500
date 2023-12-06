@@ -192,4 +192,9 @@ public class QuoServiceImpl implements QuoService {
   public int checkTestStartItem(List<TestItem> dItems) {
     return quoMapper.checkTestStartItem(dItems);
   }
+
+  @Override
+  public boolean updateTestItemModel(List<TestItem> req) throws Exception {
+    return quoMapper.updateTestItemModel(req);
+  }
 }

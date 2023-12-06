@@ -38,4 +38,6 @@ public interface QuoService {
 
   public int checkTestStartItem(List<TestItem> dItems);
 
+  public boolean updateTestItemModel(List<TestItem> req) throws Exception;
+
 }
