@@ -1,9 +1,6 @@
 package egovframework.raw.service;
 
 import java.util.List;
-
-import org.apache.ibatis.annotations.Param;
-
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
 import egovframework.raw.dto.CeDTO;
@@ -15,95 +12,99 @@ import egovframework.raw.dto.FileRawDTO;
 import egovframework.raw.dto.ImgDTO;
 import egovframework.raw.dto.InfoDTO;
 import egovframework.raw.dto.MfDTO;
+import egovframework.raw.dto.RawSearchDTO;
 import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.VdipDTO;
+import egovframework.tst.service.Test;
 
 public interface RawService {
 
-	boolean insert(RawData req);
+  boolean insert(RawData req);
 
-	boolean update(RawData req);
+  boolean update(RawData req);
 
-	CeDTO ceDetail(int rawSeq);
-	
-	boolean insertCe(CeDTO req);
+  CeDTO ceDetail(int rawSeq);
 
-	ReDTO reDetail(int rawSeq);
+  boolean insertCe(CeDTO req);
 
-	boolean insertRe(ReDTO req);
+  ReDTO reDetail(int rawSeq);
 
-	boolean insertEsd(EsdDTO req);
-	
-	EsdDTO esdDetail(int rawSeq) throws Exception;
+  boolean insertRe(ReDTO req);
 
-	int getTestSeq(String testId);
-	
-	RawData detail(int testSeq) throws Exception;
+  boolean insertEsd(EsdDTO req);
 
-	RsDTO rsDetail(int rawSeq);
+  EsdDTO esdDetail(int rawSeq) throws Exception;
 
-	boolean insertRs(RsDTO req);
+  int getTestSeq(String testId);
 
-	EftDTO eftDetail(int rawSeq);
+  RawData detail(RawSearchDTO req) throws Exception;
 
-	boolean insertEft(EftDTO req);
+  RsDTO rsDetail(int rawSeq);
 
-	List<RawTchn> tchnList(int rawSeq);
+  boolean insertRs(RsDTO req);
 
-	List<RawSpec> specList(int rawSeq);
+  EftDTO eftDetail(int rawSeq);
 
-	List<RawAsstn> asstnList(int rawSeq);
+  boolean insertEft(EftDTO req);
 
-	List<RawSys> sysList(int rawSeq);
+  List<RawTchn> tchnList(int rawSeq);
 
-	List<RawCable> cableList(int rawSeq);
+  List<RawSpec> specList(int rawSeq);
 
-	List<RawMet> methodList(int rawSeq);
+  List<RawAsstn> asstnList(int rawSeq);
 
-	List<RawMac> macList(String machineType, int rawSeq);
+  List<RawSys> sysList(int rawSeq);
 
-	List<RawMac> emptyMacList(String machineType, int rawSeq);
-	   
-	List<MethodEsdSub> esdSubList(int esdSeq);
-	
-	List<MethodCtiSub> ctiSubList(int ctiSeq);
+  List<RawCable> cableList(int rawSeq);
 
-	SurgeDTO surgeDetail(int rawSeq);
-	
-	boolean insertSurge(SurgeDTO req);
-	
-	CsDTO csDetail(int rawSeq);
-	
-	boolean insertCs(CsDTO req);
+  List<RawMet> methodList(int rawSeq);
 
-	MfDTO mfDetail(int rawSeq);
-	
-	boolean insertMf(MfDTO req);
+  List<RawMac> macList(String machineType, int rawSeq);
 
-	InfoDTO info(int testSeq);
-	
-	public VdipDTO vdipDetail(int rawSeq);
+  List<RawMac> emptyMacList(String machineType, int rawSeq);
 
-	public boolean insertVdip(VdipDTO req);
-	
-	public CtiDTO ctiDetail(int rawSeq);
+  List<MethodEsdSub> esdSubList(int esdSeq);
 
-	public  boolean insertCti(CtiDTO req);
-	
-	public ImgDTO imgDetail(ImgDTO req);
+  List<MethodCtiSub> ctiSubList(int ctiSeq);
 
-	public  boolean insertImg(ImgDTO req);
-	
-	public List<HisDTO> hisList(String rawSeq);
-	
-	public ReportDTO report(int rawSeq);
-	
-	public boolean insertFile(FileRaw req);
-	
-	int fileRawListCnt(int testSeq, ComParam param);
+  SurgeDTO surgeDetail(int rawSeq);
 
-	List<FileRawDTO> fileRawList(int testSeq, ComParam param);
+  boolean insertSurge(SurgeDTO req);
+
+  CsDTO csDetail(int rawSeq);
+
+  boolean insertCs(CsDTO req);
+
+  MfDTO mfDetail(int rawSeq);
+
+  boolean insertMf(MfDTO req);
+
+  InfoDTO info(int testSeq);
+
+  VdipDTO vdipDetail(int rawSeq);
+
+  boolean insertVdip(VdipDTO req);
+
+  CtiDTO ctiDetail(int rawSeq);
+
+  boolean insertCti(CtiDTO req);
+
+  ImgDTO imgDetail(ImgDTO req);
+
+  boolean insertImg(ImgDTO req);
+
+  List<HisDTO> hisList(String rawSeq);
+
+  ReportDTO report(int rawSeq);
+
+  boolean insertFile(FileRaw req);
+
+  int fileRawListCnt(int testSeq, ComParam param);
+
+  List<FileRawDTO> fileRawList(int testSeq, ComParam param);
+
+  List<Test> reportDetail(int testSeq);
 }

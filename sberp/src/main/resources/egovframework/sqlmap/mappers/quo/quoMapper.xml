@@ -574,9 +574,10 @@
 		<result column="cp" property="cp"/>
 		<result column="email" property="email"/>
 		<result column="ARREARS" property="arrears"/>
-		<result column="quo_state_code" property="quoStateCode"/>
+		<result column="QUO_STATE_CODE" property="quoStateCode"/>
 		<result column="QUO_MOD_SEQ" property="quoModeSeq"/>
 		<result column="quoModState" property="quoModState"/>
+		<result column="SBK_REVISION" property="revision"/>
 		<result column="prmsDtStr" property="prmsDtStr"/>
 		<result column="prmsName" property="prmsName"/>
 		
@@ -651,11 +652,13 @@
 			,CONCAT (MEMBER_TB.id,'@standardbank.co.kr') email
 			
 			, IFNULL(SLS_TB.ARREARS,'') ARREARS
-			, IFNULL(QUO_STATE_CODE, '0') quo_state_code
+			, IFNULL(QUO_STATE_CODE, '0') QUO_STATE_CODE
 			, QUO_MOD_TB.QUO_MOD_SEQ
 			, IFNULL(FN_CODE_NAME (QUO_MOD_TB.STATE_CODE, 'MM'), '') quoModState
             , IFNULL(DATE_FORMAT (QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'),'') prmsDtStr
             , IFNULL(FN_MEM_NAME (QUO_MOD_TB.PRMS_ID),'') prmsName
+            
+            , JOB_TB.SBK_REVISION
             
 			, QUO_TB.UDT_DT 
 			, QUO_TB.UDT_MEM_ID

@@ -45,6 +45,7 @@ import egovframework.raw.dto.MfDTO;
 import egovframework.raw.dto.PicDTO;
 import egovframework.raw.dto.PicVO;
 import egovframework.raw.dto.RawDTO;
+import egovframework.raw.dto.RawSearchDTO;
 import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.RegStateDTO;
 import egovframework.raw.dto.RsDTO;
@@ -83,16 +84,18 @@ public class RawController {
   private MacService macService;
 
   @ApiOperation(value = "로데이터 작성여부 확인")
-  @GetMapping(value = "/{testSeq}/regState.do")
-  public BasicResponse regState(@ApiParam(value = "시험 고유번호", required = true,
-      example = "9") @PathVariable(name = "testSeq") int testSeq) throws Exception {
+  @GetMapping(value = "/{rawSeq}/regState.do")
+  public BasicResponse regState(@ApiParam(value = "로데이터 고유번호", required = true,
+      example = "9") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
     boolean result = true;
     String msg = "";
     RegStateDTO detail = new RegStateDTO();
     RawData rawData = new RawData();
-
+    RawSearchDTO req = new RawSearchDTO();
+    
     // 기본정보
-    rawData = rawService.detail(testSeq);
+    req.setRawSeq(rawSeq);
+    rawData = rawService.detail(req);
     if (!ObjectUtils.isEmpty(rawData)) {
       detail.setRawSeq(rawData.getRawSeq());
       detail.setRawYn(1);
@@ -177,6 +180,8 @@ public class RawController {
     boolean result = true;
     String msg = "";
     RawData detail = new RawData();
+    RawSearchDTO req = new RawSearchDTO();
+    
     int testSeq = rawService.getTestSeq(testId);
     
     if (testSeq == 0) {
@@ -186,7 +191,8 @@ public class RawController {
     
     } else {
     
-      detail = rawService.detail(testSeq);
+      req.setTestSeq(testSeq);
+      detail = rawService.detail(req);
       
       if (detail == null) {
         result = false;
@@ -216,8 +222,10 @@ public class RawController {
     boolean result = true;
     String msg = "";
     RawData detail = new RawData();
-
-    detail = rawService.detail(testSeq);
+    RawSearchDTO req = new RawSearchDTO();
+    
+    req.setTestSeq(testSeq);
+    detail = rawService.detail(req);
 
     if (detail == null) {
       result = false;
@@ -245,7 +253,8 @@ public class RawController {
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
     boolean result = false;
-
+    RawSearchDTO search = new RawSearchDTO();
+    
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
@@ -275,7 +284,8 @@ public class RawController {
     if (isAuthenticated) {
 
       // 이미 등록된 로데이터가 있는지 확인
-      if (req.getRawSeq() == 0 && !ObjectUtils.isEmpty(rawService.detail(req.getTestSeq()))) {
+      search.setTestSeq(req.getTestSeq());
+      if (req.getRawSeq() == 0 && !ObjectUtils.isEmpty(rawService.detail(search))) {
         result = false;
         msg = ResponseMessage.DUPLICATE_RAW;
       } else {

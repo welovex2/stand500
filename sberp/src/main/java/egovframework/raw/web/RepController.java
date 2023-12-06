@@ -46,21 +46,24 @@ public class RepController {
   protected EgovPropertyService propertyService;
   
   @ApiOperation(value = "성적서 상세보기")
-  @GetMapping(value = "/raw/{rawSeq}/report.do")
-  public BasicResponse rawReport(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "22") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/raw/{testSeq}/report.do")
+  public BasicResponse rawReport(@ApiParam(value = "시험 고유번호", required = true,
+      example = "22") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     ReportDTO detail = new ReportDTO();
 
-    detail = rawService.report(rawSeq);
-
+    detail = rawService.report(testSeq);
     if (detail == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
     } else {
       /* 세부데이터 추가로 가지고 오기 */
+      int rawSeq = detail.getRawSeq();
 
+      // 성적서 발급내역 리스트 가져오기
+      detail.setReportList(rawService.reportDetail(testSeq));
+      
       // 3.2 시험항목 >> methodList
       detail.setMethodList(rawService.methodList(rawSeq));
       // 3.3 피시험기기의 보완내용 >> modList

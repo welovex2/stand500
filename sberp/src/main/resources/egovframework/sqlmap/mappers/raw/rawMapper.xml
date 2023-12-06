@@ -30,9 +30,6 @@
 			MNFCT_CMPNY,
 			MNFCT_CNTRY,
 			<if test="rcptDt != null and rcptDt != ''">RCPT_DT,</if>
-			REPORT_NO,
-			<if test="reportDt != null and reportDt != ''">REPORT_DT,</if>
-			REPORT_MEMO,
 			<if test="testSDt != null and testSDt != ''">TEST_S_DT,</if>
 			<if test="testEDt != null and testEDt != ''">TEST_E_DT,</if>
 			TEST_BY,
@@ -98,9 +95,6 @@
 			#{mnfctCmpny},
 			#{mnfctCntry},
 			<if test="rcptDt != null and rcptDt != ''">#{rcptDt},</if>
-			#{reportNo},
-			<if test="reportDt != null and reportDt != ''">#{reportDt},</if>
-			#{reportMemo},
 			<if test="testSDt != null and testSDt != ''">#{testSDt},</if>
 			<if test="testEDt != null and testEDt != ''">#{testEDt},</if>
 			#{testBy},
@@ -386,9 +380,6 @@
 			MNFCT_CMPNY = #{mnfctCmpny},
 			MNFCT_CNTRY = #{mnfctCntry},
 			<if test="rcptDt != null and rcptDt != ''">RCPT_DT = #{rcptDt},</if>
-			REPORT_NO = #{reportNo},
-			<if test="reportDt != null and reportDt != ''">REPORT_DT = #{reportDt},</if>
-			REPORT_MEMO = #{reportMemo},
 			<if test="testSDt != null and testSDt != ''">TEST_S_DT = #{testSDt},</if>
 			<if test="testEDt != null and testEDt != ''">TEST_E_DT = #{testEDt},</if>
 			TEST_BY = #{testBy},
@@ -443,6 +434,15 @@
 		WHERE RAW_SEQ = #{rawSeq}
 	</update>
 
+	<update id="updateReport" parameterType="rawData">
+		UPDATE TEST_TB
+		SET
+			REPORT_NO = #{reportNo},
+			REPORT_DT = IF (#{reportDt} = '', NULL, #{reportDt}),
+			REPORT_MEMO = #{reportMemo}
+		WHERE TEST_SEQ = #{testSeq}
+	</update>
+	
 	<select id="getTestSeq" parameterType="String" resultType="int">
 		SELECT
 		    RAW_TB.TEST_SEQ
@@ -460,31 +460,30 @@
 		    
 	</select>
 		
-	<select id="detail" parameterType="int" resultType="rawData">
+	<select id="detail" parameterType="rawSearchDTO" resultType="rawData">
 		SELECT
 		    RAW_SEQ,
-		    CONCAT (
-		        SBK_ID,
-		        '-',
-		        CONCAT (TEST_TB.TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
-		    ) rawId,
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) rawId,
 		    SBK_NO,
-		    SBK_ID,
-		    RAW_TB.TEST_SEQ,
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
+		    TEST_TB.TEST_SEQ,
 		    /* 고정 > 신청인 */
-		    JOB_TB.cmpy_name APLCN,
+		    JOB_TB.CMPY_NAME APLCN,
 		    /* 고정 > 기자재명칭 */
 		    if (
-		        TEST_ITEM_TB.product = '',
+		        TEST_ITEM_TB.PRODUCT = '',
 		        JOB_TB.PRDCT_NAME,
-		        TEST_ITEM_TB.product
+		        TEST_ITEM_TB.PRODUCT
 		    ) EQPMN,
 		    /* 고정 > 모델 */
 		    if (
-		        TEST_ITEM_TB.model = '',
+		        TEST_ITEM_TB.MODEL = '',
 		        JOB_TB.MODEL_NAME,
-		        TEST_ITEM_TB.model
-		    ) model,
+		        TEST_ITEM_TB.MODEL
+		    ) MODEL,
 		    MNFCT_SERIAL,
 		    /* 고정 > 제조사 */
 		    SBK_TB.MNFCT_CMPNY MNFCT_CMPNY,
@@ -499,9 +498,6 @@
 		        ),
 		        '%Y%m%d'
 		    ) RCPT_DT,
-		    REPORT_NO,
-		    REPORT_DT,
-		    REPORT_MEMO,
 		    TEST_S_DT,
 		    TEST_E_DT,
 		    TEST_BY,
@@ -552,16 +548,61 @@
 		    ADD_TEST_DATA,
 		    ADD_TEST_AUDIO
 		FROM
-		    RAW_TB
-		    INNER JOIN TEST_TB ON RAW_TB.TEST_SEQ = TEST_TB.TEST_SEQ
-		    INNER JOIN TEST_ITEM_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+		    TEST_TB
+			
+			INNER JOIN TEST_ITEM_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+		    LEFT JOIN TEST_TB orgTest ON orgTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+		    
 		    INNER JOIN JOB_TB ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM 
-		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
-		    INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM 
-		    AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+			AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM 
+			AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+		    
+		    INNER JOIN RAW_TB ON RAW_TB.TEST_SEQ = IF(SBK_TB.REVISION=0,TEST_TB.TEST_SEQ,orgTest.TEST_SEQ)
 		WHERE
 		    1 = 1
-		AND RAW_TB.TEST_SEQ = #{testSeq}
+		<if test="rawSeq != 0">AND RAW_TB.RAW_SEQ = #{rawSeq} AND RAW_TB.TEST_SEQ = TEST_TB.TEST_SEQ</if>
+		<if test="testSeq != 0">AND TEST_TB.TEST_SEQ = #{testSeq}</if>
+	</select>
+	
+	<select id="reportDetail" parameterType="int" resultType="egovMap">
+		<![CDATA[
+		SELECT 
+			CONCAT ('SB', revJob.SBK_YM, '-' , revJob.SBK_TYPE, LPAD(revJob.SBK_SEQ,4,0),
+					'-',report.TEST_TYPE_CODE,LPAD(report.TEST_NO,4,0),
+					IF(revJob.SBK_REVISION > 0, CONCAT ('-',revJob.SBK_REVISION), '')) rawId,
+			report.TEST_SEQ,
+			IFNULL (report.REPORT_NO, '') REPORT_NO,
+			IFNULL (report.REPORT_DT, '') REPORT_DT,
+			IFNULL (report.REPORT_MEMO, '') REPORT_MEMO
+			
+		FROM TEST_TB
+		   
+		   
+		   # 내 원본 시험규격이 연결된 시험규격 다 찾음
+		   INNER JOIN TEST_ITEM_TB
+		   ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+		   INNER jOIN TEST_ITEM_TB rev
+		   ON IFNULL(TEST_ITEM_TB.ORG_TEST_ITEM_SEQ, TEST_ITEM_TB.TEST_ITEM_SEQ) IN (rev.TEST_ITEM_SEQ, rev.ORG_TEST_ITEM_SEQ)
+		   
+		   # 연결된 시험정보 찾음
+		   INNER JOIN TEST_TB report
+		   ON report.TEST_ITEM_SEQ = rev.TEST_ITEM_SEQ
+		
+			# 내 리비젼 번호 찾음
+		    INNER JOIN JOB_TB
+		    ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+		    
+		    # 연결된 시험들 리비젼 번호 찾음
+		    INNER JOIN JOB_TB revJob
+		    ON revJob.QUO_YM = rev.QUO_YM
+		    AND revJob.QUO_SEQ = rev.QUO_SEQ
+		    # 나보다 같거나 작을때만 노출
+		    AND JOB_TB.SBK_REVISION >= revJob.SBK_REVISION
+		]]>
+		WHERE TEST_TB.TEST_SEQ = #{testSeq}
+		        
 	</select>
 	
 	<select id="tchnList" parameterType="int" resultType="egovMap">
@@ -734,22 +775,11 @@
 	<select id="report" parameterType="int" resultType="reportDTO">
 		SELECT
 		    RAW_TB.SBK_ID,
-		    CONCAT (
-		        SBK_ID,
-		        '-',
-		        (
-		            SELECT
-		                CONCAT (TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
-		            FROM
-		                TEST_TB
-		            WHERE
-		                TEST_SEQ = RAW_TB.TEST_SEQ
-		        )
-		    ) testId,
+		    RAW_TB.RAW_SEQ,
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    /* 1	발급번호 */
-		    REPORT_NO,
-		    REPORT_DT,
-		    REPORT_MEMO,
 		    /* 2	접수일 */
 		    DATE_FORMAT (STR_TO_DATE (
 		        CONCAT (SBK_TB.APP_YEAR, SBK_TB.APP_MON, SBK_TB.APP_DAY),
@@ -848,14 +878,19 @@
 		    ADD_TEST_AUDIO,
 		    SBK_ID
 		FROM
-		    RAW_TB
-		    INNER JOIN TEST_TB ON RAW_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+		    TEST_TB
+		    
 		    INNER JOIN TEST_ITEM_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+            LEFT JOIN TEST_TB orgTest ON orgTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+            
 		    INNER JOIN JOB_TB ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM 
 		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 		    INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM 
 		    AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
-		WHERE RAW_SEQ = #{rawSeq}
+		    
+            INNER JOIN RAW_TB ON RAW_TB.TEST_SEQ = IF(SBK_TB.REVISION=0,TEST_TB.TEST_SEQ,orgTest.TEST_SEQ)
+		    
+		WHERE TEST_TB.TEST_SEQ = #{testSeq}
 	</select>
 	
 	<insert id="insertFile" parameterType="fileRaw">

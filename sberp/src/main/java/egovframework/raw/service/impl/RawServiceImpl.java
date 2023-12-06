@@ -3,7 +3,6 @@ package egovframework.raw.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +21,7 @@ import egovframework.raw.dto.ImgDTO;
 import egovframework.raw.dto.InfoDTO;
 import egovframework.raw.dto.MfDTO;
 import egovframework.raw.dto.PicDTO;
+import egovframework.raw.dto.RawSearchDTO;
 import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
@@ -46,6 +46,7 @@ import egovframework.raw.service.RawSpec;
 import egovframework.raw.service.RawSys;
 import egovframework.raw.service.RawTchn;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.tst.service.Test;
 
 @Service("RawService")
 public class RawServiceImpl implements RawService {
@@ -71,6 +72,9 @@ public class RawServiceImpl implements RawService {
     req.setSbkId(rawMapper.getSbkId(req.getTestSeq()));
     rawMapper.insert(req);
 
+    // 성적서 발급정보 TEST_TB에 저장
+    rawMapper.updateReport(req);
+    
     // 4-2. method (시험방법), 고정리스트
     rawMapper.insertMethod(req.getRawSeq(), req.getMethodList());
 
@@ -114,6 +118,9 @@ public class RawServiceImpl implements RawService {
 
     rawMapper.update(req);
 
+    // 성적서 발급정보 TEST_TB에 저장
+    rawMapper.updateReport(req);
+    
     // 4-2. method (시험방법), 고정리스트
     rawMapper.insertMethod(req.getRawSeq(), req.getMethodList());
 
@@ -342,13 +349,16 @@ public class RawServiceImpl implements RawService {
   }
   
   @Override
-  public RawData detail(int testSeq) throws Exception {
+  public RawData detail(RawSearchDTO req) throws Exception {
     
     RawData detail = new RawData();
-
-    detail = rawMapper.detail(testSeq);
+    detail = rawMapper.detail(req);
+    
     
     if (detail != null) {
+      // 성적서 발급내역 리스트 가져오기
+      detail.setReportList(rawMapper.reportDetail(req.getTestSeq()));
+      
       /* 세부데이터 추가로 가지고 오기 */
       // 4-1. Technical Requirements (기술적 요구항목)
       detail.setRawTchnList(tchnList(detail.getRawSeq()));
@@ -849,6 +859,11 @@ public class RawServiceImpl implements RawService {
   @Override
   public List<MethodCtiSub> ctiSubList(int ctiSeq) {
     return methodMapper.ctiSubList(ctiSeq);
+  }
+
+  @Override
+  public List<Test> reportDetail(int testSeq) {
+    return rawMapper.reportDetail(testSeq);
   }
 
 

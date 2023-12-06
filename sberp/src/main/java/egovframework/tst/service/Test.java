@@ -39,9 +39,19 @@ public class Test {
   private String testTypeCode;
 
 
+  @ApiModelProperty(value = "성적서발급번호 ", example = "STB23-0158")
+  @Column
+  private String reportNo;
+
+
   @ApiModelProperty(value = "성적서 발급일 ", example = "2023-05-30")
   @Column
   private String reportDt;
+
+
+  @ApiModelProperty(value = "성적서 발급사유 ", example = "최초발급")
+  @Column
+  private String reportMemo;
 
 
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)

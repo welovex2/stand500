@@ -7,6 +7,7 @@ import egovframework.raw.service.RawCable;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawSpec;
 import egovframework.raw.service.RawSys;
+import egovframework.tst.service.Test;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
@@ -18,6 +19,10 @@ import lombok.ToString;
 @Setter
 @ToString
 public class ReportDTO {
+  
+  @ApiModelProperty(value = "0 로데이터번호  ", example = "")
+  @Column
+  private int rawSeq;
 
   @ApiModelProperty(value = "0 하단성적서번호  ", example = "")
   @Column
@@ -411,7 +416,9 @@ public class ReportDTO {
   private VdipDTO vdip;
 
   @ApiModelProperty(value = "이미지 리스트", example = "")
-  @Column
-  List<PicDTO> imgList;
+  private List<PicDTO> imgList;
+
+  @ApiModelProperty(value = "성적서 발급내역", example = "")
+  private List<Test> reportList;
 
 }

@@ -232,6 +232,9 @@ public class QuoDTO {
     @Column
     private String quoModState;
 
+    @ApiModelProperty(value = "재발행신청서 순번", example = "")
+    private int revision;
+    
     @ApiModelProperty(value = "견적서 변경 날짜", example = "")
     @Column
     private String prmsDtStr;
