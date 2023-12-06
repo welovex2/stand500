@@ -754,8 +754,11 @@
 							<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">${sub}</foreach>
 						</when>
 						<!-- 25	시험배정 -->
-						<when test="item.searchCode == 25">AND IF (TEST_SEQ = 0, '9999', TEST_TYPE_CODE) IN 
-							<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+						<when test="item.searchCode == 25">AND 
+							CASE 
+								WHEN (TEST_SEQ = 0 AND IFNULL(TEST_TYPE_CODE,'') != 'DH') THEN '1' 
+								WHEN (TEST_TYPE_CODE = 'DH') THEN '3' 
+								ELSE '2' END = #{item.searchWord}
 						</when>
 						<!-- 31	시험상태 -->
 						<when test="item.searchCode == 31">AND TEST_STATE_CODE = #{item.searchWord}</when> 
@@ -769,15 +772,24 @@
 		        			</choose>
 		        		</when>
 		        		<!-- 23	시험부 -->
-		        		<when test="item.searchCode == 23">AND TEST_TYPE_CODE = #{item.searchWord}</when>
+		        		<when test="item.searchCode == 23">AND TEST_TYPE_CODE IN
+		        			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+		        		</when>
 		        		<!-- 24	기책서명 -->
-		        		<when test="item.searchCode == 24">AND IF (REV_SIGN_URL IS NULL, SIGN_STATE_CODE, '3') = #{item.searchWord}</when>
+		        		<when test="item.searchCode == 24">AND IF (REV_SIGN_URL IS NULL, SIGN_STATE_CODE, '4') = #{item.searchWord}</when>
 		        		<!-- 40	시험규격 -->
         				<when test="item.searchCode == 40">AND TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 		        		<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
 		        		<when test="item.searchCode == 58">AND DATE_FORMAT (stateUdtDt, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<!-- 63	시료반입상태 -->
+						<when test="item.searchCode == 63">AND 
+							CASE 
+								WHEN carryInDt = '현장시험' THEN '3' 
+								WHEN ISNULL(IN_DATE) THEN '1' 
+								ELSE '2' END = #{item.searchWord}
+						</when>
 		        	</choose>
 	        	
 	        </foreach>
@@ -884,8 +896,11 @@
 							<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">${sub}</foreach>
 						</when>
 						<!-- 25	시험배정 -->
-						<when test="item.searchCode == 25">AND IF (TEST_SEQ = 0, '9999', TEST_TYPE_CODE) IN 
-							<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+						<when test="item.searchCode == 25">AND 
+							CASE 
+								WHEN (TEST_SEQ = 0 AND IFNULL(TEST_TYPE_CODE,'') != 'DH') THEN '1' 
+								WHEN (TEST_TYPE_CODE = 'DH') THEN '3' 
+								ELSE '2' END = #{item.searchWord}
 						</when>
 						<!-- 31	시험상태 -->
 						<when test="item.searchCode == 31">AND TEST_STATE_CODE = #{item.searchWord}</when> 
@@ -899,15 +914,24 @@
 		        			</choose>
 		        		</when>
 		        		<!-- 23	시험부 -->
-		        		<when test="item.searchCode == 23">AND TEST_TYPE_CODE = #{item.searchWord}</when>
+		        		<when test="item.searchCode == 23">AND TEST_TYPE_CODE IN
+		        			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+		        		</when>
 		        		<!-- 24	기책서명 -->
-		        		<when test="item.searchCode == 24">AND IF (REV_SIGN_URL IS NULL, SIGN_STATE_CODE, '3') = #{item.searchWord}</when>
+		        		<when test="item.searchCode == 24">AND IF (REV_SIGN_URL IS NULL, SIGN_STATE_CODE, '4') = #{item.searchWord}</when>
 		        		<!-- 40	시험규격 -->
         				<when test="item.searchCode == 40">AND TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 		        		<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
 		        		<when test="item.searchCode == 58">AND DATE_FORMAT (stateUdtDt, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<!-- 63	시료반입상태 -->
+						<when test="item.searchCode == 63">AND 
+							CASE 
+								WHEN carryInDt = '현장시험' THEN '3' 
+								WHEN ISNULL(IN_DATE) THEN '1' 
+								ELSE '2' END = #{item.searchWord}
+						</when>
 		        	</choose>
 		        	
 		        </foreach>

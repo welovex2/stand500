@@ -139,8 +139,8 @@ public class SbkController {
     List<String> new22 = new ArrayList<String>();
     boolean new25Yn = false, new22Yn = false;
     for (SearchVO search : param.getSearchVO()) {
-      // 1. 시험배정부(25)
-      if ("25".equals(search.getSearchCode())) {
+      // 1. 시험부(23)
+      if ("23".equals(search.getSearchCode())) {
         new25Yn = true;
         new25.add(search.getSearchWord());
       }
@@ -155,12 +155,12 @@ public class SbkController {
       }
     }
     // 받은 searchCode 삭제 후 다시 생성
-    param.getSearchVO().stream().filter(x -> "25".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
     
     SearchVO newSearch = new SearchVO();
     if (new25Yn) {
       newSearch = new SearchVO();
-      newSearch.setSearchCode("25");
+      newSearch.setSearchCode("23");
       newSearch.setSearchWords(new25);
       param.getSearchVO().add(newSearch);
     }
