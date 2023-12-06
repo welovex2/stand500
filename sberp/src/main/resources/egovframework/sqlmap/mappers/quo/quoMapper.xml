@@ -26,6 +26,11 @@
 		    AND QUO_TB.quo_seq = SLS_TB.QUO_SEQ
 		    AND SLS_TB.state != 'D'
 		    
+		    LEFT JOIN SLS_TB chqSls
+		    ON QUO_TB.CHQ_YM = chqSls.CHQ_YM
+		    AND QUO_TB.CHQ_SEQ = chqSls.CHQ_SEQ
+		    AND chqSls.STATE != 'D'
+			    
 		    LEFT JOIN CMPY_TB
 			ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
     
@@ -49,9 +54,15 @@
 					<!-- 15	작성일 -->
 					<when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 16	매출확정일 -->
-					<when test="item.searchCode == 16">AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 16">AND 
+						(DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d') OR
+						DATE_FORMAT(chqSls.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d'))
+					</when>
 					<!-- 19 매출확정자 -->
-					<when test="item.searchCode == 19">AND IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 19">AND 
+						(IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%') OR
+						IFNULL(FN_MEM_NAME(chqSls.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%'))
+					</when>
 					<!-- 57	프로젝트상태 -->
 	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 	        		<!-- 58	프로젝트상태변경일 -->
@@ -144,9 +155,15 @@
 						<!-- 15	작성일 -->
 						<when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 16	매출확정일 -->
-						<when test="item.searchCode == 16">AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 16">AND 
+							(DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d') OR
+							DATE_FORMAT(chqSls.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d'))
+						</when>
 						<!-- 19 매출확정자 -->
-						<when test="item.searchCode == 19">AND IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 19">AND 
+							(IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%') OR
+							IFNULL(FN_MEM_NAME(chqSls.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%'))
+						</when>
 						<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
