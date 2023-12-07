@@ -30,7 +30,21 @@
 
 	<insert id="insert" parameterType="testReq">
     <selectKey resultType="int" keyProperty="testNo" order="BEFORE">
-        SELECT ifnull(MAX(TEST_NO)+1,1) testNo FROM TEST_TB where TEST_TYPE_CODE = #{testTypeCode}
+        SELECT 
+			IF ( IFNULL(org.ORG_TEST_ITEM_SEQ,0) = 0,
+					IFNULL(MAX(TEST_TB.TEST_NO)+1,1),
+					orgNo.TEST_NO)  testNo
+		            
+		FROM TEST_TB 
+			
+		    LEFT JOIN TEST_ITEM_TB org
+		    ON org.TEST_TYPE_CODE = TEST_TB.TEST_TYPE_CODE
+		    AND org.TEST_ITEM_SEQ = #{testItemSeq}
+		    
+		    LEFT JOIN TEST_TB orgNo
+    		ON orgNo.TEST_ITEM_SEQ = org.ORG_TEST_ITEM_SEQ
+    
+		WHERE TEST_TB.TEST_TYPE_CODE = #{testTypeCode}
     </selectKey> 
 		INSERT INTO TEST_TB
 		(
@@ -132,8 +146,9 @@
 					<!-- 40	시험규격 -->
 	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 50	시험번호 -->
-					<when test="item.searchCode == 50">and CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
-			    													,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
+					<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+													    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
 	        	</choose>
 			</foreach>
 		</if>
@@ -148,8 +163,9 @@
 		    IFNULL (FILE_CNT, 0) FILE_CNT,
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
 		    DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
-		    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
-		    			,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testId,
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
 		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
 		    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
@@ -172,7 +188,17 @@
 			IFNULL (FN_POS_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') TestMngPos,
 			IFNULL (TEST_MNGR_TB.TEST_MNG_ID, '') TEST_MNG_ID,
 		    FN_MEM_NAME (SBK_TB.INS_MEM_ID) memName,
-		    IFNULL (RAW_TB.RAW_SEQ, '') raw_Seq,
+		    IF (JOB_TB.SBK_REVISION=0, 
+		    	
+		    	/* 원본신청서의 경우 내 로데이터 */
+		    	IFNULL (RAW_TB.RAW_SEQ, ''), 
+		    	/* 재발행신청서의 경우 원본신청서의 로데이터 */
+		    	(SELECT subRaw.RAW_SEQ FROM TEST_TB subTest
+					INNER JOIN RAW_TB subRaw
+				    ON subTest.TEST_SEQ = subRaw.TEST_SEQ
+				WHERE subTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+				    LIMIT 1
+			)) raw_seq,
 		    IFNULL (DATE_FORMAT (IF (TEST_ITEM_TB.TEST_STNDR_SEQ = 10, RAW_TB.REPORT_DT, TEST_TB.TEST_REPORT_DT), '%Y-%m-%d'), '-') REPORT_DT,
 		    IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', CONCAT (FN_DEPT_NAME(TEST_TB.UDT_MEM_ID),' ',FN_MEM_NAME(TEST_TB.UDT_MEM_ID))) REPORT_DT_INS_NAME,
 			IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', DATE_FORMAT (TEST_TB.UDT_DT, '%Y-%m-%d')) REPORT_DT_INS_DT,
@@ -265,8 +291,9 @@
 					<!-- 40	시험규격 -->
 	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 50	시험번호 -->
-					<when test="item.searchCode == 50">and CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
-		    														,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
+					<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+													    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
 	        	</choose>
 			</foreach>
 		</if>
@@ -619,7 +646,7 @@
         </collection>
 	</resultMap>
 	<select id="selectSaleList" parameterType="comParam" resultMap="sbkMap">
-		set @prev_value:=null;
+		
 		select * from (
 			select
 			    if(
@@ -645,7 +672,7 @@
 					    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 					    
                         JOB_TB.CMPY_SEQ,
-					    IFNULL (FN_CODE_NAME (CMPY_TB.CMPY_CODE, 'PT'), '미등록') cmpyType,
+					    IFNULL (CODE_PT.TYPE_NAME, '미등록') cmpyType,
 					    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 					    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
 					    JOB_TB.PRDCT_NAME prdctName,
@@ -661,8 +688,9 @@
 					    
 					    /* 시험항목 및 비용 */
 					    TEST_TB.TEST_SEQ,
-					    CONCAT (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), ''))
-		    					,'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testId,
+					    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+			    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+			    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 					    TEST_ITEM_TB.TEST_ITEM_SEQ,
 					    cate1.TEST_CATE_SEQ crtfc1,
 					    cate2.TEST_CATE_SEQ crtfc2,
@@ -677,18 +705,18 @@
 					    IF (TEST_ITEM_TB.TEST_STNDR_SEQ=0, TEST_ITEM_TB.TEST_STNDR_TEXT, IFNULL (TEST_STNDR_TB.TEST_STNDR, '')) TEST_STNDR,
 					    
 					    TEST_ITEM_TB.MEMO,
-					    IFNULL (FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE, 'TT'), '') TEST_TYPE,
+					    IFNULL (CODE_TT.TYPE_NAME, '') TEST_TYPE,
 					   
 					
 					    IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) testMem,
                         FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
                          
-					    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') testState,
+					    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
 						TEST_ITEM_TB.NET_SALES netSales,
 
 						IFNULL (MEMO_CNT, 0) memoCnt,
 			            JOB_TB.JOB_SEQ,
-			            IFNULL (FN_CODE_NAME (JOB_TB.STATE_CODE, 'CP'), '변경') stateCode,
+			            IFNULL (CODE_CP.TYPE_NAME, '') stateCode,
 			    		IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt
                         
 					FROM
@@ -742,7 +770,11 @@
 						LEFT JOIN (SELECT TEST_SEQ, COUNT(1) MEMO_CNT FROM TEST_MEMO_TB GROUP BY TEST_MEMO_TB.TEST_SEQ) TEST_MEMO_TB
 						ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
                 
-                        INNER JOIN (SELECT @dense_rank:=0) r
+		                LEFT JOIN COMCODE_TB CODE_PT ON CODE_PT.TYPE_CD = CMPY_TB.CMPY_CODE AND CODE_PT.TOP_CD = 'PT'
+		                LEFT JOIN COMCODE_TB CODE_TT ON CODE_TT.TYPE_CD = TEST_ITEM_TB.TEST_TYPE_CODE AND CODE_TT.TOP_CD = 'TT'
+		                LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CODE_TS.TOP_CD = 'TS'
+		                LEFT JOIN COMCODE_TB CODE_CP ON CODE_CP.TYPE_CD = JOB_TB.STATE_CODE AND CODE_CP.TOP_CD = 'CP'
+                        
 					WHERE
 					    1 = 1
 					    
@@ -809,6 +841,9 @@
 					
 		        ORDER BY SBK_TB.INS_DT, REVISION DESC
 	        ) lst
+	        
+	        INNER JOIN (SELECT @dense_rank:=0, @prev_value:='') AS R
+	        
 	        WHERE 1=1
 	        ORDER BY NO DESC
         ) paging

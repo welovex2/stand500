@@ -84,6 +84,7 @@
 			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
 			RESULT_CODE = #{resultCode},
 			<if test="resultUrl != null and resultUrl != ''">RESULT_URL = #{resultUrl},</if>
+			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
 
@@ -500,6 +501,7 @@
 			<if test="hz2SignUrl != null and hz2SignUrl != ''">HZ2_SIGN_URL = #{hz2SignUrl},</if>
 			HZ2_RESULT_CODE = #{hz2ResultCode},
 			RESULT_URL = #{resultUrl},
+			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
 	
@@ -1088,6 +1090,7 @@
 			  CMNT_A_YN = #{cmntAYn},
 			  CMNT_ETC = #{cmntEtc},
 			  CMNT_ETC_YN = #{cmntEtcYn},
+			  UDT_DT = NOW(),
 			  UDT_MEM_ID = #{udtMemId}
 	</insert>
 	
@@ -1392,6 +1395,7 @@
 	        CMNT_A_YN = #{cmntAYn},
 	        CMNT_ETC = #{cmntEtc},
 	        CMNT_ETC_YN = #{cmntEtcYn},
+	        UDT_DT = NOW(),
 	        UDT_MEM_ID = #{udtMemId}
 	</insert>
 	
@@ -1679,6 +1683,7 @@
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_ETC = #{cmntEtc},
 			CMNT_ETC_YN = #{cmntEtcYn},
+			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>	
 	
@@ -1914,6 +1919,7 @@
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_ETC = #{cmntEtc},
 			CMNT_ETC_YN = #{cmntEtcYn},
+			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>	
 
@@ -2128,6 +2134,7 @@
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_ETC = #{cmntEtc},
 			CMNT_ETC_YN = #{cmntEtcYn},
+			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
 	
@@ -2240,6 +2247,7 @@
 			RESULT_CODE = #{resultCode},
 			MEMO_YN = #{memoYn}, 
 			MEMO = #{memo},
+			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
 
