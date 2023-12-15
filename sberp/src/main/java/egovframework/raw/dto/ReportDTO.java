@@ -32,6 +32,18 @@ public class ReportDTO {
   @Column
   private String testId;
   
+  @ApiModelProperty(value = "0 하단성적서번호 - 리비젼  ", example = "")
+  @Column
+  private int revision;
+  
+  @ApiModelProperty(value = "0 하단성적서번호 - 시험번호  ", example = "")
+  @Column
+  private int testSeq;
+  
+  @ApiModelProperty(value = "0 하단성적서번호 - 전버젼의 발급번호  ", example = "")
+  @Column
+  private String revReportNo;
+  
   @ApiModelProperty(value = "1	발급번호  ", example = "")
   @Column
   private String reportNo;

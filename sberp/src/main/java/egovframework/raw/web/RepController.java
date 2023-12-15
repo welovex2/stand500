@@ -28,6 +28,7 @@ import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.tst.service.Test;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -63,6 +64,16 @@ public class RepController {
 
       // 성적서 발급내역 리스트 가져오기
       detail.setReportList(rawService.reportDetail(testSeq));
+      if (!ObjectUtils.isEmpty(detail.getReportList())) {
+        for (int i=0; i < detail.getReportList().size(); i++) {
+          // 발급내역 시험번호와 내번호가 동일하면
+          if (i > 0 && detail.getReportList().get(i).getTestSeq() == detail.getTestSeq()) {
+            detail.setRevReportNo(detail.getReportList().get(i-1).getReportNo());
+            
+          }
+        }
+      }
+      // -- END 성적서 발급내역 리스트 가져오기
       
       // 3.2 시험항목 >> methodList
       detail.setMethodList(rawService.methodList(rawSeq));

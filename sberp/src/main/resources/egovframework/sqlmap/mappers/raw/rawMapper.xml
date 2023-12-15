@@ -565,7 +565,7 @@
 		<if test="testSeq != 0">AND TEST_TB.TEST_SEQ = #{testSeq}</if>
 	</select>
 	
-	<select id="reportDetail" parameterType="int" resultType="egovMap">
+	<select id="reportDetail" parameterType="int" resultType="testReport">
 		<![CDATA[
 		SELECT 
 			CONCAT ('SB', revJob.SBK_YM, '-' , revJob.SBK_TYPE, LPAD(revJob.SBK_SEQ,4,0),
@@ -779,6 +779,8 @@
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
 		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
+		   	JOB_TB.SBK_REVISION revision,
+		   	TEST_TB.TEST_SEQ,
 		    /* 1	발급번호 */
 		    /* 2	접수일 */
 		    DATE_FORMAT (STR_TO_DATE (
