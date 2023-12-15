@@ -2,6 +2,7 @@ package egovframework.tst.web;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.SbkDTO;
@@ -130,6 +132,49 @@ public class TstController {
 
       return res;
     }
+    
+    /**
+     * OR 조건 검색 처리
+     */
+    List<String> new25 = new ArrayList<String>();
+    List<String> new22 = new ArrayList<String>();
+    boolean new25Yn = false, new22Yn = false;
+    for (SearchVO search : param.getSearchVO()) {
+      // 1. 시험부(23)
+      if ("23".equals(search.getSearchCode())) {
+        new25Yn = true;
+        new25.add(search.getSearchWord());
+      }
+      // 2. 신청구분(22)
+      else if ("22".equals(search.getSearchCode())) {
+        new22Yn = true;
+        if ("1".equals(search.getSearchWord())) new22.add("SG_NEW_YN");
+        else if ("2".equals(search.getSearchWord())) new22.add("SG_GB_YN");
+        else if ("3".equals(search.getSearchWord())) new22.add("SG_DG_YN");
+        else if ("4".equals(search.getSearchWord())) new22.add("SG_ETC_YN");
+        
+      }
+    }
+    // 받은 searchCode 삭제 후 다시 생성
+    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    
+    SearchVO newSearch = new SearchVO();
+    if (new25Yn) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("23");
+      newSearch.setSearchWords(new25);
+      param.getSearchVO().add(newSearch);
+    }
+    
+    if (new22Yn) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("22");
+      newSearch.setSearchWords(new22);
+      param.getSearchVO().add(newSearch);
+    }
+    /**
+     * -- END OR 조건 검색 처리
+     */
     
     // 페이징
     param.setPageUnit(param.getPageUnit());
