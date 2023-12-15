@@ -1,6 +1,7 @@
 package egovframework.tst.service.impl;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +12,6 @@ import egovframework.tst.dto.DebugDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.service.DbgMapper;
-import egovframework.tst.service.Debug;
 import egovframework.tst.service.Test;
 import egovframework.tst.service.TestCate;
 import egovframework.tst.service.TstMapper;
@@ -123,7 +123,16 @@ public class TstServiceImpl implements TstService {
 
   @Override
   public List<Res> selectSaleList(ComParam param) {
-    return tstMapper.selectSaleList(param);
+    
+    List<Res> result = tstMapper.selectSaleList(param);
+    // 페이징
+    List<Res> page = result.stream().skip(param.getFirstIndex()).limit(param.getPageUnit()).collect(Collectors.toList());
+    
+    // 번호 매기기
+    for (int i=0; i<page.size(); i++) {
+      page.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    return page;
   }
 
   @Override
