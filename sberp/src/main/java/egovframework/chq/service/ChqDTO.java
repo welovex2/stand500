@@ -104,7 +104,11 @@ public class ChqDTO extends Chq {
     @ApiModelProperty(value = "제품명 ", example = "")
     @Column
     private String prdctName;
-
+    
+    @ApiModelProperty(value = "부가세여부 ", example = "")
+    @Column
+    private String vatYn;
+    
     @ApiModelProperty(value = "시험항목리스트", example = "[]")
     @Column
     private List<TestItem> items;
