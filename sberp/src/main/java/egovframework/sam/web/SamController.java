@@ -209,7 +209,7 @@ public class SamController {
   @ApiOperation(value = "시료 리스트", notes = "검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n"
       + " 54    시료반출일,21   시료반입일,4 컨설팅명,12  회사명,6   제품명,27  모델명,55  시료담당자")
   @GetMapping(value = "/list.do")
-  public BasicResponse ppList(@ModelAttribute ComParam param) throws Exception {
+  public BasicResponse list(@ModelAttribute ComParam param) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;

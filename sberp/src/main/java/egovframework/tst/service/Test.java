@@ -18,7 +18,10 @@ import lombok.ToString;
 @ToString
 public class Test {
 
-
+  @ApiModelProperty(value = "시험번호 ", example = "")
+  @Column
+  private String rawId;
+  
   @ApiModelProperty(value = "시험 고유번호 ", example = "")
   @Column
   private int testSeq;

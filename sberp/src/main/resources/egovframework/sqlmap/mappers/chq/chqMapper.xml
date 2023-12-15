@@ -192,7 +192,7 @@
 		<result column="cmpyTitle" property="cmpyTitle"/>
 		<result column="CMPY_NAME" property="cmpyName"/>
 		<result column="PRDCT_NAME" property="prdctName"/>
-		
+		<result column="VAT_YN" property="vatYn"/>
 		<collection property="items" ofType="testItemDTO">
 			<id column="test_item_seq" property="testItemSeq"/>
 			<result column="testCate" property="testCate"/>
@@ -223,7 +223,8 @@
 			) TEST_TYPE,
 			FEE,
 			LCNS_TAX,
-			TEST_FEE
+			TEST_FEE,
+			IF(QUO_TB.VAT_YN=1,'O','') VAT_YN
 		FROM
 			CHQ_TB
 			
