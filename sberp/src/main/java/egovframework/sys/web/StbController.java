@@ -170,21 +170,21 @@ public class StbController {
     List<TestCateDTO> list = new ArrayList<TestCateDTO>();
 
     // 페이징
-    param.setPageUnit(20);
-    param.setPageSize(propertyService.getInt("pageSize"));
-
-    PagingVO pagingVO = new PagingVO();
-
-    pagingVO.setCurrentPageNo(param.getPageIndex());
-    pagingVO.setDisplayRow(param.getPageUnit());
-    pagingVO.setDisplayPage(param.getPageSize());
-
-    param.setFirstIndex(pagingVO.getFirstRecordIndex());
-    int cnt = stbService.selectCateListCnt(param);
-
-    pagingVO.setTotalCount(cnt);
-    pagingVO.setTotalPage(
-        (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
+//    param.setPageUnit(20);
+//    param.setPageSize(propertyService.getInt("pageSize"));
+//
+//    PagingVO pagingVO = new PagingVO();
+//
+//    pagingVO.setCurrentPageNo(param.getPageIndex());
+//    pagingVO.setDisplayRow(param.getPageUnit());
+//    pagingVO.setDisplayPage(param.getPageSize());
+//
+//    param.setFirstIndex(pagingVO.getFirstRecordIndex());
+//    int cnt = stbService.selectCateListCnt(param);
+//
+//    pagingVO.setTotalCount(cnt);
+//    pagingVO.setTotalPage(
+//        (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
     list = stbService.selectCateList(param);
 
     if (list == null) {
@@ -192,7 +192,7 @@ public class StbController {
       msg = ResponseMessage.NO_DATA;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
 
     return res;
   }

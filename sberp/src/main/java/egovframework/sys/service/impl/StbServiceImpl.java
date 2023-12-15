@@ -22,10 +22,10 @@ public class StbServiceImpl implements StbService {
     return stbMapper.selectList(param);
   }
 
-  @Override
-  public int selectListCnt(ComParam param) {
-    return stbMapper.selectListCnt(param);
-  }
+//  @Override
+//  public int selectListCnt(ComParam param) {
+//    return stbMapper.selectListCnt(param);
+//  }
 
   @Override
   @Transactional
@@ -99,9 +99,9 @@ public class StbServiceImpl implements StbService {
     return stbMapper.selectCateList(param);
   }
 
-  @Override
-  public int selectCateListCnt(ComParam param) {
-    return stbMapper.selectCateListCnt(param);
-  }
+//  @Override
+//  public int selectCateListCnt(ComParam param) {
+//    return stbMapper.selectCateListCnt(param);
+//  }
 
 }

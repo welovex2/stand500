@@ -174,7 +174,6 @@
 			) lst
 		ORDER BY
 			no desc
-		LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
 	
 	<insert id="insertCate" parameterType="testCateDTO">

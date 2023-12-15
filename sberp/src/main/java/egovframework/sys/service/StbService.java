@@ -9,7 +9,7 @@ public interface StbService {
 
   List<TestStndrDTO> selectList(ComParam param);
 
-  int selectListCnt(ComParam param);
+//  int selectListCnt(ComParam param);
 
   boolean insert(List<TestStndrDTO> req);
 
@@ -19,5 +19,5 @@ public interface StbService {
 
   List<TestCateDTO> selectCateList(ComParam param);
 
-  int selectCateListCnt(ComParam param);
+//  int selectCateListCnt(ComParam param);
 }
