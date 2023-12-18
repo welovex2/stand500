@@ -30,21 +30,40 @@
 
 	<insert id="insert" parameterType="testReq">
     <selectKey resultType="int" keyProperty="testNo" order="BEFORE">
-        SELECT 
+		# 해당 발급년도에 신청된 시험
+		SELECT 
 			IF ( IFNULL(org.ORG_TEST_ITEM_SEQ,0) = 0,
 					IFNULL(MAX(TEST_TB.TEST_NO)+1,1),
 					orgNo.TEST_NO)  testNo
-		            
-		FROM TEST_TB 
-			
-		    LEFT JOIN TEST_ITEM_TB org
-		    ON org.TEST_TYPE_CODE = TEST_TB.TEST_TYPE_CODE
-		    AND org.TEST_ITEM_SEQ = #{testItemSeq}
+		FROM TEST_TB
+		
+			INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
 		    
-		    LEFT JOIN TEST_TB orgNo
-    		ON orgNo.TEST_ITEM_SEQ = org.ORG_TEST_ITEM_SEQ
-    
+		    INNER JOIN JOB_TB
+		    ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+		    
+			LEFT JOIN TEST_ITEM_TB org
+			ON org.TEST_TYPE_CODE = TEST_TB.TEST_TYPE_CODE
+			AND org.TEST_ITEM_SEQ = #{testItemSeq}
+			
+			LEFT JOIN TEST_TB orgNo
+			ON orgNo.TEST_ITEM_SEQ = org.ORG_TEST_ITEM_SEQ
+		            
+		# 특정 시험부
 		WHERE TEST_TB.TEST_TYPE_CODE = #{testTypeCode}
+		# 내 신청서의 발급년도
+		AND JOB_TB.SBK_YM = (SELECT
+								JOB_TB.SBK_YM
+							FROM TEST_ITEM_TB
+								
+							    INNER JOIN JOB_TB
+							    ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+							    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+							    
+							
+							WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq})
     </selectKey> 
 		INSERT INTO TEST_TB
 		(
