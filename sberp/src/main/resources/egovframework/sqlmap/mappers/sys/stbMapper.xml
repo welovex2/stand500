@@ -36,7 +36,7 @@
 					TEST_STNDR_SEQ,
 					TEST_STNDR_TB.TEST_STNDR,
 					IFNULL(TEST_STNDR_TB.MEMO, '') MEMO,
-					date_format (TEST_STNDR_TB.ins_dt, '%Y-%m-%d') insDtStr,
+					DATE_FORMAT(TEST_STNDR_TB.ins_dt, '%Y-%m-%d') insDtStr,
 					IFNULL(FN_MEM_NAME (TEST_STNDR_TB.ins_mem_id), '') memName
 				FROM
 					TEST_STNDR_TB
@@ -139,7 +139,7 @@
 				    cate3.name depth3Text,
 				    cate4.name depth4Text,
 				    cate4.memo,
-				    date_format (cate4.ins_dt, '%Y-%m-%d') insDtStr,
+				    DATE_FORMAT(cate4.ins_dt, '%Y-%m-%d') insDtStr,
 				    IFNULL(FN_MEM_NAME (cate4.ins_mem_id), '') memName
 				FROM
 				    TEST_CATE_TB cate4

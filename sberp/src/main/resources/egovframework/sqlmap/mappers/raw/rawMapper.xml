@@ -733,7 +733,7 @@
 		    ) receiptDt,
 		    (
 		        SELECT
-		            DATE_FORMAT (INS_DT, '%Y-%m-%d')
+		            DATE_FORMAT(INS_DT, '%Y-%m-%d')
 		        FROM
 		            TEST_STATE_TB
 		        WHERE
@@ -783,13 +783,13 @@
 		   	TEST_TB.TEST_SEQ,
 		    /* 1	발급번호 */
 		    /* 2	접수일 */
-		    DATE_FORMAT (STR_TO_DATE (
+		    DATE_FORMAT(STR_TO_DATE (
 		        CONCAT (SBK_TB.APP_YEAR, SBK_TB.APP_MON, SBK_TB.APP_DAY),
 		        '%Y%m%d'
 		    ), '%Y년 %m월 %d일') RCPT_DT,
 		    /* 3	시험기간 */
-		    date_format (TEST_S_DT, '%Y년 %m월 %d일') TEST_S_DT,
-		    date_format (TEST_E_DT, '%Y년 %m월 %d일') TEST_E_DT,
+		    DATE_FORMAT(TEST_S_DT, '%Y년 %m월 %d일') TEST_S_DT,
+		    DATE_FORMAT(TEST_E_DT, '%Y년 %m월 %d일') TEST_E_DT,
 		    /* 4	고정 > 신청인(상호명) */
 		    JOB_TB.CMPY_NAME APLCN,
 		    /* 4-1	사업자등록번호 */
@@ -978,7 +978,7 @@
 				SELECT
 				    FILE_RAW_SEQ,
 				    TEST_SEQ testSeq,
-				    DATE_FORMAT (FILE_RAW_TB.ins_dt, '%Y-%m-%d') insDtStr,
+				    DATE_FORMAT(FILE_RAW_TB.ins_dt, '%Y-%m-%d') insDtStr,
 				    FN_CODE_NAME (FILE_TYPE, 'RF') file_type,
 				    TITLE,
 				    FN_MEM_NAME (FILE_RAW_TB.ins_mem_id) memName,
@@ -998,7 +998,7 @@
 		        		<!-- 2	작성자 -->
 						<when test="item.searchCode ==  2">AND IFNULL(FN_MEM_NAME(FILE_RAW_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 15	작성일 -->
-						<when test="item.searchCode == 15">AND DATE_FORMAT (FILE_RAW_TB.ins_dt, '%Y%m%d') BETWEEN date_format(#{item.startDate}, '%Y%m%d') AND date_format(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 15">AND DATE_FORMAT(FILE_RAW_TB.ins_dt, '%Y%m%d') BETWEEN date_format(#{item.startDate}, '%Y%m%d') AND date_format(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 32	첨부파일용도 -->
 						<when test="item.searchCode == 32">AND FILE_TYPE = #{item.searchWord}</when>
 						<!-- 33	제목 -->

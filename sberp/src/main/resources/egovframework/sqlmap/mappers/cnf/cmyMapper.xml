@@ -41,7 +41,7 @@
 			(
 				SELECT
 					CMPY_SEQ,
-					date_format (CMPY_TB.INS_DT, '%Y-%m-%d') insDtStr,
+					DATE_FORMAT(CMPY_TB.INS_DT, '%Y-%m-%d') insDtStr,
 					lpad (CMPY_TB.cmpy_seq, 4, '0') cmpySeq,
 					CMPY_TB.CMPY_NAME,
 					ifnull (FN_CODE_NAME (type_code, 'PK'), '') partnerType,

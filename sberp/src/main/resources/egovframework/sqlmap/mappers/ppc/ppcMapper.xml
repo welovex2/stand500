@@ -43,7 +43,7 @@
 				        <!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND PP_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
-		        		<when test="item.searchCode == 58">AND DATE_FORMAT (PP_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<when test="item.searchCode == 58">AND DATE_FORMAT(PP_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 		        	</choose>
 	        	
 	        </foreach>
@@ -58,7 +58,7 @@
 			SELECT
 				
 				CONCAT ('KR0144', '-', PP_YM, '-', LPAD(PP_SEQ,5,0)) ppId,
-	            DATE_FORMAT (PP_TB.INS_DT, '%Y-%m-%d') INS_DT_STR,
+	            DATE_FORMAT(PP_TB.INS_DT, '%Y-%m-%d') INS_DT_STR,
 	            IFNULL (FN_CODE_NAME(CMPY_CODE,'PT'), '미등록') CMPY_TYPE,
 	            IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 	            
@@ -70,17 +70,17 @@
 
 			    BL,
                 IM_QTY,
-                IFNULL (DATE_FORMAT (PP_TB.APP_DT, '%Y-%m-%d'), '-') APP_DT,
+                IFNULL (DATE_FORMAT(PP_TB.APP_DT, '%Y-%m-%d'), '-') APP_DT,
 			    
                 HS_CD,
 			    
 			    IFNULL (FN_MEM_NAME(PP_TB.INS_MEM_ID), '') INS_NAME,
 	    		IFNULL (FN_CODE_NAME (PP_TB.STATE_CODE, 'CK'), '변경') stateCode,
-	    		IFNULL (DATE_FORMAT (PP_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
+	    		IFNULL (DATE_FORMAT(PP_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
 			    FN_LAST_PP_MENO(PP_TB.pp_ym, PP_TB.pp_seq) LAST_MEMO,
 			    
 			    IFNULL (IF (DATEDIFF (CURRENT_DATE(), PP_TB.APP_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), PP_TB.APP_DT)), 0) addDay,
-			    DATE_FORMAT (DATE_ADD(PP_TB.INS_DT, INTERVAL 60 DAY), '%Y-%m-%d') dDay,
+			    DATE_FORMAT(DATE_ADD(PP_TB.INS_DT, INTERVAL 60 DAY), '%Y-%m-%d') dDay,
 			    
 				IFNULL (SBK_ID, '') SBK_ID
 			FROM PP_TB
@@ -123,7 +123,7 @@
 				        <!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND PP_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
-		        		<when test="item.searchCode == 58">AND DATE_FORMAT (PP_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<when test="item.searchCode == 58">AND DATE_FORMAT(PP_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 		        	</choose>
 		        	
 		        </foreach>
@@ -173,7 +173,7 @@
 		SELECT 
 			PP_HIS_SEQ,
 			MEMO,
-            DATE_FORMAT (INS_DT, '%Y-%m-%d %T') insDtStr,
+            DATE_FORMAT(INS_DT, '%Y-%m-%d %T') insDtStr,
             CONCAT_WS ('_', fn_dept_name(INS_MEM_ID),fn_mem_name(INS_MEM_ID)) insMem
 		FROM PP_HIS_TB
 		WHERE

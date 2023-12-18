@@ -457,7 +457,7 @@
 		
 	<insert id="insert" parameterType="sbkReq">
 		<selectKey keyProperty="sbkSeq" resultType="int" order="BEFORE">
-	        SELECT IFNULL (MAX(SBK_SEQ),0)+1 FROM SBK_TB WHERE SBK_YM = DATE_FORMAT (NOW(), '%y') AND TYPE = #{type}
+	        SELECT IFNULL (MAX(SBK_SEQ),0)+1 FROM SBK_TB WHERE SBK_YM = DATE_FORMAT(NOW(), '%y') AND TYPE = #{type}
 	    </selectKey>
 			INSERT INTO SBK_TB
 			(
@@ -587,7 +587,7 @@
 			)
 			VALUES
 			(
-				DATE_FORMAT (NOW(), '%y'),
+				DATE_FORMAT(NOW(), '%y'),
 				#{sbkSeq},
 				#{type},
 				<if test="estCmpDt != null and estCmpDt != ''">
@@ -697,9 +697,9 @@
 				#{docSiYn},
 				#{docSgYn},
 				#{docSbYn},
-				DATE_FORMAT (NOW(), '%Y'),
-				DATE_FORMAT (NOW(), '%m'),
-				DATE_FORMAT (NOW(), '%d'),
+				DATE_FORMAT(NOW(), '%Y'),
+				DATE_FORMAT(NOW(), '%m'),
+				DATE_FORMAT(NOW(), '%d'),
 				#{appName},
 				#{appSignUrl},
 				#{appAgreeName},
@@ -737,11 +737,11 @@
 						<!-- 12	회사명 -->
 						<when test="item.searchCode == 12">AND IFNULL (cmpyName, '') LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 						<!-- 15	작성일 -->
-						<when test="item.searchCode == 15">AND DATE_FORMAT (INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 15">AND DATE_FORMAT(INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 20	예상완료일 -->
-						<when test="item.searchCode == 20">AND DATE_FORMAT (EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 20">AND DATE_FORMAT(EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 21	시료반입일 -->
-						<when test="item.searchCode == 21">AND DATE_FORMAT (IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 21">AND DATE_FORMAT(IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 35	국가-->
 						<when test="item.searchCode == 35">AND crtfc1 = #{item.searchWord}</when>
 						<!-- 36	인증종류1 -->
@@ -783,7 +783,7 @@
 		        		<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
-		        		<when test="item.searchCode == 58">AND DATE_FORMAT (stateUdtDt, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<when test="item.searchCode == 58">AND DATE_FORMAT(stateUdtDt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 63	시료반입상태 -->
 						<when test="item.searchCode == 63">AND 
 							CASE 
@@ -879,11 +879,11 @@
 						<!-- 12	회사명 -->
 						<when test="item.searchCode == 12">AND IFNULL (cmpyName, '') LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 						<!-- 15	작성일 -->
-						<when test="item.searchCode == 15">AND DATE_FORMAT (INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 15">AND DATE_FORMAT(INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 20	예상완료일 -->
-						<when test="item.searchCode == 20">AND DATE_FORMAT (EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 20">AND DATE_FORMAT(EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 21	시료반입일 -->
-						<when test="item.searchCode == 21">AND DATE_FORMAT (IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 21">AND DATE_FORMAT(IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 35	국가-->
 						<when test="item.searchCode == 35">AND crtfc1 = #{item.searchWord}</when>
 						<!-- 36	인증종류1 -->
@@ -925,7 +925,7 @@
 		        		<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
-		        		<when test="item.searchCode == 58">AND DATE_FORMAT (stateUdtDt, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<when test="item.searchCode == 58">AND DATE_FORMAT(stateUdtDt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 		        		<!-- 63	시료반입상태 -->
 						<when test="item.searchCode == 63">AND 
 							CASE 
@@ -1001,7 +1001,7 @@
 	<select id="hisList" parameterType="String" resultType="egovMap">
 		SELECT 
 		
-			DATE_FORMAT (SBK_HIS_TB.ins_dt, '%Y-%m-%d %T') intDtStr,
+			DATE_FORMAT(SBK_HIS_TB.ins_dt, '%Y-%m-%d %T') intDtStr,
 		    MEMBER_TB.MEM_NAME,
 		    FN_POS_NAME(SBK_HIS_TB.MEM_ID) memPos
 			

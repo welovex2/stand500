@@ -159,13 +159,13 @@
 		    IFNULL (MEMO_CNT, 0) MEMO_CNT,
 		    IFNULL (FILE_CNT, 0) FILE_CNT,
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
-		    DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
+		    DATE_FORMAT(TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
 		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
 		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
-		    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
+		    IFNULL (DATE_FORMAT(SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 		    '미반입' imPoint,
 		    '0' imSeq,
 		    CMPY_NAME,
@@ -196,9 +196,9 @@
 				WHERE subTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
 				    LIMIT 1
 			)) raw_seq,
-		    IFNULL (DATE_FORMAT (IF (TEST_ITEM_TB.TEST_STNDR_SEQ = 10, TEST_TB.REPORT_DT, TEST_TB.TEST_REPORT_DT), '%Y-%m-%d'), '-') REPORT_DT,
+		    IFNULL (DATE_FORMAT(IF (TEST_ITEM_TB.TEST_STNDR_SEQ = 10, TEST_TB.REPORT_DT, TEST_TB.TEST_REPORT_DT), '%Y-%m-%d'), '-') REPORT_DT,
 		    IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', CONCAT (FN_DEPT_NAME(TEST_TB.UDT_MEM_ID),' ',FN_MEM_NAME(TEST_TB.UDT_MEM_ID))) REPORT_DT_INS_NAME,
-			IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', DATE_FORMAT (TEST_TB.UDT_DT, '%Y-%m-%d')) REPORT_DT_INS_DT,
+			IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', DATE_FORMAT(TEST_TB.UDT_DT, '%Y-%m-%d')) REPORT_DT_INS_DT,
 		    '-' rawState
 		    
 		FROM TEST_ITEM_TB
@@ -538,15 +538,15 @@
 		        <foreach collection="searchVO" item="item" separator="">
 		        	<choose>
 		        		<!-- 15 작성일 -->
-				        <when test="item.searchCode == 15">AND DATE_FORMAT (QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 59 신청일 -->
-				        <when test="item.searchCode == 59">AND DATE_FORMAT (SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <when test="item.searchCode == 59">AND DATE_FORMAT(SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 20	완료요청일 -->
-						<when test="item.searchCode == 20">AND DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 20">AND DATE_FORMAT(SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 21	시료반입일 -->
-						<when test="item.searchCode == 21">AND DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 21">AND DATE_FORMAT(IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 58	프로젝트상태변경일 -->
-	        			<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+	        			<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 		        		<!-- 56	신청서구분 -->
 		        		<when test="item.searchCode == 56">
 		        			<choose>
@@ -656,17 +656,17 @@
 			    (
 */
 			        SELECT
-                       
+			        
                         CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) quoId, 
-						DATE_FORMAT (QUO_TB.INS_DT, '%Y-%m-%d') quoInsDtStr,
+						DATE_FORMAT(QUO_TB.INS_DT, '%Y-%m-%d') quoInsDtStr,
                           
 					    CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) sbkId,
-					    DATE_FORMAT (SBK_TB.INS_DT, '%Y-%m-%d') sbkInsDtStr,
+					    DATE_FORMAT(SBK_TB.INS_DT, '%Y-%m-%d') sbkInsDtStr,
 
 						/* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
-						IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-')) carryInDt,
-						IFNULL (DATE_FORMAT (TEST_TB.INS_DT, '%Y-%m-%d'), '') testInDt,
-					    IFNULL (DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
+						IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT(IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-')) carryInDt,
+						IFNULL (DATE_FORMAT(TEST_TB.INS_DT, '%Y-%m-%d'), '') testInDt,
+					    IFNULL (DATE_FORMAT(SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 					    
                         JOB_TB.CMPY_SEQ,
 					    IFNULL (CODE_PT.TYPE_NAME, '미등록') cmpyType,
@@ -714,7 +714,7 @@
 						IFNULL (MEMO_CNT, 0) memoCnt,
 			            JOB_TB.JOB_SEQ,
 			            IFNULL (CODE_CP.TYPE_NAME, '') stateCode,
-			    		IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt
+			    		IFNULL (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt
                         
 					FROM
 					    SBK_TB
@@ -779,15 +779,15 @@
 		        <foreach collection="searchVO" item="item" separator="">
 		        	<choose>
 		        		<!-- 15 작성일 -->
-				        <when test="item.searchCode == 15">AND DATE_FORMAT (QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 59 신청일 -->
-				        <when test="item.searchCode == 59">AND DATE_FORMAT (SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+				        <when test="item.searchCode == 59">AND DATE_FORMAT(SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 20	완료요청일 -->
-						<when test="item.searchCode == 20">AND DATE_FORMAT (SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 20">AND DATE_FORMAT(SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 21	시료반입일 -->
-						<when test="item.searchCode == 21">AND DATE_FORMAT (IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 21">AND DATE_FORMAT(IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 58	프로젝트상태변경일 -->
-	        			<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+	        			<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 		        		<!-- 56	신청서구분 -->
 		        		<when test="item.searchCode == 56">
 		        			<choose>

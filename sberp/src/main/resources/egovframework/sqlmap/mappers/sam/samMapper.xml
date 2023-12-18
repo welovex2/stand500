@@ -113,14 +113,14 @@
 		    DIV_CODE,
 		    QTY,
 		    IM_SUB_TB.MEMO,
-			DATE_FORMAT (CARRY_IN_DATE,'%Y-%m-%d') CARRY_IN_DATE,
+			DATE_FORMAT(CARRY_IN_DATE,'%Y-%m-%d') CARRY_IN_DATE,
 		    FN_MEM_NAME (CARRY_IN_ID) CARRY_IN_ID,
 		    CARRY_IN_CODE,
 		    CARRY_IN_DLVRY_NAME,
 		    CARRY_IN_DLVRY_PHONE,
 		    CARRY_IN_DLVRY_INVC,
 		    CARRY_IN_MEMO,
-		    DATE_FORMAT (CARRY_OUT_DATE,'%Y-%m-%d') CARRY_OUT_DATE,
+		    DATE_FORMAT(CARRY_OUT_DATE,'%Y-%m-%d') CARRY_OUT_DATE,
 		    FN_MEM_NAME (CARRY_OUT_ID) CARRY_OUT_ID,
 		    IFNULL (CARRY_OUT_CODE, '') CARRY_OUT_CODE,
 		    CARRY_OUT_DLVRY_NAME,
@@ -154,9 +154,9 @@
 	       
 	        	<choose>
 			        <!-- 54	시료반출일 -->
-			        <when test="item.searchCode == 54">AND DATE_FORMAT (CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        <when test="item.searchCode == 54">AND DATE_FORMAT(CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 			        <!-- 21	시료반입일 -->
-			        <when test="item.searchCode == 21">AND DATE_FORMAT (CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        <when test="item.searchCode == 21">AND DATE_FORMAT(CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 4	컨설팅명 -->
 					<when test="item.searchCode ==  4">AND IFNULL (CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 					<!-- 12	회사명 -->
@@ -184,9 +184,9 @@
                     concat (SBK_TB.APP_YEAR, LPAD (SBK_TB.APP_MON, 2, 0), LPAD (SBK_TB.APP_DAY, 2, 0)),
                     '%Y%m%d'
                 ),'%Y-%m-%d') RCPT_DT,
-			    DATE_FORMAT (CARRY_IN_DATE, '%Y-%m-%d') CARRY_IN_DATE,
+			    DATE_FORMAT(CARRY_IN_DATE, '%Y-%m-%d') CARRY_IN_DATE,
 			    if (CARRY_OUT_CODE is null, '반입', '반출') CARRY_STATE,
-			    IFNULL (DATE_FORMAT (CARRY_OUT_DATE, '%Y-%m-%d'), '-') CARRY_OUT_DATE,
+			    IFNULL (DATE_FORMAT(CARRY_OUT_DATE, '%Y-%m-%d'), '-') CARRY_OUT_DATE,
 			    QTY,
 			    CARRY_IN_DLVRY_NAME,
 			    FN_MEM_NAME (CARRY_IN_ID) CARRY_IN_NAME,
@@ -215,9 +215,9 @@
 		       
 		        	<choose>
 				        <!-- 54	시료반출일 -->
-				        <when test="item.searchCode == 54">AND DATE_FORMAT (CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+				        <when test="item.searchCode == 54">AND DATE_FORMAT(CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 				        <!-- 21	시료반입일 -->
-				        <when test="item.searchCode == 21">AND DATE_FORMAT (CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+				        <when test="item.searchCode == 21">AND DATE_FORMAT(CARRY_IN_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 4	컨설팅명 -->
 						<when test="item.searchCode ==  4">AND IFNULL (CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 12	회사명 -->

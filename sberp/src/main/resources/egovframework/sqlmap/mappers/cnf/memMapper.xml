@@ -45,7 +45,7 @@
 				SELECT
 					@rownum:=@rownum+1 as no,
 					LPAD (member_seq, 4, 0) memberSeq,
-					IFNULL (date_format (MEMBER_TB.IN_DT, '%Y-%m-%d'), '') inDt,
+					IFNULL (DATE_FORMAT(MEMBER_TB.IN_DT, '%Y-%m-%d'), '') inDt,
 					FN_DEPT_NAME (id) deptName,
 					id,
 					mem_name,
@@ -62,28 +62,28 @@
 					            WHEN WORK_STATE = 2 THEN CONCAT (
 					                ' (',
 					                IFNULL (
-					                    date_format (MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d'),
+					                    DATE_FORMAT(MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d'),
 					                    ''
 					                ),
 					                '~',
 					                IFNULL (
-					                    date_format (MEMBER_TB.LEAVE_E_DT, '%Y-%m-%d'),
+					                    DATE_FORMAT(MEMBER_TB.LEAVE_E_DT, '%Y-%m-%d'),
 					                    ''
 					                ),
 					                ')'
 					            )
 					            WHEN WORK_STATE = 3 THEN CONCAT (
 					                '(',
-					                IFNULL (date_format (MEMBER_TB.QUIT_DT, '%Y-%m-%d'), ''),
+					                IFNULL (DATE_FORMAT(MEMBER_TB.QUIT_DT, '%Y-%m-%d'), ''),
 					                ')'
 					            )
 					        END,
 					        ''
 					    )
 					) workSate,
-					date_format (MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
-					date_format (MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d') leaveEDt,
-					date_format (MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d') quitDt,
+					DATE_FORMAT(MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
+					DATE_FORMAT(MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d') leaveEDt,
+					DATE_FORMAT(MEMBER_TB.LEAVE_S_DT, '%Y-%m-%d') quitDt,
 					LOCK_YN
 					from
 					    MEMBER_TB
@@ -190,7 +190,7 @@
 	<select id="detail" parameterType="int" resultType="member">
 		SELECT
 			lpad (MEMBER_SEQ, 4, 0) memberSeq,
-		    date_format (IN_DT, '%Y-%m-%d') inDt,
+		    DATE_FORMAT(IN_DT, '%Y-%m-%d') inDt,
 		    DEPT_SEQ,
 		    ID,
 		    MEM_NAME,
@@ -201,9 +201,9 @@
 		    FN_GET_PHONE_FORMAT(PHONE) PHONE,
 		    AUTH_CODE,
 		    WORK_STATE,
-		    date_format (LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
-		    date_format (LEAVE_E_DT, '%Y-%m-%d') leaveEDt,
-		    date_format (QUIT_DT, '%Y-%m-%d') quitDt
+		    DATE_FORMAT(LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
+		    DATE_FORMAT(LEAVE_E_DT, '%Y-%m-%d') leaveEDt,
+		    DATE_FORMAT(QUIT_DT, '%Y-%m-%d') quitDt
 		FROM
 			MEMBER_TB
 		WHERE MEMBER_SEQ = #{memberSeq}

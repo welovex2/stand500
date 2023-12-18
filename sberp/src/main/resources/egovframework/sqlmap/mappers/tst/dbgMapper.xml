@@ -82,7 +82,7 @@
 			lst.*
 		from (
 			SELECT
-			    date_format (DEBUG_TB.ins_dt, '%Y-%m-%d') insDtStr,
+			    DATE_FORMAT(DEBUG_TB.ins_dt, '%Y-%m-%d') insDtStr,
 			    concat (
 			        CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')),
 			        '-',
@@ -96,7 +96,7 @@
 			    DEBUG_TB.debug_seq,
 			    IFNULL (FN_CODE_NAME (DEBUG_STATE_TB.STATE_CODE, 'TD'), '-') debugState,
 			    IFNULL (DEBUG_TB.STATE_CODE, '') STATE_CODE,
-			    IFNULL (date_format (DEBUG_TB.UDT_DT, '%Y-%m-%d'), '') uptDtStr,
+			    IFNULL (DATE_FORMAT(DEBUG_TB.UDT_DT, '%Y-%m-%d'), '') uptDtStr,
 			    concat(FN_DEPT_NAME (DEBUG_TB.UDT_MEM_ID),' ',FN_MEM_NAME (DEBUG_TB.UDT_MEM_ID)) udtMem,
 			    IFNULL (
 			        concat (DATEDIFF (DEBUG_TB.UDT_DT, DEBUG_TB.ins_dt), '일'),

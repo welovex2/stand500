@@ -66,7 +66,7 @@
 					<!-- 57	프로젝트상태 -->
 	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 	        		<!-- 58	프로젝트상태변경일 -->
-	        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+	        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 	        	</choose>
 	        </foreach>
 		</if>
@@ -83,7 +83,7 @@
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
 			    FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, TYPE, QUO_TB.QUO_SEQ) quoId, 
 				FN_MEM_NAME (QUO_TB.INS_MEM_ID) memName,
-			    DATE_FORMAT (QUO_TB.INS_DT, '%Y-%m-%d') insDtStr,
+			    DATE_FORMAT(QUO_TB.INS_DT, '%Y-%m-%d') insDtStr,
 			    if(QUO_TB.CHQ_SEQ = 0,
 						IFNULL (date_format(SLS_TB.CNFRM_DT, '%Y-%m-%d'),''),
                         IFNULL (date_format(chqSls.CNFRM_DT, '%Y-%m-%d'),'')) cnfrmDtStr,
@@ -101,7 +101,7 @@
 			    IFNULL (JOB_TB.CNS_SEQ, '') CNS_SEQ,
 			    IFNULL (FN_LAST_CNS_MENO(JOB_TB.CNS_SEQ), '') lastMemo,
 			    IFNULL (FN_CODE_NAME (JOB_TB.STATE_CODE, 'CP'), '변경') stateCode,
-			    IFNULL (DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
+			    IFNULL (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
 			    IFNULL (CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')), '') sbkId
 			    
 			FROM QUO_TB
@@ -167,7 +167,7 @@
 						<!-- 57	프로젝트상태 -->
 		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
-		        		<when test="item.searchCode == 58">AND DATE_FORMAT (JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT (#{item.startDate}, '%Y%m%d') AND DATE_FORMAT (#{item.endDate}, '%Y%m%d')</when>
+		        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 		        	</choose>
 		        </foreach>
 			</if>
@@ -628,9 +628,9 @@
 			,IFNULL (JOB_TB.MNG_FAX, '') CMPYFAX
 			,MEMBER_TB.MEM_NAME
             
-			,DATE_FORMAT (QUO_TB.EST_CMP_DT, '%Y-%m-%d') est_cmp_dt
+			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') est_cmp_dt
 			,VERSION
-			,DATE_FORMAT (QUO_TB.ISSUE_DT, '%Y-%m-%d') issue_dt 
+			,DATE_FORMAT(QUO_TB.ISSUE_DT, '%Y-%m-%d') issue_dt 
 			,JOB_TB.PRDCT_NAME
 			,JOB_TB.MODEL_NAME
 			,QUO_TB.TRGT_CRTFC
@@ -655,7 +655,7 @@
 			, IFNULL(QUO_STATE_CODE, '0') QUO_STATE_CODE
 			, QUO_MOD_TB.QUO_MOD_SEQ
 			, IFNULL(FN_CODE_NAME (QUO_MOD_TB.STATE_CODE, 'MM'), '') quoModState
-            , IFNULL(DATE_FORMAT (QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'),'') prmsDtStr
+            , IFNULL(DATE_FORMAT(QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'),'') prmsDtStr
             , IFNULL(FN_MEM_NAME (QUO_MOD_TB.PRMS_ID),'') prmsName
             
             , JOB_TB.SBK_REVISION
@@ -753,7 +753,7 @@
 	
 	<select id="selectStatusList" parameterType="String" resultType="egovMap">
 		SELECT
-			DATE_FORMAT (QUO_MOD_TB.ins_dt, '%Y-%m-%d') insDtStr,
+			DATE_FORMAT(QUO_MOD_TB.ins_dt, '%Y-%m-%d') insDtStr,
 		    FN_MEM_NAME (QUO_MOD_TB.ins_mem_id) insName,
             QUO_MOD_TB.STATE_CODE,
             IF (QUO_MOD_TB.state_code=5,'세금계산서 신청','견적서 수정') type,
@@ -767,9 +767,9 @@
                                 else 3 end
                                 ,'MM'), '-') prmsType,
 			IFNULL (FN_MEM_NAME (QUO_MOD_TB.PRMS_ID), '') PrmsName,
-            IFNULL (DATE_FORMAT (QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), '') PRMS_DT,
+            IFNULL (DATE_FORMAT(QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), '') PRMS_DT,
 		    IFNULL (FN_CODE_NAME (IF (QUO_MOD_TB.STATE_CODE=4, 4, 0),'MM'), '-') stateType,
-			IFNULL (DATE_FORMAT (IF (QUO_MOD_TB.STATE_CODE=4, QUO_MOD_TB.UDT_DT, ''), '%Y-%m-%d'), '') UDT_DT,
+			IFNULL (DATE_FORMAT(IF (QUO_MOD_TB.STATE_CODE=4, QUO_MOD_TB.UDT_DT, ''), '%Y-%m-%d'), '') UDT_DT,
 			IF (QUO_MOD_TB.STATE_CODE=4, FN_MEM_NAME (QUO_MOD_TB.UDT_MEM_ID), '') udtName
 		FROM QUO_MOD_TB
 		WHERE 1=1

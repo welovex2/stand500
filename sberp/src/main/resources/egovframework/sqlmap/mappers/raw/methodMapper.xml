@@ -123,7 +123,7 @@
 		    MODEL,
 		    MNFCT_CMPNY,
 		    MNFCT_SERIAL,
-		    IFNULL (date_format (RAW_MAC_TB.REFORM_DT, '%Y-%m-%d'), '-') reformDtStr,
+		    IFNULL (DATE_FORMAT(RAW_MAC_TB.REFORM_DT, '%Y-%m-%d'), '-') reformDtStr,
 		    IF (REFORM_PERIOD = 0, '-', CONCAT (REFORM_PERIOD, '년')) REFORM_PERIOD,
 		    USE_YN
 		FROM
@@ -173,7 +173,7 @@
 		    model,
 		    MNFCT_CMPNY,
 		    MNFCT_SERIAL,
-		    IFNULL (date_format (REFORM_DT, '%Y-%m-%d'), '-') reformDtStr,
+		    IFNULL (DATE_FORMAT(REFORM_DT, '%Y-%m-%d'), '-') reformDtStr,
 		    CONCAT (REFORM_PERIOD, '년') REFORM_PERIOD,
 		    false USE_YN
 		FROM

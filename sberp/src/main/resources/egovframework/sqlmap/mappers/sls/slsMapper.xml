@@ -192,7 +192,7 @@
 				        )
 				    ) chqId,
 				    FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, QUO_TB.type, QUO_TB.quo_seq) quoId,
-				    IFNULL (date_format (SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
+				    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 				    MEMBER_TB.MEM_NAME cnfrmName,
 				    IFNULL (FN_CODE_NAME (CMPY_TB.CMPY_CODE, 'PT'), '미등록') cmpy_type,
 				    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
@@ -207,10 +207,10 @@
 				    BILL_SEQ,
 				    BILL_TB.BILL,
 				    IF (BILL_YN=1, '발행완료', '미발행') BILL_YN,
-				    IFNULL (date_format (OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
-				    IFNULL (CONCAT(fn_code_name (PAY_CODE, 'MP'),' (',date_format (PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
+				    IFNULL (DATE_FORMAT(OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
+				    IFNULL (CONCAT(fn_code_name (PAY_CODE, 'MP'),' (',DATE_FORMAT(PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
 				    IFNULL (fn_code_name (QUO_MOD_TB.STATE_CODE, 'MM'), '-') quoState,
-				    IFNULL (date_format (QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), date_format (QUO_MOD_TB.INS_DT, '%Y-%m-%d')) prmsDtStr,
+				    IFNULL (DATE_FORMAT(QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), DATE_FORMAT(QUO_MOD_TB.INS_DT, '%Y-%m-%d')) prmsDtStr,
 				    IFNULL (FN_MEM_NAME (QUO_MOD_TB.PRMS_ID), FN_MEM_NAME (QUO_MOD_TB.INS_MEM_ID)) prmsName
 				FROM
 				    SLS_TB
@@ -294,7 +294,7 @@
 				        )
 				    ) chqId,
 				    GROUP_CONCAT(FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, QUO_TB.type, QUO_TB.quo_seq) SEPARATOR ', ') quoId,
-				    IFNULL (date_format (SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
+				    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 				    MEMBER_TB.MEM_NAME cnfrmName,
 				    IFNULL (FN_CODE_NAME (CMPY_TB.CMPY_CODE, 'PT'), '미등록') cmpy_type,
 				    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
@@ -309,8 +309,8 @@
 				    BILL_SEQ,
 				    BILL_TB.BILL,
 				    IF (BILL_YN=1, '발행완료', '미발행') BILL_YN,
-				    ifnull (date_format (OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
-				    IFNULL(CONCAT(fn_code_name (PAY_CODE, 'MP'),' (', date_format (PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
+				    ifnull (DATE_FORMAT(OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
+				    IFNULL(CONCAT(fn_code_name (PAY_CODE, 'MP'),' (', DATE_FORMAT(PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
 				    '-' quoState,
 				    '-' prmsDtStr,
 				    '-' prmsName
@@ -530,7 +530,7 @@
 				<!-- 12	회사명 -->
 				<when test="item.searchCode == 12">and IFNULL (JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 				<!-- 16	매출확정일 -->
-				<when test="item.searchCode == 16">and DATE_FORMAT (SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+				<when test="item.searchCode == 16">and DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 				<!-- 19	매출확정자 -->
 				<when test="item.searchCode == 19">and IFNULL (MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 				<!-- 23	시험부 -->
@@ -614,7 +614,7 @@
 						<!-- 12	회사명 -->
 						<when test="item.searchCode == 12">and IFNULL (JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 16	매출확정일 -->
-						<when test="item.searchCode == 16">and DATE_FORMAT (SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+						<when test="item.searchCode == 16">and DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 						<!-- 19	매출확정자 -->
 						<when test="item.searchCode == 19">and IFNULL (MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 						<!-- 23	시험부 -->
@@ -672,14 +672,14 @@
 
 	<select id="selectBillList" parameterType="String" resultType="egovMap">
 		SELECT
-		    date_format (BILL_TB.ins_dt, '%Y-%m-%d') instDtStr,
+		    DATE_FORMAT(BILL_TB.ins_dt, '%Y-%m-%d') instDtStr,
 		    MEMBER_TB.MEM_NAME insName,
 		    BILL,
 		    IF (BILL_YN = 1, '발행완료', '미발행') billYnStr,
-		    IFNULL (date_format (BILL_TB.BILL_DT, '%Y-%m-%d'),'') BILL_DT,
+		    IFNULL (DATE_FORMAT(BILL_TB.BILL_DT, '%Y-%m-%d'),'') BILL_DT,
 		    IFNULL (FN_MEM_NAME (bill_id),'') bill_id,
 		    IFNULL (fn_code_name (PAY_CODE, 'MP'), '미납') PAY_CODE,
-		    IFNULL (date_format (BILL_TB.PAY_DT, '%Y-%m-%d'),'') PAY_DT,
+		    IFNULL (DATE_FORMAT(BILL_TB.PAY_DT, '%Y-%m-%d'),'') PAY_DT,
 		    IFNULL (FN_MEM_NAME (pay_id),'') pay_id
 		FROM
 		    BILL_TB

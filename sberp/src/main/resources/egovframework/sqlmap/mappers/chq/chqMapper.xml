@@ -126,7 +126,7 @@
 			lst.*
 		FROM (
 			SELECT
-			    IFNULL (date_format (CHQ_TB.ins_dt, '%Y-%m-%d'), '') insDtStr,
+			    IFNULL (DATE_FORMAT(CHQ_TB.ins_dt, '%Y-%m-%d'), '') insDtStr,
 			    concat (
 			        'CH',
 			        CHQ_TB.CHQ_YM,
@@ -134,7 +134,7 @@
 			        LPAD (CHQ_TB.CHQ_SEQ, 3, 0)
 			    ) chqId,
 			    FN_MEM_NAME (CHQ_TB.ins_mem_id) memName,
-			    IFNULL (date_format (SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
+			    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			    SUM(QUO_TB.TOTAL_VAT) CHRGS,
 			    SUM(items.NET_SALES) NET_SALES
@@ -208,7 +208,7 @@
 		SELECT
 			FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, type, QUO_TB.quo_seq) quoId,
 			CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')) sbkId,
-			IFNULL (date_format (SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
+			IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			IFNULL (JOB_TB.CMPY_NAME, '') CMPY_NAME,
 			PRDCT_NAME,
@@ -269,13 +269,13 @@
 		            CHQ_TB.CHQ_YM,
 		            CHQ_TB.CHQ_SEQ,
 		            IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
-		            IFNULL (date_format (CHQ_TB.ins_dt, '%Y-%m-%d'), '') insDtStr,
+		            IFNULL (DATE_FORMAT(CHQ_TB.ins_dt, '%Y-%m-%d'), '') insDtStr,
 		            concat (
 		                FN_DEPT_NAME (CHQ_TB.ins_mem_id),
 		                ' ',
 		                FN_MEM_NAME (CHQ_TB.ins_mem_id)
 		            ) memName,
-		            IFNULL (date_format (SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
+		            IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 		            count(1) cnt,
 		            sum(TEST_ITEM_TB.FEE) FEE,
 		            sum(TEST_ITEM_TB.LCNS_TAX) LCNS_TAX,

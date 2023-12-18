@@ -72,7 +72,7 @@
  			SELECT 
  				a.NTT_ID, a.NTT_SJ, 
  				IFNULL (FN_MEM_NAME (a.INS_MEM_ID), '') ins_name,
- 				DATE_FORMAT (a.INS_DT, '%Y-%m-%d') insDtStr, 
+ 				DATE_FORMAT(a.INS_DT, '%Y-%m-%d') insDtStr, 
  				IFNULL (RDCNT, 0) RDCNT,
  				(SELECT IF(COUNT(1) > 0,1,0) FROM FILE_DETAIL_TB WHERE ATCH_FILE_ID = a.ATCH_FILE_ID AND STATE != 'D') attchYn,
  				a.RDCNT, IF(DATE_SUB(NOW(), INTERVAL 3 DAY) <= a.INS_DT, 'Y', 'D') AS newYn 
@@ -131,7 +131,7 @@
 			SELECT
                 a.BBS_ID, a.NTT_ID,
 				a.NTT_NO, a.NTT_SJ, a.NTT_CN,
-                DATE_FORMAT (a.INS_DT, '%Y-%m-%d') insDtStr,
+                DATE_FORMAT(a.INS_DT, '%Y-%m-%d') insDtStr,
 				IFNULL (a.RDCNT, 0) RDCNT, a.ATCH_FILE_ID 
 			FROM
 				BBS_TB a
