@@ -355,7 +355,7 @@
 				SIGN_STATE_CODE = 
 								<choose>
 									<when test="item.testTypeCode == 'DH'">3,</when>
-									<otherwise>1,</otherwise>
+									<otherwise>IF(SIGN_STATE_CODE=3,1,SIGN_STATE_CODE),</otherwise>
 								</choose>
 				FEE = #{item.fee},
 				LCNS_TAX = #{item.lcnsTax},
