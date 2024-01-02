@@ -79,6 +79,11 @@ public class Member {
   private String workState;
 
   
+  @ApiModelProperty(value = "계정잠김상태 ", example = "")
+  @Column
+  private int lockYn;
+  
+  
   @ApiModelProperty(value = "휴직시작일 ", example = "")
   @Column
   private String leaveSDt;

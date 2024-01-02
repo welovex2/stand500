@@ -140,6 +140,7 @@
 		    PHONE,
 		    AUTH_CODE,
 		    WORK_STATE,
+		    LOCK_YN,
 		    <if test="leaveSDt != null and leaveSDt != ''">LEAVE_S_DT,</if>
 		    <if test="leaveEDt != null and leaveEDt != ''">LEAVE_E_DT,</if>
 		    <if test="quitDt != null and quitDt != ''">QUIT_DT,</if>
@@ -161,6 +162,7 @@
 			#{phone},
 			#{authCode},
 			#{workState},
+			#{lockYn},
 			<if test="leaveSDt != null and leaveSDt != ''">#{leaveSDt},</if>
 			<if test="leaveEDt != null and leaveEDt != ''">#{leaveEDt},</if>
 			<if test="quitDt != null and quitDt != ''">#{quitDt},</if>
@@ -179,6 +181,7 @@
 		    PHONE = #{phone},
 		    AUTH_CODE = #{authCode},
 		    WORK_STATE = #{workState},
+		    LOCK_YN = #{lockYn},
 		    <if test="leaveSDt != null and leaveSDt != ''">LEAVE_S_DT = #{leaveSDt},</if>
 		    <if test="leaveEDt != null and leaveEDt != ''">LEAVE_E_DT = #{leaveEDt},</if>
 		    <if test="quitDt != null and quitDt != ''">QUIT_DT = #{quitDt},</if>
@@ -201,6 +204,7 @@
 		    FN_GET_PHONE_FORMAT(PHONE) PHONE,
 		    AUTH_CODE,
 		    WORK_STATE,
+		    LOCK_YN,
 		    DATE_FORMAT(LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
 		    DATE_FORMAT(LEAVE_E_DT, '%Y-%m-%d') leaveEDt,
 		    DATE_FORMAT(QUIT_DT, '%Y-%m-%d') quitDt

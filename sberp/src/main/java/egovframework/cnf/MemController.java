@@ -111,7 +111,6 @@ public class MemController {
     req.setUdtMemId(user.getId());
 
     // 기본 패스워드 설정
-    System.out.println("비번="+req.getId().concat("300"));
     req.setPassword(EgovFileScrty.encryptPassword(req.getId().concat("300"), req.getId()));
 
     System.out.println("=-===========");
