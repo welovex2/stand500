@@ -106,27 +106,27 @@ public class StsServiceImpl implements StsService {
         // 시험접수 건수
         total.setInCnt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getInCnt()).summaryStatistics().getSum());
         // 시험접수 금액
-        total.setInAmt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getInAmt()).summaryStatistics().getSum());
+        total.setInAmt((long) dayData.getTestTypeList().stream().mapToLong(amt -> amt.getInAmt()).summaryStatistics().getSum());
         // 시험중 건수
         total.setIngCnt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getIngCnt()).summaryStatistics().getSum());
         // 시험중 금액
-        total.setIngAmt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getIngAmt()).summaryStatistics().getSum());
+        total.setIngAmt((long) dayData.getTestTypeList().stream().mapToLong(amt -> amt.getIngAmt()).summaryStatistics().getSum());
         // 디버깅 건수
         total.setDebCnt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getDebCnt()).summaryStatistics().getSum());
         // 디버깅 금액
-        total.setDebAmt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getDebAmt()).summaryStatistics().getSum());
+        total.setDebAmt((long) dayData.getTestTypeList().stream().mapToLong(amt -> amt.getDebAmt()).summaryStatistics().getSum());
         // 홀딩 건수
         total.setHolCnt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getHolCnt()).summaryStatistics().getSum());
         // 홀딩 금액
-        total.setHolAmt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getHolAmt()).summaryStatistics().getSum());
+        total.setHolAmt((long) dayData.getTestTypeList().stream().mapToLong(amt -> amt.getHolAmt()).summaryStatistics().getSum());
         // 시험완료 건수
         total.setEndCnt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getEndCnt()).summaryStatistics().getSum());
         // 시험완료 금액
-        total.setEndAmt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getEndAmt()).summaryStatistics().getSum());
+        total.setEndAmt((long) dayData.getTestTypeList().stream().mapToLong(amt -> amt.getEndAmt()).summaryStatistics().getSum());
         // 성적서발급완료 건수
         total.setRepCnt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getRepCnt()).summaryStatistics().getSum());
         // 성적서발급완료 금액
-        total.setRepAmt((int) dayData.getTestTypeList().stream().mapToInt(amt -> amt.getRepAmt()).summaryStatistics().getSum());
+        total.setRepAmt((long) dayData.getTestTypeList().stream().mapToLong(amt -> amt.getRepAmt()).summaryStatistics().getSum());
         
         dayData.getTestTypeList().add(total);
         //--END 날짜별 합계 리스트에 추가
@@ -154,7 +154,7 @@ public class StsServiceImpl implements StsService {
       StsDTO total = new StsDTO();
       total.setStsDt("Total");
       total.setBillAmt((int) billList.stream().mapToInt(bill -> bill.getBillAmt()).summaryStatistics().getSum());
-      total.setPayAmt((int) payList.stream().mapToInt(pay -> pay.getPayAmt()).summaryStatistics().getSum());
+      total.setPayAmt((long) payList.stream().mapToLong(pay -> pay.getPayAmt()).summaryStatistics().getSum());
       // 부서별 토탈
       List<StsDTO.TestTypeList> typeTotal = stsMapper.selectTotalStateList(param);
       // 2. 해당일에 시험 배정된 건
@@ -179,27 +179,27 @@ public class StsServiceImpl implements StsService {
       // 시험접수 건수
       endTotal.setInCnt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getInCnt()).summaryStatistics().getSum());
       // 시험접수 금액
-      endTotal.setInAmt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getInAmt()).summaryStatistics().getSum());
+      endTotal.setInAmt((long) total.getTestTypeList().stream().mapToLong(amt -> amt.getInAmt()).summaryStatistics().getSum());
       // 시험중 건수
       endTotal.setIngCnt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getIngCnt()).summaryStatistics().getSum());
       // 시험중 금액
-      endTotal.setIngAmt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getIngAmt()).summaryStatistics().getSum());
+      endTotal.setIngAmt((long) total.getTestTypeList().stream().mapToLong(amt -> amt.getIngAmt()).summaryStatistics().getSum());
       // 디버깅 건수
       endTotal.setDebCnt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getDebCnt()).summaryStatistics().getSum());
       // 디버깅 금액
-      endTotal.setDebAmt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getDebAmt()).summaryStatistics().getSum());
+      endTotal.setDebAmt((long) total.getTestTypeList().stream().mapToLong(amt -> amt.getDebAmt()).summaryStatistics().getSum());
       // 홀딩 건수
       endTotal.setHolCnt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getHolCnt()).summaryStatistics().getSum());
       // 홀딩 금액
-      endTotal.setHolAmt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getHolAmt()).summaryStatistics().getSum());
+      endTotal.setHolAmt((long) total.getTestTypeList().stream().mapToLong(amt -> amt.getHolAmt()).summaryStatistics().getSum());
       // 시험완료 건수
       endTotal.setEndCnt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getEndCnt()).summaryStatistics().getSum());
       // 시험완료 금액
-      endTotal.setEndAmt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getEndAmt()).summaryStatistics().getSum());
+      endTotal.setEndAmt((long) total.getTestTypeList().stream().mapToLong(amt -> amt.getEndAmt()).summaryStatistics().getSum());
       // 성적서발급완료 건수
       endTotal.setRepCnt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getRepCnt()).summaryStatistics().getSum());
       // 성적서발급완료 금액
-      endTotal.setRepAmt((int) total.getTestTypeList().stream().mapToInt(amt -> amt.getRepAmt()).summaryStatistics().getSum());
+      endTotal.setRepAmt((long) total.getTestTypeList().stream().mapToLong(amt -> amt.getRepAmt()).summaryStatistics().getSum());
       
       total.getTestTypeList().add(endTotal);
       //-- END 토탈의 토탈 추가
