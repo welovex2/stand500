@@ -5,6 +5,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
+import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
 
@@ -44,4 +45,6 @@ public interface TstMapper {
   public int selectSaleListCnt(ComParam param);
 
   public boolean testStateUpdate(Req req);
+  
+  public List<TestItemDTO> selectSubList(String sbkId);
 }

@@ -112,6 +112,9 @@ public class TestDTO {
     @ApiModelProperty(value = "첨부파일 갯수", example = "1")
     private int fileCnt;
     
+    @ApiModelProperty(value = "시험 갯수", example = "")
+    private int testCnt;
+    
     @ApiModelProperty(value = "시험배정일", example = "")
     private String insDtStr;
     

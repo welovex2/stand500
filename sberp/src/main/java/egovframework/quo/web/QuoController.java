@@ -1,14 +1,29 @@
 package egovframework.quo.web;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.apache.poi.util.IOUtils;
+import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
+import org.apache.poi.xssf.usermodel.XSSFCreationHelper;
+import org.apache.poi.xssf.usermodel.XSSFDrawing;
+import org.apache.poi.xssf.usermodel.XSSFPicture;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.MediaType;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -37,8 +52,8 @@ import egovframework.quo.service.QuoDTO;
 import egovframework.quo.service.QuoModDTO;
 import egovframework.quo.service.QuoService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItem;
-import egovframework.tst.web.TstController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -512,6 +527,180 @@ public class QuoController {
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
+  }
+  
+  @ApiOperation(value = "견적서 엑셀 폼 다운")
+  @GetMapping(value = "/{quoId}/excelDown.do")
+  public void excelDown(@ApiParam(value = "견적서 고유번호", required = true,example = "Q2312-G1306") @PathVariable(name = "quoId") String quoId
+      , HttpServletResponse response) throws Exception {
+
+//    String filePath = "C:\\Users\\김정미\\Desktop\\STB_FORM.xlsx"; // 불러올 파일
+    String filePath = propertyService.getString("Globals.fileStorePath").concat("QUO_FORM.xlsx"); // 불러올 파일
+    
+    QuoDTO.Req req = new QuoDTO.Req();
+    QuoDTO.Res detail = new QuoDTO.Res();
+    
+    req.setQuoId(quoId);
+    detail = quoService.selectDetail(req);
+
+    // 1. FileInputStream 으로 파일 읽기
+    FileInputStream inputStream = new FileInputStream(filePath);
+    
+    // 2. XSSFWorkbook 객체 생성하기
+    XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
+    
+    // 3. XSSFSheet 객체 생성 - 첫번째 시트를 가져온다
+    XSSFSheet sheet = workbook.getSheetAt(0);
+
+    if (detail != null) {
+      
+//      try { 
+        // 4. XSSFRow 첫번째 Row 가져와서 수정하기
+        XSSFRow row = sheet.getRow(3); // 시트의 4번째 Row 를 가져온다
+        row.getCell(8).setCellValue(detail.getVersion().trim());               // 견적서 Ver
+        
+        row = sheet.getRow(4);  // 견적서 발급번호
+        row.getCell(4).setCellValue(detail.getQuoId().trim());               
+        
+        row = sheet.getRow(10);  // 업체명, 발행일
+        row.getCell(3).setCellValue(detail.getCmpyName().trim());               
+        row.getCell(8).setCellValue(detail.getIssueDt().trim());
+        
+        row = sheet.getRow(11);  // 담당자, 전화번호
+        row.getCell(3).setCellValue(detail.getMngName().trim());               
+        row.getCell(8).setCellValue(detail.getCmpyPhone().trim());
+        
+        row = sheet.getRow(12);  // 작성자, 팩스번호
+        row.getCell(3).setCellValue(detail.getMemName().trim());               
+        row.getCell(8).setCellValue(detail.getCmpyFax().trim());
+        
+        row = sheet.getRow(15);  // 제품명
+        row.getCell(3).setCellValue(detail.getPrdctName().trim());
+        row = sheet.getRow(16);  // 모델명
+        row.getCell(3).setCellValue(detail.getModelName().trim());
+        row = sheet.getRow(17);  // 대상인증
+        row.getCell(3).setCellValue(detail.getTrgtCrtfc().trim());
+        row = sheet.getRow(18);  // 제품설명
+        row.getCell(3).setCellValue(detail.getPrdInf().trim());
+        
+        row = sheet.getRow(19);  // 사용전원?
+        row.getCell(9).setCellValue(detail.getPowerSuplyYn() == 1 ? "YES" : "NO");
+        
+        row = sheet.getRow(20);  // 제품무게?
+        row.getCell(9).setCellValue(detail.getWghtYn() == 1 ? "YES" : "NO");
+        
+        row = sheet.getRow(23);  // 제품 특이사항
+        row.getCell(1).setCellValue(detail.getMemo().trim());
+        
+        int r = 28;
+        for (TestItemDTO item : detail.getItems()) {
+          r++;
+          
+          row = sheet.getRow(r);  // 시험규격
+          row.getCell(1).setCellValue(item.getTestStndr().trim());
+          row.getCell(3).setCellValue(item.getTestType().trim());
+          row.getCell(4).setCellValue(item.getMemo().trim());
+          row.getCell(6).setCellValue(item.getFee() * 1.0);    // 접수비
+          row.getCell(7).setCellValue(item.getLcnsTax() * 1.0);    // 먼허세
+          row.getCell(8).setCellValue(item.getSpclDscnt() * -1.0);  // 개정금액
+          row.getCell(9).setCellValue(item.getTestFee() * 1.0);  // 시험비
+          
+          if (r == 32) break;
+        }
+        
+        row = sheet.getRow(33); // 부가가치세, 청구액 
+        row.getCell(3).setCellValue(detail.getVatYn() == 1 ? "YES" : "NO");
+        row.getCell(8).setCellValue(Double.valueOf(detail.getCostTotal().trim()));
+        
+        row = sheet.getRow(34); // 총합계 
+        row.getCell(8).setCellValue(Double.valueOf(detail.getTotalVat().trim()));
+        
+        row = sheet.getRow(37); // 소요시간
+        row.getCell(1).setCellValue("상기 의뢰 업무를 수행하는 데 ".concat(Integer.toString(detail.getNeedWeek())).concat("주 정도 소요될 것으로 예상됩니다. 일정은 사전에 협의되어야 하며 업무 시작일은 시험비용 납입 확인 및 시료 도착, \r\n" + 
+            "신청 정보 회신이 모두 이루어진 시점을 기준으로 합니다. 긴급 진행의 경우 담당자와 상담 해주시기 바랍니다."));
+        row = sheet.getRow(38); // 소요시간
+        row.getCell(1).setCellValue("Please anticipate a ".concat(Integer.toString(detail.getNeedWeek())).concat("Weeks for the scope listed above. It need to be scheduled in advance and business start is needed to satisfy all the \r\n" + 
+            "conditions as cost payment, sample arrives, receiving application form. The expedited scheduling shall be consultation with representatives"));
+    
+        row = sheet.getRow(42); // 특약조건
+        row.getCell(1).setCellValue(detail.getSpclCndtn().trim());
+        
+        row = sheet.getRow(48); // 이름
+        row.getCell(1).setCellValue(detail.getMemPos().trim());
+        row = sheet.getRow(49); // dir
+        row.getCell(1).setCellValue("Dir : 031-393-9394");
+        row = sheet.getRow(50); // cp
+        row.getCell(1).setCellValue("C.P : ".concat(detail.getCp().trim()));
+        row = sheet.getRow(51); // email
+        row.getCell(1).setCellValue("E-Mail : ".concat(detail.getEmail().trim()));
+        
+        // 사진
+        FileVO fileVO = new FileVO();
+        
+        String url = detail.getSgnUrl();
+
+        // 정규식 패턴
+        String pattern = "atchFileId=([A-Za-z0-9_]+)";
+
+        // 패턴을 컴파일
+        Pattern regexPattern = Pattern.compile(pattern);
+
+        // 문자열과 패턴을 매치
+        Matcher matcher = regexPattern.matcher(url);
+
+        // 매치된 경우 값 출력
+        if (matcher.find()) {
+            String fileId = matcher.group(1);
+            fileVO.setAtchFileId(fileId);
+            fileVO.setFileSn("0");
+        }
+        FileVO fvo = fileMngService.selectFileInf(fileVO);
+        
+        
+        File file = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
+        InputStream is = new FileInputStream(file);
+
+        byte[] bytes = IOUtils.toByteArray(is);
+        int picIdx = workbook.addPicture(bytes, XSSFWorkbook.PICTURE_TYPE_PNG);
+        is.close();
+        
+        XSSFCreationHelper helper = workbook.getCreationHelper();
+        XSSFDrawing drawing = sheet.createDrawingPatriarch();
+        XSSFClientAnchor anchor = helper.createClientAnchor();
+        
+        // 이미지 출력할 cell 위치
+        anchor.setCol1(2);
+        anchor.setRow1(45);
+        anchor.setCol2(4);
+        anchor.setRow2(47);
+        
+        // 이미지 그리기
+        XSSFPicture pic = drawing.createPicture(anchor, picIdx);
+//        pic.resize();
+        
+//      } catch (Exception e) {
+//        log.error(e.getMessage());
+//      }
+    }
+    
+    // 6. 파일다운로드로 저장하기
+    response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    // 응답이 파일 타입이라는 것을 명시
+    response.setHeader("Content-Disposition", "attachment;filename=" + quoId + ".xlsx");
+    ServletOutputStream servletOutputStream = response.getOutputStream();
+//    XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
+    workbook.setForceFormulaRecalculation(true);
+    workbook.write(servletOutputStream);
+    
+    // 7. 자원 반환
+//    out.close();
+    servletOutputStream.close();
+    workbook.close();
+    inputStream.close();
+
+//    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+
+//    return res;
   }
 
 }

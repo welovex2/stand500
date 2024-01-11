@@ -5,10 +5,14 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.SearchVO;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.DebugDTO;
+import egovframework.tst.dto.TestDTO;
+import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.service.DbgMapper;
@@ -124,15 +128,22 @@ public class TstServiceImpl implements TstService {
   @Override
   public List<Res> selectSaleList(ComParam param) {
     
-    List<Res> result = tstMapper.selectSaleList(param);
-    // 페이징
-    List<Res> page = result.stream().skip(param.getFirstIndex()).limit(param.getPageUnit()).collect(Collectors.toList());
     
-    // 번호 매기기
-    for (int i=0; i<page.size(); i++) {
-      page.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    List<Res> result = tstMapper.selectSaleList(param);
+    
+    for (Res item : result) {
+    
+      if (item.getTestCnt() > 1) {
+        
+        List<TestItemDTO> subList = tstMapper.selectSubList(item.getSbkId());
+        
+        if (!ObjectUtils.isEmpty(subList)) {
+          item.setItems(subList);
+        }
+      }
     }
-    return page;
+    
+    return result;
   }
 
   @Override

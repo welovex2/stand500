@@ -253,7 +253,7 @@ public class TstController {
     }
 
     BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+        BasicResponse.builder().result(result).message(msg).summary(cnt).data(list).paging(pagingVO).build();
 
     return res;
   }

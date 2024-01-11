@@ -1,11 +1,8 @@
 package egovframework.quo.service;
 
 import java.util.List;
-
 import javax.persistence.Column;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-
+import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItem;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -245,7 +242,7 @@ public class QuoDTO {
 
     @ApiModelProperty(value = "시험항목리스트", example = "[]")
     @Column
-    private List<TestItem> items;
+    private List<TestItemDTO> items;
 
     @ApiModelProperty(value = "영문견적서 시험항목리스트", example = "[]")
     @Column
