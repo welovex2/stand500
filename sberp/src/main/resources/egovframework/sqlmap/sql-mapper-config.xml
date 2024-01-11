@@ -74,6 +74,8 @@
     	<typeAlias alias="mfDTO"		type="egovframework.raw.dto.MfDTO"/>
     	<typeAlias alias="vdipDTO"		type="egovframework.raw.dto.VdipDTO"/>
     	<typeAlias alias="ctiDTO"		type="egovframework.raw.dto.CtiDTO"/>
+    	<typeAlias alias="clkDTO"		type="egovframework.raw.dto.ClkDTO"/>
+    	<typeAlias alias="dpDTO"		type="egovframework.raw.dto.DpDTO"/>
     	<typeAlias alias="imgDTO"		type="egovframework.raw.dto.ImgDTO"/>
     	<typeAlias alias="reportDTO"	type="egovframework.raw.dto.ReportDTO"/>
     	<typeAlias alias="rawMet"		type="egovframework.raw.service.RawMet"/>

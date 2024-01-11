@@ -21,6 +21,9 @@
                 CS_YN,
                 MFLD_YN,
                 VDIP_YN,
+                /* 9814 */
+                CLK_YN,
+                DP_YN,
                 name,
 			    model,
 			    MNFCT_CMPNY,
@@ -45,6 +48,9 @@
 							<when test="item.searchWord == 'CB'">CEB_USE_YN useYn, CEB_ORDR disOrdr,</when>
 							<when test="item.searchWord == 'RA'">REA_USE_YN useYn, REA_ORDR disOrdr,</when>
 							<when test="item.searchWord == 'RB'">REB_USE_YN useYn, REB_ORDR disOrdr,</when>
+							<!-- 9814 -->
+							<when test="item.searchWord == 'CK'">CLK_USE_YN useYn, CLK_ORDR disOrdr,</when>
+							<when test="item.searchWord == 'DP'">DP_USE_YN useYn, DP_ORDR disOrdr,</when>
 						</choose>
 					</if>
 				</foreach>
@@ -80,6 +86,9 @@
 						<when test="item.searchWord == 'CB'">and CEB_YN = 1</when>
 						<when test="item.searchWord == 'RA'">and REA_YN = 1</when>
 						<when test="item.searchWord == 'RB'">and REB_YN = 1</when>
+						<!-- 9814 -->
+						<when test="item.searchWord == 'CK'">and CLK_YN = 1</when>
+						<when test="item.searchWord == 'DP'">and DP_YN = 1</when>
 					</choose>
 				</if>
 			</foreach>
@@ -98,6 +107,9 @@
 						<when test="item.searchWord == 'CB'">CEB_ORDR ASC,</when>
 						<when test="item.searchWord == 'RA'">REA_ORDR ASC,</when>
 						<when test="item.searchWord == 'RB'">REB_ORDR ASC,</when>
+						<!-- 9814 -->
+						<when test="item.searchWord == 'CK'">CLK_ORDR ASC,</when>
+						<when test="item.searchWord == 'DP'">DP_ORDR ASC,</when>
 					</choose>
 				</if>
 			</foreach>
@@ -133,6 +145,9 @@
 	    CS_YN,
 	    MFLD_YN,
 	    VDIP_YN,
+	    /* 9814 */
+	    CLK_YN,
+	    DP_YN,
 	    INS_MEM_ID,
 	    UDT_MEM_ID
 	  )
@@ -157,6 +172,9 @@
 	    #{csYn},
 	    #{mfldYn},
 	    #{vdipYn},
+	    /* 9814 */
+	    #{clkYn},
+	    #{dpYn},
 	    #{insMemId},
 	    #{udtMemId}
 	  )
@@ -179,6 +197,9 @@
 	    CS_YN = #{csYn},
 	    MFLD_YN = #{mfldYn},
 	    VDIP_YN = #{vdipYn},
+	    /* 9814 */
+	    CLK_YN = #{clkYn},
+	    DP_YN = #{dpYn},
 	    UDT_DT = NOW(),
 	    UDT_MEM_ID = #{udtMemId},
 	    STATE = #{state}
@@ -200,6 +221,8 @@
 			<when test="type == 'CB'"> CEB_ORDR = #{disOrdr} , CEB_USE_YN = #{useYn},</when>
 			<when test="type == 'RA'"> REA_ORDR = #{disOrdr} , REA_USE_YN = #{useYn},</when>
 			<when test="type == 'RB'"> REB_ORDR = #{disOrdr} , REB_USE_YN = #{useYn},</when>
+			<when test="type == 'CK'"> CLK_ORDR = #{disOrdr} , CLK_USE_YN = #{useYn},</when>
+			<when test="type == 'DP'"> DP_ORDR = #{disOrdr} , DP_USE_YN = #{useYn},</when>
 		</choose>
 			STATE = 'U', UDT_DT = NOW(), UDT_MEM_ID = #{udtMemId}
 		

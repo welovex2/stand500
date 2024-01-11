@@ -1,18 +1,17 @@
 package egovframework.sys.service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
-
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 @ApiModel(value = "Machine", description = "시험장비")
 public class Machine {
 
@@ -116,7 +115,16 @@ public class Machine {
   @Column
   private int vdipYn;
 
-
+  @ApiModelProperty(value = "Click_YN ", example = "")
+  @Column
+  private int clkYn;
+  
+  
+  @ApiModelProperty(value = "DP_YN ", example = "")
+  @Column
+  private int dpYn;
+  
+  
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;
