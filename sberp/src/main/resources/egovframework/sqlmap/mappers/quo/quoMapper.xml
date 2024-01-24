@@ -67,12 +67,16 @@
 	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 	        		<!-- 58	프로젝트상태변경일 -->
 	        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+	        		<!-- 5	견적서번호 -->
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 61	신청서번호 -->
+					<when test="item.searchCode == 61">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 	        	</choose>
 	        </foreach>
 		</if>
 	</select>
 	
-	<select id="selectList" parameterType="comParam" resultType="egovMap">
+	<select id="selectList" parameterType="comParam" resultType="quoRes">
 		select 
 			@rownum:=@rownum+1 as no,
 			lst.*
@@ -168,6 +172,10 @@
 		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 		        		<!-- 58	프로젝트상태변경일 -->
 		        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+		        		<!-- 5	견적서번호 -->
+						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+						<!-- 61	신청서번호 -->
+						<when test="item.searchCode == 61">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 		        	</choose>
 		        </foreach>
 			</if>

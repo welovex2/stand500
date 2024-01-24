@@ -4,7 +4,7 @@
 
 	<select id="selectListCnt" parameterType="comParam" resultType="int">
 		select
-			Count(1)
+			count(1)
 		FROM
 		    SBK_TB
 		        
@@ -39,7 +39,7 @@
 	        <foreach collection="searchVO" item="item" separator="">
 	       
 	        	<choose>
-	        		<!-- 15	작성일 -->
+					<!-- 15	작성일 -->
 					<when test="item.searchCode == 15">AND DATE_FORMAT(SBK_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 			        <!-- 54	시료반출일 -->
 			        <when test="item.searchCode == 54">AND DATE_FORMAT(out_sub.CARRY_OUT_DATE, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
@@ -52,7 +52,40 @@
 					<!-- 27	모델명 -->
 		        	<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 		        	<!-- 40	시험규격 -->
-	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
+        			<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
+        			
+	        		<!-- 18	시험배정일 -->
+	        		<when test="item.searchCode == 18">AND DATE_FORMAT(TEST_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+	        		<!-- 66 신청서타입 -->
+	        		<when test="item.searchCode == 66 and item.searchWord != ''">AND SBK_TB.TYPE = #{item.searchWord}</when>
+	        		<!-- 65	성적서구분 -->
+	        		<when test="item.searchCode == 65">
+	        			<choose>
+	        				<when test="item.searchWord.equals('K')">AND TEST_RPRT_K_YN = 1</when>
+	        				<when test="item.searchWord.equals('N')">AND TEST_RPRT_N_YN = 1</when>
+	        			</choose>
+	        		</when>
+	        		<!-- 63	시료반입상태 -->
+	        		<when test="item.searchCode == 63">AND 
+						CASE 
+							WHEN IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT(in_sub.CARRY_IN_DATE, '%Y-%m-%d'),'-')) = '현장시험' THEN '3' 
+							WHEN ISNULL(in_sub.CARRY_IN_DATE) THEN '1' 
+							ELSE '2' END = #{item.searchWord}
+					</when>
+	        		<!-- 67	시료반출상태 -->
+					<when test="item.searchCode == 67">AND 
+						CASE 
+							WHEN ISNULL(out_sub.CARRY_OUT_DATE) THEN '1' 
+							ELSE '2' END = #{item.searchWord}
+					</when>
+	        		<!-- 61	신청서번호 -->
+	        		<when test="item.searchCode == 61">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',SBK_TB.REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+	        		<!-- 50	시험번호 -->
+	        		<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+												    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+												    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+	        		<!-- 68	시료접수자 -->
+        			<when test="item.searchCode == 68">AND FN_MEM_NAME(in_sub.CARRY_IN_ID) like CONCAT('%',#{item.searchWord},'%')</when>
 				</choose>
 	        </foreach>
         </if>
@@ -90,7 +123,8 @@
 			    IFNULL (FN_CODE_NAME(out_sub.CARRY_OUT_CODE, 'TC'), '') CARRY_OUT_TYPE,
 			    IFNULL (out_sub.CARRY_OUT_DLVRY_NAME, '') CARRY_OUT_DLVRY_NAME,
 			    IFNULL (out_sub.CARRY_OUT_DLVRY_INVC, '') CARRY_OUT_DLVRY_INVC,
-			    IFNULL (DATE_FORMAT(IF(TEST_ITEM_TB.TEST_STNDR_SEQ = 10,
+			    CONCAT_WS (', ', IF (TEST_RPRT_K_YN = 1, 'KOLAS', NULL), IF (TEST_RPRT_N_YN = 1, '일반', NULL)) TEST_RPRT,
+			    IFNULL (DATE_FORMAT(IF(TEST_ITEM_TB.TEST_STNDR_SEQ IN (10, 7, 686),
 			                        RAW_TB.REPORT_DT,
 			                        TEST_TB.TEST_REPORT_DT),
 			                    '%Y-%m-%d'),
@@ -151,6 +185,39 @@
 			        	<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 			        	<!-- 40	시험규격 -->
 	        			<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
+	        			
+		        		<!-- 18	시험배정일 -->
+		        		<when test="item.searchCode == 18">AND DATE_FORMAT(TEST_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+		        		<!-- 66 신청서타입 -->
+		        		<when test="item.searchCode == 66 and item.searchWord != ''">AND SBK_TB.TYPE = #{item.searchWord}</when>
+		        		<!-- 65	성적서구분 -->
+		        		<when test="item.searchCode == 65">
+		        			<choose>
+		        				<when test="item.searchWord.equals('K')">AND TEST_RPRT_K_YN = 1</when>
+		        				<when test="item.searchWord.equals('N')">AND TEST_RPRT_N_YN = 1</when>
+		        			</choose>
+		        		</when>
+		        		<!-- 63	시료반입상태 -->
+		        		<when test="item.searchCode == 63">AND 
+							CASE 
+								WHEN IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT(in_sub.CARRY_IN_DATE, '%Y-%m-%d'),'-')) = '현장시험' THEN '3' 
+								WHEN ISNULL(in_sub.CARRY_IN_DATE) THEN '1' 
+								ELSE '2' END = #{item.searchWord}
+						</when>
+		        		<!-- 67	시료반출상태 -->
+						<when test="item.searchCode == 67">AND 
+							CASE 
+								WHEN ISNULL(out_sub.CARRY_OUT_DATE) THEN '1' 
+								ELSE '2' END = #{item.searchWord}
+						</when>
+		        		<!-- 61	신청서번호 -->
+		        		<when test="item.searchCode == 61">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',SBK_TB.REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+		        		<!-- 50	시험번호 -->
+		        		<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+													    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+		        		<!-- 68	시료접수자 -->
+	        			<when test="item.searchCode == 68">AND FN_MEM_NAME(in_sub.CARRY_IN_ID) like CONCAT('%',#{item.searchWord},'%')</when>
 		        	</choose>
 		        	
 		        </foreach>

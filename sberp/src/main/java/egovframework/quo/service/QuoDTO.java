@@ -89,6 +89,10 @@ public class QuoDTO {
     @Column
     private int no;
 
+    @ApiModelProperty(value = "프로젝트번호", example = "12")
+    @Column
+    private int jobSeq;
+    
     @ApiModelProperty(value = "취합번호", example = "CH2303-001")
     @Column
     private String chqId;
@@ -239,6 +243,14 @@ public class QuoDTO {
     @ApiModelProperty(value = "견적서 상태 변경자", example = "")
     @Column
     private String prmsName;
+    
+    @ApiModelProperty(value = "프로젝트 상태 변경 날짜", example = "")
+    @Column
+    private String stateUdtDt;
+
+    @ApiModelProperty(value = "프로젝트 상태", example = "")
+    @Column
+    private String stateCode;
 
     @ApiModelProperty(value = "시험항목리스트", example = "[]")
     @Column

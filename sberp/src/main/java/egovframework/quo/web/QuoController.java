@@ -52,7 +52,10 @@ import egovframework.quo.service.QuoDTO;
 import egovframework.quo.service.QuoModDTO;
 import egovframework.quo.service.QuoService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.sls.service.SlsDTO;
+import egovframework.sls.service.SlsSummary;
 import egovframework.tst.dto.TestItemDTO;
+import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.service.TestItem;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -121,8 +124,18 @@ public class QuoController {
       msg = ResponseMessage.NO_DATA;
     }
 
+    /*
+     * 순매출총합
+     */
+    SlsSummary summ = new SlsSummary();
+    summ.setTotalCnt(cnt);
+    summ.setTotal(list.stream().mapToInt(QuoDTO.Res::getChrgs).sum());
+    summ.setTotalCnt(list.size());
+    summ.setTotalNetSales(list.stream().mapToInt(QuoDTO.Res::getNetSales).sum());
+    summ.setNetSalesCnt(list.size());
+    
     BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+        BasicResponse.builder().result(result).message(msg).summary(summ).data(list).paging(pagingVO).build();
 
     return res;
   }
