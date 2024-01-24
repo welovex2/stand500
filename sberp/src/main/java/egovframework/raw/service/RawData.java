@@ -163,6 +163,36 @@ public class RawData {
   @ApiModelProperty(value = "CLASS_ETC_MEMO ", example = "0")
   @Column
   private int classEtcYn;
+  
+  /**
+   * 9814 추가
+   */
+  @ApiModelProperty(value = "제품군 1 ", example = "0")
+  @Column
+  private int class1Yn;  
+  
+  @ApiModelProperty(value = "제품군 2 ", example = "0")
+  @Column
+  private int class2Yn;
+  
+  @ApiModelProperty(value = "제품군 3 ", example = "0")
+  @Column
+  private int class3Yn;
+  
+  @ApiModelProperty(value = "제품군 4 ", example = "0")
+  @Column
+  private int class4Yn;
+  
+  @ApiModelProperty(value = "제품군 5 ", example = "0")
+  @Column
+  private int class5Yn;
+  
+  @ApiModelProperty(value = "제품군 UBD ", example = "0")
+  @Column
+  private int classUbdYn;
+  /**
+   * --END 9814 추가
+   */
 
   @ApiModelProperty(value = "4-2. method (시험방법)", example = "")
   @Column

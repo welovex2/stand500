@@ -4,8 +4,10 @@ import java.util.List;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
 import egovframework.raw.dto.CeDTO;
+import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
 import egovframework.raw.dto.CtiDTO;
+import egovframework.raw.dto.DpDTO;
 import egovframework.raw.dto.EftDTO;
 import egovframework.raw.dto.EsdDTO;
 import egovframework.raw.dto.FileRawDTO;
@@ -91,8 +93,18 @@ public interface RawService {
   CtiDTO ctiDetail(int rawSeq);
 
   boolean insertCti(CtiDTO req);
+  
+  ClkDTO clkDetail(int rawSeq);
 
+  boolean insertClk(ClkDTO req);
+  
+  DpDTO dpDetail(int rawSeq);
+
+  boolean insertDp(DpDTO req);
+  
   ImgDTO imgDetail(ImgDTO req);
+  
+  List<ImgDTO> imgList(int rawSeq);
 
   boolean insertImg(ImgDTO req);
 

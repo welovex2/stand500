@@ -1,12 +1,12 @@
 package egovframework.raw.service;
 
 import java.util.List;
-
 import org.apache.ibatis.annotations.Param;
-
 import egovframework.raw.dto.CeDTO;
+import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
 import egovframework.raw.dto.CtiDTO;
+import egovframework.raw.dto.DpDTO;
 import egovframework.raw.dto.EftDTO;
 import egovframework.raw.dto.EsdDTO;
 import egovframework.raw.dto.ImgDTO;
@@ -126,12 +126,22 @@ public interface MethodMapper {
 
   public boolean insertCti(CtiDTO req);
 
+  public ClkDTO clkDetail(int rawSeq);
+
+  public boolean insertClk(ClkDTO req);
+  
+  public DpDTO dpDetail(int rawSeq);
+
+  public boolean insertDp(DpDTO req);
+  
   public void insertCtiSub(@Param("ctiSeq") int ctiSeq,
       @Param("ctiSubList") List<MethodCtiSub> sIItems);
 
   public List<MethodCtiSub> ctiSubList(int ctiSeq);
 
   public ImgDTO imgDetail(ImgDTO req);
+  
+  public List<ImgDTO> imgList(int rawSeq);
 
   public boolean insertImg(ImgDTO req);
 }

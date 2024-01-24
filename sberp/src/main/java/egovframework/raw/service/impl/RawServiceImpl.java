@@ -12,8 +12,10 @@ import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
 import egovframework.raw.dto.CeDTO;
+import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
 import egovframework.raw.dto.CtiDTO;
+import egovframework.raw.dto.DpDTO;
 import egovframework.raw.dto.EftDTO;
 import egovframework.raw.dto.EsdDTO;
 import egovframework.raw.dto.FileRawDTO;
@@ -244,13 +246,24 @@ public class RawServiceImpl implements RawService {
 
     if (detail != null) {
       // 측정설비
-      detail.setMacList(macList("RA", rawSeq));
-      detail.getMacList().addAll(macList("RB", rawSeq));
+      // 3235
+      if (detail.getTestStndrSeq() == 10) {
+        detail.setMacList(macList("RA", rawSeq));
+        detail.getMacList().addAll(macList("RB", rawSeq));
+      } 
+      // 9814
+      else {
+        detail.setMacList(new ArrayList<RawMac>());
+        detail.getMacList().addAll(macList("RE1", rawSeq));
+        detail.getMacList().addAll(macList("RE2", rawSeq));
+        detail.getMacList().addAll(macList("RE3", rawSeq));
+      }
     }
     return detail;
   }
 
   @Override
+  @Transactional
   public boolean insertRe(ReDTO req) {
     boolean result = true;
 
@@ -455,31 +468,34 @@ public class RawServiceImpl implements RawService {
       methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
 
     // 시험결과 > 인가부위
-    List<MethodRsSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cIItems))
-      methodMapper.insertRsSub(req.getRsSeq(), cIItems);
-
-    List<MethodRsSub> cUItems =
-        req.getSubList().stream().filter(t -> "U".equals(t.getState())).map(state -> {
-          state.setState(state.getNoYn() == 1 ? "D" : "U");
-          return state;
-        }).collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cUItems))
-      methodMapper.updateRsSub(req.getRsSeq(), cUItems);
-
-    List<MethodRsSub> cDItems = req.getSubList().stream().filter(t -> "D".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cDItems))
-      methodMapper.updateRsSub(req.getRsSeq(), cDItems);
-
-    // 해당없음일 경우에 기존 데이터 날리기(appl_type이 같은것들)
-    for (MethodRsSub nodata : cIItems) {
-      if (nodata.getNoYn() == 1) {
-        methodMapper.deleteRsSub(req.getRsSeq(), nodata);
+    if (!ObjectUtils.isEmpty(req.getSubList())) {
+      
+      List<MethodRsSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cIItems))
+        methodMapper.insertRsSub(req.getRsSeq(), cIItems);
+  
+      List<MethodRsSub> cUItems =
+          req.getSubList().stream().filter(t -> "U".equals(t.getState())).map(state -> {
+            state.setState(state.getNoYn() == 1 ? "D" : "U");
+            return state;
+          }).collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cUItems))
+        methodMapper.updateRsSub(req.getRsSeq(), cUItems);
+  
+      List<MethodRsSub> cDItems = req.getSubList().stream().filter(t -> "D".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cDItems))
+        methodMapper.updateRsSub(req.getRsSeq(), cDItems);
+  
+      // 해당없음일 경우에 기존 데이터 날리기(appl_type이 같은것들)
+      for (MethodRsSub nodata : cIItems) {
+        if (nodata.getNoYn() == 1) {
+          methodMapper.deleteRsSub(req.getRsSeq(), nodata);
+        }
       }
     }
-
+    
     return result;
   }
 
@@ -638,32 +654,34 @@ public class RawServiceImpl implements RawService {
       methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
 
     // 시험결과 > 인가부위
-    List<MethodCsSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cIItems))
-      methodMapper.insertCsSub(req.getCsSeq(), cIItems);
-
-    List<MethodCsSub> cUItems =
-        req.getSubList().stream().filter(t -> "U".equals(t.getState())).map(state -> {
-          state.setState(state.getNoYn() == 1 ? "D" : "U");
-          return state;
-        }).collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cUItems))
-      methodMapper.updateCsSub(req.getCsSeq(), cUItems);
-
-    List<MethodCsSub> cDItems = req.getSubList().stream().filter(t -> "D".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cDItems))
-      methodMapper.updateCsSub(req.getCsSeq(), cDItems);
-
-
-    // 해당없음일 경우에 기존 데이터 날리기(appl_type이 같은것들)
-    for (MethodCsSub nodata : cIItems) {
-      if (nodata.getNoYn() == 1) {
-        methodMapper.deleteCsSub(req.getCsSeq(), nodata);
+    if (!ObjectUtils.isEmpty(req.getSubList())) {
+      List<MethodCsSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cIItems))
+        methodMapper.insertCsSub(req.getCsSeq(), cIItems);
+  
+      List<MethodCsSub> cUItems =
+          req.getSubList().stream().filter(t -> "U".equals(t.getState())).map(state -> {
+            state.setState(state.getNoYn() == 1 ? "D" : "U");
+            return state;
+          }).collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cUItems))
+        methodMapper.updateCsSub(req.getCsSeq(), cUItems);
+  
+      List<MethodCsSub> cDItems = req.getSubList().stream().filter(t -> "D".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cDItems))
+        methodMapper.updateCsSub(req.getCsSeq(), cDItems);
+  
+  
+      // 해당없음일 경우에 기존 데이터 날리기(appl_type이 같은것들)
+      for (MethodCsSub nodata : cIItems) {
+        if (nodata.getNoYn() == 1) {
+          methodMapper.deleteCsSub(req.getCsSeq(), nodata);
+        }
       }
     }
-
+    
     return result;
 
   }
@@ -772,10 +790,67 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  public ClkDTO clkDetail(int rawSeq) {
+    ClkDTO detail = methodMapper.clkDetail(rawSeq);
+
+    if (detail != null) {
+      // 측정설비
+      detail.setMacList(macList("CK", rawSeq));
+    }
+    return detail;
+  }
+
+  @Override
+  public boolean insertClk(ClkDTO req) {
+
+    boolean result = true;
+
+    methodMapper.insertClk(req);
+
+    // 측정설비
+    if (!ObjectUtils.isEmpty(req.getMacList()))
+      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+
+    return result;
+
+  }
+  
+  @Override
+  public DpDTO dpDetail(int rawSeq) {
+    DpDTO detail = methodMapper.dpDetail(rawSeq);
+
+    if (detail != null) {
+      // 측정설비
+      detail.setMacList(macList("DP", rawSeq));
+    }
+    return detail;
+  }
+
+  @Override
+  public boolean insertDp(DpDTO req) {
+
+    boolean result = true;
+
+    methodMapper.insertDp(req);
+
+    // 측정설비
+    if (!ObjectUtils.isEmpty(req.getMacList()))
+      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+
+    return result;
+
+  }
+  
+  @Override
   public ImgDTO imgDetail(ImgDTO req) {
     return methodMapper.imgDetail(req);
   }
 
+  @Override
+  public List<ImgDTO> imgList(int rawSeq) {
+    return methodMapper.imgList(rawSeq);
+  }
+  
   @Override
   public boolean insertImg(ImgDTO req) {
 

@@ -48,6 +48,14 @@
 			CLASS_B_YN,
 			CLASS_ETC,
 			CLASS_ETC_YN,
+			/* 9814 */
+			CLASS1_YN,
+			CLASS2_YN,
+			CLASS3_YN,
+			CLASS4_YN,
+			CLASS5_YN,
+			CLASS_UBD_YN,
+			/* 9814 */
 			PRD_EXPLN,
 			PRD_USES,
 			CLOCK_FRQNC,
@@ -113,6 +121,14 @@
 			#{classBYn},
 			#{classEtc},
 			#{classEtcYn},
+			/* 9814 */
+			#{class1Yn},
+			#{class2Yn},
+			#{class3Yn},
+			#{class4Yn},
+			#{class5Yn},
+			#{classUbdYn},
+			/* 9814 */
 			#{prdExpln},
 			#{prdUses},
 			#{clockFrqnc},
@@ -398,6 +414,14 @@
 			CLASS_B_YN = #{classBYn},
 			CLASS_ETC = #{classEtc},
 			CLASS_ETC_YN = #{classEtcYn},
+			/* 9814 */
+			CLASS1_YN = #{class1Yn},
+			CLASS2_YN = #{class2Yn},
+			CLASS3_YN = #{class3Yn},
+			CLASS4_YN = #{class4Yn},
+			CLASS5_YN = #{class5Yn},
+			CLASS_UBD_YN = #{classUbdYn},
+			/* 9814 */
 			PRD_EXPLN = #{prdExpln},
 			PRD_USES = #{prdUses},
 			CLOCK_FRQNC = #{clockFrqnc},
@@ -516,6 +540,14 @@
 		    RAW_TB.CLASS_B_YN,
 		    CLASS_ETC,
 		    CLASS_ETC_YN,
+		    /* 9814 */
+			CLASS1_YN,
+			CLASS2_YN,
+			CLASS3_YN,
+			CLASS4_YN,
+			CLASS5_YN,
+			CLASS_UBD_YN,
+			/* 9814 */
 		    PRD_EXPLN,
 		    PRD_USES,
 		    RAW_TB.CLOCK_FRQNC,
@@ -829,6 +861,16 @@
 		    RAW_TB.CLASS_B_YN rawClassBYn,
 		    CLASS_ETC rawClassEtc,
 		    CLASS_ETC_YN rawClassEtcYn,
+		    
+		    /* 9814 */
+			CLASS1_YN,
+			CLASS2_YN,
+			CLASS3_YN,
+			CLASS4_YN,
+			CLASS5_YN,
+			CLASS_UBD_YN,
+			/* 9814 */
+			
 		    /* 1-3. 시험방법 >> 고정*/
 		    /* 1-4. 인증받은 모듈 사용 유무 */
 		    WHT_USE_CRT_YN,
@@ -878,6 +920,9 @@
 		    ADD_TEST_CABLE,
 		    ADD_TEST_DATA,
 		    ADD_TEST_AUDIO,
+		    /* 9814 구분 */
+		    TEST_ITEM_TB.TEST_STNDR_SEQ,
+		    
 		    SBK_ID
 		FROM
 		    TEST_TB

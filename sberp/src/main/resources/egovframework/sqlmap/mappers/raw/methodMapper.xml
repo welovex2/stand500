@@ -18,6 +18,8 @@
 			ROOM1_YN,
 			ROOM2_YN,
 			ROOM3_YN,
+			ROOM_ETC_YN,
+			ROOM_ETC,
 			TEMP,
 			TEMP_PLUS,
 			HMDT,
@@ -46,6 +48,8 @@
 			#{room1Yn},
 			#{room2Yn},
 			#{room3Yn},
+			#{roomEtcYn},
+			#{roomEtc},
 			#{temp},
 			#{tempPlus},
 			#{hmdt},
@@ -71,6 +75,8 @@
 			ROOM1_YN = #{room1Yn},
 			ROOM2_YN = #{room2Yn},
 			ROOM3_YN = #{room3Yn},
+			ROOM_ETC_YN = #{roomEtcYn},
+			ROOM_ETC = #{roomEtc},
 			TEMP = #{temp},
 			TEMP_PLUS = #{tempPlus},
 			HMDT = #{hmdt},
@@ -157,8 +163,8 @@
 			<when test="machineType == 'VD'">MACHINE_TB.VDIP_ORDR ASC,</when>
 			<when test="machineType == 'CA'">MACHINE_TB.CEA_ORDR ASC,</when>
 			<when test="machineType == 'CB'">MACHINE_TB.CEB_ORDR ASC,</when>
-			<when test="machineType == 'RA'">MACHINE_TB.REA_ORDR ASC,</when>
-			<when test="machineType == 'RB'">MACHINE_TB.REB_ORDR ASC,</when>
+			<when test="machineType == 'RA' or machineType == 'RE1' or machineType == 'RE2'">MACHINE_TB.REA_ORDR ASC,</when>
+			<when test="machineType == 'RB' or machineType == 'RE3' ">MACHINE_TB.REB_ORDR ASC,</when>
 		</choose>
 		MACHINE_TB.MACHINE_SEQ DESC
 	</select>
@@ -192,6 +198,8 @@
 			<when test="machineType == 'CB'">AND CEB_YN = 1 AND CEB_USE_YN = 1</when>
 			<when test="machineType == 'RA'">AND REA_YN = 1 AND REA_USE_YN = 1</when>
 			<when test="machineType == 'RB'">AND REB_YN = 1 AND REB_USE_YN = 1</when>
+			<when test="machineType == 'DP'">AND DP_YN = 1 AND DP_USE_YN = 1</when>
+			<when test="machineType == 'CK'">AND CLK_YN = 1 AND CLK_USE_YN = 1</when>
 		</choose>
 		ORDER BY 
 		<choose>
@@ -206,6 +214,8 @@
 			<when test="machineType == 'CB'">MACHINE_TB.CEB_ORDR ASC,</when>
 			<when test="machineType == 'RA'">MACHINE_TB.REA_ORDR ASC,</when>
 			<when test="machineType == 'RB'">MACHINE_TB.REB_ORDR ASC,</when>
+			<when test="machineType == 'DP'">MACHINE_TB.DP_ORDR ASC,</when>
+			<when test="machineType == 'CK'">MACHINE_TB.CLK_ORDR ASC,</when>
 		</choose>
 		MACHINE_TB.MACHINE_SEQ DESC
 	</select>
@@ -236,6 +246,8 @@
 		    ROOM1_YN,
 		    ROOM2_YN,
 		    ROOM3_YN,
+		    ROOM_ETC_YN,
+			ROOM_ETC,
 		    TEMP,
 		    TEMP_PLUS,
 		    HMDT,
@@ -256,7 +268,8 @@
 
 	<select id="reDetail" parameterType="int" resultType="reDTO">
 		SELECT RE_SEQ,
-		    RAW_SEQ,
+		    METHOD_RE_TB.RAW_SEQ,
+		    TEST_ITEM_TB.TEST_STNDR_SEQ,
 		    VLT_AC_YN,
 		    VLT_ETC,
 		    VLT_ETC_YN,
@@ -311,10 +324,35 @@
 		    HZ2_SIGN,
 		    FN_GET_IMAGE(HZ2_SIGN_URL,0) HZ2_SIGN_URL,
 		    HZ2_RESULT_CODE,
+		    
+			HZ3_VLT10M_YN,
+			HZ3_VLT_ETC1_YN,
+			HZ3_LNGTH_3M_YN,
+			HZ3_TEMP,
+			HZ3_TEMP_PLUS,
+			HZ3_HMDT,
+			HZ3_HMDT_PLUS,
+			HZ3_MSRMN_YEAR,
+			HZ3_MSRMN_MON,
+			HZ3_MSRMN_DAY,
+			HZ3_MSRMN_HOUR,
+			HZ3_MSRMN_MIN,
+			HZ3_SIGN,
+			FN_GET_IMAGE(HZ3_SIGN_URL,0) HZ3_SIGN_URL,
+			HZ3_RESULT_CODE,
+			
 		    RESULT_URL
 		FROM METHOD_RE_TB
+			
+			INNER JOIN RAW_TB
+            ON METHOD_RE_TB.RAW_SEQ = RAW_TB.RAW_SEQ
+            INNER jOIN TEST_TB
+            ON RAW_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+            INNER jOIN TEST_ITEM_TB
+            ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+            
 		WHERE 1=1
-		AND RAW_SEQ = #{rawSeq}
+		AND METHOD_RE_TB.RAW_SEQ = #{rawSeq}
 	</select>
 	
 	<insert id="insertRe" parameterType="reDTO">
@@ -379,6 +417,23 @@
 			HZ2_SIGN,
 			HZ2_SIGN_URL,
 			HZ2_RESULT_CODE,
+			
+			<if test="hz3Vlt10mYn != null and hz3Vlt10mYn != ''">HZ3_VLT10M_YN,</if>
+			<if test="hz3VltEtc1Yn != null and hz3VltEtc1Yn != ''">HZ3_VLT_ETC1_YN,</if>
+			<if test="hz3Lngth3mYn != null and hz3Lngth3mYn != ''">HZ3_LNGTH_3M_YN,</if>
+			<if test="hz3Temp != null and hz3Temp != ''">HZ3_TEMP,</if>
+			<if test="hz3TempPlus != null and hz3TempPlus != ''">HZ3_TEMP_PLUS,</if>
+			<if test="hz3Hmdt != null and hz3Hmdt != ''">HZ3_HMDT,</if>
+			<if test="hz3HmdtPlus != null and hz3HmdtPlus != ''">HZ3_HMDT_PLUS,</if>
+			<if test="hz3MsrmnYear != null and hz3MsrmnYear != ''">HZ3_MSRMN_YEAR,</if>
+			<if test="hz3MsrmnMon != null and hz3MsrmnMon != ''">HZ3_MSRMN_MON,</if>
+			<if test="hz3MsrmnDay != null and hz3MsrmnDay != ''">HZ3_MSRMN_DAY,</if>
+			<if test="hz3MsrmnHour != null and hz3MsrmnHour != ''">HZ3_MSRMN_HOUR,</if>
+			<if test="hz3MsrmnMin != null and hz3MsrmnMin != ''">HZ3_MSRMN_MIN,</if>
+			<if test="hz3Sign != null and hz3Sign != ''">HZ3_SIGN,</if>
+			<if test="hz3SignUrl != null and hz3SignUrl != ''">HZ3_SIGN_URL,</if>
+			<if test="hz3ResultCode != null and hz3ResultCode != ''">HZ3_RESULT_CODE,</if>
+			
 			RESULT_URL,
 			INS_MEM_ID,
 			UDT_MEM_ID
@@ -441,30 +496,49 @@
 			#{hz2Sign},
 			#{hz2SignUrl},
 			#{hz2ResultCode},
+			
+			<if test="hz3Vlt10mYn != null and hz3Vlt10mYn != ''">#{hz3Vlt10mYn},</if>
+			<if test="hz3VltEtc1Yn != null and hz3VltEtc1Yn != ''">#{hz3VltEtc1Yn},</if>
+			<if test="hz3Lngth3mYn != null and hz3Lngth3mYn != ''">#{hz3Lngth3mYn},</if>
+			<if test="hz3Temp != null and hz3Temp != ''">#{hz3Temp},</if>
+			<if test="hz3TempPlus != null and hz3TempPlus != ''">#{hz3TempPlus},</if>
+			<if test="hz3Hmdt != null and hz3Hmdt != ''">#{hz3Hmdt},</if>
+			<if test="hz3HmdtPlus != null and hz3HmdtPlus != ''">#{hz3HmdtPlus},</if>
+			<if test="hz3MsrmnYear != null and hz3MsrmnYear != ''">#{hz3MsrmnYear},</if>
+			<if test="hz3MsrmnMon != null and hz3MsrmnMon != ''">#{hz3MsrmnMon},</if>
+			<if test="hz3MsrmnDay != null and hz3MsrmnDay != ''">#{hz3MsrmnDay},</if>
+			<if test="hz3MsrmnHour != null and hz3MsrmnHour != ''">#{hz3MsrmnHour},</if>
+			<if test="hz3MsrmnMin != null and hz3MsrmnMin != ''">#{hz3MsrmnMin},</if>
+			<if test="hz3Sign != null and hz3Sign != ''">#{hz3Sign},</if>
+			<if test="hz3SignUrl != null and hz3SignUrl != ''">#{hz3SignUrl},</if>
+			<if test="hz3ResultCode != null and hz3ResultCode != ''">#{hz3ResultCode},</if>
+			
 			#{resultUrl},
 			#{insMemId},
 			#{udtMemId}
 		)
 		ON DUPLICATE KEY UPDATE
-			VLT_AC_YN = #{vltAcYn},
-			VLT_ETC = #{vltEtc},
-			VLT_ETC_YN = #{vltEtcYn},
+			<if test="vltAcYn != null">VLT_AC_YN = #{vltAcYn},</if>
+			<if test="vltEtc != null">VLT_ETC = #{vltEtc},</if>
+			<if test="vltEtcYn != null">VLT_ETC_YN = #{vltEtcYn},</if>
 			VAR_N_YN = #{varNYn},
 			VAR_Y_YN = #{varYYn},
 			HZ1_CODE = #{hz1Code},
+			HZ1_VLT_ETC1 = #{hz1VltEtc1},
+			HZ1_LNGTH_1M_YN = #{hz1Lngth1mYn},
+			HZ1_LNGTH_10M_YN = #{hz1Lngth10mYn},
+			HZ1_LNGTH_30M_YN = #{hz1Lngth30mYn},
+			HZ1_ANTN_3M_YN = #{hz1Antn3mYn},
+			HZ1_ANTN_4M_YN = #{hz1Antn4mYn},
+			
+			<if test="hz1ResultCode != null">
 			HZ1_VLT10M_YN = #{hz1Vlt10mYn},
 			HZ1_VLT3M_YN = #{hz1Vlt3mYn},
-			HZ1_VLT_ETC1 = #{hz1VltEtc1},
 			HZ1_VLT_ETC1_YN = #{hz1VltEtc1Yn},
 			HZ1_VLT_ETC2 = #{hz1VltEtc2},
 			HZ1_VLT_ETC2_YN = #{hz1VltEtc2Yn},
-			HZ1_LNGTH_1M_YN = #{hz1Lngth1mYn},
 			HZ1_LNGTH_3M_YN = #{hz1Lngth3mYn},
-			HZ1_LNGTH_10M_YN = #{hz1Lngth10mYn},
-			HZ1_LNGTH_30M_YN = #{hz1Lngth30mYn},
 			HZ1_ANTN_2M_YN = #{hz1Antn2mYn},
-			HZ1_ANTN_3M_YN = #{hz1Antn3mYn},
-			HZ1_ANTN_4M_YN = #{hz1Antn4mYn},
 			HZ1_TEMP = #{hz1Temp},
 			HZ1_TEMP_PLUS = #{hz1TempPlus},
 			HZ1_HMDT = #{hz1Hmdt},
@@ -475,19 +549,23 @@
 			HZ1_MSRMN_HOUR = #{hz1MsrmnHour},
 			HZ1_MSRMN_MIN = #{hz1MsrmnMin},
 			HZ1_SIGN = #{hz1Sign},
-			<if test="hz1SignUrl != null and hz1SignUrl != ''">HZ1_SIGN_URL = #{hz1SignUrl},</if>
+			HZ1_SIGN_URL = #{hz1SignUrl},
 			HZ1_RESULT_CODE = #{hz1ResultCode},
+			</if>
+			
 			HZ2_CODE = #{hz2Code},
-			HZ2_VLT10M_YN = #{hz2Vlt10mYn},
-			HZ2_VLT3M_YN = #{hz2Vlt3mYn},
 			HZ2_VLT_ETC1 = #{hz2VltEtc1},
 			HZ2_VLT_ETC1_YN = #{hz2VltEtc1Yn},
 			HZ2_VLT_ETC2 = #{hz2VltEtc2},
 			HZ2_VLT_ETC2_YN = #{hz2VltEtc2Yn},
 			HZ2_LNGTH_1M_YN = #{hz2Lngth1mYn},
+			HZ2_LNGTH_30M_YN = #{hz2Lngth30mYn},
+			
+			<if test="hz2ResultCode != null">
+			HZ2_VLT10M_YN = #{hz2Vlt10mYn},
+			HZ2_VLT3M_YN = #{hz2Vlt3mYn},
 			HZ2_LNGTH_3M_YN = #{hz2Lngth3mYn},
 			HZ2_LNGTH_10M_YN = #{hz2Lngth10mYn},
-			HZ2_LNGTH_30M_YN = #{hz2Lngth30mYn},
 			HZ2_TEMP = #{hz2Temp},
 			HZ2_TEMP_PLUS = #{hz2TempPlus},
 			HZ2_HMDT = #{hz2Hmdt},
@@ -498,8 +576,28 @@
 			HZ2_MSRMN_HOUR = #{hz2MsrmnHour},
 			HZ2_MSRMN_MIN = #{hz2MsrmnMin},
 			HZ2_SIGN = #{hz2Sign},
-			<if test="hz2SignUrl != null and hz2SignUrl != ''">HZ2_SIGN_URL = #{hz2SignUrl},</if>
+			HZ2_SIGN_URL = #{hz2SignUrl},
 			HZ2_RESULT_CODE = #{hz2ResultCode},
+			</if>
+			
+			<if test="hz3ResultCode != null">
+			HZ3_VLT10M_YN = #{hz3Vlt10mYn},
+			HZ3_VLT_ETC1_YN = #{hz3VltEtc1Yn},
+			HZ3_LNGTH_3M_YN = #{hz3Lngth3mYn},
+			HZ3_TEMP = #{hz3Temp},
+			HZ3_TEMP_PLUS = #{hz3TempPlus},
+			HZ3_HMDT = #{hz3Hmdt},
+			HZ3_HMDT_PLUS = #{hz3HmdtPlus},
+			HZ3_MSRMN_YEAR = #{hz3MsrmnYear},
+			HZ3_MSRMN_MON = #{hz3MsrmnMon},
+			HZ3_MSRMN_DAY = #{hz3MsrmnDay},
+			HZ3_MSRMN_HOUR = #{hz3MsrmnHour},
+			HZ3_MSRMN_MIN = #{hz3MsrmnMin},
+			HZ3_SIGN = #{hz3Sign},
+			HZ3_SIGN_URL = #{hz3SignUrl},
+			HZ3_RESULT_CODE = #{hz3ResultCode},
+			</if>
+			
 			RESULT_URL = #{resultUrl},
 			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
@@ -515,6 +613,8 @@
 		    VAR_Y_YN,
 		    ROOM1_YN,
 		    ROOM2_YN,
+		    ROOM_ETC_YN,
+			ROOM_ETC,
 		    TEMP,
 		    TEMP_PLUS,
 		    HMDT,
@@ -585,21 +685,10 @@
 	    </selectKey>
 		INSERT INTO METHOD_ESD_TB
 		(
-			ESD_SEQ,
-			RAW_SEQ,
-			VLT_AC_YN,
-			VLT_ETC,
-			VLT_ETC_YN,
-			VAR_N_YN,
-			VAR_Y_YN,
-			ROOM1_YN,
-			ROOM2_YN,
-			TEMP,
-			TEMP_PLUS,
-			HMDT,
-			HMDT_PLUS,
-			BRMT,
-			BRMT_PLUS,
+			ESD_SEQ, RAW_SEQ,
+			VLT_AC_YN, VLT_ETC, VLT_ETC_YN, VAR_N_YN, VAR_Y_YN,
+			ROOM1_YN, ROOM2_YN, ROOM_ETC_YN, ROOM_ETC,
+			TEMP, TEMP_PLUS, HMDT, HMDT_PLUS, BRMT, BRMT_PLUS,
 			DC_1S_YN, DC_ETC, DC_ETC_YN, DC_GIN_YN, DC_CON_YN, DC_IMP_YN, DC_IMP_ETC, DC_IMP_ETC_YN,
 			EVLTN_A_YN, EVLTN_B_YN, EVLTN_C_YN,
 			DC_CON_2_YN, DC_CON_4_YN, DC_CON_6_YN, DC_CON_8_YN, DC_CON_ETC, DC_CON_ETC_YN,
@@ -615,21 +704,10 @@
 		)
 		VALUES
 		(
-			(SELECT ifnull(MAX(seq.ESD_SEQ)+1,1) esdSeq FROM METHOD_ESD_TB seq),
-			#{rawSeq},
-			#{vltAcYn},
-			#{vltEtc},
-			#{vltEtcYn},
-			#{varNYn},
-			#{varYYn},
-			#{room1Yn},
-			#{room2Yn},
-			#{temp},
-			#{tempPlus},
-			#{hmdt},
-			#{hmdtPlus},
-			#{brmt},
-			#{brmtPlus},
+			(SELECT ifnull(MAX(seq.ESD_SEQ)+1,1) esdSeq FROM METHOD_ESD_TB seq), #{rawSeq},
+			#{vltAcYn}, #{vltEtc}, #{vltEtcYn}, #{varNYn}, #{varYYn},
+			#{room1Yn}, #{room2Yn}, #{roomEtcYn}, #{roomEtc},
+			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus}, #{brmt}, #{brmtPlus},
 			#{dc1sYn},#{dcEtc},#{dcEtcYn},#{dcGinYn},#{dcConYn},#{dcImpYn},#{dcImpEtc},#{dcImpEtcYn},
 			#{evltnAYn},#{evltnBYn},#{evltnCYn},
 			#{dcCon2Yn},#{dcCon4Yn},#{dcCon6Yn},#{dcCon8Yn},#{dcConEtc},#{dcConEtcYn},
@@ -651,6 +729,8 @@
 			    VAR_Y_YN = #{varYYn},
 			    ROOM1_YN = #{room1Yn},
 			    ROOM2_YN = #{room2Yn},
+			    ROOM_ETC_YN = #{roomEtcYn},
+			    ROOM_ETC = #{roomEtc},
 			    TEMP = #{temp},
 			    TEMP_PLUS = #{tempPlus},
 			    HMDT = #{hmdt},
@@ -768,6 +848,7 @@
 		    VAR_Y_YN,
 		    ROOM1_YN,
 		    ROOM2_YN,
+		    ROOM3_YN,
 		    ROOM_ETC,
 		    ROOM_ETC_YN,
 		    TEMP,
@@ -855,6 +936,7 @@
 			VAR_Y_YN,
 			ROOM1_YN,
 			ROOM2_YN,
+			ROOM3_YN,
 			ROOM_ETC,
 			ROOM_ETC_YN,
 			TEMP,
@@ -902,26 +984,6 @@
 			V_B_CODE,
 			V_R_CODE,
 			V_L_CODE,
-<!-- 			AUDIO_ELCT_YN, -->
-<!-- 			AUDIO_ACST_YN, -->
-<!-- 			AUDIO_NEAR_YN, -->
-<!-- 			AUDIO_FEAR_YN, -->
-<!-- 			AUDIO1_CODE, -->
-<!-- 			AUDIO2_CODE, -->
-<!-- 			SPKR_ELCT_YN, -->
-<!-- 			SPKR_ACST_YN, -->
-<!-- 			SPKR_NEAR_YN, -->
-<!-- 			SPKR_FEAR_YN, -->
-<!-- 			SPKR1_CODE, -->
-<!-- 			SPKR2_CODE, -->
-<!-- 			COMM1_NOISE_YN, -->
-<!-- 			COMM1_ACST_YN, -->
-<!-- 			COMM1_CODE1, -->
-<!-- 			COMM1_CODE2, -->
-<!-- 			COMM2_NOISE_YN, -->
-<!-- 			COMM2_ACST_YN, -->
-<!-- 			COMM2_CODE1, -->
-<!-- 			COMM2_CODE2, -->
 			CMNT_A_YN,
 			CMNT_ETC,
 			CMNT_ETC_YN,
@@ -939,6 +1001,7 @@
 			#{varYYn},
 			#{room1Yn},
 			#{room2Yn},
+			#{room3Yn},
 			#{roomEtc},
 			#{roomEtcYn},
 			#{temp},
@@ -986,26 +1049,6 @@
 			#{vBCode},
 			#{vRCode},
 			#{vLCode},
-<!-- 			#{audioElctYn}, -->
-<!-- 			#{audioAcstYn}, -->
-<!-- 			#{audioNearYn}, -->
-<!-- 			#{audioFearYn}, -->
-<!-- 			#{audio1Code}, -->
-<!-- 			#{audio2Code}, -->
-<!-- 			#{spkrElctYn}, -->
-<!-- 			#{spkrAcstYn}, -->
-<!-- 			#{spkrNearYn}, -->
-<!-- 			#{spkrFearYn}, -->
-<!-- 			#{spkr1Code}, -->
-<!-- 			#{spkr2Code}, -->
-<!-- 			#{comm1NoiseYn}, -->
-<!-- 			#{comm1AcstYn}, -->
-<!-- 			#{comm1Code1}, -->
-<!-- 			#{comm1Code2}, -->
-<!-- 			#{comm2NoiseYn}, -->
-<!-- 			#{comm2AcstYn}, -->
-<!-- 			#{comm2Code1}, -->
-<!-- 			#{comm2Code2}, -->
 			#{cmntAYn},
 			#{cmntEtc},
 			#{cmntEtcYn},
@@ -1020,6 +1063,7 @@
 		      VAR_Y_YN = #{varYYn},
 		      ROOM1_YN = #{room1Yn},
 		      ROOM2_YN = #{room2Yn},
+		      ROOM3_YN = #{room3Yn},
 		      ROOM_ETC = #{roomEtc},
 		      ROOM_ETC_YN = #{roomEtcYn},
 		      TEMP = #{temp},
@@ -2144,14 +2188,6 @@
 		    VLT_AC_YN, VLT_ETC, VLT_ETC_YN, VAR_N_YN, VAR_Y_YN,
 		    ROOM1_YN, ROOM2_YN, ROOM_ETC, ROOM_ETC_YN,
 		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS, BRMT, BRMT_PLUS,
-<!-- 		    DIPS_RDC1_YN, DIPS_RDC1_TEXT, DIPS_RDC1_05_YN, DIPS_RDC1_5_YN, DIPS_RDC1_25_YN, DIPS_RDC1_30_YN, DIPS_RDC1_50_YN, DIPS_RDC1_ETC, DIPS_RDC1_ETC_YN, DIPS_RDC1_CODE, -->
-<!-- 		    DIPS_RDC2_YN, DIPS_RDC2_TEXT, DIPS_RDC2_05_YN, DIPS_RDC2_5_YN, DIPS_RDC2_25_YN, DIPS_RDC2_30_YN, DIPS_RDC2_50_YN, DIPS_RDC2_ETC, DIPS_RDC2_ETC_YN, DIPS_RDC2_CODE, -->
-<!-- 		    DIPS_RDC3_YN, DIPS_RDC3_TEXT, DIPS_RDC3_ETC, DIPS_RDC3_ETC_YN, DIPS_RDC3_CODE, DIPS_RDC4_YN, DIPS_RDC4_TEXT, DIPS_RDC4_ETC, DIPS_RDC4_ETC_YN, DIPS_RDC4_CODE, -->
-<!-- 		    INTRP_RDC1_YN, INTRP_RDC1_TEXT, INTRP_RDC1_05_YN, INTRP_RDC1_250_YN, INTRP_RDC1_300_YN, INTRP_RDC1_ETC, INTRP_RDC1_ETC_YN, INTRP_RDC1_CODE,  -->
-<!-- 		    INTRP_RDC2_YN, INTRP_RDC2_TEXT, INTRP_RDC2_ETC, INTRP_RDC2_ETC_YN, INTRP_RDC2_CODE, -->
-<!-- 		    INTRP_RDC3_YN, INTRP_RDC3_TEXT, INTRP_RDC3_ETC, INTRP_RDC3_ETC_YN, INTRP_RDC3_CODE, -->
-<!-- 		    INTRP_RDC4_YN, INTRP_RDC4_TEXT, INTRP_RDC4_ETC, INTRP_RDC4_ETC_YN, INTRP_RDC4_CODE, -->
-<!-- 		    FLCTT_P10_YN, FLCTT_M10_YN, FLCTT_M15_YN, -->
 			VOL1_RESULT_CODE, VOL1_CMNT_CODE, VOL1_CMNT, FN_CODE_NAME(VOL1_CMNT_CODE,'RV') VOL1_REPORT,
 		    VOL2_RESULT_CODE, VOL2_CMNT_CODE, VOL2_CMNT, FN_CODE_NAME(VOL2_CMNT_CODE,'RV') VOL2_REPORT,
 		    VOL3_RESULT_CODE, VOL3_CMNT_CODE, VOL3_CMNT, FN_CODE_NAME(VOL3_CMNT_CODE,'RV') VOL3_REPORT,
@@ -2173,14 +2209,6 @@
 		    VLT_AC_YN, VLT_ETC, VLT_ETC_YN, VAR_N_YN, VAR_Y_YN,
 		    ROOM1_YN, ROOM2_YN, ROOM_ETC, ROOM_ETC_YN,
 		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS, BRMT, BRMT_PLUS,
-<!-- 		    DIPS_RDC1_YN, DIPS_RDC1_TEXT, DIPS_RDC1_05_YN, DIPS_RDC1_5_YN, DIPS_RDC1_25_YN, DIPS_RDC1_30_YN, DIPS_RDC1_50_YN, DIPS_RDC1_ETC, DIPS_RDC1_ETC_YN, DIPS_RDC1_CODE, -->
-<!-- 		    DIPS_RDC2_YN, DIPS_RDC2_TEXT, DIPS_RDC2_05_YN, DIPS_RDC2_5_YN, DIPS_RDC2_25_YN, DIPS_RDC2_30_YN, DIPS_RDC2_50_YN, DIPS_RDC2_ETC, DIPS_RDC2_ETC_YN, DIPS_RDC2_CODE, -->
-<!-- 		    DIPS_RDC3_YN, DIPS_RDC3_TEXT, DIPS_RDC3_ETC, DIPS_RDC3_ETC_YN, DIPS_RDC3_CODE, DIPS_RDC4_YN, DIPS_RDC4_TEXT, DIPS_RDC4_ETC, DIPS_RDC4_ETC_YN, DIPS_RDC4_CODE, -->
-<!-- 		    INTRP_RDC1_YN, INTRP_RDC1_TEXT, INTRP_RDC1_05_YN, INTRP_RDC1_250_YN, INTRP_RDC1_300_YN, INTRP_RDC1_ETC, INTRP_RDC1_ETC_YN, INTRP_RDC1_CODE,  -->
-<!-- 		    INTRP_RDC2_YN, INTRP_RDC2_TEXT, INTRP_RDC2_ETC, INTRP_RDC2_ETC_YN, INTRP_RDC2_CODE, -->
-<!-- 		    INTRP_RDC3_YN, INTRP_RDC3_TEXT, INTRP_RDC3_ETC, INTRP_RDC3_ETC_YN, INTRP_RDC3_CODE, -->
-<!-- 		    INTRP_RDC4_YN, INTRP_RDC4_TEXT, INTRP_RDC4_ETC, INTRP_RDC4_ETC_YN, INTRP_RDC4_CODE, -->
-<!-- 		    FLCTT_P10_YN, FLCTT_M10_YN, FLCTT_M15_YN, -->
 			VOL1_RESULT_CODE, VOL1_CMNT_CODE, VOL1_CMNT,
 		    VOL2_RESULT_CODE, VOL2_CMNT_CODE, VOL2_CMNT,
 		    VOL3_RESULT_CODE, VOL3_CMNT_CODE, VOL3_CMNT,
@@ -2196,13 +2224,6 @@
 	        #{vltAcYn}, #{vltEtc}, #{vltEtcYn}, #{varNYn}, #{varYYn},
 	        #{room1Yn}, #{room2Yn}, #{roomEtc}, #{roomEtcYn},
 	        #{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus}, #{brmt}, #{brmtPlus},
-<!-- 	        #{dipsRdc1Yn}, #{dipsRdc1Text}, #{dipsRdc105Yn}, #{dipsRdc15Yn}, #{dipsRdc125Yn}, #{dipsRdc130Yn}, #{dipsRdc150Yn}, #{dipsRdc1Etc}, #{dipsRdc1EtcYn}, #{dipsRdc1Code}, -->
-<!-- 	        #{dipsRdc2Yn}, #{dipsRdc2Text}, #{dipsRdc205Yn}, #{dipsRdc25Yn}, #{dipsRdc225Yn}, #{dipsRdc230Yn}, #{dipsRdc250Yn}, #{dipsRdc2Etc}, #{dipsRdc2EtcYn}, #{dipsRdc2Code}, -->
-<!-- 	        #{dipsRdc3Yn}, #{dipsRdc3Text}, #{dipsRdc3Etc}, #{dipsRdc3EtcYn}, #{dipsRdc3Code}, #{dipsRdc4Yn}, #{dipsRdc4Text}, #{dipsRdc4Etc}, #{dipsRdc4EtcYn}, #{dipsRdc4Code},  -->
-<!-- 	        #{intrpRdc1Yn}, #{intrpRdc1Text}, #{intrpRdc105Yn}, #{intrpRdc1250Yn}, #{intrpRdc1300Yn}, #{intrpRdc1Etc}, #{intrpRdc1EtcYn}, #{intrpRdc1Code}, #{intrpRdc2Yn}, -->
-<!-- 		    #{intrpRdc2Text}, #{intrpRdc2Etc}, #{intrpRdc2EtcYn}, #{intrpRdc2Code}, #{intrpRdc3Yn}, #{intrpRdc3Text}, #{intrpRdc3Etc}, #{intrpRdc3EtcYn}, #{intrpRdc3Code}, #{intrpRdc4Yn}, -->
-<!-- 		    #{intrpRdc4Text}, #{intrpRdc4Etc}, #{intrpRdc4EtcYn}, #{intrpRdc4Code}, -->
-<!-- 		    #{flcttP10Yn}, #{flcttM10Yn}, #{flcttM15Yn}, -->
 			#{vol1ResultCode}, #{vol1CmntCode}, #{vol1Cmnt},
 			#{vol2ResultCode}, #{vol2CmntCode}, #{vol2Cmnt},
 			#{vol3ResultCode}, #{vol3CmntCode}, #{vol3Cmnt},
@@ -2358,6 +2379,117 @@
 		AND CTI_SEQ = #{ctiSeq}
 	</select>
 	
+	<insert id="insertClk" parameterType="clkDTO">
+		<selectKey resultType="int" keyProperty="ckSeq" order="BEFORE">
+	        SELECT IFNULL(MAX(CK_SEQ)+1,1) ckSeq FROM METHOD_CK_TB
+	    </selectKey>
+		INSERT INTO METHOD_CK_TB
+		(
+			CK_SEQ, RAW_SEQ, VLT_AC_YN, VLT_ETC, VLT_ETC_YN,
+			ROOM1_YN, ROOM2_YN, ROOM3_YN, ROOM_ETC_YN, ROOM_ETC,
+			TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
+			MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
+			SIGN, SIGN_URL, RESULT_CODE, INS_MEM_ID, UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{ckSeq}, #{rawSeq}, #{vltAcYn}, #{vltEtc}, #{vltEtcYn},
+			#{room1Yn}, #{room2Yn}, #{room3Yn}, #{roomEtcYn}, #{roomEtc},
+			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
+			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
+			#{sign}, #{signUrl}, #{resultCode}, #{insMemId}, #{udtMemId}
+		)
+		ON DUPLICATE KEY UPDATE
+			VLT_AC_YN = #{vltAcYn},
+			VLT_ETC = #{vltEtc},
+			VLT_ETC_YN = #{vltEtcYn},
+			ROOM1_YN = #{room1Yn},
+			ROOM2_YN = #{room2Yn},
+			ROOM3_YN = #{room3Yn},
+			ROOM_ETC_YN = #{roomEtcYn},
+			ROOM_ETC = #{roomEtc},
+			TEMP = #{temp},
+			TEMP_PLUS = #{tempPlus},
+			HMDT = #{hmdt},
+			HMDT_PLUS = #{hmdtPlus},
+			MSRMN_YEAR = #{msrmnYear},
+			MSRMN_MON = #{msrmnMon},
+			MSRMN_DAY = #{msrmnDay},
+			MSRMN_HOUR = #{msrmnHour},
+			MSRMN_MIN = #{msrmnMin},
+			SIGN = #{sign},
+			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			RESULT_CODE = #{resultCode},
+			UDT_DT = NOW(),
+			UDT_MEM_ID = #{udtMemId}
+	</insert>
+	
+	<select id="clkDetail" parameterType="int" resultType="clkDTO">
+		SELECT CK_SEQ, RAW_SEQ, VLT_AC_YN, VLT_ETC, VLT_ETC_YN,
+		    ROOM1_YN, ROOM2_YN, ROOM3_YN, ROOM_ETC_YN, ROOM_ETC,
+		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
+		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, RESULT_CODE
+		FROM METHOD_CK_TB
+		WHERE 1=1
+		AND RAW_SEQ = #{rawSeq}
+	</select>
+	
+	<insert id="insertDp" parameterType="dpDTO">
+		<selectKey resultType="int" keyProperty="dpSeq" order="BEFORE">
+	        SELECT IFNULL(MAX(DP_SEQ)+1,1) dpSeq FROM METHOD_DP_TB
+	    </selectKey>
+		INSERT INTO METHOD_DP_TB
+		(
+			DP_SEQ, RAW_SEQ, VLT_AC_YN, VLT_ETC, VLT_ETC_YN,
+			ROOM1_YN, ROOM2_YN, ROOM_ETC_YN, ROOM_ETC,
+			TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
+			MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
+			SIGN, SIGN_URL, RESULT_CODE, INS_MEM_ID, UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{dpSeq}, #{rawSeq}, #{vltAcYn}, #{vltEtc}, #{vltEtcYn},
+			#{room1Yn}, #{room2Yn}, #{roomEtcYn}, #{roomEtc},
+			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
+			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
+			#{sign}, #{signUrl}, #{resultCode}, #{insMemId}, #{udtMemId}
+		)
+		ON DUPLICATE KEY UPDATE
+			VLT_AC_YN = #{vltAcYn},
+			VLT_ETC = #{vltEtc},
+			VLT_ETC_YN = #{vltEtcYn},
+			ROOM1_YN = #{room1Yn},
+			ROOM2_YN = #{room2Yn},
+			ROOM_ETC_YN = #{roomEtcYn},
+			ROOM_ETC = #{roomEtc},
+			TEMP = #{temp},
+			TEMP_PLUS = #{tempPlus},
+			HMDT = #{hmdt},
+			HMDT_PLUS = #{hmdtPlus},
+			MSRMN_YEAR = #{msrmnYear},
+			MSRMN_MON = #{msrmnMon},
+			MSRMN_DAY = #{msrmnDay},
+			MSRMN_HOUR = #{msrmnHour},
+			MSRMN_MIN = #{msrmnMin},
+			SIGN = #{sign},
+			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			RESULT_CODE = #{resultCode},
+			UDT_DT = NOW(),
+			UDT_MEM_ID = #{udtMemId}
+	</insert>
+	
+	<select id="dpDetail" parameterType="int" resultType="dpDTO">
+		SELECT DP_SEQ, RAW_SEQ, VLT_AC_YN, VLT_ETC, VLT_ETC_YN,
+		    ROOM1_YN, ROOM2_YN, ROOM_ETC_YN, ROOM_ETC,
+		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
+		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, RESULT_CODE
+		FROM METHOD_DP_TB
+		WHERE 1=1
+		AND RAW_SEQ = #{rawSeq}
+	</select>
+	
 	<insert id="insertImg" parameterType="imgDTO">
 		<selectKey resultType="int" keyProperty="imgSeq" order="BEFORE">
 	        SELECT ifnull(MAX(IMG_SEQ)+1,1) FROM METHOD_IMG_TB
@@ -2395,5 +2527,29 @@
 		AND RAW_SEQ = #{rawSeq}
 		AND PIC_ID = #{picId}
 	</select>
-	
+
+	<select id="imgList" parameterType="int" resultType="imgDTO">
+        SELECT 
+			IFNULL(METHOD_IMG_TB.RAW_SEQ, #{rawSeq}), cast(num as unsigned) pic_id, IFNULL(IF(num = 14, 1, RAW_MET_TB.CHECK_YN), 0) check_yn, IFNULL(PIC_YN, 0) pic_yn, 
+			(SELECT COUNT(1) FROM FILE_DETAIL_TB WHERE ATCH_FILE_ID = METHOD_IMG_TB.ATCH_FILE_ID AND STATE != 'D') regCnt
+        FROM (
+			SELECT @num := @num + 1 AS num
+			FROM INFORMATION_SCHEMA.TABLES, (SELECT @num := 0) temp
+			LIMIT 0, 18
+        ) numb
+			
+			LEFT JOIN METHOD_IMG_TB
+            ON numb.num = PIC_ID
+            AND METHOD_IMG_TB.RAW_SEQ = #{rawSeq}
+            
+            LEFT JOIN RAW_MET_TB
+            ON CASE WHEN numb.num=15 THEN 1
+					WHEN numb.num=16 THEN 13
+                    WHEN numb.num=17 THEN 15
+                    WHEN numb.num=18 THEN 16
+				ELSE numb.num END = RAW_MET_TB.MET_SEQ+1
+            AND RAW_MET_TB.RAW_SEQ =#{rawSeq}
+            ;
+	</select>
+		
 </mapper>

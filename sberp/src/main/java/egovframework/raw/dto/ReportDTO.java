@@ -127,6 +127,13 @@ public class ReportDTO {
   @ApiModelProperty(value = "1-1. 시험기자재 (제품구분)  B", example = "")
   @Column
   private int classBYn;
+  
+  private int class1Yn;
+  private int class2Yn;
+  private int class3Yn;
+  private int class4Yn;
+  private int class5Yn;
+  private int classUbdYn;
 
   // @ApiModelProperty(value="1-2. 시험기준 >> 고정 ", example = "")
   @ApiModelProperty(value="시험요구_KC_EMC ", example = "1")
@@ -235,7 +242,7 @@ public class ReportDTO {
   private List<RawMet> methodList;
 
 
-  @ApiModelProperty(value = "3.3 피시험기기의 보완내용 >> modList   ", example = "")
+  @ApiModelProperty(value = "3.3 피시험기기의 보완내용 >> modList", example = "")
   private List<String> modFileList;
 
 
@@ -388,49 +395,61 @@ public class ReportDTO {
   @Column
   private String addTestAudio;
 
-  @ApiModelProperty(value = "9.1 교류 주전원 포트에서의 전도성 방해 시험   ", example = "")
+  @ApiModelProperty(value = "9.1 교류 주전원 포트에서의 전도성 방해 시험", example = "")
   private CeDTO ce1;
 
-  @ApiModelProperty(value = "9.2 비대칭모드 전도성 방해 시험   ", example = "")
+  @ApiModelProperty(value = "9.2 비대칭모드 전도성 방해 시험", example = "")
   private CeDTO ce2;
 
-  @ApiModelProperty(value = "9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험   ", example = "")
+  @ApiModelProperty(value = "9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험", example = "")
   private CeDTO ce3;
 
-  @ApiModelProperty(value = "9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험   ", example = "")
+  @ApiModelProperty(value = "9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험", example = "")
   private CeDTO ce4;
 
-  @ApiModelProperty(value = "9.5 방사성 방해 시험 (1GHz 이하 대역)   ", example = "")
+  @ApiModelProperty(value = "RE (9 ㎑ ~ 30 ㎒) ", example = "")
+  private ReDTO re0;
+  
+  @ApiModelProperty(value = "9.5 방사성 방해 시험 (1GHz 이하 대역)", example = "")
   private ReDTO re1;
 
-  @ApiModelProperty(value = "9.6 방사성 방해 시험 (1GHz 초과 대역)   ", example = "")
+  @ApiModelProperty(value = "9.6 방사성 방해 시험 (1GHz 초과 대역)", example = "")
   private ReDTO re2;
 
-  @ApiModelProperty(value = "9.7 정전기 방전 시험   ", example = "")
+  @ApiModelProperty(value = "9.7 정전기 방전 시험", example = "")
   private EsdDTO esd;
 
-  @ApiModelProperty(value = "9.8 방사성 RF 전자기장 시험   ", example = "")
+  @ApiModelProperty(value = "9.8 방사성 RF 전자기장 시험", example = "")
   private RsDTO rs;
 
-  @ApiModelProperty(value = "9.9 전기적 빠른 과도현상 시험   ", example = "")
+  @ApiModelProperty(value = "9.9 전기적 빠른 과도현상 시험", example = "")
   private EftDTO eft;
 
-  @ApiModelProperty(value = "9.10 서지 시험   ", example = "")
+  @ApiModelProperty(value = "9.10 서지 시험", example = "")
   private SurgeDTO surge;
 
-  @ApiModelProperty(value = "9.11 전도성 RF 전자기장 시험   ", example = "")
+  @ApiModelProperty(value = "9.11 전도성 RF 전자기장 시험", example = "")
   private CsDTO cs;
 
-  @ApiModelProperty(value = "9.12 전원 주파수 자기장 시험   ", example = "")
+  @ApiModelProperty(value = "9.12 전원 주파수 자기장 시험", example = "")
   private MfDTO mf;
 
-  @ApiModelProperty(value = "9.13 전압 강하 및 순간 정전 시험   ", example = "")
+  @ApiModelProperty(value = "9.13 전압 강하 및 순간 정전 시험", example = "")
   private VdipDTO vdip;
 
+  @ApiModelProperty(value = "Click", example = "")
+  private ClkDTO clk;
+
+  @ApiModelProperty(value = "DP", example = "")
+  private DpDTO dp;
+  
   @ApiModelProperty(value = "이미지 리스트", example = "")
   private List<PicDTO> imgList;
 
   @ApiModelProperty(value = "성적서 발급내역", example = "")
   private List<Test> reportList;
+  
+  @ApiModelProperty(value = "시험규격", example = "")
+  private int testStndrSeq;
 
 }

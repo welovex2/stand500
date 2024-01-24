@@ -20,6 +20,10 @@ public class ReDTO extends MethodRe {
   @Column
   int testSeq;
 
+  @ApiModelProperty(value = "시험규격번호", example = "10", hidden = true)
+  @Column
+  int testStndrSeq;
+  
   @ApiModelProperty(value = "측정설비 종류(공통코드 : TM)", example = "CE")
   @Column
   String macType;
