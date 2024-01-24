@@ -177,6 +177,8 @@ public class EgovFileMngUtil {
     	                file.transferTo(orgFile);
     	                
     	                Thumbnailator.createThumbnail(orgFile, thumbnailFile, newWidth, newHeight);
+    	                orgFile.delete();
+    	                
     	                _size = thumbnailFile.length();
     	                
     					System.out.println("리사이즈완료");
