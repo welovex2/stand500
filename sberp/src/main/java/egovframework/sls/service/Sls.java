@@ -8,9 +8,11 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 @ApiModel(description = "매출")
 public class Sls {
 
@@ -48,6 +50,11 @@ public class Sls {
   @Column
   private String cnfrmDate;
 
+  
+  @ApiModelProperty(value = "메모 ", example = "", hidden = true)
+  @Column
+  private String memo;
+  
 
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column

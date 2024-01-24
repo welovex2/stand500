@@ -155,4 +155,9 @@ public class SlsServiceImpl implements SlsService {
     return slsMapper.selectQuoDetail(quoId);
   }
 
+  @Override
+  public boolean memoUpdate(Req req) {
+    return slsMapper.memoUpdate(req);
+  }
+
 }

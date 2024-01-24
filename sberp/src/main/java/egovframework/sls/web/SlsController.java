@@ -18,6 +18,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.quo.service.Quo;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -25,6 +26,7 @@ import egovframework.sls.service.BillDTO;
 import egovframework.sls.service.SlsDTO;
 import egovframework.sls.service.SlsService;
 import egovframework.sls.service.SlsSummary;
+import egovframework.tst.dto.TestDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -246,6 +248,32 @@ public class SlsController {
       return res;
     }
     
+    /**
+     * OR 조건 검색 처리
+     */
+    List<String> new25 = new ArrayList<String>();
+    boolean new25Yn = false;
+    for (SearchVO search : param.getSearchVO()) {
+      // 1. 시험부(23)
+      if ("23".equals(search.getSearchCode())) {
+        new25Yn = true;
+        new25.add(search.getSearchWord());
+      }
+    }
+    // 받은 searchCode 삭제 후 다시 생성
+    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    
+    SearchVO newSearch = new SearchVO();
+    if (new25Yn) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("23");
+      newSearch.setSearchWords(new25);
+      param.getSearchVO().add(newSearch);
+    }
+    /**
+     * -- END OR 조건 검색 처리
+     */
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -350,6 +378,52 @@ public class SlsController {
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
     return res;
+  }
+  
+  
+  @ApiOperation(value = "매출 메모 추가")
+  @PostMapping(value = "/memo/insert.do")
+  public BasicResponse insertMemo(
+      @ApiParam(value = "slsId : 매출 아이디, memo : 매출 메모") @RequestBody SlsDTO.Req req)
+      throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+
+    // 로그인정보
+    req.setInsMemId(user.getId());
+    req.setUdtMemId(user.getId());
+
+    System.out.println("=-===========");
+    System.out.println(req.toString());
+    System.out.println("=-===========");
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+
+
+      try {
+
+        // 메모 입력
+        result = slsService.memoUpdate(req);
+
+      } catch (Exception e) {
+
+        msg = ResponseMessage.RETRY;
+        log.warn(user.getId() + " :: " + e.toString());
+        log.warn(req.toString());
+        log.warn("");
+
+      }
+
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+
   }
 
 

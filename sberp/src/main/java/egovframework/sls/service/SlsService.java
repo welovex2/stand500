@@ -37,4 +37,6 @@ public interface SlsService {
 
   Quo selectQuoDetail(String quoId);
 
+  boolean memoUpdate(Req req);
+
 }
