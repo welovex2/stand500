@@ -148,7 +148,6 @@
 		from (
 			select
 				@rownum:=@rownum+1 as no
-				#ROW_NUMBER() OVER(ORDER BY TEST_ITEM_TB.TEST_ITEM_SEQ) AS no
 				/* 시험항목 및 비용 */
 				,TEST_ITEM_TB.test_item_seq
 				,B.test_cate_seq crtfc1
@@ -164,6 +163,7 @@
 				,TEST_ITEM_TB.product
 				,TEST_ITEM_TB.model
 				,TEST_ITEM_TB.memo
+				,ifnull(date_format(TEST_ITEM_TB.EST_CMP_DT, '%Y-%m-%d'), '') EST_CMP_DT
 				/* 신청서에서는 가격정보 보여주지 않음 #12
 				,TEST_ITEM_TB.FEE
 				,TEST_ITEM_TB.LCNS_TAX
@@ -765,7 +765,7 @@
 						<when test="item.searchCode == 31">AND TEST_STATE_CODE = #{item.searchWord}</when> 
 						<!-- 27	모델명 -->
 		        		<when test="item.searchCode == 27">AND IFNULL(MODEL, '') like concat('%',#{item.searchWord},'%')</when>
-		        		<!-- 56	신청서구분 -->
+		        		<!-- 56	재발행구분 -->
 		        		<when test="item.searchCode == 56">
 		        			<choose>
 		        				<when test="item.searchWord == 1">AND REVISION = 0</when>
@@ -835,6 +835,7 @@
        	 	<result column="test_stndr" property="testStndr"/>
        	 	<result column="test_type" property="testType"/>
        	 	<result column="model" property="model"/>
+       	 	<result column="item_est_cmp_dt" property="estCmpDt"/>
        	 	<result column="sign_state_code" property="signStateCode"/>
        	 	<result column="sign_state" property="signState"/>
        	 	<result column="testMemDept" property="testMemDept"/>
@@ -907,7 +908,7 @@
 						<when test="item.searchCode == 31">AND TEST_STATE_CODE = #{item.searchWord}</when> 
 						<!-- 27	모델명 -->
 		        		<when test="item.searchCode == 27">AND IFNULL(MODEL, '') like concat('%',#{item.searchWord},'%')</when>
-		        		<!-- 56	신청서구분 -->
+		        		<!-- 56	재발행구분 -->
 		        		<when test="item.searchCode == 56">
 		        			<choose>
 		        				<when test="item.searchWord == 1">AND REVISION = 0</when>
@@ -953,8 +954,13 @@
 				REV_ID = #{revId},
 				REV_SIGN_DT = NOW(),
 				SIGN_STATE_CODE = '2',
+				REV_SIGN_URL = NULL,
 				</if>
-				<if test="(revSignUrl != null and revSignUrl != '') or state = 'D'">REV_SIGN_URL = #{revSignUrl},</if>
+				<if test="revSignUrl != null and revSignUrl != ''">
+				REV_SIGN_URL = #{revSignUrl}, 
+				REV_SIGN_DT = NOW(),
+				</if>
+				<if test="state.equals('DT')">EST_CMP_DT = #{estCmpDt},</if>
 		<![CDATA[
 				UDT_MEM_ID = #{udtMemId},
 				UDT_DT = NOW()

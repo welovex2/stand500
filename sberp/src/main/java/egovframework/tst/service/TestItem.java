@@ -69,6 +69,12 @@ public class TestItem {
   @Column
   private String memo;
 
+  
+  @ApiModelProperty(value = "완료요청일 ", example = "2024-02-21")
+  @Column
+  private String estCmpDt;
+  
+  
   @ApiModelProperty(value = "기술책임자 아이디 ", example = "")
   @Column
   private String revId;

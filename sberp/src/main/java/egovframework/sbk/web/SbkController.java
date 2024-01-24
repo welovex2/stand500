@@ -371,7 +371,7 @@ public class SbkController {
     return res;
   }
 
-  @ApiOperation(value = "서명요청하기", notes = "testItemSeq, revId, sendType(S:문자, M:메일)")
+  @ApiOperation(value = "서명요청하기", notes = "testItemSeq, revId, sendType(S:문자, M:메일), estCmpDt")
   @PostMapping(value = "/signRequest.do")
   public BasicResponse signRequest(@RequestBody TestItemDTO req) throws Exception {
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -381,6 +381,33 @@ public class SbkController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
+      req.setState("DT");
+      result = sbkService.updateTestItemSign(req);
+    } else {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "요청완료일 변경하기", notes = "testItemSeq, estCmpDt")
+  @PostMapping(value = "/cmpDt/update.do")
+  public BasicResponse estCmpDtUpdate(@RequestBody TestItemDTO req) throws Exception {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    System.out.println("=-===========");
+    System.out.println(req.toString());
+    System.out.println("=-===========");
+    
+    if (isAuthenticated) {
+      req.setState("DT");
       result = sbkService.updateTestItemSign(req);
     } else {
       result = false;
