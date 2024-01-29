@@ -62,6 +62,9 @@
 		<logger name="egovframework" level="WARN" additivity="false">
 			<appender-ref ref="ERROR_APPENDER"/>
 		</logger>
-		
+		<logger name="java.sql" level="WARN" additivity="false">
+			<appender-ref ref="ERROR_APPENDER"/>
+		</logger>
+				
     </Loggers>
 </Configuration>

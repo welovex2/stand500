@@ -61,8 +61,8 @@
 	        		<!-- 65	성적서구분 -->
 	        		<when test="item.searchCode == 65">
 	        			<choose>
-	        				<when test="item.searchWord.equals('K')">AND TEST_RPRT_K_YN = 1</when>
-	        				<when test="item.searchWord.equals('N')">AND TEST_RPRT_N_YN = 1</when>
+                            <when test="item.searchWord == 'K'.toString()">AND TEST_RPRT_K_YN = 1</when>
+                            <when test="item.searchWord == 'N'.toString()">AND TEST_RPRT_N_YN = 1</when>
 	        			</choose>
 	        		</when>
 	        		<!-- 63	시료반입상태 -->
@@ -193,8 +193,8 @@
 		        		<!-- 65	성적서구분 -->
 		        		<when test="item.searchCode == 65">
 		        			<choose>
-		        				<when test="item.searchWord.equals('K')">AND TEST_RPRT_K_YN = 1</when>
-		        				<when test="item.searchWord.equals('N')">AND TEST_RPRT_N_YN = 1</when>
+	                            <when test="item.searchWord == 'K'.toString()">AND TEST_RPRT_K_YN = 1</when>
+	                            <when test="item.searchWord == 'N'.toString()">AND TEST_RPRT_N_YN = 1</when>
 		        			</choose>
 		        		</when>
 		        		<!-- 63	시료반입상태 -->

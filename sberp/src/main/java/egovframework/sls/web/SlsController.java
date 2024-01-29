@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,13 +49,14 @@ public class SlsController {
       notes = "1. 결과값은 SlsDTO.Res 참고\n" + "2.검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n" + " 고객유형(PT)\n"
           + " 납부상태:미납-0, 납부-1" + " 계산서발행여부:미발행-0, 발행-1" + " 수정요청(MM)")
   @GetMapping(value = "/list.do")
-  public BasicResponse slsList(@ModelAttribute ComParam param) throws Exception {
+  public BasicResponse slsList(@ModelAttribute ComParam param) {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
     String msg = "";
     List<SlsDTO.Res> list = new ArrayList<SlsDTO.Res>();
-
+    SlsSummary summ = new SlsSummary();
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
@@ -77,31 +79,39 @@ public class SlsController {
     pagingVO.setDisplayPage(param.getPageSize());
 
     param.setFirstIndex(pagingVO.getFirstRecordIndex());
-    int cnt = slsService.selectListCnt(param);
-
-    pagingVO.setTotalCount(cnt);
-    param.setTotalCount(cnt);
-    pagingVO.setTotalPage(
-        (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
-    list = slsService.selectList(param);
-
-    if (list == null) {
-      result = false;
-      msg = ResponseMessage.NO_DATA;
-    }
     
-    /*
-     * 미수금액총합 / 순매출총합 / 청구액총합
-     * 미수금 총합 = 미수금이 없는 수
-     * 순매출, 청구액 총합 = 화면리스트 수
-     */
-    SlsSummary summ = new SlsSummary();
-    summ.setTotal(list.stream().mapToInt(SlsDTO.Res::getChrgs).sum());
-    summ.setTotalCnt(list.size());
-    summ.setTotalArrears(list.stream().mapToInt(SlsDTO.Res::getArrears).sum());
-    summ.setArrearsCnt((int) list.stream().filter(t -> t.getArrears() > 0).count());
-    summ.setTotalNetSales(list.stream().mapToInt(SlsDTO.Res::getNetSales).sum());
-    summ.setNetSalesCnt(list.size());
+    try {
+      
+      int cnt = slsService.selectListCnt(param);
+      
+      pagingVO.setTotalCount(cnt);
+      param.setTotalCount(cnt);
+      pagingVO.setTotalPage(
+          (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
+      list = slsService.selectList(param);
+      
+      if (list == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      }
+      
+      /*
+       * 미수금액총합 / 순매출총합 / 청구액총합
+       * 미수금 총합 = 미수금이 없는 수
+       * 순매출, 청구액 총합 = 화면리스트 수
+       */
+      summ.setTotal(list.stream().mapToInt(SlsDTO.Res::getChrgs).sum());
+      summ.setTotalCnt(list.size());
+      summ.setTotalArrears(list.stream().mapToInt(SlsDTO.Res::getArrears).sum());
+      summ.setArrearsCnt((int) list.stream().filter(t -> t.getArrears() > 0).count());
+      summ.setTotalNetSales(list.stream().mapToInt(SlsDTO.Res::getNetSales).sum());
+      summ.setNetSalesCnt(list.size());
+      
+    } catch (Exception e) {
+
+      msg = ResponseMessage.RETRY;
+      log.warn(user.getId() + " :: " + e.toString());
+    }
     
     BasicResponse res =
         BasicResponse.builder().result(result).message(msg).summary(summ).data(list).paging(pagingVO).build();
