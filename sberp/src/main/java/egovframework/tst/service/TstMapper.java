@@ -1,7 +1,9 @@
 package egovframework.tst.service;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
@@ -46,5 +48,5 @@ public interface TstMapper {
 
   public boolean testStateUpdate(Req req);
   
-  public List<TestItemDTO> selectSubList(String sbkId);
+  public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId, @Param("searchVO") List<SearchVO> param);
 }
