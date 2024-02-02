@@ -41,8 +41,8 @@
 	        	<choose>
 					<!-- 1	고객유형 -->
 					<when test="item.searchCode == 1">AND IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-					<!-- 2	작성자 -->
-					<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(QUO_TB.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 7	고지부담당자 -->
+					<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 4	컨설팅명 -->
 					<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 6	제품명 -->
@@ -86,7 +86,7 @@
 				JOB_TB.JOB_SEQ,
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
 			    FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, TYPE, QUO_TB.QUO_SEQ) quoId, 
-				FN_MEM_NAME (QUO_TB.INS_MEM_ID) memName,
+				FN_MEM_NAME (JOB_TB.MNG_ID) memName,
 			    DATE_FORMAT(QUO_TB.INS_DT, '%Y-%m-%d') insDtStr,
 			    if(QUO_TB.CHQ_SEQ = 0,
 						IFNULL (date_format(SLS_TB.CNFRM_DT, '%Y-%m-%d'),''),
@@ -146,8 +146,8 @@
 		        	<choose>
 						<!-- 1	고객유형 -->
 						<when test="item.searchCode == 1">AND IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-						<!-- 2	작성자 -->
-						<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(QUO_TB.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 						<!-- 4	컨설팅명 -->
 						<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 						<!-- 6	제품명 -->
@@ -475,12 +475,16 @@
 	</select>
 	
 	<insert id="insertJob" parameterType="quoReq" >
-			INSERT INTO JOB_TB
+		<selectKey resultType="int" keyProperty="jobSeq" order="AFTER">
+	        SELECT MAX(JOB_SEQ) jobSeq FROM JOB_TB;
+	    </selectKey>
+		INSERT INTO JOB_TB
 			(QUO_YM,
 			QUO_SEQ,
 			CMPY_SEQ,
 			CMPY_MNG_SEQ,
 			CMPY_NAME,
+			MNG_ID,
 			MNG_PHONE,
 			MNG_FAX,
 			MNG_NAME,
@@ -497,11 +501,11 @@
 			#{cmpyMngSeq},
 		<![CDATA[
 			#{cmpyName},
+			#{mngId},
 			#{cmpyPhone},
 			#{cmpyFax},
 			#{mngName},
-			(select ifnull(nullif(group_concat(DISTINCT  product), ''), #{prdctName}) 
-			from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D'),
+			#{prdctName}, 
 			#{modelName},
 			#{insMemId},
 			#{udtMemId}
@@ -519,8 +523,7 @@
 				MNG_PHONE = #{cmpyPhone},
 				MNG_FAX = #{cmpyFax},
 				MNG_NAME = #{mngName},
-				PRDCT_NAME = (select ifnull(nullif(group_concat(DISTINCT  product), ''), #{prdctName}) 
-								from TEST_ITEM_TB where quo_ym = substring(#{quoId},2,4) and quo_seq = substring(#{quoId},8,4) and state != 'D' order by TEST_ITEM_SEQ),
+				PRDCT_NAME = #{prdctName},
 				MODEL_NAME = #{modelName},
 				UDT_MEM_ID = #{udtMemId}
 		]]>
@@ -560,6 +563,7 @@
 		<result column="cmpyName" property="cmpyName"/>
 		<result column="issue_dt" property="issueDt"/>
 		<result column="mngName" property="mngName"/>
+		<result column="INS_MEM" property="insMem"/>
 		<result column="cmpyPhone" property="cmpyPhone"/>
 		<result column="cmpyFax" property="cmpyFax"/>
 		<result column="mem_name" property="memName"/>
@@ -633,14 +637,15 @@
 			,IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle
 			,IFNULL (CMPY_MNG_TB.NAME, '') cmpyMngName
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
-            ,IFNULL (JOB_TB.MNG_NAME, '') MNGNAME
+            ,FN_MEM_NAME (JOB_TB.MNG_ID) MNG_NAME	/* 업무담당자 추가 */
+            ,FN_MEM_NAME (QUO_TB.INS_MEM_ID) INS_MEM	/* 작성자 추가 */
 			,IFNULL (JOB_TB.MNG_PHONE, '') CMPYPHONE
 			,IFNULL (JOB_TB.MNG_FAX, '') CMPYFAX
 			,MEMBER_TB.MEM_NAME
             
-			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') est_cmp_dt
+			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') EST_CMP_DT
 			,VERSION
-			,DATE_FORMAT(QUO_TB.ISSUE_DT, '%Y-%m-%d') issue_dt 
+			,DATE_FORMAT(QUO_TB.ISSUE_DT, '%Y-%m-%d') ISSUE_DT 
 			,JOB_TB.PRDCT_NAME
 			,JOB_TB.MODEL_NAME
 			,QUO_TB.TRGT_CRTFC
@@ -707,7 +712,7 @@
 		    AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 		    
 		    INNER JOIN MEMBER_TB
-		    ON QUO_TB.INS_MEM_ID = MEMBER_TB.ID
+		    ON JOB_TB.MNG_ID = MEMBER_TB.ID
 		    
 		    LEFT JOIN TEST_ITEM_TB
 		    ON QUO_TB.QUO_YM = TEST_ITEM_TB.QUO_YM

@@ -1,15 +1,15 @@
 package egovframework.cmm.service.impl;
 
 import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import egovframework.cmm.service.CmmMapper;
 import egovframework.cmm.service.CmmService;
 import egovframework.cmm.service.Comcode;
 import egovframework.cmm.service.Dept;
 import egovframework.cmm.service.Job;
+import egovframework.cmm.service.JobMngr;
 import egovframework.cnf.service.Cmpy;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.Member;
@@ -98,6 +98,18 @@ public class CmmServiceImpl extends EgovAbstractServiceImpl implements CmmServic
   @Override
   public boolean jobStateUpdate(Job req) {
     return cmmMapper.jobStateUpdate(req);
+  }
+
+  @Override
+  @Transactional
+  public boolean insertJobMng(JobMngr req) {
+    cmmMapper.updateJobMng(req);
+    return cmmMapper.insertJobMng(req);
+  }
+
+  @Override
+  public List<Job> jobMngList(int jobSeq) {
+    return cmmMapper.jobMngList(jobSeq);
   }
 
 }

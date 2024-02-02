@@ -58,7 +58,11 @@ public class Job {
 	@ApiModelProperty(value="회사전화번호 ", example = "")
 	@Column
 	private String cmpyPhone;
-	
+
+    @ApiModelProperty(value="업무담당자 아이디 ", example = "")
+    @Column
+    private String mngId;
+	   
 	@ApiModelProperty(value="담당자 이름 ", example = "")
 	@Column
 	private String mngName;

@@ -247,6 +247,19 @@ public class SbkController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
+      
+      // 필수체크
+      if (StringUtils.isEmpty(req.getSbkId()) && StringUtils.isEmpty(req.getMngId())) {
+        
+        result = false;
+        msg = ResponseMessage.ERROR_MNG;
+        
+        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+        return res;
+        
+      } 
+      
+      
       FileVO FileResult = null;
       List<FileVO> FileResults = null;
       String atchFileId = "";
@@ -317,7 +330,7 @@ public class SbkController {
         log.warn("");
 
       }
-
+      
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;

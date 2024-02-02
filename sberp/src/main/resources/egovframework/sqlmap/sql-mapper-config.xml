@@ -13,6 +13,7 @@
     	<typeAlias alias="powerDTO"		type="egovframework.sys.dto.PowerDTO"/>
     	<typeAlias alias="fileVO"		type="egovframework.cmm.service.FileVO"/>
     	<typeAlias alias="job"			type="egovframework.cmm.service.Job"/>
+    	<typeAlias alias="jobMngr"		type="egovframework.cmm.service.JobMngr"/>
     	<typeAlias alias="boardVO"		type="egovframework.cmm.service.BoardVO"/>
     	
     	<!-- 상담서 -->
@@ -76,6 +77,7 @@
     	<typeAlias alias="ctiDTO"		type="egovframework.raw.dto.CtiDTO"/>
     	<typeAlias alias="clkDTO"		type="egovframework.raw.dto.ClkDTO"/>
     	<typeAlias alias="dpDTO"		type="egovframework.raw.dto.DpDTO"/>
+    	<typeAlias alias="telDTO"		type="egovframework.raw.dto.TelDTO"/>
     	<typeAlias alias="imgDTO"		type="egovframework.raw.dto.ImgDTO"/>
     	<typeAlias alias="reportDTO"	type="egovframework.raw.dto.ReportDTO"/>
     	<typeAlias alias="rawMet"		type="egovframework.raw.service.RawMet"/>

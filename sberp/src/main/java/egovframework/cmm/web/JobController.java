@@ -1,14 +1,19 @@
 package egovframework.cmm.web;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Resource;
 import org.springframework.util.ObjectUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.CmmService;
 import egovframework.cmm.service.Job;
+import egovframework.cmm.service.JobMngr;
 import egovframework.cmm.service.JobVO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.ResponseMessage;
@@ -97,6 +102,54 @@ public class JobController {
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "업무담당자 저장", notes = "jobSeq:프로젝트고유번호, mngId:업무담당자ID, memo:메모")
+  @PostMapping(value = "/mngInsert.do")
+  public BasicResponse mngInsert(@RequestBody JobMngr req) throws Exception {
+    
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+
+    // 로그인정보
+    req.setInsMemId(user.getId());
+    req.setUdtMemId(user.getId());
+
+    boolean result = false;
+    String msg = "";
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      result = cmmService.insertJobMng(req);
+    } else {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+
+  @ApiOperation(value = "업무담당자 변경 내역")
+  @GetMapping(value = "/testMemList.do")
+  public BasicResponse testMemList(@ApiParam(value = "프로젝트고유번호", required = true, example = "1") 
+                                   @RequestParam(value = "jobSeq") int jobSeq) throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+    List<Job> list = new ArrayList<Job>();
+
+    list = cmmService.jobMngList(jobSeq);
+
+    if (list == null) {
+      msg = ResponseMessage.NO_DATA;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
 
     return res;
   }

@@ -18,6 +18,10 @@ public class QuoDTO {
   @ApiModel(value = "QuoDTO.Req", description = "견적서 등록")
   public static class Req extends Quo {
 
+    @ApiModelProperty(value = "프로젝트번호", example = "12")
+    @Column
+    private int jobSeq;
+    
     @ApiModelProperty(value = "견적서번호", example = "Q2303-G0018")
     @Column
     private String quoId;
@@ -74,6 +78,10 @@ public class QuoDTO {
 //    @Size(min = 0, max = 13, message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
     private String cmpyFax;
 
+    @ApiModelProperty(value = "담당자 아이디 ", example = "welovex2")
+    @Column
+    private String mngId;
+    
     @ApiModelProperty(value = "시험항목 및 비용 ", example = "")
     @Column
     private List<TestItem> testItems;
@@ -105,7 +113,7 @@ public class QuoDTO {
     @Column
     private String sbkId;
 
-    @ApiModelProperty(value = "작성자", example = "김정미")
+    @ApiModelProperty(value = "담당자", example = "김정미")
     @Column
     private String memName;
 
@@ -113,6 +121,10 @@ public class QuoDTO {
     @Column
     private String insDtStr;
 
+    @ApiModelProperty(value = "작성자", example = "김가나")
+    @Column
+    private String insMem;
+    
     @ApiModelProperty(value = "매출확정일", example = "2023-03-04")
     @Column
     private String cnfrmDtStr;

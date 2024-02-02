@@ -4,9 +4,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import egovframework.cmm.service.CmmMapper;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.JobMngr;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sbk.service.SbkDTO.Req;
 import egovframework.sbk.service.SbkDTO.Res;
@@ -20,7 +23,10 @@ public class SbkServiceImpl implements SbkService {
 
 	@Autowired
 	SbkMapper sbkMapper;
-	
+
+	@Autowired
+	CmmMapper cmmMapper;
+	   
 	@Override
 	public SbkDTO.Res selectDetail(Req req) {
 		SbkDTO.Res detail;
@@ -42,8 +48,16 @@ public class SbkServiceImpl implements SbkService {
 		req.setSbkId(sbkMapper.selectRef(req));
 		
 		// 업무서 공통 정보
-		if (StringUtils.isEmpty(req.getQuoId()))
+		if (StringUtils.isEmpty(req.getQuoId())) {
 			sbkMapper.insertJob(req);
+			// 업무담당자 히스토리 저장
+			JobMngr job = new JobMngr();
+			job.setJobSeq(req.getJobSeq());
+			job.setMngId(req.getMngId());
+			job.setInsMemId(req.getInsMemId());
+			job.setUdtMemId(req.getUdtMemId());
+			cmmMapper.insertJobMng(job);
+		}
 		else
 			sbkMapper.updateJobSbk(req);
 		
@@ -73,6 +87,20 @@ public class SbkServiceImpl implements SbkService {
 	@Override
 	public List<Res> selectList(ComParam param) throws Exception {
 		List<SbkDTO.Res> list = sbkMapper.selectList(param);
+		
+	    for (Res item : list) {
+	      
+	      if (item.getTestItemCnt() > 1) {
+	        
+	        
+	        List<TestItemDTO> subList = sbkMapper.selectSubList(item.getSbkId(), param.getSearchVO());
+	        
+	        if (!ObjectUtils.isEmpty(subList)) {
+	          item.setItems(subList);
+	        }
+	      }
+	    }
+	    
 		return list;
 	}
 

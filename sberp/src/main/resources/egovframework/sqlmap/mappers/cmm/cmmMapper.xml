@@ -98,15 +98,16 @@
 	</select>
 	
 	<select id="deptMemList" parameterType="int" resultType="egovMap">
-		select 
-			id
-			, mem_name
-		from MEMBER_TB
-		where 1=1
-		and state != 'D'
+		SELECT
+			MEMBER_SEQ, 
+			ID,
+			MEM_NAME
+		FROM MEMBER_TB
+		WHERE 1=1
+		AND STATE != 'D'
 		/*and REV_YN = 1*/
-		and work_state = '1'
-		and dept_seq = #{deptSeq};
+		AND WORK_STATE = '1'
+		AND DEPT_SEQ = #{deptSeq};
 	</select>
 	
 	<update id="jobStateUpdate" parameterType="job">
@@ -116,5 +117,56 @@
 			STATE_UDT_DT = NOW()
 		WHERE JOB_SEQ = #{jobSeq}
 	</update>
+
+	<update id="updateJobMng" parameterType="job">
+		UPDATE JOB_TB
+		SET
+			MNG_ID = #{mngId},
+			UDT_DT = NOW()
+		WHERE JOB_SEQ = #{jobSeq}
+	</update>
+		
+	<insert id="insertJobMng" parameterType="jobMngr" >
+		INSERT INTO JOB_MNGR_TB
+		(
+			JOB_SEQ,
+			MNG_ID,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{jobSeq},
+			#{mngId},
+			#{memo},
+			#{insMemId},
+			#{udtMemId}
+		)
+	</insert>
+	
+	<select id="jobMngList" parameterType="int" resultType="egovMap">
+		SELECT
+			DATE_FORMAT(JOB_MNGR_TB.INS_DT, '%Y-%m-%d') instDtStr,
+			
+			FN_DEPT_NAME(JOB_MNGR_TB.MNG_ID) memPos,
+			MEMBER_TB.MEM_NAME memName,
+			
+			FN_DEPT_NAME(JOB_MNGR_TB.INS_MEM_ID) insPos,
+		    ins.MEM_NAME insName,
+		    IFNULL (memo, '') MEMO
+		    
+		FROM JOB_MNGR_TB
+		
+			INNER JOIN MEMBER_TB
+			ON JOB_MNGR_TB.MNG_ID = MEMBER_TB.ID
+			
+			INNER JOIN MEMBER_TB ins
+			ON JOB_MNGR_TB.INS_MEM_ID = ins.ID
+		
+		WHERE 1=1
+		AND JOB_MNGR_TB.JOB_SEQ = #{jobSeq}
+		ORDER BY JOB_MNGR_SEQ DESC
+	</select>
 	
 </mapper>

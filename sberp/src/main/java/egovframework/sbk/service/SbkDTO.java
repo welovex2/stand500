@@ -19,6 +19,11 @@ public class SbkDTO {
   @ToString(callSuper = true)
   @ApiModel(value = "SbkDTO.Req", description = "신청서 작성")
   public static class Req extends Sbk {
+    
+    @ApiModelProperty(value = "프로젝트번호", example = "12")
+    @Column
+    private int jobSeq;
+    
     @ApiModelProperty(value = "견적서번호", example = " ")
     @Column
     private String quoId;
@@ -62,7 +67,11 @@ public class SbkDTO {
     @ApiModelProperty(value = "모델명 ", example = "dong-gle")
     @Column
     private String modelName;
-
+    
+    @ApiModelProperty(value = "담당자 아이디 ", example = "welovex2")
+    @Column
+    private String mngId;
+    
   }
 
   @Getter
@@ -142,6 +151,10 @@ public class SbkDTO {
     @Column
     private String insDtStr;
 
+    @ApiModelProperty(value = "작성자", example = "김가나")
+    @Column
+    private String insMem;
+    
     @ApiModelProperty(value = "고객유형", example = "컨설팅 or 직고객")
     @Column
     private String cmpyType;
@@ -199,7 +212,9 @@ public class SbkDTO {
     @ApiModelProperty(value = "제조국", example = "루마니아")
     @Column
     private String mnfctCntry;
-    
+   
+    @ApiModelProperty(value = "시험 갯수", example = "")
+    private int testItemCnt;
   }
 
 }

@@ -27,6 +27,10 @@ public class Member {
   @Column
   private int deptSeq;
 
+  
+  @ApiModelProperty(value = "부서 이름 ", example = "")
+  @Column
+  private String deptName;
 
   @ApiModelProperty(value = "아이디 ", example = "", required = true)
   @Column
@@ -53,6 +57,10 @@ public class Member {
   @Column
   private int posSeq;
 
+  
+  @ApiModelProperty(value = "직위 이름 ", example = "")
+  @Column
+  private String posName;
 
   @ApiModelProperty(value = "기술책임자 여부 ", example = "")
   @Column

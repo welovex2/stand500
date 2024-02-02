@@ -1,7 +1,6 @@
 package egovframework.cmm.service;
 
 import java.util.List;
-
 import egovframework.cnf.service.Cmpy;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.Member;
@@ -28,4 +27,10 @@ public interface CmmMapper {
   public List<Member> deptMemList(int deptSeq);
 
   public boolean jobStateUpdate(Job req);
+
+  public boolean updateJobMng(JobMngr req);
+  
+  public boolean insertJobMng(JobMngr req);
+
+  public List<Job> jobMngList(int jobSeq);
 }

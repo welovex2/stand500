@@ -126,7 +126,7 @@
 					<!-- 6	제품명 -->
 					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 7	고지부담당자 -->
-					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 8	기술책임자 -->
 					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 9	시험담당자 -->
@@ -141,6 +141,13 @@
 					<when test="item.searchCode == 22">AND 1 IN 
 						<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">${sub}</foreach>
 					</when>
+					<!-- 56	재발행구분 -->
+	        		<when test="item.searchCode == 56">
+	        			<choose>
+	        				<when test="item.searchWord == 1">AND REVISION = 0</when>
+	        				<when test="item.searchWord == 2">AND REVISION != 0</when>
+	        			</choose>
+	        		</when>
 					<!-- 35	국가-->
 					<when test="item.searchCode == 35">and cate1.TEST_CATE_SEQ = #{item.searchWord}</when>
 					<!-- 36	인증종류1 -->
@@ -176,6 +183,7 @@
 	<select id="selectList" parameterType="testReq" resultType="testRes">
 		SELECT
 		
+			JOB_TB.JOB_SEQ,
 		    TEST_TB.TEST_SEQ,
 		    IFNULL (MEMO_CNT, 0) MEMO_CNT,
 		    IFNULL (FILE_CNT, 0) FILE_CNT,
@@ -205,7 +213,7 @@
 			IFNULL (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID), '미배정') TestMngName,
 			IFNULL (FN_POS_NAME(TEST_MNGR_TB.TEST_MNG_ID), '') TestMngPos,
 			IFNULL (TEST_MNGR_TB.TEST_MNG_ID, '') TEST_MNG_ID,
-		    FN_MEM_NAME (SBK_TB.INS_MEM_ID) memName,
+		    FN_MEM_NAME (JOB_TB.MNG_ID) memName,
 		    IF (JOB_TB.SBK_REVISION=0, 
 		    	
 		    	/* 원본신청서의 경우 내 로데이터 */
@@ -270,7 +278,7 @@
 					<!-- 6	제품명 -->
 					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 7	고지부담당자 -->
-					<when test="item.searchCode == 7">and FN_MEM_NAME(SBK_TB.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 8	기술책임자 -->
 					<when test="item.searchCode == 8">and IFNULL(FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 9	시험담당자 -->
@@ -296,6 +304,13 @@
 					<!-- 23	시험부 -->
 	        		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE IN
 	        			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+	        		</when>
+	        		<!-- 56	재발행구분 -->
+	        		<when test="item.searchCode == 56">
+	        			<choose>
+	        				<when test="item.searchWord == 1">AND REVISION = 0</when>
+	        				<when test="item.searchWord == 2">AND REVISION != 0</when>
+	        			</choose>
 	        		</when>
 					<!-- 26	로데이터 -->
 					<when test="item.searchCode == 26"></when>
@@ -514,7 +529,7 @@
 	<select id="selectSaleListCnt" parameterType="comParam" resultType="int">
 		SELECT COUNT(1) FROM (		
 			SELECT 
-				count(1)
+				COUNT(1)
 			FROM
 			    SBK_TB
 				
@@ -560,71 +575,9 @@
 					        
 			WHERE 1 = 1
 			
-			<if test="searchVO != null">
-		        <foreach collection="searchVO" item="item" separator="">
-		        	<choose>
-		        		<!-- 15 작성일 -->
-				        <when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-				        <!-- 59 신청일 -->
-				        <when test="item.searchCode == 59">AND DATE_FORMAT(SBK_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-				        <!-- 20	완료요청일 -->
-						<when test="item.searchCode == 20">AND DATE_FORMAT(SBK_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-						<!-- 64	개별완료요청일 -->
-						<when test="item.searchCode == 64">AND DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-						<!-- 21	시료반입일 -->
-						<when test="item.searchCode == 21">AND DATE_FORMAT(IM_TB.CARRY_IN_DATE, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-						<!-- 58	프로젝트상태변경일 -->
-	        			<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-		        		<!-- 56	재발행구분 -->
-		        		<when test="item.searchCode == 56">
-		        			<choose>
-		        				<when test="item.searchWord == 1">AND REVISION = 0</when>
-		        				<when test="item.searchWord == 2">AND REVISION != 0</when>
-		        			</choose>
-		        		</when>
-		        		<!-- 1	고객유형 -->
-						<when test="item.searchCode == 1">AND IFNULL (CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-						<!-- 31	시험상태 -->
-						<when test="item.searchCode == 31">AND TEST_TB.TEST_STATE_CODE = #{item.searchWord}</when> 
-						<!-- 57	프로젝트상태 -->
-		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
-		        		<!-- 5	견적서번호 -->
-						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-						<!-- 61	신청서번호 -->
-						<when test="item.searchCode == 61">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-						<!-- 4	컨설팅명 -->
-						<when test="item.searchCode == 4">AND IFNULL (CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 12	회사명 -->
-						<when test="item.searchCode == 12">AND IFNULL (JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 6	제품명 -->
-						<when test="item.searchCode == 6">AND IFNULL (JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 27-모델명 -->
-				        <when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 7	고지부담당자 -->
-						<when test="item.searchCode == 7">AND FN_MEM_NAME (SBK_TB.INS_MEM_ID) like CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 9	시험담당자 -->
-						<when test="item.searchCode == 9">AND IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 40	시험규격 -->
-	        			<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 62	참고메모 -->
-						<when test="item.searchCode == 62">AND TEST_ITEM_TB.MEMO LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 23	시험부 -->
-			       		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE IN
-			       			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
-			       		</when>
-			       		<!-- 22	신청구분 -->
-						<when test="item.searchCode == 22">AND 1 IN 
-							<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">${sub}</foreach>
-						</when>
-						<!-- 50	시험번호 -->
-			       		<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
-													    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
-													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-		        	</choose>
-				</foreach>
-			</if>
+			<include refid="whereList"/>
 			
-			GROUP BY SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.REVISION
+			GROUP BY SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ, SBK_TB.REVISION
         
         ) cnt
 	</select>
@@ -726,7 +679,7 @@
 		   
 		
 		    IF (FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)) testMem,
-            FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
+            FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
                       
 		    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
 			TEST_ITEM_TB.NET_SALES netSales,

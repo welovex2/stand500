@@ -7,8 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import egovframework.cmm.service.CmmMapper;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.JobMngr;
 import egovframework.quo.dto.EngQuoDTO;
 import egovframework.quo.service.EngTestItem;
 import egovframework.quo.service.QuoDTO.Req;
@@ -24,6 +26,9 @@ public class QuoServiceImpl implements QuoService {
   @Autowired
   QuoMapper quoMapper;
 
+  @Autowired
+  CmmMapper cmmMapper;
+  
   @Override
   public String selectRef(Req quo) throws Exception {
     return quoMapper.selectRef(quo);
@@ -48,8 +53,17 @@ public class QuoServiceImpl implements QuoService {
     }
 
     // 업무서 공통 정보
-    if (StringUtils.isEmpty(quo.getSbkId()))
+    if (StringUtils.isEmpty(quo.getSbkId())) {
       quoMapper.insertJob(quo);
+      
+      // 업무담당자 히스토리 저장
+      JobMngr job = new JobMngr();
+      job.setJobSeq(quo.getJobSeq());
+      job.setMngId(quo.getMngId());
+      job.setInsMemId(quo.getInsMemId());
+      job.setUdtMemId(quo.getUdtMemId());
+      cmmMapper.insertJobMng(job);
+    }
     else
       quoMapper.updateJobQuo(quo);
 

@@ -272,6 +272,16 @@ public class QuoController {
             return res;
           }
       }
+      // 필수체크
+      else if (StringUtils.isEmpty(req.getQuoId()) && StringUtils.isEmpty(req.getMngId())) {
+        
+        result = false;
+        msg = ResponseMessage.ERROR_MNG;
+        
+        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+        return res;
+        
+      } 
       
       List<FileVO> FileResult = null;
 
