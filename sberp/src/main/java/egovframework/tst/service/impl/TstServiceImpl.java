@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.SearchVO;
 import egovframework.sbk.service.SbkDTO;
@@ -94,6 +95,12 @@ public class TstServiceImpl implements TstService {
       dbgMapper.insert(dto);
     }
     
+    // 시험상태설정>사유기입 (#25)
+    if (!StringUtils.isEmpty(req.getMemo())) {
+      req.setMemo("[시험상태변경] ".concat(req.getMemo()));
+      tstMapper.testBoardInsert(req);
+    }
+    
     // (#18) 시험상태 변경시, 시험테이블에 최신상태 SEQ 업데이트
     tstMapper.testStateUpdate(req);
 
@@ -135,7 +142,8 @@ public class TstServiceImpl implements TstService {
     
       if (item.getTestCnt() > 1) {
         
-        List<TestItemDTO> subList = tstMapper.selectSubList(item.getSbkId());
+        
+        List<TestItemDTO> subList = tstMapper.selectSubList(item.getSbkId(), param.getSearchVO());
         
         if (!ObjectUtils.isEmpty(subList)) {
           item.setItems(subList);
