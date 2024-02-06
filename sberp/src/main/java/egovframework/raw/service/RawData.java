@@ -331,7 +331,17 @@ public class RawData {
   @Column
   private String stdMemo;
 
+  
+  @ApiModelProperty(value = "규격적용 특이사항 YN ", example = "0")
+  @Column
+  private int stdYn;
+  
+  
+  @ApiModelProperty(value = "규격적용 특이사항 기타 YN ", example = "0")
+  @Column
+  private int stdEtcYn;
 
+  
   @ApiModelProperty(value = "디스플레이 관찰 거리 ", example = "해당없다")
   @Column
   private String addTestDis;

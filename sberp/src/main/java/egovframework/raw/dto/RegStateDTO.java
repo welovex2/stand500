@@ -46,4 +46,12 @@ public class RegStateDTO {
   /**
    * --END 9814 추가
    */
+  
+  /**
+   * Tel 추가
+   */
+  private int telYn;
+  /**
+   * --END Tel 추가
+   */
 }

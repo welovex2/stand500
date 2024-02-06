@@ -211,12 +211,18 @@ public class ReportDTO {
   @ApiModelProperty(value = "1-4. 특기사항  ", example = "")
   @Column
   private String crtMemo;
-
-
+  
+  @ApiModelProperty(value = "7. 기타 사항  ", example = "")
+  @Column
+  private int stdYn;
+  
+  @ApiModelProperty(value = "7. 기타 사항  ", example = "")
+  @Column
+  private int stdEtcYn;
+  
   @ApiModelProperty(value = "1-5. 특기사항  ", example = "")
   @Column
   private String stdMemo;
-
 
   @ApiModelProperty(value = "1. 시험원  ", example = "")
   @Column
@@ -442,6 +448,9 @@ public class ReportDTO {
 
   @ApiModelProperty(value = "DP", example = "")
   private DpDTO dp;
+  
+  @ApiModelProperty(value = "TEL", example = "")
+  private TelDTO tel;
   
   @ApiModelProperty(value = "이미지 리스트", example = "")
   private List<PicDTO> imgList;

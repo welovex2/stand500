@@ -36,7 +36,6 @@ import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
-import egovframework.raw.dto.CtiDTO;
 import egovframework.raw.dto.DpDTO;
 import egovframework.raw.dto.EftDTO;
 import egovframework.raw.dto.EsdDTO;
@@ -52,6 +51,7 @@ import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.RegStateDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
+import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.FileRaw;
 import egovframework.raw.service.RawData;
@@ -100,7 +100,7 @@ public class RawController {
     
     // 기본정보
     req.setRawSeq(rawSeq);
-    rawData = rawService.detail(req);
+    rawData = rawService.basicDetail(req);
     if (!ObjectUtils.isEmpty(rawData)) {
       detail.setRawSeq(rawData.getRawSeq());
       detail.setRawYn(1);
@@ -196,12 +196,16 @@ public class RawController {
     // Dp
     if (!ObjectUtils.isEmpty(rawService.dpDetail(detail.getRawSeq())))
       detail.setDpYn(1);
+ 
+    // Tel
+    if (!ObjectUtils.isEmpty(rawService.telDetail(detail.getRawSeq())))
+      detail.setTelYn(1);
     
     
     // 시험장면 사진
     ImgDTO pic = new ImgDTO();
     pic.setRawSeq(detail.getRawSeq());
-    for (int i = 1; i < 18; i++) {
+    for (int i = 1; i < 20; i++) {
       pic.setPicId(Integer.toString(i));
       if (!ObjectUtils.isEmpty(rawService.imgDetail(pic))) {
         detail.setPcYn(1);
@@ -322,8 +326,6 @@ public class RawController {
 
     System.out.println("=-===========");
     System.out.println(req.toString());
-    System.out.println("=-===========");
-    System.out.println(uptFileList);
     System.out.println("=-===========");
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
@@ -446,7 +448,7 @@ public class RawController {
             result = rawService.update(req);
 
         } catch (Exception e) {
-          msg = e.getCause().toString();
+          msg = e.getMessage();
         }
 
       }
@@ -1544,6 +1546,7 @@ public class RawController {
 
     return res;
   }
+  
 
   @ApiOperation(value = "로데이터 DP 상세보기")
   @GetMapping(value = "/{rawSeq}/dp/detail.do")
@@ -1565,6 +1568,103 @@ public class RawController {
 
     return res;
   }
+  
+  @ApiOperation(value = "로데이터 > TEL 등록",
+      notes = "0. rawSeq값 필수\n"
+          + "1. signFile 시험자 서명")
+  @PostMapping(value = "/tel/insert.do")
+  public BasicResponse insertTel(@RequestPart(value = "telDTO") TelDTO req,
+      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    String msg = "";
+    boolean result = false;
+
+    // 로그인정보
+    req.setInsMemId(user.getId());
+    req.setUdtMemId(user.getId());
+
+    System.out.println("=-===========");
+    System.out.println(req.toString());
+    System.out.println("=-===========");
+
+    ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+    Validator validator = validatorFactory.getValidator();
+
+    Set<ConstraintViolation<TelDTO>> violations = validator.validate(req);
+
+    for (ConstraintViolation<TelDTO> violation : violations) {
+      msg = violation.getMessage();
+
+      BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
+
+      return res;
+    }
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    // 신규등록시 필수 값 확인
+    if (req.getRawSeq() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_DATA;
+    } else {
+
+      if (isAuthenticated) {
+
+        try {
+          FileVO oneFile = null;
+          String atchFileId = "";
+  
+          // 시험자 서명
+          if (!ObjectUtils.isEmpty(signFile)) {
+            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+            atchFileId = fileMngService.insertFileInf(oneFile);
+            req.setSignUrl(atchFileId);
+          }
+  
+          result = rawService.insertTel(req);
+        } catch (Exception e) {
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(msg);
+        }
+
+      } else {
+        result = false;
+        msg = ResponseMessage.UNAUTHORIZED;
+      }
+
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
+
+    return res;
+  }
+  
+
+
+  @ApiOperation(value = "로데이터 TEL 상세보기")
+  @GetMapping(value = "/{rawSeq}/tel/detail.do")
+  public BasicResponse telDetail(@ApiParam(value = "로데이터 고유번호", required = true, example = "132") 
+                                 @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+    
+    boolean result = true;
+    String msg = "";
+    TelDTO detail = new TelDTO();
+
+    detail = rawService.telDetail(rawSeq);
+
+    if (detail == null) {
+      result = false;
+      msg = ResponseMessage.NO_DATA;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+
+    return res;
+  }
+ 
+  
   
   @ApiOperation(value = "로데이터 시험장면사진 등록현황")
   @GetMapping(value = "/{rawSeq}/pic/regState.do")
@@ -1668,8 +1768,6 @@ public class RawController {
 
     System.out.println("=-===========");
     System.out.println(req.toString());
-    System.out.println("=-===========");
-    System.out.println(delFileList);
     System.out.println("=-===========");
     
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();

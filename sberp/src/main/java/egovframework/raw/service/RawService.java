@@ -19,6 +19,7 @@ import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
+import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.tst.service.Test;
 
@@ -44,6 +45,8 @@ public interface RawService {
 
   RawData detail(RawSearchDTO req) throws Exception;
 
+  RawData basicDetail(RawSearchDTO req) throws Exception;
+  
   RsDTO rsDetail(int rawSeq);
 
   boolean insertRs(RsDTO req);
@@ -101,6 +104,10 @@ public interface RawService {
   DpDTO dpDetail(int rawSeq);
 
   boolean insertDp(DpDTO req);
+  
+  TelDTO telDetail(int rawSeq);
+
+  boolean insertTel(TelDTO req);
   
   ImgDTO imgDetail(ImgDTO req);
   

@@ -82,6 +82,10 @@
 			TEST_ETC_YN,
 			OPR_CND,
 			SETUP_URL,
+			/* TEL 추가 */
+			STD_YN,
+			STD_ETC_YN,
+			/* TEL 추가 */
 			STD_MEMO,
 			ADD_TEST_DIS,
 			ADD_TEST_CABLE,
@@ -155,6 +159,10 @@
 			#{testEtcYn},
 			#{oprCnd},
 			#{setupUrl},
+			/* TEL 추가 */
+			#{stdYn},
+			#{stdEtcYn},
+			/* TEL 추가 */
 			#{stdMemo},
 			#{addTestDis},
 			#{addTestCable},
@@ -448,6 +456,10 @@
 			TEST_ETC_YN = #{testEtcYn},
 			OPR_CND = #{oprCnd},
 			<if test="setupUrl != null and setupUrl != ''">SETUP_URL = #{setupUrl},</if>
+			/* TEL 추가 */
+			STD_YN = #{stdYn},
+			STD_ETC_YN = #{stdEtcYn},
+			/* TEL 추가 */
 			STD_MEMO = #{stdMemo},
 			ADD_TEST_DIS = #{addTestDis},
 			ADD_TEST_CABLE = #{addTestCable},
@@ -574,6 +586,10 @@
 		    TEST_ETC_YN,
 		    OPR_CND,
 		    SETUP_URL,
+		    /* TEL 추가 */
+			STD_YN,
+			STD_ETC_YN,
+			/* TEL 추가 */
 		    STD_MEMO,
 		    ADD_TEST_DIS,
 		    ADD_TEST_CABLE,
@@ -730,13 +746,28 @@
 	</insert>
 	
 	<select id="methodList" parameterType="int" resultType="rawMet">
-		SELECT MET_SEQ,
+           SELECT MET_SEQ,
 		    CHECK_YN,
 		    TYPE,
-		    MEMO,
-		    if(MEMO = '','',concat(@num:=@num+1,'. ',MEMO)) reportMemo, 
-		    if(MEMO = '','',concat('NOTE ',@num)) as note
-		FROM RAW_MET_TB,  (select @num:=0) note
+            RAW_MET_TB.MEMO,
+			IF (ord.MEMO IS NULL OR ord.MEMO = '', '', CONCAT(@num:=@num+1,'. ',ord.MEMO)) reportMemo, 
+			IF (RAW_MET_TB.MEMO= '', '', concat('NOTE ',@num)) as note
+		FROM RAW_MET_TB
+			
+               LEFT JOIN (
+					SELECT 
+						MIN(MET_SEQ) MIN_SEQ,
+						MEMO
+					FROM RAW_MET_TB
+					WHERE 1=1
+					AND RAW_SEQ = #{rawSeq}
+					GROUP BY MEMO
+					ORDER BY MET_SEQ
+               ) ord
+               ON RAW_MET_TB.MET_SEQ = ord.MIN_SEQ
+               
+               INNER JOIN (select @num:=0) note
+               
 		WHERE 1=1
 		AND RAW_SEQ = #{rawSeq}
 		ORDER BY MET_SEQ
@@ -877,6 +908,10 @@
 		    CRT_NBR,
 		    CRT_MEMO,
 		    /* 1-5. 특기사항 */
+		    /* TEL 추가 */
+			STD_YN,
+			STD_ETC_YN,
+			/* TEL 추가 */
 		    STD_MEMO,
 		    /* 1. 시험원 */
 		    TEST_BY,

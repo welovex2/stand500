@@ -2489,7 +2489,66 @@
 		WHERE 1=1
 		AND RAW_SEQ = #{rawSeq}
 	</select>
+
+	<insert id="insertTel" parameterType="telDTO">
+		<selectKey resultType="int" keyProperty="telSeq" order="BEFORE">
+	        SELECT IFNULL(MAX(TEL_SEQ)+1,1) telSeq FROM METHOD_TEL_TB
+	    </selectKey>
+		INSERT INTO METHOD_TEL_TB
+		(
+			TEL_SEQ, RAW_SEQ,
+			TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
+			MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
+			SIGN, SIGN_URL, 
+			RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
+			CMNT_A_YN, CMNT_B_YN, 
+			INS_MEM_ID, UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{telSeq}, #{rawSeq},
+			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
+			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
+			#{sign}, #{signUrl}, 
+			#{resultCode}, #{resultPassCode}, #{resultResetCode}, #{resultNoPassCode}, #{resultNewPassCode},
+			#{cmntAYn}, #{cmntBYn},
+			#{insMemId}, #{udtMemId}
+		)
+		ON DUPLICATE KEY UPDATE
+			TEMP = #{temp},
+			TEMP_PLUS = #{tempPlus},
+			HMDT = #{hmdt},
+			HMDT_PLUS = #{hmdtPlus},
+			MSRMN_YEAR = #{msrmnYear},
+			MSRMN_MON = #{msrmnMon},
+			MSRMN_DAY = #{msrmnDay},
+			MSRMN_HOUR = #{msrmnHour},
+			MSRMN_MIN = #{msrmnMin},
+			SIGN = #{sign},
+			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			RESULT_CODE = #{resultCode},
+			RESULT_PASS_CODE = #{resultPassCode}, 
+			RESULT_RESET_CODE = #{resultResetCode}, 
+			RESULT_NO_PASS_CODE = #{resultNoPassCode}, 
+			RESULT_NEW_PASS_CODE = #{resultNewPassCode},
+			CMNT_A_YN = #{cmntAYn},
+			CMNT_B_YN = #{cmntBYn}, 
+			UDT_DT = NOW(),
+			UDT_MEM_ID = #{udtMemId}
+	</insert>
 	
+	<select id="telDetail" parameterType="int" resultType="telDTO">
+		SELECT TEL_SEQ, RAW_SEQ,
+		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
+		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
+			CMNT_A_YN, CMNT_B_YN
+		FROM METHOD_TEL_TB
+		WHERE 1=1
+		AND RAW_SEQ = #{rawSeq}
+	</select>
+		
 	<insert id="insertImg" parameterType="imgDTO">
 		<selectKey resultType="int" keyProperty="imgSeq" order="BEFORE">
 	        SELECT ifnull(MAX(IMG_SEQ)+1,1) FROM METHOD_IMG_TB
@@ -2535,7 +2594,7 @@
         FROM (
 			SELECT @num := @num + 1 AS num
 			FROM INFORMATION_SCHEMA.TABLES, (SELECT @num := 0) temp
-			LIMIT 0, 18
+			LIMIT 0, 19
         ) numb
 			
 			LEFT JOIN METHOD_IMG_TB

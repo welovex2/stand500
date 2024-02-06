@@ -28,6 +28,7 @@ import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
+import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.FileRaw;
 import egovframework.raw.service.MethodCsSub;
@@ -78,38 +79,40 @@ public class RawServiceImpl implements RawService {
     rawMapper.updateReport(req);
     
     // 4-2. method (시험방법), 고정리스트
-    rawMapper.insertMethod(req.getRawSeq(), req.getMethodList());
+    if (!ObjectUtils.isEmpty(req.getMethodList())) rawMapper.insertMethod(req.getRawSeq(), req.getMethodList());
 
     // 기술제원
-    List<RawSpec> pIItems = req.getRawSpecList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(pIItems))
-      rawMapper.insertSpec(req.getRawSeq(), pIItems);
-
-    // 기술적 요구항목
-    // List<RawTchn> tIItems =
-    // req.getRawTchnList().stream().filter(t->"I".equals(t.getState())).collect(Collectors.toList());
-    // if (!ObjectUtils.isEmpty(tIItems))
-    // rawMapper.insertTchn(req.getRawSeq(), tIItems);
+    if (!ObjectUtils.isEmpty(req.getRawSpecList())) {
+      List<RawSpec> pIItems = req.getRawSpecList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(pIItems))
+        rawMapper.insertSpec(req.getRawSeq(), pIItems);
+    }
 
     // 시험기기 전체구성
-    List<RawAsstn> aIItems = req.getRawAsstnList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(aIItems))
-      rawMapper.insertAsstn(req.getRawSeq(), aIItems);
-
+    if (!ObjectUtils.isEmpty(req.getRawAsstnList())) {
+      List<RawAsstn> aIItems = req.getRawAsstnList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(aIItems))
+        rawMapper.insertAsstn(req.getRawSeq(), aIItems);
+    }
+    
     // 시스템구성
-    List<RawSys> sIItems = req.getRawSysList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(sIItems))
-      rawMapper.insertSys(req.getRawSeq(), sIItems);
-
+    if (!ObjectUtils.isEmpty(req.getRawSysList())) {
+      List<RawSys> sIItems = req.getRawSysList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(sIItems))
+        rawMapper.insertSys(req.getRawSeq(), sIItems);
+    }
+    
     // 접속케이블
-    List<RawCable> cIItems = req.getRawCableList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cIItems))
-      rawMapper.insertCable(req.getRawSeq(), cIItems);
-
+    if (!ObjectUtils.isEmpty(req.getRawCableList())) {
+      List<RawCable> cIItems = req.getRawCableList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cIItems))
+        rawMapper.insertCable(req.getRawSeq(), cIItems);
+    }
+    
     return result;
   }
 
@@ -124,88 +127,82 @@ public class RawServiceImpl implements RawService {
     rawMapper.updateReport(req);
     
     // 4-2. method (시험방법), 고정리스트
-    rawMapper.insertMethod(req.getRawSeq(), req.getMethodList());
+    if (!ObjectUtils.isEmpty(req.getMethodList())) rawMapper.insertMethod(req.getRawSeq(), req.getMethodList());
 
     // 기술제원
-    List<RawSpec> pIItems = req.getRawSpecList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(pIItems))
-      rawMapper.insertSpec(req.getRawSeq(), pIItems);
+    if (!ObjectUtils.isEmpty(req.getRawSpecList())) {
+      List<RawSpec> pIItems = req.getRawSpecList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(pIItems))
+        rawMapper.insertSpec(req.getRawSeq(), pIItems);
+  
+      List<RawSpec> pUItems = req.getRawSpecList().stream().filter(t -> "U".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(pUItems))
+        rawMapper.updateSpec(req.getRawSeq(), pUItems);
+  
+      List<RawSpec> pDItems = req.getRawSpecList().stream().filter(t -> "D".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(pDItems))
+        rawMapper.deleteSpec(req.getRawSeq(), pDItems);
+    }
 
-    List<RawSpec> pUItems = req.getRawSpecList().stream().filter(t -> "U".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(pUItems))
-      rawMapper.updateSpec(req.getRawSeq(), pUItems);
-
-    List<RawSpec> pDItems = req.getRawSpecList().stream().filter(t -> "D".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(pDItems))
-      rawMapper.deleteSpec(req.getRawSeq(), pDItems);
-
-    // 기술적 요구항목
-    // List<RawTchn> tIItems =
-    // req.getRawTchnList().stream().filter(t->"I".equals(t.getState())).collect(Collectors.toList());
-    // if (!ObjectUtils.isEmpty(tIItems))
-    // rawMapper.insertTchn(req.getRawSeq(), tIItems);
-    //
-    // List<RawTchn> tUItems =
-    // req.getRawTchnList().stream().filter(t->"U".equals(t.getState())).collect(Collectors.toList());
-    // if (!ObjectUtils.isEmpty(tUItems))
-    // rawMapper.updateTchn(req.getRawSeq(), tUItems);
-    //
-    // List<RawTchn> tDItems =
-    // req.getRawTchnList().stream().filter(t->"D".equals(t.getState())).collect(Collectors.toList());
-    // if (!ObjectUtils.isEmpty(tDItems))
-    // rawMapper.deleteTchn(req.getRawSeq(), tDItems);
 
     // 시험기기 전체구성
-    List<RawAsstn> aIItems = req.getRawAsstnList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(aIItems))
-      rawMapper.insertAsstn(req.getRawSeq(), aIItems);
-
-    List<RawAsstn> aUItems = req.getRawAsstnList().stream().filter(t -> "U".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(aUItems))
-      rawMapper.updateAsstn(req.getRawSeq(), aUItems);
-
-    List<RawAsstn> aDItems = req.getRawAsstnList().stream().filter(t -> "D".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(aDItems))
-      rawMapper.deleteAsstn(req.getRawSeq(), aDItems);
-
+    if (!ObjectUtils.isEmpty(req.getRawAsstnList())) {
+      List<RawAsstn> aIItems = req.getRawAsstnList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(aIItems))
+        rawMapper.insertAsstn(req.getRawSeq(), aIItems);
+  
+      List<RawAsstn> aUItems = req.getRawAsstnList().stream().filter(t -> "U".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(aUItems))
+        rawMapper.updateAsstn(req.getRawSeq(), aUItems);
+  
+      List<RawAsstn> aDItems = req.getRawAsstnList().stream().filter(t -> "D".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(aDItems))
+        rawMapper.deleteAsstn(req.getRawSeq(), aDItems);
+    }
+    
+    
     // 시스템구성
-    List<RawSys> sIItems = req.getRawSysList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(sIItems))
-      rawMapper.insertSys(req.getRawSeq(), sIItems);
-
-    List<RawSys> sUItems = req.getRawSysList().stream().filter(t -> "U".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(sUItems))
-      rawMapper.updateSys(req.getRawSeq(), sUItems);
-
-    List<RawSys> sDItems = req.getRawSysList().stream().filter(t -> "D".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(sDItems))
-      rawMapper.deleteSys(req.getRawSeq(), sDItems);
-
+    if (!ObjectUtils.isEmpty(req.getRawSysList())) {
+      List<RawSys> sIItems = req.getRawSysList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(sIItems))
+        rawMapper.insertSys(req.getRawSeq(), sIItems);
+  
+      List<RawSys> sUItems = req.getRawSysList().stream().filter(t -> "U".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(sUItems))
+        rawMapper.updateSys(req.getRawSeq(), sUItems);
+  
+      List<RawSys> sDItems = req.getRawSysList().stream().filter(t -> "D".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(sDItems))
+        rawMapper.deleteSys(req.getRawSeq(), sDItems);
+    }
+    
     // 접속케이블
-    List<RawCable> cIItems = req.getRawCableList().stream().filter(t -> "I".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cIItems))
-      rawMapper.insertCable(req.getRawSeq(), cIItems);
-
-    List<RawCable> cUItems = req.getRawCableList().stream().filter(t -> "U".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cUItems))
-      rawMapper.updateCable(req.getRawSeq(), cUItems);
-
-    List<RawCable> cDItems = req.getRawCableList().stream().filter(t -> "D".equals(t.getState()))
-        .collect(Collectors.toList());
-    if (!ObjectUtils.isEmpty(cDItems))
-      rawMapper.deleteCable(req.getRawSeq(), cDItems);
-
+    if (!ObjectUtils.isEmpty(req.getRawCableList())) {
+      List<RawCable> cIItems = req.getRawCableList().stream().filter(t -> "I".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cIItems))
+        rawMapper.insertCable(req.getRawSeq(), cIItems);
+  
+      List<RawCable> cUItems = req.getRawCableList().stream().filter(t -> "U".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cUItems))
+        rawMapper.updateCable(req.getRawSeq(), cUItems);
+  
+      List<RawCable> cDItems = req.getRawCableList().stream().filter(t -> "D".equals(t.getState()))
+          .collect(Collectors.toList());
+      if (!ObjectUtils.isEmpty(cDItems))
+        rawMapper.deleteCable(req.getRawSeq(), cDItems);
+    }
+    
     return result;
   }
 
@@ -359,6 +356,20 @@ public class RawServiceImpl implements RawService {
   @Override
   public int getTestSeq(String testId) {
     return rawMapper.getTestSeq(testId);
+  }
+  
+  @Override
+  public RawData basicDetail(RawSearchDTO req) throws Exception {
+    
+    RawData detail = new RawData();
+    detail = rawMapper.detail(req);
+    
+    if (detail != null) {
+      // 4-2. method (시험방법)
+      detail.setMethodList(methodList(detail.getRawSeq()));
+    }
+    
+    return detail;
   }
   
   @Override
@@ -836,6 +847,24 @@ public class RawServiceImpl implements RawService {
     // 측정설비
     if (!ObjectUtils.isEmpty(req.getMacList()))
       methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+
+    return result;
+
+  }
+ 
+  @Override
+  public TelDTO telDetail(int rawSeq) {
+    TelDTO detail = methodMapper.telDetail(rawSeq);
+
+    return detail;
+  }
+
+  @Override
+  public boolean insertTel(TelDTO req) {
+
+    boolean result = true;
+
+    methodMapper.insertTel(req);
 
     return result;
 

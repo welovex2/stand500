@@ -14,6 +14,7 @@ import egovframework.raw.dto.MfDTO;
 import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
+import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 
@@ -133,6 +134,10 @@ public interface MethodMapper {
   public DpDTO dpDetail(int rawSeq);
 
   public boolean insertDp(DpDTO req);
+  
+  public TelDTO telDetail(int rawSeq);
+
+  public boolean insertTel(TelDTO req);
   
   public void insertCtiSub(@Param("ctiSeq") int ctiSeq,
       @Param("ctiSubList") List<MethodCtiSub> sIItems);

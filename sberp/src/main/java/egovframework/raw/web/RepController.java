@@ -54,7 +54,8 @@ public class RepController {
     boolean result = true;
     String msg = "";
     ReportDTO detail = new ReportDTO();
-
+    FileVO fileVO = new FileVO();
+    
     try {
       
       detail = rawService.report(testSeq);
@@ -79,10 +80,46 @@ public class RepController {
         }
         // -- END 성적서 발급내역 리스트 가져오기
         
-        // 3.2 시험항목 >> methodList
-        detail.setMethodList(rawService.methodList(rawSeq));
+        // TEL 규격은 아래 기본정보 없음
+        if (detail.getTestStndrSeq() != 560) {
+          
+          // 3.2 시험항목 >> methodList
+          detail.setMethodList(rawService.methodList(rawSeq));
+          // 4.2 기술 제원 >> SpecList
+          detail.setRawSpecList(rawService.specList(rawSeq));
+          // 5.1 전체구성 >> AsstnList
+          detail.setRawAsstnList(rawService.asstnList(rawSeq));
+          // 5.2 시스템구성 (시험기자재가 컴퓨터 및 시스템인 경우) >> sysList
+          detail.setRawSysList(rawService.sysList(rawSeq));
+          // 5.3 접속 케이블 >> cableList
+          detail.setRawCableList(rawService.cableList(rawSeq));
+          // 5.5 배치도 >> setupList
+          fileVO = new FileVO();
+          fileVO.setAtchFileId(detail.getSetupUrl());
+          List<FileVO> setupReulst = fileMngService.selectImageFileList(fileVO);
+          List<PicDTO> setupList = new ArrayList<PicDTO>();
+          if (setupReulst != null) {
+            for (FileVO item : setupReulst) {
+              PicDTO map = new PicDTO();
+              map.setTitle(item.getFileCn());
+              
+              if ("CDN".contentEquals(item.getFileLoc())) {
+                map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+                    .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+              } else {
+                map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
+                    .concat("&fileSn=").concat(item.getFileSn()));
+              }
+              
+              setupList.add(map);
+    
+            }
+          }
+          detail.setSetupList(setupList);
+        }
+        //-- END 추가 기본정보 셋팅
+        
         // 3.3 피시험기기의 보완내용 >> modList
-        FileVO fileVO = new FileVO();
         fileVO.setAtchFileId(detail.getModUrl());
         List<FileVO> modResult = fileMngService.selectImageFileList(fileVO);
         List<String> modList = new ArrayList<String>();
@@ -98,324 +135,301 @@ public class RepController {
           }
         }
         detail.setModFileList(modList);
-        // 4.2 기술 제원 >> SpecList
-        detail.setRawSpecList(rawService.specList(rawSeq));
-        // 5.1 전체구성 >> AsstnList
-        detail.setRawAsstnList(rawService.asstnList(rawSeq));
-        // 5.2 시스템구성 (시험기자재가 컴퓨터 및 시스템인 경우) >> sysList
-        detail.setRawSysList(rawService.sysList(rawSeq));
-        // 5.3 접속 케이블 >> cableList
-        detail.setRawCableList(rawService.cableList(rawSeq));
-        // 5.5 배치도 >> setupList
-        fileVO = new FileVO();
-        fileVO.setAtchFileId(detail.getSetupUrl());
-        List<FileVO> setupReulst = fileMngService.selectImageFileList(fileVO);
-        List<PicDTO> setupList = new ArrayList<PicDTO>();
-        if (setupReulst != null) {
-          for (FileVO item : setupReulst) {
-            PicDTO map = new PicDTO();
-            map.setTitle(item.getFileCn());
-            
-            if ("CDN".contentEquals(item.getFileLoc())) {
-              map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-            } else {
-              map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
-                  .concat("&fileSn=").concat(item.getFileSn()));
-            }
-            
-            setupList.add(map);
-  
-          }
-        }
-        detail.setSetupList(setupList);
-  
+        
         CeDTO ce = null;
         ReDTO re = null;
-        for (int i = 0; i < detail.getMethodList().size(); i++) {
-  
-          RawMet met = (RawMet) detail.getMethodList().get(i);
-  
-          /**
-           * 시험 해당 됨 처리
-           */
-          if (met.getCheckYn() == 1) {
-            switch (met.getMetSeq()) {
-              //   9.1 교류 주전원 포트에서의 전도성 방해 시험
-              case 0:
-                if (ObjectUtils.isEmpty(ce))
-                  ce = rawService.ceDetail(rawSeq);
-                if (ce != null) {
-                  ce.setMacList(rawService.macList("CA", rawSeq));
-                }
-                detail.setCe1(ce);
-                break;
-              //   9.2 비대칭모드 전도성 방해 시험
-              case 1:
-                ce = null;
-                if (ObjectUtils.isEmpty(ce))
-                  ce = rawService.ceDetail(rawSeq);
-                if (ce != null) {
-                  ce.setMacList(rawService.macList("CA", rawSeq));
-                }
-                detail.setCe2(ce);
-                break;
-              //   9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험
-              case 2:
-                ce = null;
-                if (ObjectUtils.isEmpty(ce))
-                  ce = rawService.ceDetail(rawSeq);
-                if (ce != null) {
-                  ce.setMacList(rawService.macList("CB", rawSeq));
-                }
-                detail.setCe3(ce);
-                break;
-              //   9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험
-              case 3:
-                ce = null;
-                if (ObjectUtils.isEmpty(ce))
-                  ce = rawService.ceDetail(rawSeq);
-                if (ce != null) {
-                  ce.setMacList(rawService.macList("CB", rawSeq));
-                }
-                detail.setCe4(ce);
-                break;
-              //   9.5 방사성 방해 시험 (1GHz 이하 대역)
-              case 4:
-                if (ObjectUtils.isEmpty(re))
-                  re = rawService.reDetail(rawSeq);
-                if (re != null) {
-                  if (detail.getTestStndrSeq() == 10)
-                    re.setMacList(rawService.macList("RA", rawSeq));
-                  else 
-                    re.setMacList(rawService.macList("RE2", rawSeq));
-                }
-                detail.setRe1(re);
-                break;
-              case 5:
-                re = null;
-                //   9.6 방사성 방해 시험 (1GHz 초과 대역)
-                if (ObjectUtils.isEmpty(re))
-                  re = rawService.reDetail(rawSeq);
-                if (re != null) {
-                  if (detail.getTestStndrSeq() == 10)
-                    re.setMacList(rawService.macList("RB", rawSeq));
-                  else 
-                    re.setMacList(rawService.macList("RE3", rawSeq));
-                }
-                detail.setRe2(re);
-                break;
-              //   9.7 정전기 방전 시험
-              case 6:
-                detail.setEsd(rawService.esdDetail(rawSeq));
-                break;
-              //   9.8 방사성 RF 전자기장 시험
-              case 7:
-                detail.setRs(rawService.rsDetail(rawSeq));
-                break;
-              //   9.9 전기적 빠른 과도현상 시험
-              case 8:
-                detail.setEft(rawService.eftDetail(rawSeq));
-                break;
-              //   9.10 서지 시험
-              case 9:
-                detail.setSurge(rawService.surgeDetail(rawSeq));
-                break;
-              //   9.11 전도성 RF 전자기장 시험
-              case 10:
-                detail.setCs(rawService.csDetail(rawSeq));
-                break;
-              //   9.12 전원 주파수 자기장 시험
-              case 11:
-                detail.setMf(rawService.mfDetail(rawSeq));
-                break;
-              //   9.13 전압 강하 및 순간 정전 시험
-              case 12:
-                detail.setVdip(rawService.vdipDetail(rawSeq));
-                break;
-              
-              //   Click
-              case 13:
-                detail.setClk(rawService.clkDetail(rawSeq));
-                break;
+        if (!ObjectUtils.isEmpty(detail.getMethodList())) {
+          for (int i = 0; i < detail.getMethodList().size(); i++) {
+    
+            RawMet met = (RawMet) detail.getMethodList().get(i);
+    
+            /**
+             * 시험 해당 됨 처리
+             */
+            if (met.getCheckYn() == 1) {
+              switch (met.getMetSeq()) {
+                //   9.1 교류 주전원 포트에서의 전도성 방해 시험
+                case 0:
+                  if (ObjectUtils.isEmpty(ce))
+                    ce = rawService.ceDetail(rawSeq);
+                  if (ce != null) {
+                    ce.setMacList(rawService.macList("CA", rawSeq));
+                  }
+                  detail.setCe1(ce);
+                  break;
+                //   9.2 비대칭모드 전도성 방해 시험
+                case 1:
+                  ce = null;
+                  if (ObjectUtils.isEmpty(ce))
+                    ce = rawService.ceDetail(rawSeq);
+                  if (ce != null) {
+                    ce.setMacList(rawService.macList("CA", rawSeq));
+                  }
+                  detail.setCe2(ce);
+                  break;
+                //   9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험
+                case 2:
+                  ce = null;
+                  if (ObjectUtils.isEmpty(ce))
+                    ce = rawService.ceDetail(rawSeq);
+                  if (ce != null) {
+                    ce.setMacList(rawService.macList("CB", rawSeq));
+                  }
+                  detail.setCe3(ce);
+                  break;
+                //   9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험
+                case 3:
+                  ce = null;
+                  if (ObjectUtils.isEmpty(ce))
+                    ce = rawService.ceDetail(rawSeq);
+                  if (ce != null) {
+                    ce.setMacList(rawService.macList("CB", rawSeq));
+                  }
+                  detail.setCe4(ce);
+                  break;
+                //   9.5 방사성 방해 시험 (1GHz 이하 대역)
+                case 4:
+                  if (ObjectUtils.isEmpty(re))
+                    re = rawService.reDetail(rawSeq);
+                  if (re != null) {
+                    if (detail.getTestStndrSeq() == 10)
+                      re.setMacList(rawService.macList("RA", rawSeq));
+                    else 
+                      re.setMacList(rawService.macList("RE2", rawSeq));
+                  }
+                  detail.setRe1(re);
+                  break;
+                case 5:
+                  re = null;
+                  //   9.6 방사성 방해 시험 (1GHz 초과 대역)
+                  if (ObjectUtils.isEmpty(re))
+                    re = rawService.reDetail(rawSeq);
+                  if (re != null) {
+                    if (detail.getTestStndrSeq() == 10)
+                      re.setMacList(rawService.macList("RB", rawSeq));
+                    else 
+                      re.setMacList(rawService.macList("RE3", rawSeq));
+                  }
+                  detail.setRe2(re);
+                  break;
+                //   9.7 정전기 방전 시험
+                case 6:
+                  detail.setEsd(rawService.esdDetail(rawSeq));
+                  break;
+                //   9.8 방사성 RF 전자기장 시험
+                case 7:
+                  detail.setRs(rawService.rsDetail(rawSeq));
+                  break;
+                //   9.9 전기적 빠른 과도현상 시험
+                case 8:
+                  detail.setEft(rawService.eftDetail(rawSeq));
+                  break;
+                //   9.10 서지 시험
+                case 9:
+                  detail.setSurge(rawService.surgeDetail(rawSeq));
+                  break;
+                //   9.11 전도성 RF 전자기장 시험
+                case 10:
+                  detail.setCs(rawService.csDetail(rawSeq));
+                  break;
+                //   9.12 전원 주파수 자기장 시험
+                case 11:
+                  detail.setMf(rawService.mfDetail(rawSeq));
+                  break;
+                //   9.13 전압 강하 및 순간 정전 시험
+                case 12:
+                  detail.setVdip(rawService.vdipDetail(rawSeq));
+                  break;
                 
-              //   DP
-              case 14:
-                detail.setDp(rawService.dpDetail(rawSeq));
-                break;
-
-              //   RE (9 ㎑ ~ 30 ㎒)
-              case 15:
-                re = null;
-                //   9.6 방사성 방해 시험 (1GHz 초과 대역)
-                if (ObjectUtils.isEmpty(re))
-                  re = rawService.reDetail(rawSeq);
-                if (re != null) {
-                  re.setMacList(rawService.macList("RE1", rawSeq));
-                }
-                detail.setRe0(re);
-                break;
-                
-            } // -- END switch
-          } // -- END if
-          /**
-           * 시험항목 없을 경우 macList만 셋팅
-           */
-          else if (met.getCheckYn() == 0) {
+                //   Click
+                case 13:
+                  detail.setClk(rawService.clkDetail(rawSeq));
+                  break;
+                  
+                //   DP
+                case 14:
+                  detail.setDp(rawService.dpDetail(rawSeq));
+                  break;
   
-            switch (met.getMetSeq()) {
-              //   9.1 교류 주전원 포트에서의 전도성 방해 시험
-              case 0:
-                ce = new CeDTO();
-                ce.setResultCode("-1");
-                ce.setPicYn(0);
-                ce.setMacList(rawService.emptyMacList("CA", rawSeq));
-                detail.setCe1(ce);
-                break;
-              //   9.2 비대칭모드 전도성 방해 시험
-              case 1:
-                ce = new CeDTO();
-                ce.setResultCode("-1");
-                ce.setPicYn(0);
-                ce.setMacList(rawService.emptyMacList("CA", rawSeq));
-                detail.setCe2(ce);
-                break;
-              //   9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험
-              case 2:
-                ce = new CeDTO();
-                ce.setResultCode("-1");
-                ce.setPicYn(0);
-                ce.setMacList(rawService.emptyMacList("CB", rawSeq));
-                detail.setCe3(ce);
-                break;
-              //   9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험
-              case 3:
-                ce = new CeDTO();
-                ce.setResultCode("-1");
-                ce.setPicYn(0);
-                ce.setMacList(rawService.emptyMacList("CB", rawSeq));
-                detail.setCe4(ce);
-                break;
-              //   9.7 정전기 방전 시험
-              case 6:
-                EsdDTO esd = new EsdDTO();
-                esd.setResultCode("-1");
-                esd.setPicYn(0);
-                esd.setMacList(rawService.emptyMacList("ED", rawSeq));
-                detail.setEsd(esd);
-                break;
-              //   9.8 방사성 RF 전자기장 시험
-              case 7:
-                RsDTO rs = new RsDTO();
-                rs.setResultCode("-1");
-                rs.setPicYn(0);
-                rs.setMacList(rawService.emptyMacList("RS", rawSeq));
-                detail.setRs(rs);
-                break;
-              //   9.9 전기적 빠른 과도현상 시험
-              case 8:
-                EftDTO eft = new EftDTO();
-                eft.setResultCode("-1");
-                eft.setPicYn(0);
-                eft.setMacList(rawService.emptyMacList("ET", rawSeq));
-                detail.setEft(eft);
-                break;
-              //   9.10 서지 시험
-              case 9:
-                SurgeDTO su = new SurgeDTO();
-                su.setResultCode("-1");
-                su.setPicYn(0);
-                su.setMacList(rawService.emptyMacList("SG", rawSeq));
-                detail.setSurge(su);
-                break;
-              //   9.11 전도성 RF 전자기장 시험
-              case 10:
-                CsDTO cs = new CsDTO();
-                cs.setResultCode("-1");
-                cs.setPicYn(0);
-                cs.setMacList(rawService.emptyMacList("CS", rawSeq));
-                detail.setCs(cs);
-                break;
-              //   9.12 전원 주파수 자기장 시험
-              case 11:
-                MfDTO mf = new MfDTO();
-                mf.setResultCode("-1");
-                mf.setPicYn(0);
-                mf.setMacList(rawService.emptyMacList("MF", rawSeq));
-                detail.setMf(mf);
-                break;
-              //   9.13 전압 강하 및 순간 정전 시험
-              case 12:
-                VdipDTO vp = new VdipDTO();
-                vp.setResultCode("-1");
-                vp.setPicYn(0);
-                vp.setMacList(rawService.emptyMacList("VD", rawSeq));
-                detail.setVdip(vp);
-                break;
-                
-              //   Click
-              case 13:
-                ClkDTO clk = new ClkDTO();
-                clk.setResultCode("-1");
-                clk.setPicYn(0);
-                clk.setMacList(rawService.emptyMacList("CK", rawSeq));
-                detail.setClk(clk);
-                break;
-
-              //   DP
-              case 14:
-                DpDTO dp = new DpDTO();
-                dp.setResultCode("-1");
-                dp.setPicYn(0);
-                dp.setMacList(rawService.emptyMacList("DP", rawSeq));
-                detail.setDp(dp);
-                break;
-
-              //   RE (9 ㎑ ~ 30 ㎒)
-              case 15:
-                re = new ReDTO();
-                re.setHz1ResultCode("-1");
-                re.setPicYn(0);
-                re.setMacList(rawService.emptyMacList("RA", rawSeq));
-                detail.setRe0(re);
-                break;
-              //   9.5 방사성 방해 시험 (1GHz 이하 대역)
-              case 4:
-                re = new ReDTO();
-
-                if (detail.getTestStndrSeq() == 10) {
+                //   RE (9 ㎑ ~ 30 ㎒)
+                case 15:
+                  re = null;
+                  //   9.6 방사성 방해 시험 (1GHz 초과 대역)
+                  if (ObjectUtils.isEmpty(re))
+                    re = rawService.reDetail(rawSeq);
+                  if (re != null) {
+                    re.setMacList(rawService.macList("RE1", rawSeq));
+                  }
+                  detail.setRe0(re);
+                  break;
+                  
+              } // -- END switch
+            } // -- END if
+            /**
+             * 시험항목 없을 경우 macList만 셋팅
+             */
+            else if (met.getCheckYn() == 0) {
+    
+              switch (met.getMetSeq()) {
+                //   9.1 교류 주전원 포트에서의 전도성 방해 시험
+                case 0:
+                  ce = new CeDTO();
+                  ce.setResultCode("-1");
+                  ce.setPicYn(0);
+  //                ce.setMacList(rawService.emptyMacList("CA", rawSeq));
+                  detail.setCe1(ce);
+                  break;
+                //   9.2 비대칭모드 전도성 방해 시험
+                case 1:
+                  ce = new CeDTO();
+                  ce.setResultCode("-1");
+                  ce.setPicYn(0);
+  //                ce.setMacList(rawService.emptyMacList("CA", rawSeq));
+                  detail.setCe2(ce);
+                  break;
+                //   9.3 B급 기기의 방송수신기 튜너포트 차동전압 전도성 방해 시험
+                case 2:
+                  ce = new CeDTO();
+                  ce.setResultCode("-1");
+                  ce.setPicYn(0);
+  //                ce.setMacList(rawService.emptyMacList("CB", rawSeq));
+                  detail.setCe3(ce);
+                  break;
+                //   9.4 B급 기기의 RF변조기 출력포트에서의 차동전압 전도성 방해 시험
+                case 3:
+                  ce = new CeDTO();
+                  ce.setResultCode("-1");
+                  ce.setPicYn(0);
+  //                ce.setMacList(rawService.emptyMacList("CB", rawSeq));
+                  detail.setCe4(ce);
+                  break;
+                //   9.7 정전기 방전 시험
+                case 6:
+                  EsdDTO esd = new EsdDTO();
+                  esd.setResultCode("-1");
+                  esd.setPicYn(0);
+  //                esd.setMacList(rawService.emptyMacList("ED", rawSeq));
+                  detail.setEsd(esd);
+                  break;
+                //   9.8 방사성 RF 전자기장 시험
+                case 7:
+                  RsDTO rs = new RsDTO();
+                  rs.setResultCode("-1");
+                  rs.setPicYn(0);
+  //                rs.setMacList(rawService.emptyMacList("RS", rawSeq));
+                  detail.setRs(rs);
+                  break;
+                //   9.9 전기적 빠른 과도현상 시험
+                case 8:
+                  EftDTO eft = new EftDTO();
+                  eft.setResultCode("-1");
+                  eft.setPicYn(0);
+  //                eft.setMacList(rawService.emptyMacList("ET", rawSeq));
+                  detail.setEft(eft);
+                  break;
+                //   9.10 서지 시험
+                case 9:
+                  SurgeDTO su = new SurgeDTO();
+                  su.setResultCode("-1");
+                  su.setPicYn(0);
+  //                su.setMacList(rawService.emptyMacList("SG", rawSeq));
+                  detail.setSurge(su);
+                  break;
+                //   9.11 전도성 RF 전자기장 시험
+                case 10:
+                  CsDTO cs = new CsDTO();
+                  cs.setResultCode("-1");
+                  cs.setPicYn(0);
+  //                cs.setMacList(rawService.emptyMacList("CS", rawSeq));
+                  detail.setCs(cs);
+                  break;
+                //   9.12 전원 주파수 자기장 시험
+                case 11:
+                  MfDTO mf = new MfDTO();
+                  mf.setResultCode("-1");
+                  mf.setPicYn(0);
+  //                mf.setMacList(rawService.emptyMacList("MF", rawSeq));
+                  detail.setMf(mf);
+                  break;
+                //   9.13 전압 강하 및 순간 정전 시험
+                case 12:
+                  VdipDTO vp = new VdipDTO();
+                  vp.setResultCode("-1");
+                  vp.setPicYn(0);
+  //                vp.setMacList(rawService.emptyMacList("VD", rawSeq));
+                  detail.setVdip(vp);
+                  break;
+                  
+                //   Click
+                case 13:
+                  ClkDTO clk = new ClkDTO();
+                  clk.setResultCode("-1");
+                  clk.setPicYn(0);
+  //                clk.setMacList(rawService.emptyMacList("CK", rawSeq));
+                  detail.setClk(clk);
+                  break;
+  
+                //   DP
+                case 14:
+                  DpDTO dp = new DpDTO();
+                  dp.setResultCode("-1");
+                  dp.setPicYn(0);
+  //                dp.setMacList(rawService.emptyMacList("DP", rawSeq));
+                  detail.setDp(dp);
+                  break;
+  
+                //   RE (9 ㎑ ~ 30 ㎒)
+                case 15:
+                  re = new ReDTO();
                   re.setHz1ResultCode("-1");
-                } else {
-                  re.setHz2ResultCode("-1");
-                }
-                re.setPicYn(0);
-                re.setMacList(rawService.emptyMacList("RA", rawSeq));
-                detail.setRe1(re);
-                break;
-              case 5:
-                //   9.6 방사성 방해 시험 (1GHz 초과 대역)
-                re = new ReDTO();
-                
-                if (detail.getTestStndrSeq() == 10) {
-                  re.setHz2ResultCode("-1");
-                } else {
-                  re.setHz3ResultCode("-1");
-                }
-                re.setPicYn(0);
-                re.setMacList(rawService.emptyMacList("RB", rawSeq));
-                detail.setRe2(re);
-                break;
-
+                  re.setPicYn(0);
+  //                re.setMacList(rawService.emptyMacList("RA", rawSeq));
+                  detail.setRe0(re);
+                  break;
+                //   9.5 방사성 방해 시험 (1GHz 이하 대역)
+                case 4:
+                  re = new ReDTO();
   
-            } // -- END switch
-          } // -- END elseif
-        } // -- END for
+                  if (detail.getTestStndrSeq() == 10) {
+                    re.setHz1ResultCode("-1");
+                  } else {
+                    re.setHz2ResultCode("-1");
+                  }
+                  re.setPicYn(0);
+  //                re.setMacList(rawService.emptyMacList("RA", rawSeq));
+                  detail.setRe1(re);
+                  break;
+                case 5:
+                  //   9.6 방사성 방해 시험 (1GHz 초과 대역)
+                  re = new ReDTO();
+                  
+                  if (detail.getTestStndrSeq() == 10) {
+                    re.setHz2ResultCode("-1");
+                  } else {
+                    re.setHz3ResultCode("-1");
+                  }
+                  re.setPicYn(0);
+  //                re.setMacList(rawService.emptyMacList("RB", rawSeq));
+                  detail.setRe2(re);
+                  break;
   
+    
+              } // -- END switch
+            } // -- END elseif
+          } // -- END for
+        } //-- END if methodList
+        
+        // TEL 규격은 아래 기본정보 없음
+        System.out.println("시험규격="+detail.getTestStndrSeq());
+        if (detail.getTestStndrSeq() == 560) {
+          detail.setTel(rawService.telDetail(rawSeq));
+        }
+        //-- END 시험항목
   
         // 시험장면 사진
         List<PicDTO> resultList = new ArrayList<PicDTO>();
   
-        for (int i = 1; i < 19; i++) {
+        for (int i = 1; i < 20; i++) {
           
           ImgDTO img = new ImgDTO();
           img.setRawSeq(rawSeq);
@@ -458,7 +472,7 @@ public class RepController {
               }
             }
   
-            // 시험장면에서 등록한 해당함/해당없음 
+            // 시험장면에서 등록한 해당함/해당없음 9814 전용
             int picYn = img.getPicYn();
             
             switch (i) {
@@ -514,22 +528,6 @@ public class RepController {
                 if (ObjectUtils.isEmpty( detail.getVdip())) detail.setVdip(new VdipDTO());
                 detail.getVdip().setPicYn(picYn);
                 break;
-//              case 15:
-//                detail.getCe5().setPicYn(picYn);
-//                break;
-//              case 16:
-//                if (ObjectUtils.isEmpty( detail.getClk())) detail.setClk(new ClkDTO());
-//                detail.getClk().setPicYn(picYn);
-//                break;
-//              case 17:
-//                if (ObjectUtils.isEmpty( detail.getDp())) detail.setDp(new DpDTO());
-//                detail.getDp().setPicYn(picYn);
-//                break;
-//              case 18:
-//                if (ObjectUtils.isEmpty( detail.getRe0())) detail.setRe0(new ReDTO());
-//                detail.getRe0().setPicYn(picYn);
-//                break;  
-  
             } //-- END PIC_YN
            
   
