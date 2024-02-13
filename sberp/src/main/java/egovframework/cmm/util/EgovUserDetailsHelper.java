@@ -9,6 +9,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import egovframework.cmm.service.LoginVO;
 import egovframework.rte.fdl.string.EgovObjectUtil;
 import egovframework.sys.dto.PowerDTO;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * EgovUserDetails Helper 클래스
@@ -28,7 +29,7 @@ import egovframework.sys.dto.PowerDTO;
  *
  *      </pre>
  */
-
+@Slf4j
 public class EgovUserDetailsHelper {
 
   /**
@@ -72,8 +73,8 @@ public class EgovUserDetailsHelper {
     HttpServletRequest req = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
     String thisUrl = req.getRequestURI();
     
-    System.out.println("///////////////////////////////////////////");
-    System.out.println(req.getRequestURI());
+    log.info("///////////////////////////////////////////");
+    log.info(req.getRequestURI());
 
     if (EgovObjectUtil.isNull(loginVO)) {
       return Boolean.FALSE;
@@ -86,11 +87,11 @@ public class EgovUserDetailsHelper {
       // 현재 나의 페이지의 권한 확인
       if (thisUrl.indexOf(p.getMenuCode()) > -1) {
         
-        System.out.println("누구="+loginVO.getEmpName());
-        System.out.println("체크URL="+p.getMenuCode());
-        System.out.println("읽기권한="+p.isRYn());
-        System.out.println("쓰기권한="+p.isWYn());
-        System.out.println("///////////////////////////////////////////");
+        log.info("누구="+loginVO.getEmpName());
+        log.info("체크URL="+p.getMenuCode());
+        log.info("읽기권한="+p.isRYn());
+        log.info("쓰기권한="+p.isWYn());
+        log.info("///////////////////////////////////////////");
 
         // 신청서 디테일은 권한 없이 볼수 있게 함.
         if ("sbk".equals(p.getMenuCode())
@@ -100,11 +101,11 @@ public class EgovUserDetailsHelper {
         else if (!p.isRYn() && (thisUrl.toLowerCase().indexOf("list") > -1 
                             || thisUrl.toLowerCase().indexOf("detail") > -1
                             || thisUrl.toLowerCase().indexOf("excel") > -1)) {
-          System.out.println("R 권한없음");
+          log.warn("R 권한없음");
           return Boolean.FALSE;
         }
         else if (!p.isWYn() && thisUrl.toLowerCase().indexOf("insert") > -1) {
-          System.out.println("W 권한없음");
+          log.warn("W 권한없음");
           return Boolean.FALSE;
         }
       }

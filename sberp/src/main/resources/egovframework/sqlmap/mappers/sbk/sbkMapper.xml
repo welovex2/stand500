@@ -725,7 +725,7 @@
 			<!-- 1	고객유형 -->
 		<when test="item.searchCode == 1">AND IFNULL (CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
 		<!-- 4	컨설팅명 -->
-		<when test="item.searchCode == 4">AND IFNULL (cmpyTitle, '') LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+		<when test="item.searchCode == 4">AND IFNULL (CMPY_TB.CMPY_NAME, '') LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 		<!-- 5	신청서번호 -->
 		<when test="item.searchCode == 5">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 		<!-- 6	제품명 -->
@@ -877,7 +877,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
         </collection>
 	</resultMap>
 	<select id="selectList" parameterType="comParam" resultMap="sbkMap">
-
+	set @ROWNUM:=0;
 	SELECT 
 		@ROWNUM:=@ROWNUM+1 AS NO,
 		lst.*

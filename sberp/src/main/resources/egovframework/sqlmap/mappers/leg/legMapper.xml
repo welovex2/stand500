@@ -124,8 +124,8 @@
 			    IFNULL (out_sub.CARRY_OUT_DLVRY_NAME, '') CARRY_OUT_DLVRY_NAME,
 			    IFNULL (out_sub.CARRY_OUT_DLVRY_INVC, '') CARRY_OUT_DLVRY_INVC,
 			    CONCAT_WS (', ', IF (TEST_RPRT_K_YN = 1, 'KOLAS', NULL), IF (TEST_RPRT_N_YN = 1, '일반', NULL)) TEST_RPRT,
-			    IFNULL (DATE_FORMAT(IF(TEST_ITEM_TB.TEST_STNDR_SEQ IN (10, 7, 686),
-			                        RAW_TB.REPORT_DT,
+			    IFNULL (DATE_FORMAT(IF(TEST_ITEM_TB.TEST_STNDR_SEQ IN (10, 7, 686, 560),
+			                        TEST_TB.REPORT_DT,
 			                        TEST_TB.TEST_REPORT_DT),
 			                    '%Y-%m-%d'),
 			            '-') REPORT_DT
