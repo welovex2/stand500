@@ -562,7 +562,7 @@
 		<result column="version" property="version"/>
 		<result column="cmpyName" property="cmpyName"/>
 		<result column="issue_dt" property="issueDt"/>
-		<result column="mngName" property="mngName"/>
+		<result column="MNG_NAME" property="mngName"/>
 		<result column="INS_MEM" property="insMem"/>
 		<result column="cmpyPhone" property="cmpyPhone"/>
 		<result column="cmpyFax" property="cmpyFax"/>
@@ -637,11 +637,11 @@
 			,IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle
 			,IFNULL (CMPY_MNG_TB.NAME, '') cmpyMngName
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
-            ,FN_MEM_NAME (JOB_TB.MNG_ID) MNG_NAME	/* 업무담당자 추가 */
+            ,IFNULL (JOB_TB.MNG_NAME, '') MNG_NAME	
             ,FN_MEM_NAME (QUO_TB.INS_MEM_ID) INS_MEM	/* 작성자 추가 */
+			,MEMBER_TB.MEM_NAME							/* 업무담당자 추가 */
 			,IFNULL (JOB_TB.MNG_PHONE, '') CMPYPHONE
 			,IFNULL (JOB_TB.MNG_FAX, '') CMPYFAX
-			,MEMBER_TB.MEM_NAME
             
 			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') EST_CMP_DT
 			,VERSION
