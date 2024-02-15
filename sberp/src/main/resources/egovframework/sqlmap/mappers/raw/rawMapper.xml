@@ -746,30 +746,33 @@
 	</insert>
 	
 	<select id="methodList" parameterType="int" resultType="rawMet">
-           SELECT MET_SEQ,
-		    CHECK_YN,
-		    TYPE,
-            RAW_MET_TB.MEMO,
-			IF (ord.MEMO IS NULL OR ord.MEMO = '', '', CONCAT(@num:=@num+1,'. ',ord.MEMO)) reportMemo, 
-			IF (RAW_MET_TB.MEMO= '', '', concat('NOTE ',@num)) as note
-		FROM RAW_MET_TB
-			
-               LEFT JOIN (
-					SELECT 
-						MIN(MET_SEQ) MIN_SEQ,
-						MEMO
-					FROM RAW_MET_TB
-					WHERE 1=1
-					AND RAW_SEQ = #{rawSeq}
-					GROUP BY MEMO
-					ORDER BY MET_SEQ
-               ) ord
-               ON RAW_MET_TB.MET_SEQ = ord.MIN_SEQ
-               
-               INNER JOIN (select @num:=0) note
-               
-		WHERE 1=1
-		AND RAW_SEQ = #{rawSeq}
+		SELECT * FROM (
+			SELECT MET_SEQ,
+			    CHECK_YN,
+			    TYPE,
+	            RAW_MET_TB.MEMO,
+				IF (ord.MEMO IS NULL OR ord.MEMO = '', '', CONCAT(@num:=@num+1,'. ',ord.MEMO)) reportMemo, 
+				IF (RAW_MET_TB.MEMO= '', '', concat('NOTE ',@num)) as note
+			FROM RAW_MET_TB
+				
+	               LEFT JOIN (
+						SELECT 
+							MIN(MET_SEQ) MIN_SEQ,
+							MEMO
+						FROM RAW_MET_TB
+						WHERE 1=1
+						AND RAW_SEQ = #{rawSeq}
+						GROUP BY MEMO
+						ORDER BY MET_SEQ
+	               ) ord
+	               ON RAW_MET_TB.MET_SEQ = ord.MIN_SEQ
+	               
+	               INNER JOIN (select @num:=0) note
+	               
+			WHERE 1=1
+			AND RAW_SEQ = #{rawSeq}
+			ORDER BY MEMO
+			) lst
 		ORDER BY MET_SEQ
 	</select>
 	
