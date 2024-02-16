@@ -225,9 +225,9 @@
 				WHERE subTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
 				    LIMIT 1
 			)) raw_seq,
-		    IFNULL (DATE_FORMAT(IF (TEST_ITEM_TB.TEST_STNDR_SEQ IN (10, 7, 686, 560), TEST_TB.REPORT_DT, TEST_TB.TEST_REPORT_DT), '%Y-%m-%d'), '-') REPORT_DT,
-		    IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', CONCAT (FN_DEPT_NAME(TEST_TB.UDT_MEM_ID),' ',FN_MEM_NAME(TEST_TB.UDT_MEM_ID))) REPORT_DT_INS_NAME,
-			IF(TEST_TB.TEST_REPORT_DT IS NULL, '-', DATE_FORMAT(TEST_TB.UDT_DT, '%Y-%m-%d')) REPORT_DT_INS_DT,
+		    IFNULL (DATE_FORMAT(TEST_TB.REPORT_DT, '%Y-%m-%d'), '-') REPORT_DT,
+		    CONCAT (FN_DEPT_NAME(TEST_TB.UDT_MEM_ID),' ',FN_MEM_NAME(TEST_TB.UDT_MEM_ID)) REPORT_DT_INS_NAME,
+			DATE_FORMAT(TEST_TB.UDT_DT, '%Y-%m-%d') REPORT_DT_INS_DT,
 		    '-' rawState
 		    
 		FROM TEST_ITEM_TB
@@ -514,12 +514,7 @@
 	<update id="update" parameterType="testReq">
 		UPDATE TEST_TB
 		SET
-			<if test="reportDt != ''">
-			TEST_REPORT_DT = #{reportDt},
-			</if>
-			<if test="reportDt == ''">
-			TEST_REPORT_DT = NULL,
-			</if>
+			REPORT_DT = IF (#{reportDt} = '', NULL, #{reportDt}),
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE TEST_SEQ = #{testSeq}
