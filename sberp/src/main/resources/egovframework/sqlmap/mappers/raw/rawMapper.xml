@@ -747,33 +747,54 @@
 	
 	<select id="methodList" parameterType="int" resultType="rawMet">
 		SELECT * FROM (
-			SELECT MET_SEQ,
-			    CHECK_YN,
-			    TYPE,
-	            RAW_MET_TB.MEMO,
-				IF (ord.MEMO IS NULL OR ord.MEMO = '', '', CONCAT(@num:=@num+1,'. ',ord.MEMO)) reportMemo, 
-				IF (RAW_MET_TB.MEMO= '', '', concat('NOTE ',@num)) as note
-			FROM RAW_MET_TB
-				
-	               LEFT JOIN (
-						SELECT 
-							MIN(MET_SEQ) MIN_SEQ,
-							MEMO
-						FROM RAW_MET_TB
+			
+			SELECT 
+			
+				MET_SEQ,
+				CHECK_YN,
+				TYPE,
+				MEMO,
+				IF (MEMO != '', IF (@memo = MEMO, concat('NOTE ',@cnt), concat('NOTE ',@cnt:=num)), '') note,
+				reportMemo,
+				@memo:=MEMO
+		
+			FROM (
+		
+					SELECT 
+						RAW_MET_TB.*,
+						num,
+						IFNULL (reportMemo, '') reportMemo
+		
+					FROM RAW_MET_TB
+						
+						LEFT JOIN (
+				                    SELECT 
+										MIN(MET_SEQ) MIN_SEQ,
+				                        IF (MEMO = '', '', @num:=@num+1) num,
+				                        IF (MEMO IS NULL OR MEMO = '', '', CONCAT(@num,'. ',MEMO)) reportMemo
+									FROM RAW_MET_TB
+										INNER JOIN (select @num:=0) note
+									WHERE 1=1
+									AND RAW_SEQ = #{rawSeq}
+									GROUP BY MEMO
+									ORDER BY MET_SEQ
+								) ord
+					           ON RAW_MET_TB.MET_SEQ = ord.MIN_SEQ
+		           
 						WHERE 1=1
 						AND RAW_SEQ = #{rawSeq}
-						GROUP BY MEMO
-						ORDER BY MET_SEQ
-	               ) ord
-	               ON RAW_MET_TB.MET_SEQ = ord.MIN_SEQ
-	               
-	               INNER JOIN (select @num:=0) note
-	               
-			WHERE 1=1
-			AND RAW_SEQ = #{rawSeq}
-			ORDER BY MEMO
-			) lst
-		ORDER BY MET_SEQ
+						ORDER BY MEMO
+		        
+			)lst
+			INNER JOIN (select @memo:='', @cnt:=0) note
+		
+		) cmp
+		
+		ORDER BY CASE 
+						WHEN MET_SEQ = 13 THEN 2
+		                WHEN MET_SEQ = 14 THEN 3
+		                WHEN MET_SEQ = 15 THEN 3.5
+						ELSE MET_SEQ END
 	</select>
 	
 	
