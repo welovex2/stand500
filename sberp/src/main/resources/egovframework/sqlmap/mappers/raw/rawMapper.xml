@@ -801,8 +801,11 @@
 			INNER JOIN (select @memo:='', @cnt:=0) note
 		
 		) cmp
-		ORDER BY MET_SEQ
-
+		ORDER BY CASE 
+					WHEN MET_SEQ = 13 THEN 2
+					WHEN MET_SEQ = 14 THEN 3
+					WHEN MET_SEQ = 15 THEN 3.5
+					ELSE MET_SEQ END
 	</select>
 	
 	
