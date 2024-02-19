@@ -549,7 +549,7 @@
 			HZ1_MSRMN_HOUR = #{hz1MsrmnHour},
 			HZ1_MSRMN_MIN = #{hz1MsrmnMin},
 			HZ1_SIGN = #{hz1Sign},
-			HZ1_SIGN_URL = #{hz1SignUrl},
+			<if test="hz1SignUrl != null and hz1SignUrl != ''">HZ1_SIGN_URL = #{hz1SignUrl},</if>
 			HZ1_RESULT_CODE = #{hz1ResultCode},
 			</if>
 			
@@ -576,7 +576,7 @@
 			HZ2_MSRMN_HOUR = #{hz2MsrmnHour},
 			HZ2_MSRMN_MIN = #{hz2MsrmnMin},
 			HZ2_SIGN = #{hz2Sign},
-			HZ2_SIGN_URL = #{hz2SignUrl},
+			<if test="hz2SignUrl != null and hz2SignUrl != ''">HZ2_SIGN_URL = #{hz2SignUrl},</if>
 			HZ2_RESULT_CODE = #{hz2ResultCode},
 			</if>
 			
