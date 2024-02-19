@@ -193,6 +193,7 @@
 		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
+		    IF (TEST_TB.TEST_STATE_CODE=5, IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
 		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
 		    IFNULL (DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 		    '미반입' imPoint,
@@ -417,6 +418,7 @@
 		UPDATE TEST_TB
 		SET
 			TEST_STATE_CODE = #{stateCode},
+			TEST_STATE_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE TEST_SEQ = #{testSeq}
@@ -615,6 +617,7 @@
        	 	<result column="testMem" property="testMem"/>
        	 	<result column="testInDt" property="testInDt"/>
        	 	<result column="testState" property="testState"/>
+       	 	<result column="addDay" property="addDay"/>
        	 	<result column="netSales" property="netSales"/>
        	 	<result column="memoCnt" property="memoCnt"/>
         </collection>
@@ -677,6 +680,7 @@
             FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
                       
 		    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
+		    IF (TEST_TB.TEST_STATE_CODE=5, IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
 			TEST_ITEM_TB.NET_SALES netSales,
 
 			IFNULL (MEMO_CNT, 0) memoCnt,

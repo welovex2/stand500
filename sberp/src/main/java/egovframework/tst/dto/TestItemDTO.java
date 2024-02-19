@@ -79,6 +79,10 @@ public class TestItemDTO extends TestItem {
   @ApiModelProperty(value = "시험상태 ", example = "")
   @Column
   private String testState;
+
+  @ApiModelProperty(value = "시험완료 경과일 ", example = "")
+  @Column
+  private String addDay;
   
   @ApiModelProperty(value = "시험신청자 부서 ", example = "", hidden = true)
   @Column

@@ -124,6 +124,9 @@ public class TestDTO {
     @ApiModelProperty(value = "시험상태", example = "")
     private String testState;
     
+    @ApiModelProperty(value = "시험완료 경과일", example = "")
+    private String addDay;
+    
     @ApiModelProperty(value = "제품명", example = "")
     private String product;
     
