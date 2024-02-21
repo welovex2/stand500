@@ -786,6 +786,7 @@
             FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
                       
 		    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
+		    IF (TEST_TB.TEST_STATE_CODE=5, IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
 			TEST_ITEM_TB.NET_SALES netSales,
 
 			IFNULL (MEMO_CNT, 0) memoCnt,
