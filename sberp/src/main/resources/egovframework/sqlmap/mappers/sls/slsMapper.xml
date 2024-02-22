@@ -47,132 +47,47 @@
 			    )
 			WHERE
 			    1 = 1
-			    and SLS_TB.state != 'D'
-				<if test="searchVO != null">
-			        <foreach collection="searchVO" item="item" separator="">
-			        	<choose>
-							<!-- 1	고객유형 -->
-							<when test="item.searchCode == 1">AND IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-							<!-- 4	컨설팅명 -->
-							<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 6	제품명 -->
-							<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 12	회사명 -->
-							<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 16	매출확정일 -->
-							<when test="item.searchCode == 16">AND date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-							<!-- 19	매출확정자 -->
-							<when test="item.searchCode == 19">AND IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 30	수정요청 -->
-							<when test="item.searchCode == 30">AND IFNULL(QUO_MOD_TB.STATE_CODE, '') = #{item.searchWord}</when>
-							<!-- 46	미수금액 -->
-							<when test="item.searchCode == 46">
-								<if test="item.searchWord == 0">AND ARREARS = 0</if>
-								<if test="item.searchWord == 1">AND ARREARS != 0</if>
-							</when>
-							<!-- 28	납부상태 -->
-							<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
-							<!-- 5	견적서번호 -->
-							<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 69 취합견적서번호 -->
-							<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
-															        '',
-															        CONCAT (
-															            'CH',
-															            SLS_TB.CHQ_YM,
-															            '-',
-															            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
-															        )
-															    ) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-							<!-- 70 매출번호 -->
-							<when test="item.searchCode == 70">AND FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 71 납부완료일 -->
-							<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-			        	</choose>
-					</foreach>
-				</if>
+			    AND SLS_TB.STATE != 'D'
+			    
+				<include refid="whereList"/>
 				
-				union all
-	            
-				SELECT
-					
-				    FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) slsId
-				    
-				FROM
-				    SLS_TB
-				    inner join QUO_TB on
-				        SLS_TB.chq_ym = QUO_TB.chq_ym
-				        and SLS_TB.chq_seq = QUO_TB.chq_seq
-				    
-				    
-				   LEFT JOIN (
-						SELECT QUO_YM, QUO_SEQ, sum(CHRGS) CHRGS, sum(NET_SALES) NET_SALES
-						FROM TEST_ITEM_TB
-				        where state != 'D'
-				        group by QUO_YM, QUO_SEQ
-				    ) items
-				    ON QUO_TB.QUO_YM = items.QUO_YM
-				    AND QUO_TB.quo_seq = items.QUO_SEQ
-				    
-				    INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
-				    AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ
-				    AND JOB_TB.state != 'D'
-				    INNER JOIN BILL_TB ON SLS_TB.SLS_YM = BILL_TB.SLS_YM
-				    AND SLS_TB.SLS_SEQ = BILL_TB.SLS_SEQ
-				    INNER JOIN MEMBER_TB ON SLS_TB.cnfrm_id = MEMBER_TB.id
-				    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-				    
-				WHERE
-				    1 = 1
-				    and SLS_TB.state != 'D'  
-				    
-				<if test="searchVO != null">
-			        <foreach collection="searchVO" item="item" separator="">
-			        	<choose>
-							<!-- 1	고객유형 -->
-							<when test="item.searchCode == 1">and IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-							<!-- 4	컨설팅명 -->
-							<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 6	제품명 -->
-							<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 12	회사명 -->
-							<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 16	매출확정일 -->
-							<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-							<!-- 19	매출확정자 -->
-							<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 30	수정요청 -->
-							<when test="item.searchCode == 30">and 1 != 1</when>
-							<!-- 46	미수금액 -->
-							<when test="item.searchCode == 46">
-								<if test="item.searchWord == 0">and ARREARS = 0</if>
-								<if test="item.searchWord == 1">and ARREARS != 0</if>
-							</when>
-							<!-- 28	납부상태 -->
-							<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
-							<!-- 5	견적서번호 -->
-							<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 69 취합견적서번호 -->
-							<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
-															        '',
-															        CONCAT (
-															            'CH',
-															            SLS_TB.CHQ_YM,
-															            '-',
-															            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
-															        )
-															    ) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-							<!-- 70 매출번호 -->
-							<when test="item.searchCode == 70">AND FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 71 납부완료일 -->
-							<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-
-			        	</choose>
-					</foreach>
-				</if>
+			UNION ALL
+            
+			SELECT
 				
-				
-	                group by SLS_TB.chq_ym, SLS_TB.chq_seq
+			    FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) slsId
+			    
+			FROM
+			    SLS_TB
+			    inner join QUO_TB on
+			        SLS_TB.chq_ym = QUO_TB.chq_ym
+			        and SLS_TB.chq_seq = QUO_TB.chq_seq
+			    
+			    
+			   LEFT JOIN (
+					SELECT QUO_YM, QUO_SEQ, sum(CHRGS) CHRGS, sum(NET_SALES) NET_SALES
+					FROM TEST_ITEM_TB
+			        where state != 'D'
+			        group by QUO_YM, QUO_SEQ
+			    ) items
+			    ON QUO_TB.QUO_YM = items.QUO_YM
+			    AND QUO_TB.quo_seq = items.QUO_SEQ
+			    
+			    INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+			    AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ
+			    AND JOB_TB.state != 'D'
+			    INNER JOIN BILL_TB ON SLS_TB.SLS_YM = BILL_TB.SLS_YM
+			    AND SLS_TB.SLS_SEQ = BILL_TB.SLS_SEQ
+			    INNER JOIN MEMBER_TB ON SLS_TB.cnfrm_id = MEMBER_TB.id
+			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+			    
+			WHERE
+			    1 = 1
+			    AND SLS_TB.STATE != 'D'  
+			    
+				<include refid="whereListChq"/>
+			
+                GROUP BY SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ
 	         ) cnt
 	</select>
 	<resultMap type="slsRes" id="slsMap">
@@ -217,7 +132,6 @@
 		FROM (
 			SELECT * FROM (
 				SELECT
-					#ROW_NUMBER() OVER(ORDER BY SLS_TB.ins_dt) AS no,
 				    FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) slsId,
 				    if (
 				        QUO_TB.chq_seq = 0,
@@ -289,57 +203,13 @@
 				    )
 				WHERE
 				    1 = 1
-				    and SLS_TB.state != 'D'
+				    and SLS_TB.STATE != 'D'
+					
+					<include refid="whereList"/>
 				
-				<if test="searchVO != null">
-			        <foreach collection="searchVO" item="item" separator="">
-			        	<choose>
-							<!-- 1	고객유형 -->
-							<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-							<!-- 4	컨설팅명 -->
-							<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 6	제품명 -->
-							<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 12	회사명 -->
-							<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 16	매출확정일 -->
-							<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-							<!-- 19	매출확정자 -->
-							<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 30	수정요청 -->
-							<when test="item.searchCode == 30">and IFNULL(QUO_MOD_TB.STATE_CODE, '') = #{item.searchWord}</when>
-							<!-- 46	미수금액 -->
-							<when test="item.searchCode == 46">
-								<if test="item.searchWord == 0">and ARREARS = 0</if>
-								<if test="item.searchWord == 1">and ARREARS != 0</if>
-							</when>
-							<!-- 28	납부상태 -->
-							<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
-							<!-- 5	견적서번호 -->
-							<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 69 취합견적서번호 -->
-							<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
-															        '',
-															        CONCAT (
-															            'CH',
-															            SLS_TB.CHQ_YM,
-															            '-',
-															            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
-															        )
-															    ) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-							<!-- 70 매출번호 -->
-							<when test="item.searchCode == 70">AND FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 71 납부완료일 -->
-							<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-
-			        	</choose>
-					</foreach>
-				</if>
-				
-				union all
+				UNION ALL
 	            
 				SELECT
-					#ROW_NUMBER() OVER(ORDER BY SLS_TB.ins_dt) AS no,
 				    FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) slsId,
 				    if (
 				        QUO_TB.chq_seq = 0,
@@ -399,56 +269,12 @@
 				    
 				WHERE
 				    1 = 1
-				    and SLS_TB.state != 'D'  
+				    AND SLS_TB.STATE != 'D'  
 				    
-				<if test="searchVO != null">
-			        <foreach collection="searchVO" item="item" separator="">
-			        	<choose>
-							<!-- 1	고객유형 -->
-							<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-							<!-- 4	컨설팅명 -->
-							<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 6	제품명 -->
-							<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 12	회사명 -->
-							<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 16	매출확정일 -->
-							<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-							<!-- 19	매출확정자 -->
-							<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
-							<!-- 30	수정요청 -->
-							<when test="item.searchCode == 30">and 1 != 1</when>
-							<!-- 46	미수금액 -->
-							<when test="item.searchCode == 46">
-								<if test="item.searchWord == 0">and ARREARS = 0</if>
-								<if test="item.searchWord == 1">and ARREARS != 0</if>
-							</when>
-							<!-- 28	납부상태 -->
-							<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
-							<!-- 5	견적서번호 -->
-							<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 69 취합견적서번호 -->
-							<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
-															        '',
-															        CONCAT (
-															            'CH',
-															            SLS_TB.CHQ_YM,
-															            '-',
-															            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
-															        )
-															    ) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-							<!-- 70 매출번호 -->
-							<when test="item.searchCode == 70">AND FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-							<!-- 71 납부완료일 -->
-							<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
-
-			        	</choose>
-					</foreach>
-				</if>
+				    <include refid="whereListChq"/>
 				
-				
-	                group by SLS_TB.chq_ym, SLS_TB.chq_seq
-	                order by slsId asc
+	                GROUP BY SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ
+	                ORDER BY slsId ASC
 			) uni
 			
 	        
@@ -459,6 +285,107 @@
         WHERE 1=1
         AND no BETWEEN #{totalCount}+1-#{pageUnit}-#{firstIndex} AND #{totalCount}-#{firstIndex}
 	</select>
+	
+	<sql id="whereList">
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	        	<choose>
+					<!-- 1	고객유형 -->
+					<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+					<!-- 4	컨설팅명 -->
+					<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 6	제품명 -->
+					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 12	회사명 -->
+					<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 16	매출확정일 -->
+					<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 19	매출확정자 -->
+					<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 30	수정요청 -->
+					<when test="item.searchCode == 30">and IFNULL(QUO_MOD_TB.STATE_CODE, '') = #{item.searchWord}</when>
+					<!-- 46	미수금액 -->
+					<when test="item.searchCode == 46">
+						<if test="item.searchWord == 0">and ARREARS = 0</if>
+						<if test="item.searchWord == 1">and ARREARS != 0</if>
+					</when>
+					<!-- 28	납부상태 -->
+					<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
+					<!-- 29	발행여부 -->
+					<when test="item.searchCode == 29">AND IFNULL(BILL_YN, '0') = #{item.searchWord}</when>
+					<!-- 5	견적서번호 -->
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 69 취합견적서번호 -->
+					<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
+													        '',
+													        CONCAT (
+													            'CH',
+													            SLS_TB.CHQ_YM,
+													            '-',
+													            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
+													        )
+													    ) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 70 매출번호 -->
+					<when test="item.searchCode == 70">AND FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 71 납부완료일 -->
+					<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 72 계산서발행일 -->
+					<when test="item.searchCode == 72">AND DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+	
+	        	</choose>
+			</foreach>
+		</if>
+	</sql>
+	<sql id="whereListChq">
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	        	<choose>
+					<!-- 1	고객유형 -->
+					<when test="item.searchCode == 1">and ifnull(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
+					<!-- 4	컨설팅명 -->
+					<when test="item.searchCode == 4">and IFNULL(CMPY_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 6	제품명 -->
+					<when test="item.searchCode == 6">and IFNULL(JOB_TB.PRDCT_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 12	회사명 -->
+					<when test="item.searchCode == 12">and IFNULL(JOB_TB.CMPY_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 16	매출확정일 -->
+					<when test="item.searchCode == 16">and date_format(SLS_TB.CNFRM_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 19	매출확정자 -->
+					<when test="item.searchCode == 19">and IFNULL(MEMBER_TB.MEM_NAME, '') like concat('%',#{item.searchWord},'%')</when>
+					<!-- 30	수정요청 -->
+					<when test="item.searchCode == 30">and 1 != 1</when>
+					<!-- 46	미수금액 -->
+					<when test="item.searchCode == 46">
+						<if test="item.searchWord == 0">and ARREARS = 0</if>
+						<if test="item.searchWord == 1">and ARREARS != 0</if>
+					</when>
+					<!-- 28	납부상태 -->
+					<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
+					<!-- 29	발행여부 -->
+					<when test="item.searchCode == 29">AND IFNULL(BILL_YN, '0') = #{item.searchWord}</when>
+					<!-- 5	견적서번호 -->
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 69 취합견적서번호 -->
+					<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
+													        '',
+													        CONCAT (
+													            'CH',
+													            SLS_TB.CHQ_YM,
+													            '-',
+													            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
+													        )
+													    ) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 70 매출번호 -->
+					<when test="item.searchCode == 70">AND FN_GET_SEQSTRING ('M', SLS_TB.sls_ym, '', SLS_TB.sls_seq) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 71 납부완료일 -->
+					<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 72 계산서발행일 -->
+					<when test="item.searchCode == 72">AND DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+
+	        	</choose>
+			</foreach>
+		</if>
+	</sql>
 	
 	<insert id="insert" parameterType="slsReq" >
 		 <selectKey resultType="String" keyProperty="slsId" order="AFTER">

@@ -189,6 +189,7 @@ public class RepController {
                   break;
                 //   9.5 방사성 방해 시험 (1GHz 이하 대역)
                 case 4:
+                  re = null;
                   if (ObjectUtils.isEmpty(re))
                     re = rawService.reDetail(rawSeq);
                   if (re != null) {
