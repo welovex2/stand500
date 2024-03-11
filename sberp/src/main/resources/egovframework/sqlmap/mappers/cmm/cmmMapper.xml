@@ -68,10 +68,12 @@
 	<select id="comcodeList" parameterType="String" resultType="egovMap">
 		SELECT 
 			type_cd,
-			type_name
+			type_name,
+			memo
 		FROM COMCODE_TB
 		WHERE use_yn = 1
-		AND top_cd = #{code};
+		AND top_cd = #{code}
+		ORDER BY DIS_ORDR, COMCODE_SEQ;
 	</select>
 	
 	<select id="deptList" resultType="egovMap">
