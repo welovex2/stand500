@@ -213,7 +213,7 @@ public class SbkController {
   public BasicResponse insert(
       @RequestPart(value = "appFile", required = false) MultipartFile appFile,
       @RequestPart(value = "agreeFile", required = false) MultipartFile agreeFile,
-      @RequestPart(value = "workFile", required = false) MultipartFile workFile,
+//      @RequestPart(value = "workFile", required = false) MultipartFile workFile,
       @RequestPart(value = "sendFile", required = false) List<MultipartFile> sendFile,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
       @RequestPart(value = "sbk") SbkDTO.Req req) throws Exception {
@@ -278,11 +278,11 @@ public class SbkController {
       }
 
       // 업무자 서명
-      if (!ObjectUtils.isEmpty(workFile)) {
-        FileResult = fileUtil.parseFile(workFile, "SBK", 0, "", "");
-        atchFileId = fileMngService.insertFileInf(FileResult);
-        req.setWorkSignUrl(atchFileId);
-      }
+//      if (!ObjectUtils.isEmpty(workFile)) {
+//        FileResult = fileUtil.parseFile(workFile, "SBK", 0, "", "");
+//        atchFileId = fileMngService.insertFileInf(FileResult);
+//        req.setWorkSignUrl(atchFileId);
+//      }
 
       // 신청서류
       if (!ObjectUtils.isEmpty(sendFile)) {
@@ -436,7 +436,6 @@ public class SbkController {
   @PostMapping(value = "/signRev.do",
       consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
   public BasicResponse updateTestItemSign(
-      @RequestPart(value = "files", required = false) final MultipartFile multiRequest,
       @RequestPart(value = "req") TestItemDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -458,14 +457,14 @@ public class SbkController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      FileVO FileResult = null;
-
-      String atchFileId = "";
-      if (!ObjectUtils.isEmpty(multiRequest)) {
-        FileResult = fileUtil.parseFile(multiRequest, "SIGN", 0, "", "");
-        atchFileId = fileMngService.insertFileInf(FileResult);
-        req.setRevSignUrl(atchFileId);
-      }
+//      FileVO FileResult = null;
+//
+//      String atchFileId = "";
+//      if (!ObjectUtils.isEmpty(multiRequest)) {
+//        FileResult = fileUtil.parseFile(multiRequest, "SIGN", 0, "", "");
+//        atchFileId = fileMngService.insertFileInf(FileResult);
+//        req.setRevSignUrl(atchFileId);
+//      }
 
       result = sbkService.updateTestItemSign(req);
 

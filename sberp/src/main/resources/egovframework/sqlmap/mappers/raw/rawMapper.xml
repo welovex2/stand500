@@ -110,9 +110,9 @@
 			<if test="testSDt != null and testSDt != ''">#{testSDt},</if>
 			<if test="testEDt != null and testEDt != ''">#{testEDt},</if>
 			#{testBy},
-			#{testSignUrl},
+			#{testAtchFileId},
 			#{revBy},
-			#{revSignUrl},
+			#{revAtchFileId},
 			#{tbrKcEmcYn},
 			#{tbrKcRfEmcYn},
 			#{tbrEmcdYn},
@@ -407,9 +407,9 @@
 			<if test="testSDt != null and testSDt != ''">TEST_S_DT = #{testSDt},</if>
 			<if test="testEDt != null and testEDt != ''">TEST_E_DT = #{testEDt},</if>
 			TEST_BY = #{testBy},
-			<if test="testSignUrl != null and testSignUrl != ''">TEST_SIGN_URL = #{testSignUrl},</if>
+			TEST_SIGN_URL = #{testAtchFileId},
 			REV_BY = #{revBy},
-			<if test="revSignUrl != null and revSignUrl != ''">REV_SIGN_URL = #{revSignUrl},</if>
+			REV_SIGN_URL = #{revAtchFileId},
 			TBR_KC_EMC_YN = #{tbrKcEmcYn},
 			TBR_KC_RF_EMC_YN = #{tbrKcRfEmcYn},
 			TBR_EMCD_YN = #{tbrEmcdYn},
@@ -538,8 +538,10 @@
 		    TEST_E_DT,
 		    TEST_BY,
 		    FN_GET_IMAGE (RAW_TB.TEST_SIGN_URL, 0) TEST_SIGN_URL,
+		    RAW_TB.TEST_SIGN_URL TEST_ATCH_FILE_ID,
 		    REV_BY,
 		    FN_GET_IMAGE (RAW_TB.REV_SIGN_URL, 0) REV_SIGN_URL,
+		    RAW_TB.REV_SIGN_URL REV_ATCH_FILE_ID,
 		    TBR_KC_EMC_YN,
 		    TBR_KC_RF_EMC_YN,
 		    TBR_EMCD_YN,

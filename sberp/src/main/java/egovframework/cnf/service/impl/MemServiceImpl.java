@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.Dept;
 import egovframework.cmm.service.LoginVO;
@@ -38,6 +39,12 @@ public class MemServiceImpl implements MemService {
   public boolean insert(Member req) {
 
     memMapper.insert(req);
+    
+    // 서명파일 저장
+    if (!StringUtils.isEmpty(req.getAtchFileId())) {
+      memMapper.insertSign(req);
+    }
+    
     return true;
   }
 

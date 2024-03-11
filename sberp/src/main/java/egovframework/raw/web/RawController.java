@@ -358,18 +358,18 @@ public class RawController {
         String atchFileId = "";
 
         // 시험자 서명
-        if (!ObjectUtils.isEmpty(raw.getTestSign())) {
-          oneFile = fileUtil.parseFile(raw.getTestSign(), "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setTestSignUrl(atchFileId);
-        }
+//        if (!ObjectUtils.isEmpty(raw.getTestSign())) {
+//          oneFile = fileUtil.parseFile(raw.getTestSign(), "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setTestSignUrl(atchFileId);
+//        }
 
         // 기술책임자 서명
-        if (!ObjectUtils.isEmpty(raw.getRevSign())) {
-          oneFile = fileUtil.parseFile(raw.getRevSign(), "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setRevSignUrl(atchFileId);
-        }
+//        if (!ObjectUtils.isEmpty(raw.getRevSign())) {
+//          oneFile = fileUtil.parseFile(raw.getRevSign(), "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setRevSignUrl(atchFileId);
+//        }
 
         // 보완파일
         if (!ObjectUtils.isEmpty(raw.getModFileList())) {
@@ -492,9 +492,9 @@ public class RawController {
           + "2. delFileList(리스트파일일  경우만) : atchFileId(resultUrl값), fileCn(파일순번)\n"
           + "3. signFile 시험자 서명, resultFiles 시험결과")
   @PostMapping(value = "/ce/insert.do")
-  public BasicResponse insertCe(@RequestPart(value = "ceDTO") CeDTO req,
+  public BasicResponse insertCe(@RequestPart(value = "ceDTO") CeDTO req
 //      @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile
+//      @RequestPart(value = "signFile", required = false) MultipartFile signFile
 //      @RequestPart(value = "resultFiles", required = false) final List<MultipartFile> resultFiles
       )
       throws Exception {
@@ -542,12 +542,12 @@ public class RawController {
           FileVO oneFile = null;
           String atchFileId = "";
   
-          // 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile)) {
-            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setSignUrl(atchFileId);
-          }
+//          // 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile)) {
+//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setSignUrl(atchFileId);
+//          }
   
           result = rawService.insertCe(req);
         } catch (Exception e) {
@@ -594,11 +594,11 @@ public class RawController {
           + "1. 수정시 rawSeq 필수\n "
           + "2. signFile1 대역1 서명, signFile2 대역2 서명, signFile2 대역3 서명, resultFiles 시험결과\n" + "4. 대역코드(RH)")
   @PostMapping(value = "/re/insert.do")
-  public BasicResponse insertRe(@RequestPart(value = "reDTO") ReDTO req,
+  public BasicResponse insertRe(@RequestPart(value = "reDTO") ReDTO req
 //      @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
-      @RequestPart(value = "signFile1", required = false) MultipartFile signFile1,
-      @RequestPart(value = "signFile2", required = false) MultipartFile signFile2,
-      @RequestPart(value = "signFile3", required = false) MultipartFile signFile3
+//      @RequestPart(value = "signFile1", required = false) MultipartFile signFile1,
+//      @RequestPart(value = "signFile2", required = false) MultipartFile signFile2,
+//      @RequestPart(value = "signFile3", required = false) MultipartFile signFile3
 //      @RequestPart(value = "resultFiles", required = false) final List<MultipartFile> resultFiles
       )
       throws Exception {
@@ -653,24 +653,24 @@ public class RawController {
           FileVO oneFile = null;
           String atchFileId = "";
   
-          // 대역1 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile1)) {
-            oneFile = fileUtil.parseFile(signFile1, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setHz1SignUrl(atchFileId);
-          }
-          // 대역2 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile2)) {
-            oneFile = fileUtil.parseFile(signFile2, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setHz2SignUrl(atchFileId);
-          }
-          // 대역3 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile3)) {
-            oneFile = fileUtil.parseFile(signFile3, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setHz3SignUrl(atchFileId);
-          }
+//          // 대역1 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile1)) {
+//            oneFile = fileUtil.parseFile(signFile1, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setHz1SignUrl(atchFileId);
+//          }
+//          // 대역2 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile2)) {
+//            oneFile = fileUtil.parseFile(signFile2, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setHz2SignUrl(atchFileId);
+//          }
+//          // 대역3 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile3)) {
+//            oneFile = fileUtil.parseFile(signFile3, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setHz3SignUrl(atchFileId);
+//          }
   
           result = rawService.insertRe(req);
         } catch (Exception e) {
@@ -719,7 +719,6 @@ public class RawController {
           + "5. delFileList : atchFileId(imgUrl), fileSn(파일순번)\n")
   @PostMapping(value = "/esd/insert.do")
   public BasicResponse insertEsd(@RequestPart(value = "esdDTO") EsdDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
       @RequestPart(value = "uptFileList", required = false) List<FileVO> uptFileList,
       @ModelAttribute ImgDTO img) throws Exception {
@@ -761,16 +760,16 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
+//        FileVO oneFile = null;
         String atchFileId = "";
         List<FileVO> FileResult = null;
 
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//         시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         // 정전기 방전 인가부위
         if (!ObjectUtils.isEmpty(img.getImgList())) {
@@ -857,8 +856,7 @@ public class RawController {
   @ApiOperation(value = "로데이터 > RS 등록", notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n"
       + "1. 수정시 rawSeq 필수\n " + "2. signFile 시험자 서명")
   @PostMapping(value = "/rs/insert.do")
-  public BasicResponse insertRs(@RequestPart(value = "rsDTO") RsDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertRs(@RequestPart(value = "rsDTO") RsDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -898,15 +896,15 @@ public class RawController {
       if (isAuthenticated) {
 
         try {
-          FileVO oneFile = null;
-          String atchFileId = "";
+//          FileVO oneFile = null;
+//          String atchFileId = "";
   
-          // 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile)) {
-            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setSignUrl(atchFileId);
-          }
+//          // 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile)) {
+//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setSignUrl(atchFileId);
+//          }
   
           result = rawService.insertRs(req);
         } catch (Exception e) {
@@ -951,8 +949,7 @@ public class RawController {
       notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" + "1. 수정시 rawSeq 필수\n "
           + "2. signFile 시험자 서명")
   @PostMapping(value = "/eft/insert.do")
-  public BasicResponse insertEft(@RequestPart(value = "eftDTO") EftDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertEft(@RequestPart(value = "eftDTO") EftDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -991,15 +988,15 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
-        String atchFileId = "";
-
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//        FileVO oneFile = null;
+//        String atchFileId = "";
+//
+//        // 시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         result = rawService.insertEft(req);
 
@@ -1012,20 +1009,6 @@ public class RawController {
 
     BasicResponse res =
         BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
-
-    return res;
-  }
-
-  @ApiOperation(value = "등록")
-  @PostMapping(value = "/insert2.do")
-  public BasicResponse insert2(@RequestBody VdipDTO req) {
-    boolean result = false;
-
-    System.out.println(req.toString());
-
-    // rawService.insert(req);
-
-    BasicResponse res = BasicResponse.builder().result(result).message("").build();
 
     return res;
   }
@@ -1054,8 +1037,7 @@ public class RawController {
       notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" + "1. 수정시 rawSeq 필수\n "
           + "2. signFile 시험자 서명")
   @PostMapping(value = "/surge/insert.do")
-  public BasicResponse insertSurge(@RequestPart(value = "surgeDTO") SurgeDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertSurge(@RequestPart(value = "surgeDTO") SurgeDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1094,15 +1076,15 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
-        String atchFileId = "";
-
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//        FileVO oneFile = null;
+//        String atchFileId = "";
+//
+//        // 시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         result = rawService.insertSurge(req);
 
@@ -1142,8 +1124,7 @@ public class RawController {
   @ApiOperation(value = "로데이터 > CS 등록", notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n"
       + "1. 수정시 rawSeq 필수\n " + "2. signFile 시험자 서명")
   @PostMapping(value = "/cs/insert.do")
-  public BasicResponse insertCs(@RequestPart(value = "csDTO") CsDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertCs(@RequestPart(value = "csDTO") CsDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1182,15 +1163,15 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
-        String atchFileId = "";
-
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//        FileVO oneFile = null;
+//        String atchFileId = "";
+//
+//        // 시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         result = rawService.insertCs(req);
 
@@ -1230,8 +1211,7 @@ public class RawController {
   @ApiOperation(value = "로데이터 > M-Field 등록", notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n"
       + "1. 수정시 rawSeq 필수\n " + "2. signFile 시험자 서명")
   @PostMapping(value = "/mfield/insert.do")
-  public BasicResponse insertMf(@RequestPart(value = "mfDTO") MfDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertMf(@RequestPart(value = "mfDTO") MfDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1270,15 +1250,15 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
-        String atchFileId = "";
-
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//        FileVO oneFile = null;
+//        String atchFileId = "";
+//
+//        // 시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         result = rawService.insertMf(req);
 
@@ -1319,8 +1299,7 @@ public class RawController {
   @ApiOperation(value = "로데이터 > V-Dip 등록", notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n"
       + "1. 수정시 rawSeq 필수\n " + "2. signFile 시험자 서명")
   @PostMapping(value = "/vdip/insert.do")
-  public BasicResponse insertVd(@RequestPart(value = "vdipDTO") VdipDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertVd(@RequestPart(value = "vdipDTO") VdipDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1359,15 +1338,15 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
-        String atchFileId = "";
-
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//        FileVO oneFile = null;
+//        String atchFileId = "";
+//
+//        // 시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         result = rawService.insertVdip(req);
 
@@ -1388,8 +1367,7 @@ public class RawController {
       notes = "0. rawSeq 필수\n "
           + "1. signFile 시험자 서명")
   @PostMapping(value = "/clk/insert.do")
-  public BasicResponse insertClk(@RequestPart(value = "clkDTO") ClkDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertClk(@RequestPart(value = "clkDTO") ClkDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1428,15 +1406,15 @@ public class RawController {
 
       if (isAuthenticated) {
 
-        FileVO oneFile = null;
-        String atchFileId = "";
-
-        // 시험자 서명
-        if (!ObjectUtils.isEmpty(signFile)) {
-          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-          atchFileId = fileMngService.insertFileInf(oneFile);
-          req.setSignUrl(atchFileId);
-        }
+//        FileVO oneFile = null;
+//        String atchFileId = "";
+//
+//        // 시험자 서명
+//        if (!ObjectUtils.isEmpty(signFile)) {
+//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//          atchFileId = fileMngService.insertFileInf(oneFile);
+//          req.setSignUrl(atchFileId);
+//        }
 
         result = rawService.insertClk(req);
 
@@ -1478,8 +1456,7 @@ public class RawController {
       notes = "0. rawSeq값 필수\n"
           + "1. signFile 시험자 서명")
   @PostMapping(value = "/dp/insert.do")
-  public BasicResponse insertDp(@RequestPart(value = "dpDTO") DpDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertDp(@RequestPart(value = "dpDTO") DpDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1518,15 +1495,15 @@ public class RawController {
       if (isAuthenticated) {
 
         try {
-          FileVO oneFile = null;
-          String atchFileId = "";
-  
-          // 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile)) {
-            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setSignUrl(atchFileId);
-          }
+//          FileVO oneFile = null;
+//          String atchFileId = "";
+//  
+//          // 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile)) {
+//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setSignUrl(atchFileId);
+//          }
   
           result = rawService.insertDp(req);
         } catch (Exception e) {
@@ -1573,8 +1550,7 @@ public class RawController {
       notes = "0. rawSeq값 필수\n"
           + "1. signFile 시험자 서명")
   @PostMapping(value = "/tel/insert.do")
-  public BasicResponse insertTel(@RequestPart(value = "telDTO") TelDTO req,
-      @RequestPart(value = "signFile", required = false) MultipartFile signFile) throws Exception {
+  public BasicResponse insertTel(@RequestPart(value = "telDTO") TelDTO req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -1612,15 +1588,15 @@ public class RawController {
       if (isAuthenticated) {
 
         try {
-          FileVO oneFile = null;
-          String atchFileId = "";
-  
-          // 시험자 서명
-          if (!ObjectUtils.isEmpty(signFile)) {
-            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-            atchFileId = fileMngService.insertFileInf(oneFile);
-            req.setSignUrl(atchFileId);
-          }
+//          FileVO oneFile = null;
+//          String atchFileId = "";
+//  
+//          // 시험자 서명
+//          if (!ObjectUtils.isEmpty(signFile)) {
+//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+//            atchFileId = fileMngService.insertFileInf(oneFile);
+//            req.setSignUrl(atchFileId);
+//          }
   
           result = rawService.insertTel(req);
         } catch (Exception e) {

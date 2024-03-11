@@ -143,11 +143,6 @@ public class MethodCe {
   private String resultCode;
 
 
-  @ApiModelProperty(value = "시험결과_URL ", example = "")
-  @Column
-  private String resultUrl;
-
-
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;

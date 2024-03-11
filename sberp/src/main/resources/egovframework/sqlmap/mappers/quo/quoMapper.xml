@@ -221,7 +221,7 @@
 			(
 				date_format(now(), '%y%m'),
 				#{quoSeq},
-				ifnull(#{issueDt},now()),
+				IFNULL(#{issueDt},now()),
 				#{trgtCrtfc},
 				#{prdInf},
 				#{powerSuplyYn},
@@ -230,7 +230,7 @@
 				#{vatYn},
 				#{needWeek},
 				#{spclCndtn},
-				#{sgnUrl},
+				#{atchFileId},
 				#{quoStateCode},
 				#{version},
 				<if test="estCmpDt != null and estCmpDt != ''">
@@ -258,9 +258,7 @@
 			VAT_YN = #{vatYn},
 			NEED_WEEK = #{needWeek},
 			SPCL_CNDTN = #{spclCndtn},
-			<if test="sgnUrl != null and sgnUrl != ''">
-			SGN_URL = #{sgnUrl},
-			</if>
+			SGN_URL = #{atchFileId},
 			VERSION = #{version},
 			<if test="estCmpDt != null and estCmpDt != ''">
 			EST_CMP_DT = #{estCmpDt},
@@ -580,7 +578,8 @@
 		<result column="spcl_cndtn" property="spclCndtn"/>
 		<result column="cost_total" property="CostTotal"/>
 		<result column="total_vat" property="TotalVat"/>
-		<result column="sgn_url" property="sgnUrl"/>
+		<result column="SGN_URL" property="sgnUrl"/>
+		<result column="ATCH_FILE_ID" property="atchFileId"/>
 		<result column="ENG_NAME" property="engName"/>
 		<result column="memPos" property="memPos"/>
 		<result column="dir" property="dir"/>
@@ -660,6 +659,7 @@
 			,QUO_TB.COST_TOTAL
 			,QUO_TB.TOTAL_VAT
 			,FN_GET_IMAGE (QUO_TB.SGN_URL,0) SGN_URL
+			,QUO_TB.SGN_URL ATCH_FILE_ID
 			,IFNULL (MEMBER_TB.ENG_NAME, '') ENG_NAME
 			,CONCAT (MEMBER_TB.MEM_NAME, ' ' ,(SELECT IFNULL(NAME, '') FROM POS_TB WHERE POS_TB.POS_SEQ = MEMBER_TB.POS_SEQ LIMIT 1)) memPos
 			,IFNULL (FN_GET_PHONE_FORMAT (MEMBER_TB.TEL), '') dir

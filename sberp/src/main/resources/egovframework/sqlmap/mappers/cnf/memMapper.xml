@@ -122,9 +122,6 @@
 	</select>
 	
 	<insert id="insert" parameterType="member">
-	    <selectKey resultType="int" keyProperty="memberSeq" order="AFTER">
-	        SELECT MAX(MEMBER_SEQ) memberSeq FROM MEMBER_TB;
-	    </selectKey>
 	    INSERT INTO MEMBER_TB
 	    (
 			MEMBER_SEQ,
@@ -190,9 +187,26 @@
 	        STATE = 'U'
 	</insert>
 	
+	<insert id="insertSign" parameterType="member">
+		INSERT INTO MEMBER_SIGN_TB
+		(
+			MEMBER_SEQ,
+			ATCH_FILE_ID,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{memberSeq},
+			#{atchFileId},
+			#{insMemId},
+			#{udtMemId}
+		)	
+	</insert>
+		
 	<select id="detail" parameterType="int" resultType="member">
 		SELECT
-			lpad (MEMBER_SEQ, 4, 0) memberSeq,
+			LPAD (MEMBER_TB.MEMBER_SEQ, 4, 0) memberSeq,
 		    DATE_FORMAT(IN_DT, '%Y-%m-%d') inDt,
 		    DEPT_SEQ,
 		    FN_DEPT_NAME (ID) DEPT_NAME,
@@ -209,10 +223,15 @@
 		    LOCK_YN,
 		    DATE_FORMAT(LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
 		    DATE_FORMAT(LEAVE_E_DT, '%Y-%m-%d') leaveEDt,
-		    DATE_FORMAT(QUIT_DT, '%Y-%m-%d') quitDt
+		    DATE_FORMAT(QUIT_DT, '%Y-%m-%d') quitDt,
+		    FN_GET_IMAGE (MEMBER_SIGN_TB.ATCH_FILE_ID,0) sgnUrl
 		FROM
 			MEMBER_TB
-		WHERE MEMBER_SEQ = #{memberSeq}
+			
+			LEFT JOIN MEMBER_SIGN_TB
+            ON MEMBER_SIGN_TB.MEMBER_SIGN_SEQ = (SELECT MEMBER_SIGN_SEQ FROM MEMBER_SIGN_TB sub WHERE sub.MEMBER_SEQ = MEMBER_TB.MEMBER_SEQ ORDER BY INS_DT DESC LIMIT 1)
+            
+		WHERE MEMBER_TB.MEMBER_SEQ = #{memberSeq}
 	</select>
 	
 	

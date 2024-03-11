@@ -45,4 +45,8 @@ public class VdipDTO extends MethodVdip {
   @ApiModelProperty(value = "성적서용 시험결과 ", example = "")
   @Column
   private String vol3Report;
+  
+  @ApiModelProperty(value = "서명파일 아이디", example = "")
+  @Column
+  private String atchFileId;
 }

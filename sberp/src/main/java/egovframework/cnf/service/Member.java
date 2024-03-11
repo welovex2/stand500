@@ -106,6 +106,13 @@ public class Member {
   @Column
   private String quitDt;
 
+  @ApiModelProperty(value = "서명파일 ", example = "")
+  @Column
+  private String atchFileId;
+ 
+  @ApiModelProperty(value = "서명파일 미리보기 ", example = "")
+  @Column
+  private String sgnUrl;
   
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column

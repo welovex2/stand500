@@ -29,4 +29,8 @@ public class DpDTO extends MethodDp {
   @ApiModelProperty(value = "해당됨/해당없음 ", example = "")
   @Column
   private int picYn = 1;
+  
+  @ApiModelProperty(value = "서명파일 아이디", example = "")
+  @Column
+  private String atchFileId;
 }

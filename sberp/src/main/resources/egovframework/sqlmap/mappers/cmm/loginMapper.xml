@@ -14,23 +14,31 @@
 		<result property="lockYn" column="lockYn"/>
 		<result property="failPassCnt" column="failPassCnt"/>
 		<result property="authCode" column="authCode"/>		
+		<result property="atchFileId" column="atchFileId"/>
+		<result property="sgnUrl" column="sgnUrl"/>
 	</resultMap>
 	
 	<!-- 일반 로그인 -->
 	<select id="actionLogin" resultMap="login">
-			<![CDATA[
-            SELECT ID id
-                 , MEM_NAME memName
-                 , FN_DEPT_NAME(ID) deptName
-                 , FN_POS_NAME(ID) position
-                 , DATE_FORMAT(LAST_LOGIN_DT, '%Y-%m-%d %T') lastLoginDt
-                 , LOCK_YN lockYn
-                 , AUTH_CODE authCode
-              FROM MEMBER_TB
-             WHERE 1=1
-               AND ID = #{id}
-               AND PASSWORD = #{password}
-			]]>
+		<![CDATA[
+           SELECT ID id
+                , MEM_NAME memName
+                , FN_DEPT_NAME(ID) deptName
+                , FN_POS_NAME(ID) position
+                , DATE_FORMAT(LAST_LOGIN_DT, '%Y-%m-%d %T') lastLoginDt
+                , LOCK_YN lockYn
+                , AUTH_CODE authCode
+                , MEMBER_SIGN_TB.ATCH_FILE_ID atchFileId
+                , FN_GET_IMAGE (MEMBER_SIGN_TB.ATCH_FILE_ID,0) sgnUrl
+             FROM MEMBER_TB
+             	
+             	LEFT JOIN MEMBER_SIGN_TB
+            	ON MEMBER_SIGN_TB.MEMBER_SIGN_SEQ = (SELECT MEMBER_SIGN_SEQ FROM MEMBER_SIGN_TB sub WHERE sub.MEMBER_SEQ = MEMBER_TB.MEMBER_SEQ ORDER BY INS_DT DESC LIMIT 1)
+				
+            WHERE 1=1
+              AND ID = #{id}
+              AND PASSWORD = #{password}
+		]]>
 	</select>
 	
 	<!-- 로그인 정보 저장 -->

@@ -223,10 +223,8 @@ public class QuoController {
   }
   
   @ApiOperation(value = "견적서 등록", notes = "견적서 수정시 고유번호(quoSeq) 필수")
-  @PostMapping(value = "/insert.do",
-      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = "/insert.do")
   public BasicResponse quoInsert(
-      @RequestPart(value = "files", required = false) final List<MultipartFile> multiRequest,
       @RequestPart(value = "quo") QuoDTO.Req req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -283,15 +281,15 @@ public class QuoController {
         
       } 
       
-      List<FileVO> FileResult = null;
-
-      final List<MultipartFile> files = multiRequest;
-      String atchFileId = "";
-      if (!files.isEmpty()) {
-        FileResult = fileUtil.parseFile(files, "QUO", 0, "", "");
-        atchFileId = fileMngService.insertFileInfs(FileResult);
-        req.setSgnUrl(atchFileId);
-      }
+//      List<FileVO> FileResult = null;
+//
+//      final List<MultipartFile> files = multiRequest;
+//      String atchFileId = "";
+//      if (!files.isEmpty()) {
+//        FileResult = fileUtil.parseFile(files, "QUO", 0, "", "");
+//        atchFileId = fileMngService.insertFileInfs(FileResult);
+//        req.setSgnUrl(atchFileId);
+//      }
 
       try {
         if (StringUtils.isEmpty(req.getQuoId()))

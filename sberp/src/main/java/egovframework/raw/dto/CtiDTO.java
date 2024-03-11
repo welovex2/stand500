@@ -30,4 +30,8 @@ public class CtiDTO extends MethodCti {
 	@ApiModelProperty(value="시험결과 > 전원 System: DC XX V System ", example = "")
 	@Column
 	List<MethodCtiSub> subList;
+	
+    @ApiModelProperty(value = "서명파일 아이디", example = "")
+    @Column
+    private String atchFileId;
 }

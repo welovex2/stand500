@@ -371,10 +371,6 @@ public class MethodRe {
   @Column
   private String hz3ResultCode;
 
-  @ApiModelProperty(value = "시험결과_URL ", example = "")
-  @Column
-  private String resultUrl;
-
 
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column

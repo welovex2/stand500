@@ -4,7 +4,7 @@
 
 	<insert id="insertCe" parameterType="ceDTO">
 		<selectKey resultType="int" keyProperty="ceSeq" order="BEFORE">
-	        SELECT ifnull(MAX(CE_SEQ)+1,1) ceSeq FROM METHOD_CE_TB
+	        SELECT IFNULL(MAX(CE_SEQ)+1,1) ceSeq FROM METHOD_CE_TB
 	    </selectKey>
 		INSERT INTO METHOD_CE_TB
 		(
@@ -32,7 +32,6 @@
 			SIGN,
 			SIGN_URL,
 			RESULT_CODE,
-			RESULT_URL,
 			INS_MEM_ID,
 			UDT_MEM_ID
 		)
@@ -60,9 +59,8 @@
 			#{msrmnHour},
 			#{msrmnMin},
 			#{sign},
-			#{signUrl},
+			#{atchFileId},
 			#{resultCode},
-			#{resultUrl},
 			#{insMemId},
 			#{udtMemId}
 		)
@@ -87,9 +85,8 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
-			<if test="resultUrl != null and resultUrl != ''">RESULT_URL = #{resultUrl},</if>
 			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
@@ -259,8 +256,8 @@
 		    MSRMN_MIN,
 		    SIGN,
 		    FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
-		    RESULT_CODE,
-		    RESULT_URL
+		    SIGN_URL ATCH_FILE_ID,
+		    RESULT_CODE
 		FROM METHOD_CE_TB
 		WHERE 1=1
 		AND RAW_SEQ = #{rawSeq}
@@ -300,6 +297,7 @@
 		    HZ1_MSRMN_MIN,
 		    HZ1_SIGN,
 		    FN_GET_IMAGE(HZ1_SIGN_URL,0) HZ1_SIGN_URL,
+		    HZ1_SIGN_URL hz1AtchFileId,
 		    HZ1_RESULT_CODE,
 		    HZ2_CODE,
 		    HZ2_VLT10M_YN,
@@ -323,6 +321,7 @@
 		    HZ2_MSRMN_MIN,
 		    HZ2_SIGN,
 		    FN_GET_IMAGE(HZ2_SIGN_URL,0) HZ2_SIGN_URL,
+		    HZ2_SIGN_URL hz2AtchFileId,
 		    HZ2_RESULT_CODE,
 		    
 			HZ3_VLT10M_YN,
@@ -339,9 +338,9 @@
 			HZ3_MSRMN_MIN,
 			HZ3_SIGN,
 			FN_GET_IMAGE(HZ3_SIGN_URL,0) HZ3_SIGN_URL,
-			HZ3_RESULT_CODE,
+			HZ3_SIGN_URL hz3AtchFileId,
+			HZ3_RESULT_CODE
 			
-		    RESULT_URL
 		FROM METHOD_RE_TB
 			
 			INNER JOIN RAW_TB
@@ -434,7 +433,6 @@
 			<if test="hz3SignUrl != null and hz3SignUrl != ''">HZ3_SIGN_URL,</if>
 			<if test="hz3ResultCode != null and hz3ResultCode != ''">HZ3_RESULT_CODE,</if>
 			
-			RESULT_URL,
 			INS_MEM_ID,
 			UDT_MEM_ID
 		)
@@ -471,7 +469,7 @@
 			#{hz1MsrmnHour},
 			#{hz1MsrmnMin},
 			#{hz1Sign},
-			#{hz1SignUrl},
+			#{hz1AtchFileId},
 			#{hz1ResultCode},
 			#{hz2Code},
 			#{hz2Vlt10mYn},
@@ -513,7 +511,6 @@
 			<if test="hz3SignUrl != null and hz3SignUrl != ''">#{hz3SignUrl},</if>
 			<if test="hz3ResultCode != null and hz3ResultCode != ''">#{hz3ResultCode},</if>
 			
-			#{resultUrl},
 			#{insMemId},
 			#{udtMemId}
 		)
@@ -549,7 +546,7 @@
 			HZ1_MSRMN_HOUR = #{hz1MsrmnHour},
 			HZ1_MSRMN_MIN = #{hz1MsrmnMin},
 			HZ1_SIGN = #{hz1Sign},
-			<if test="hz1SignUrl != null and hz1SignUrl != ''">HZ1_SIGN_URL = #{hz1SignUrl},</if>
+			HZ1_SIGN_URL = #{hz1AtchFileId},
 			HZ1_RESULT_CODE = #{hz1ResultCode},
 			</if>
 			
@@ -576,7 +573,7 @@
 			HZ2_MSRMN_HOUR = #{hz2MsrmnHour},
 			HZ2_MSRMN_MIN = #{hz2MsrmnMin},
 			HZ2_SIGN = #{hz2Sign},
-			<if test="hz2SignUrl != null and hz2SignUrl != ''">HZ2_SIGN_URL = #{hz2SignUrl},</if>
+			HZ2_SIGN_URL = #{hz2AtchFileId},
 			HZ2_RESULT_CODE = #{hz2ResultCode},
 			</if>
 			
@@ -594,11 +591,10 @@
 			HZ3_MSRMN_HOUR = #{hz3MsrmnHour},
 			HZ3_MSRMN_MIN = #{hz3MsrmnMin},
 			HZ3_SIGN = #{hz3Sign},
-			HZ3_SIGN_URL = #{hz3SignUrl},
+			HZ3_SIGN_URL = #{hz3AtchFileId},
 			HZ3_RESULT_CODE = #{hz3ResultCode},
 			</if>
 			
-			RESULT_URL = #{resultUrl},
 			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
@@ -663,6 +659,7 @@
 		    MSRMN_MIN,
 		    SIGN,
 		    FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
 		    INDRC_H_YN,
 		    INDRC_H_RESULT_CODE,
@@ -715,7 +712,7 @@
 			#{h2Yn},#{h4Yn},#{h6Yn},#{h8Yn},#{hEtc},#{hEtcYn},
 			#{v2Yn},#{v4Yn},#{v6Yn},#{v8Yn},#{vEtc},#{vEtcYn},
 			#{msrmnYear},#{msrmnMon},#{msrmnDay},#{msrmnHour},#{msrmnMin},
-			#{sign},#{signUrl},#{resultCode},
+			#{sign},#{atchFileId},#{resultCode},
 			#{indrcHYn},#{indrcHResultCode},#{indrcHMemo},
 			#{indrcVYn},#{indrcVResultCode},#{indrcVMemo},
 			#{cmntAYn},#{cmntEtc},#{cmntEtcYn},#{imgUrl},
@@ -778,7 +775,7 @@
 			    MSRMN_HOUR = #{msrmnHour},
 			    MSRMN_MIN = #{msrmnMin},
 			    SIGN = #{sign},
-			    <if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			    SIGN_URL = #{atchFileId},
 			    RESULT_CODE = #{resultCode},
 				INDRC_H_YN = #{indrcHYn},
 				INDRC_H_RESULT_CODE = #{indrcHResultCode},
@@ -887,6 +884,7 @@
 		    MSRMN_MIN,
 		    SIGN,
 		    FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
 		    H_F_CODE,
 		    H_B_CODE,
@@ -910,7 +908,7 @@
 			RS_SUB_SEQ,
 			APPL_TYPE,
 			NO_YN,
-			ifnull(APPL_NAME, '') APPL_NAME,
+			IFNULL(APPL_NAME, '') APPL_NAME,
 			H_RESULT_CODE,
 			V_RESULT_CODE,
 			MEMO,
@@ -1039,7 +1037,7 @@
 			#{msrmnHour},
 			#{msrmnMin},
 			#{sign},
-			#{signUrl},
+			#{atchFileId},
 			#{resultCode},
 			#{hFCode},
 			#{hBCode},
@@ -1101,7 +1099,7 @@
 		      MSRMN_HOUR = #{msrmnHour},
 		      MSRMN_MIN = #{msrmnMin},
 		      SIGN = #{sign},
-		      <if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+		      SIGN_URL = #{atchFileId},
 		      RESULT_CODE = #{resultCode},
 		      H_F_CODE = #{hFCode},
 		      H_B_CODE = #{hBCode},
@@ -1111,26 +1109,6 @@
 		      V_B_CODE = #{vBCode},
 		      V_R_CODE = #{vRCode},
 		      V_L_CODE = #{vLCode},
-<!-- 		      AUDIO_ELCT_YN = #{audioElctYn}, -->
-<!-- 		      AUDIO_ACST_YN = #{audioAcstYn}, -->
-<!-- 		      AUDIO_NEAR_YN = #{audioNearYn}, -->
-<!-- 		      AUDIO_FEAR_YN = #{audioFearYn}, -->
-<!-- 		      AUDIO1_CODE = #{audio1Code}, -->
-<!-- 			  AUDIO2_CODE = #{audio2Code}, -->
-<!-- 			  SPKR_ELCT_YN = #{spkrElctYn}, -->
-<!-- 			  SPKR_ACST_YN = #{spkrAcstYn}, -->
-<!-- 			  SPKR_NEAR_YN = #{spkrNearYn}, -->
-<!-- 			  SPKR_FEAR_YN = #{spkrFearYn}, -->
-<!-- 			  SPKR1_CODE = #{spkr1Code}, -->
-<!-- 			  SPKR2_CODE = #{spkr2Code}, -->
-<!-- 			  COMM1_NOISE_YN = #{comm1NoiseYn}, -->
-<!-- 			  COMM1_ACST_YN = #{comm1AcstYn}, -->
-<!-- 			  COMM1_CODE1 = #{comm1Code1}, -->
-<!-- 			  COMM1_CODE2 = #{comm1Code2}, -->
-<!-- 			  COMM2_NOISE_YN = #{comm2NoiseYn}, -->
-<!-- 			  COMM2_ACST_YN = #{comm2AcstYn}, -->
-<!-- 			  COMM2_CODE1 = #{comm2Code1}, -->
-<!-- 			  COMM2_CODE2 = #{comm2Code2}, -->
 			  CMNT_A_YN = #{cmntAYn},
 			  CMNT_ETC = #{cmntEtc},
 			  CMNT_ETC_YN = #{cmntEtcYn},
@@ -1201,16 +1179,8 @@
 		    RPTTN_5_YN, RPTTN_100_YN,
 		    ACRDT_1_YN, ACRDT_2_YN, ACRDT_TRM_YN, ACRDT_TRM_ETC_YN,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
-<!-- 		    POWER_L_YN, POWER_N_YN, POWER_PE_YN, POWER_ETC, POWER_ETC_YN, -->
-<!-- 		    POWER_LN_YN, POWER_LPE_YN, POWER_NPE_YN, POWER_LNPE_YN,  -->
-<!-- 		    POWER_ETC1, POWER_ETC2, POWER_ETC3, POWER_ETC4, POWER_ETC5, POWER_ETC6, -->
-<!-- 			POWER_ETC1_YN, POWER_ETC2_YN, POWER_ETC3_YN, POWER_ETC4_YN, POWER_ETC5_YN, POWER_ETC6_YN, -->
-<!-- 		    DC_POWER_P_YN, DC_POWER_N_YN, DC_POWER_PN_YN, -->
-<!-- 		    SGNL_ETC1, SGNL_ETC1_YN, SGNL_ETC2, SGNL_ETC2_YN, SGNL_ETC3, SGNL_ETC3_YN, -->
-<!-- 		    POWER_L_CODE, POWER_LN_CODE, POWER_LNPE_CODE, POWER_ETC1_CODE, POWER_ETC2_CODE, -->
-<!-- 		    DC_POWER_P_CODE, SGN_ETC1_CODE, SGN_ETC2_CODE, SGN_ETC3_CODE, -->
 		    CMNT_A_YN, CMNT_ETC, CMNT_ETC_YN
 		FROM METHOD_EFT_TB
 		WHERE 1=1
@@ -1266,21 +1236,6 @@
 			MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 			SIGN, SIGN_URL,
 			RESULT_CODE,
-<!-- 			POWER_L_YN, POWER_N_YN, POWER_PE_YN, POWER_ETC, POWER_ETC_YN, -->
-<!-- 			POWER_LN_YN, POWER_LPE_YN, POWER_NPE_YN, POWER_LNPE_YN,  -->
-<!-- 			POWER_ETC1, POWER_ETC2, POWER_ETC3, POWER_ETC4, POWER_ETC5, POWER_ETC6, -->
-<!-- 			POWER_ETC1_YN, POWER_ETC2_YN, POWER_ETC3_YN, POWER_ETC4_YN, POWER_ETC5_YN, POWER_ETC6_YN, -->
-<!-- 			DC_POWER_P_YN, DC_POWER_N_YN, DC_POWER_PN_YN, -->
-<!-- 			SGNL_ETC1, SGNL_ETC1_YN, SGNL_ETC2, SGNL_ETC2_YN, SGNL_ETC3, SGNL_ETC3_YN, -->
-<!-- 			POWER_L_CODE, -->
-<!-- 			POWER_LN_CODE, -->
-<!-- 			POWER_LNPE_CODE, -->
-<!-- 			POWER_ETC1_CODE, -->
-<!-- 			POWER_ETC2_CODE, -->
-<!-- 			DC_POWER_P_CODE, -->
-<!-- 			SGN_ETC1_CODE, -->
-<!-- 			SGN_ETC2_CODE, -->
-<!-- 			SGN_ETC3_CODE, -->
 			CMNT_A_YN,
 			CMNT_ETC,
 			CMNT_ETC_YN,
@@ -1324,37 +1279,8 @@
 			#{msrmnHour},
 			#{msrmnMin},
 			#{sign},
-			#{signUrl},
+			#{atchFileId},
 			#{resultCode},
-<!-- 			#{powerLYn}, -->
-<!-- 			#{powerNYn}, -->
-<!-- 			#{powerPeYn}, -->
-<!-- 			#{powerEtc}, -->
-<!-- 			#{powerEtcYn}, -->
-<!-- 			#{powerLnYn}, -->
-<!-- 			#{powerLpeYn}, -->
-<!-- 			#{powerNpeYn}, -->
-<!-- 			#{powerLnpeYn}, -->
-<!-- 			#{powerEtc1}, #{powerEtc2}, #{powerEtc3}, #{powerEtc4}, #{powerEtc5}, #{powerEtc6}, -->
-<!-- 			#{powerEtc1Yn}, #{powerEtc2Yn}, #{powerEtc3Yn}, #{powerEtc4Yn}, #{powerEtc5Yn}, #{powerEtc6Yn}, -->
-<!-- 			#{dcPowerPYn}, -->
-<!-- 			#{dcPowerNYn}, -->
-<!-- 			#{dcPowerPnYn}, -->
-<!-- 			#{sgnlEtc1}, -->
-<!-- 			#{sgnlEtc1Yn}, -->
-<!-- 			#{sgnlEtc2}, -->
-<!-- 			#{sgnlEtc2Yn}, -->
-<!-- 			#{sgnlEtc3}, -->
-<!-- 			#{sgnlEtc3Yn}, -->
-<!-- 			#{powerLCode}, -->
-<!-- 			#{powerLnCode}, -->
-<!-- 			#{powerLnpeCode}, -->
-<!-- 			#{powerEtc1Code}, -->
-<!-- 			#{powerEtc2Code}, -->
-<!-- 			#{dcPowerPCode}, -->
-<!-- 			#{sgnEtc1Code}, -->
-<!-- 			#{sgnEtc2Code}, -->
-<!-- 			#{sgnEtc3Code}, -->
 			#{cmntAYn},
 			#{cmntEtc},
 			#{cmntEtcYn},
@@ -1395,47 +1321,8 @@
 		    MSRMN_HOUR = #{msrmnHour},
 		    MSRMN_MIN = #{msrmnMin},
 		    SIGN = #{sign},
-		    <if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+		    SIGN_URL = #{atchFileId},
 		    RESULT_CODE = #{resultCode},
-<!-- 		    POWER_L_YN = #{powerLYn}, -->
-<!-- 		    POWER_N_YN = #{powerNYn}, -->
-<!-- 		    POWER_PE_YN = #{powerPeYn}, -->
-<!-- 		    POWER_ETC = #{powerEtc}, -->
-<!-- 		    POWER_ETC_YN = #{powerEtcYn}, -->
-<!-- 		    POWER_LN_YN = #{powerLnYn}, -->
-<!-- 		    POWER_LPE_YN = #{powerLpeYn}, -->
-<!-- 		    POWER_NPE_YN = #{powerNpeYn}, -->
-<!-- 		    POWER_LNPE_YN = #{powerLnpeYn}, -->
-<!-- 		    POWER_ETC1 = #{powerEtc1}, -->
-<!-- 		    POWER_ETC2 = #{powerEtc2}, -->
-<!-- 		    POWER_ETC3 = #{powerEtc3}, -->
-<!-- 		    POWER_ETC4 = #{powerEtc4}, -->
-<!-- 		    POWER_ETC5 = #{powerEtc5}, -->
-<!-- 		    POWER_ETC6 = #{powerEtc6}, -->
-<!-- 		    POWER_ETC1_YN = #{powerEtc1Yn}, -->
-<!-- 		    POWER_ETC2_YN = #{powerEtc2Yn}, -->
-<!-- 		    POWER_ETC3_YN = #{powerEtc3Yn}, -->
-<!-- 		    POWER_ETC4_YN = #{powerEtc4Yn}, -->
-<!-- 		    POWER_ETC5_YN = #{powerEtc5Yn}, -->
-<!-- 		    POWER_ETC6_YN = #{powerEtc6Yn}, -->
-<!-- 		    DC_POWER_P_YN = #{dcPowerPYn}, -->
-<!-- 		    DC_POWER_N_YN = #{dcPowerNYn}, -->
-<!-- 		    DC_POWER_PN_YN = #{dcPowerPnYn}, -->
-<!-- 		    SGNL_ETC1 = #{sgnlEtc1}, -->
-<!-- 		    SGNL_ETC1_YN = #{sgnlEtc1Yn}, -->
-<!-- 		    SGNL_ETC2 = #{sgnlEtc2}, -->
-<!-- 		    SGNL_ETC2_YN = #{sgnlEtc2Yn}, -->
-<!-- 	        SGNL_ETC3 = #{sgnlEtc3}, -->
-<!-- 	        SGNL_ETC3_YN = #{sgnlEtc3Yn}, -->
-<!-- 	        POWER_L_CODE = #{powerLCode}, -->
-<!-- 	        POWER_LN_CODE = #{powerLnCode}, -->
-<!-- 	        POWER_LNPE_CODE = #{powerLnpeCode}, -->
-<!-- 	        POWER_ETC1_CODE = #{powerEtc1Code}, -->
-<!-- 	        POWER_ETC2_CODE = #{powerEtc2Code}, -->
-<!-- 	        DC_POWER_P_CODE = #{dcPowerPCode}, -->
-<!-- 	        SGN_ETC1_CODE = #{sgnEtc1Code}, -->
-<!-- 	        SGN_ETC2_CODE = #{sgnEtc2Code}, -->
-<!-- 	        SGN_ETC3_CODE = #{sgnEtc3Code}, -->
 	        CMNT_A_YN = #{cmntAYn},
 	        CMNT_ETC = #{cmntEtc},
 	        CMNT_ETC_YN = #{cmntEtcYn},
@@ -1549,15 +1436,8 @@
 		    EVLTN_A_YN, EVLTN_B_YN, EVLTN_C_YN,
 		    COUPLING_18_YN, COUPLING_10_YN, COUPLING_40_YN,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
-<!-- 		    POWER_LN_YN, POWER_LN_ETC, POWER_LN_ETC_YN, POWER_LPE_YN, POWER_NPE_YN, -->
-<!-- 		    POWER_ECT1_YN, POWER_ECT2_YN, POWER_ECT3_YN, POWER_ECT4_YN, POWER_ECT5_YN, POWER_ECT6_YN, -->
-<!-- 		    POWER_ECT1, POWER_ECT2, POWER_ECT3, POWER_ECT4, POWER_ECT5, POWER_ECT6, -->
-<!-- 		    DC_POWER_PN_YN, DC_POWER_ETC_YN, DC_POWER_ETC, DC_POWER_TEXT, -->
-<!-- 		    SGNL1, SGNL2, -->
-<!-- 		    POWER_LN_CODE, POWER_LPE_CODE, POWER_ECT1_CODE, POWER_ECT2_CODE, -->
-<!-- 		    DC_POWER_PN_CODE, DC_POWER_ETC_CODE, SGNL1_CODE, SGNL2_CODE, -->
 		    CMNT_A_YN, CMNT_ETC, CMNT_ETC_YN
 		FROM METHOD_SURGE_TB
 		WHERE 1=1
@@ -1609,13 +1489,6 @@
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 		    SIGN, SIGN_URL,
 		    RESULT_CODE,
-<!-- 		    POWER_LN_YN, POWER_LN_ETC, POWER_LN_ETC_YN, POWER_LPE_YN, POWER_NPE_YN, -->
-<!-- 		    POWER_ECT1_YN, POWER_ECT2_YN, POWER_ECT3_YN, POWER_ECT4_YN, POWER_ECT5_YN, POWER_ECT6_YN, -->
-<!-- 		    POWER_ECT1, POWER_ECT2, POWER_ECT3, POWER_ECT4, POWER_ECT5, POWER_ECT6, -->
-<!-- 		    DC_POWER_PN_YN, DC_POWER_ETC_YN, DC_POWER_ETC, DC_POWER_TEXT, -->
-<!-- 		    SGNL1, SGNL2, -->
-<!-- 		    POWER_LN_CODE, POWER_LPE_CODE, POWER_ECT1_CODE, POWER_ECT2_CODE, -->
-<!-- 		    DC_POWER_PN_CODE, DC_POWER_ETC_CODE, SGNL1_CODE, SGNL2_CODE, -->
 		    CMNT_A_YN, CMNT_ETC, CMNT_ETC_YN,
 		    INS_MEM_ID, UDT_MEM_ID
 		)
@@ -1633,16 +1506,8 @@
 			#{evltnAYn}, #{evltnBYn}, #{evltnCYn},
 			#{coupling18Yn}, #{coupling10Yn}, #{coupling40Yn},
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-			#{sign}, #{signUrl},
+			#{sign}, #{atchFileId},
 			#{resultCode},
-<!-- 			#{powerLnYn}, #{powerLnEtc}, #{powerLnEtcYn}, #{powerLpeYn}, #{powerNpeYn}, -->
-<!-- 			#{powerEct1Yn}, #{powerEct2Yn}, #{powerEct3Yn}, #{powerEct4Yn}, #{powerEct5Yn}, #{powerEct6Yn}, -->
-<!-- 			#{powerEct1}, #{powerEct2}, #{powerEct3}, #{powerEct4}, #{powerEct5}, #{powerEct6}, -->
-<!-- 			#{dcPowerPnYn}, #{dcPowerEtcYn}, #{dcPowerEtc}, #{dcPowerText}, -->
-<!-- 			#{sgnl1}, #{sgnl2}, -->
-<!-- 			#{powerLnCode}, #{powerLpeCode}, #{powerEct1Code}, #{powerEct2Code}, -->
-<!-- 			#{dcPowerPnCode}, #{dcPowerEtcCode}, -->
-<!-- 			#{sgnl1Code}, #{sgnl2Code}, -->
 			#{cmntAYn}, #{cmntEtc}, #{cmntEtcYn},
 			#{insMemId},#{udtMemId}
 		)
@@ -1691,39 +1556,8 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
-<!-- 			POWER_LN_YN = #{powerLnYn}, -->
-<!-- 			POWER_LN_ETC = #{powerLnEtc}, -->
-<!-- 			POWER_LN_ETC_YN = #{powerLnEtcYn}, -->
-<!-- 			POWER_LPE_YN = #{powerLpeYn}, -->
-<!-- 			POWER_NPE_YN = #{powerNpeYn}, -->
-<!-- 			POWER_ECT1_YN = #{powerEct1Yn}, -->
-<!-- 			POWER_ECT2_YN = #{powerEct2Yn}, -->
-<!-- 			POWER_ECT3_YN = #{powerEct3Yn}, -->
-<!-- 			POWER_ECT4_YN = #{powerEct4Yn}, -->
-<!-- 			POWER_ECT5_YN = #{powerEct5Yn}, -->
-<!-- 			POWER_ECT6_YN = #{powerEct6Yn}, -->
-<!-- 			POWER_ECT1 = #{powerEct1}, -->
-<!-- 			POWER_ECT2 = #{powerEct2}, -->
-<!-- 			POWER_ECT3 = #{powerEct3}, -->
-<!-- 			POWER_ECT4 = #{powerEct4}, -->
-<!-- 			POWER_ECT5 = #{powerEct5}, -->
-<!-- 			POWER_ECT6 = #{powerEct6}, -->
-<!-- 			DC_POWER_PN_YN = #{dcPowerPnYn}, -->
-<!-- 			DC_POWER_ETC_YN = #{dcPowerEtcYn}, -->
-<!-- 			DC_POWER_ETC = #{dcPowerEtc}, -->
-<!-- 			DC_POWER_TEXT = #{dcPowerText}, -->
-<!-- 			SGNL1 = #{sgnl1}, -->
-<!-- 			SGNL2 = #{sgnl2}, -->
-<!-- 			POWER_LN_CODE = #{powerLnCode}, -->
-<!-- 			POWER_LPE_CODE = #{powerLpeCode}, -->
-<!-- 			POWER_ECT1_CODE = #{powerEct1Code}, -->
-<!-- 			POWER_ECT2_CODE = #{powerEct2Code}, -->
-<!-- 			DC_POWER_PN_CODE = #{dcPowerPnCode}, -->
-<!-- 			DC_POWER_ETC_CODE = #{dcPowerEtcCode}, -->
-<!-- 			SGNL1_CODE = #{sgnl1Code}, -->
-<!-- 			SGNL2_CODE = #{sgnl2Code}, -->
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_ETC = #{cmntEtc},
 			CMNT_ETC_YN = #{cmntEtcYn},
@@ -1816,21 +1650,8 @@
 		    EVLTN_A_YN, EVLTN_B_YN, EVLTN_C_YN,
 		    FRQNC_AREA, SPC_FRQNC,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
-<!-- 		    APPL_POWER_YN, APPL_IN_YN, APPL_OUT_YN, APPL_DB_POWER_YN, -->
-<!-- 		    APPL1_M2_YN, APPL1_M3_YN, APPL1_EM_YN, APPL1_ETC, APPL1_ETC_YN, -->
-<!-- 		    APPL2_M2_YN, APPL2_M3_YN, APPL2_EM_YN, APPL2_ETC, APPL2_ETC_YN, -->
-<!-- 		    APPL3_M2_YN, APPL3_M3_YN, APPL3_EM_YN, APPL3_ETC, APPL3_ETC_YN, -->
-<!-- 		    APPL1_CODE, APPL2_CODE, APPL3_CODE, -->
-<!-- 		    APPL1_MEMO, APPL2_MEMO, APPL3_MEMO, -->
-<!-- 		    PORT1, PORT2, -->
-<!-- 		    PORT1_ACRDT_M2_YN, PORT1_ACRDT_M3_YN, PORT1_ACRDT_EM_YN, PORT1_ACRDT_ETC, PORT1_ACRDT_ETC_YN, PORT1_ACRDT_CODE, PORT1_ACRDT_MEMO, -->
-<!-- 		    PORT2_ACRDT_M2_YN, PORT2_ACRDT_M3_YN, PORT2_ACRDT_EM_YN, PORT2_ACRDT_ETC, PORT2_ACRDT_ETC_YN, PORT2_ACRDT_CODE, PORT2_ACRDT_MEMO, -->
-<!-- 		    AUDIO_ELCT_YN, AUDIO_ACST_YN, AUDIO_NEAR_YN, AUDIO_FEAR_YN, AUDIO_M2_YN, AUDIO_M3_YN, AUDIO_EM_YN, AUDIO_ETC, AUDIO_ETC_YN, AUDIO_CODE, AUDIO_MEMO, -->
-<!-- 		    SPKR_ELCT_YN, SPKR_ACST_YN, SPKR_NEAR_YN, SPKR_FEAR_YN, SPKR_M2_YN, SPKR_M3_YN, SPKR_EM_YN, SPKR_ETC, SPKR_ETC_YN, SPKR_CODE, SPKR_MEMO, -->
-<!-- 		    COMM1_NOISE_YN, COMM1_ACST_YN, COMM1_M2_YN, COMM1_M3_YN, COMM1_EM_YN, COMM1_ETC, COMM1_ETC_YN, COMM1_CODE, COMM1_MEMO, -->
-<!-- 		    COMM2_NOISE_YN, COMM2_ACST_YN, COMM2_M2_YN, COMM2_M3_YN, COMM2_EM_YN, COMM2_ETC, COMM2_ETC_YN, COMM2_CODE, COMM2_MEMO, -->
 		    CMNT_A_YN, CMNT_ETC, CMNT_ETC_YN
 		FROM METHOD_CS_TB
 		WHERE 1=1
@@ -1843,7 +1664,7 @@
 			CS_SUB_SEQ,
 			APPL_TYPE,
 			NO_YN,
-			ifnull(APPL_NAME, '') APPL_NAME,
+			IFNULL(APPL_NAME, '') APPL_NAME,
 			CDN_M2_YN,
 			CDN_M3_YN,
 			EM_YN,
@@ -1875,25 +1696,12 @@
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 		    SIGN, SIGN_URL,
 		    RESULT_CODE,
-<!-- 		    APPL_POWER_YN, APPL_IN_YN, APPL_OUT_YN, APPL_DB_POWER_YN, -->
-<!-- 		    APPL1_M2_YN, APPL1_M3_YN, APPL1_EM_YN, APPL1_ETC, APPL1_ETC_YN, -->
-<!-- 		    APPL2_M2_YN, APPL2_M3_YN, APPL2_EM_YN, APPL2_ETC, APPL2_ETC_YN, -->
-<!-- 		    APPL3_M2_YN, APPL3_M3_YN, APPL3_EM_YN, APPL3_ETC, APPL3_ETC_YN, -->
-<!-- 		    APPL1_CODE, APPL2_CODE, APPL3_CODE, -->
-<!-- 		    APPL1_MEMO, APPL2_MEMO, APPL3_MEMO, -->
-<!-- 		    PORT1, PORT2, -->
-<!-- 		    PORT1_ACRDT_M2_YN, PORT1_ACRDT_M3_YN, PORT1_ACRDT_EM_YN, PORT1_ACRDT_ETC, PORT1_ACRDT_ETC_YN, PORT1_ACRDT_CODE, PORT1_ACRDT_MEMO, -->
-<!-- 		    PORT2_ACRDT_M2_YN, PORT2_ACRDT_M3_YN, PORT2_ACRDT_EM_YN, PORT2_ACRDT_ETC, PORT2_ACRDT_ETC_YN, PORT2_ACRDT_CODE, PORT2_ACRDT_MEMO, -->
-<!-- 		    AUDIO_ELCT_YN, AUDIO_ACST_YN, AUDIO_NEAR_YN, AUDIO_FEAR_YN, AUDIO_M2_YN, AUDIO_M3_YN, AUDIO_EM_YN, AUDIO_ETC, AUDIO_ETC_YN, AUDIO_CODE, AUDIO_MEMO, -->
-<!-- 		    SPKR_ELCT_YN, SPKR_ACST_YN, SPKR_NEAR_YN, SPKR_FEAR_YN, SPKR_M2_YN, SPKR_M3_YN, SPKR_EM_YN, SPKR_ETC, SPKR_ETC_YN, SPKR_CODE, SPKR_MEMO, -->
-<!-- 		    COMM1_NOISE_YN, COMM1_ACST_YN, COMM1_M2_YN, COMM1_M3_YN, COMM1_EM_YN, COMM1_ETC, COMM1_ETC_YN, COMM1_CODE, COMM1_MEMO, -->
-<!-- 		    COMM2_NOISE_YN, COMM2_ACST_YN, COMM2_M2_YN, COMM2_M3_YN, COMM2_EM_YN, COMM2_ETC, COMM2_ETC_YN, COMM2_CODE, COMM2_MEMO, -->
 		    CMNT_A_YN, CMNT_ETC, CMNT_ETC_YN,
 		    INS_MEM_ID, UDT_MEM_ID
 		)
 		VALUES 
 		(
-			(SELECT ifnull(MAX(seq.CS_SEQ)+1,1) csSeq FROM METHOD_CS_TB seq),
+			(SELECT IFNULL(MAX(seq.CS_SEQ)+1,1) csSeq FROM METHOD_CS_TB seq),
 			#{rawSeq},
 			#{vltAcYn}, #{vltEtc}, #{vltEtcYn}, #{varNYn}, #{varYYn},
 			#{room1Yn}, #{room2Yn}, #{roomEtc}, #{roomEtcYn},
@@ -1903,21 +1711,8 @@
 			#{evltnAYn}, #{evltnBYn}, #{evltnCYn},
 			#{frqncArea}, #{spcFrqnc},
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-			#{sign}, #{signUrl},
+			#{sign}, #{atchFileId},
 			#{resultCode},
-<!-- 			#{applPowerYn}, #{applInYn}, #{applOutYn}, #{applDbPowerYn}, -->
-<!-- 			#{appl1M2Yn}, #{appl1M3Yn}, #{appl1EmYn}, #{appl1Etc}, #{appl1EtcYn}, -->
-<!-- 			#{appl2M2Yn}, #{appl2M3Yn}, #{appl2EmYn}, #{appl2Etc}, #{appl2EtcYn}, -->
-<!-- 			#{appl3M2Yn}, #{appl3M3Yn}, #{appl3EmYn}, #{appl3Etc}, #{appl3EtcYn}, -->
-<!-- 			#{appl1Code}, #{appl2Code}, #{appl3Code}, -->
-<!-- 			#{appl1Memo}, #{appl2Memo}, #{appl3Memo}, -->
-<!-- 			#{port1}, #{port2}, -->
-<!-- 			#{port1AcrdtM2Yn}, #{port1AcrdtM3Yn}, #{port1AcrdtEmYn}, #{port1AcrdtEtc}, #{port1AcrdtEtcYn}, #{port1AcrdtCode}, #{port1AcrdtMemo}, -->
-<!-- 			#{port2AcrdtM2Yn}, #{port2AcrdtM3Yn}, #{port2AcrdtEmYn}, #{port2AcrdtEtc}, #{port2AcrdtEtcYn}, #{port2AcrdtCode}, #{port2AcrdtMemo}, -->
-<!-- 			#{audioElctYn}, #{audioAcstYn}, #{audioNearYn}, #{audioFearYn}, #{audioM2Yn}, #{audioM3Yn}, #{audioEmYn}, #{audioEtc}, #{audioEtcYn}, #{audioCode}, #{audioMemo}, -->
-<!-- 			#{spkrElctYn}, #{spkrAcstYn}, #{spkrNearYn}, #{spkrFearYn}, #{spkrM2Yn}, #{spkrM3Yn}, #{spkrEmYn}, #{spkrEtc}, #{spkrEtcYn}, #{spkrCode}, #{spkrMemo}, -->
-<!-- 			#{comm1NoiseYn}, #{comm1AcstYn}, #{comm1M2Yn}, #{comm1M3Yn}, #{comm1EmYn}, #{comm1Etc}, #{comm1EtcYn}, #{comm1Code}, #{comm1Memo}, -->
-<!-- 			#{comm2NoiseYn}, #{comm2AcstYn}, #{comm2M2Yn}, #{comm2M3Yn}, #{comm2EmYn}, #{comm2Etc}, #{comm2EtcYn}, #{comm2Code}, #{comm2Memo}, -->
 			#{cmntAYn}, #{cmntEtc}, #{cmntEtcYn},
 			#{insMemId}, #{udtMemId}
 		)
@@ -1958,7 +1753,7 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_ETC = #{cmntEtc},
@@ -2040,7 +1835,7 @@
 			SF_300_YN, SF_ETC_YN, SF_ETC,
     		EVLTN_A_YN, EVLTN_B_YN, EVLTN_C_YN,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
 		    X_STND, X_CODE, X_MEMO,
 		    Y_STND, Y_CODE, Y_MEMO,
@@ -2053,7 +1848,7 @@
 	</select>
 	<insert id="insertMf" parameterType="mfDTO">
 		<selectKey resultType="int" keyProperty="mfSeq" order="BEFORE">
-	        SELECT ifnull(MAX(MF_SEQ)+1,1) mfSeq FROM METHOD_MF_TB
+	        SELECT IFNULL(MAX(MF_SEQ)+1,1) mfSeq FROM METHOD_MF_TB
 	    </selectKey>
 	    INSERT INTO METHOD_MF_TB
 		(
@@ -2110,7 +1905,7 @@
 	        #{msrmnHour},
 	        #{msrmnMin},
 	        #{sign},
-	        #{signUrl},
+	        #{atchFileId},
 	        #{resultCode},
 	        #{xStnd},
 	        #{xCode},
@@ -2164,7 +1959,7 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
 			X_STND = #{xStnd},
 			X_CODE = #{xCode},
@@ -2192,7 +1987,7 @@
 		    VOL2_RESULT_CODE, VOL2_CMNT_CODE, VOL2_CMNT, FN_CODE_NAME(VOL2_CMNT_CODE,'RV') VOL2_REPORT,
 		    VOL3_RESULT_CODE, VOL3_CMNT_CODE, VOL3_CMNT, FN_CODE_NAME(VOL3_CMNT_CODE,'RV') VOL3_REPORT,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE,
 		    MEMO_YN, MEMO
 		FROM METHOD_VDIP_TB
@@ -2228,7 +2023,7 @@
 			#{vol2ResultCode}, #{vol2CmntCode}, #{vol2Cmnt},
 			#{vol3ResultCode}, #{vol3CmntCode}, #{vol3Cmnt},
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-			#{sign}, #{signUrl},
+			#{sign}, #{atchFileId},
 			#{resultCode},
 			#{memoYn},#{memo}, 
 			#{insMemId},#{udtMemId}
@@ -2264,7 +2059,7 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
 			MEMO_YN = #{memoYn}, 
 			MEMO = #{memo},
@@ -2281,7 +2076,7 @@
 		    TEMP, TEMP_PLUS,
 		    HMDT, HMDT_PLUS,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE
 		FROM METHOD_CTI_TB
 		WHERE 1=1
@@ -2397,7 +2192,7 @@
 			#{room1Yn}, #{room2Yn}, #{room3Yn}, #{roomEtcYn}, #{roomEtc},
 			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-			#{sign}, #{signUrl}, #{resultCode}, #{insMemId}, #{udtMemId}
+			#{sign}, #{atchFileId}, #{resultCode}, #{insMemId}, #{udtMemId}
 		)
 		ON DUPLICATE KEY UPDATE
 			VLT_AC_YN = #{vltAcYn},
@@ -2418,7 +2213,7 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
 			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
@@ -2429,7 +2224,7 @@
 		    ROOM1_YN, ROOM2_YN, ROOM3_YN, ROOM_ETC_YN, ROOM_ETC,
 		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, RESULT_CODE
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID, RESULT_CODE
 		FROM METHOD_CK_TB
 		WHERE 1=1
 		AND RAW_SEQ = #{rawSeq}
@@ -2453,7 +2248,7 @@
 			#{room1Yn}, #{room2Yn}, #{roomEtcYn}, #{roomEtc},
 			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-			#{sign}, #{signUrl}, #{resultCode}, #{insMemId}, #{udtMemId}
+			#{sign}, #{atchFileId}, #{resultCode}, #{insMemId}, #{udtMemId}
 		)
 		ON DUPLICATE KEY UPDATE
 			VLT_AC_YN = #{vltAcYn},
@@ -2473,7 +2268,7 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
 			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
@@ -2484,7 +2279,7 @@
 		    ROOM1_YN, ROOM2_YN, ROOM_ETC_YN, ROOM_ETC,
 		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, RESULT_CODE
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID, RESULT_CODE
 		FROM METHOD_DP_TB
 		WHERE 1=1
 		AND RAW_SEQ = #{rawSeq}
@@ -2509,7 +2304,7 @@
 			#{telSeq}, #{rawSeq},
 			#{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-			#{sign}, #{signUrl}, 
+			#{sign}, #{atchFileId}, 
 			#{resultCode}, #{resultPassCode}, #{resultResetCode}, #{resultNoPassCode}, #{resultNewPassCode},
 			#{cmntAYn}, #{cmntBYn},
 			#{insMemId}, #{udtMemId}
@@ -2525,7 +2320,7 @@
 			MSRMN_HOUR = #{msrmnHour},
 			MSRMN_MIN = #{msrmnMin},
 			SIGN = #{sign},
-			<if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
+			SIGN_URL = #{atchFileId},
 			RESULT_CODE = #{resultCode},
 			RESULT_PASS_CODE = #{resultPassCode}, 
 			RESULT_RESET_CODE = #{resultResetCode}, 
@@ -2541,7 +2336,7 @@
 		SELECT TEL_SEQ, RAW_SEQ,
 		    TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL,
+		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
 			CMNT_A_YN, CMNT_B_YN
 		FROM METHOD_TEL_TB
@@ -2603,7 +2398,7 @@
             
             LEFT JOIN RAW_MET_TB
             ON CASE WHEN numb.num=15 THEN 1
-					WHEN numb.num=16 THEN 13
+					WHEN numb.num=16 THEN 14
                     WHEN numb.num=17 THEN 15
                     WHEN numb.num=18 THEN 16
 				ELSE numb.num END = RAW_MET_TB.MET_SEQ+1

@@ -16,13 +16,13 @@ import lombok.ToString;
 @Getter @Setter @ToString(callSuper = true)
 public class RawDTO {
 
-	@ApiModelProperty(value="시험자 서명", example = "")
-	@Column
-	private MultipartFile testSign;
-
-	@ApiModelProperty(value="기술책임자 서명", example = "")
-	@Column
-	private MultipartFile revSign;
+//	@ApiModelProperty(value="시험자 서명", example = "")
+//	@Column
+//	private MultipartFile testSign;
+//
+//	@ApiModelProperty(value="기술책임자 서명", example = "")
+//	@Column
+//	private MultipartFile revSign;
 	
 	@ApiModelProperty(value="EUT Modifications (보완사항)", example = "")
 	@Column

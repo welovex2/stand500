@@ -45,4 +45,6 @@ public interface MemMapper {
   boolean insertPos(Pos req);
   
   boolean checkId(Member req);
+
+  boolean insertSign(Member req);
 }

@@ -8,6 +8,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -15,16 +16,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.multipart.MultipartFile;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.Dept;
+import egovframework.cmm.service.EgovFileMngService;
+import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.Pos;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovFileScrty;
 import egovframework.cmm.util.EgovStringUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
@@ -45,6 +51,12 @@ public class MemController {
   @Resource(name = "MemService")
   private MemService memService;
 
+  @Resource(name = "EgovFileMngUtil")
+  private EgovFileMngUtil fileUtil;
+  
+  @Resource(name = "EgovFileMngService")
+  private EgovFileMngService fileMngService;
+  
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
@@ -100,8 +112,8 @@ public class MemController {
   @ApiOperation(value = "사용자 등록", notes = "수정시, memberSeq 필수")
   @PostMapping(value = "/insert.do")
   public BasicResponse insert(
-      @ApiParam(value = "", required = true, example = "") @RequestBody Member req)
-      throws Exception {
+      @RequestPart(value = "file", required = false) final MultipartFile multiRequest,
+      @RequestPart(value = "req") Member req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -132,6 +144,16 @@ public class MemController {
 
     boolean result = false;
 
+    FileVO FileResult = null;
+
+    final MultipartFile files = multiRequest;
+    String atchFileId = "";
+    if (!ObjectUtils.isEmpty(files)) {
+      FileResult = fileUtil.parseFile(files, "MEM", 0, "", "");
+      atchFileId = fileMngService.insertFileInf(FileResult);
+      req.setAtchFileId(atchFileId);
+    }
+    
     try {
       
       // ID 중복체크

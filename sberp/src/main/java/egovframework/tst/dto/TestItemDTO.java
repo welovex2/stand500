@@ -97,6 +97,8 @@ public class TestItemDTO extends TestItem {
   private String testInDt;
   
   @ApiModelProperty(value = "게시판글수 ", example = "", hidden = true)
-  @Column
   private int memoCnt;
+  
+  @ApiModelProperty(value = "서명파일 아이디", example = "")
+  private String atchFileId;
 }

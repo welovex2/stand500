@@ -98,7 +98,7 @@
 			
 			APP_YEAR, APP_MON, APP_DAY, APP_NAME, FN_GET_IMAGE(APP_SIGN_URL,0) APP_SIGN_URL,
 			APP_AGREE_NAME, FN_GET_IMAGE(APP_AGREE_SIGN_URL,0) APP_AGREE_SIGN_URL,
-			WORK_CHK_YN, WORK_NAME, FN_GET_IMAGE(WORK_SIGN_URL,0) WORK_SIGN_URL,
+			WORK_CHK_YN, WORK_NAME, FN_GET_IMAGE(WORK_SIGN_URL,0) WORK_SIGN_URL, WORK_SIGN_URL ATCH_FILE_ID,
 			
 			MOD_CHECK1_YN, MOD_CHECK2_YN,
 			
@@ -185,20 +185,21 @@
 				,0 CNSLT_FEE
 				,0 OTSRC_FEE
 				,0 NET_SALES
-				,ifnull(FN_DEPT_NAME(TEST_ITEM_TB.rev_id), '') RevDept 
-				,ifnull(MEMBER_TB.dept_seq, '') dept_seq
-	            ,ifnull(TEST_ITEM_TB.rev_id, '') rev_id
-				,ifnull(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') RevName
+				,IFNULL(FN_DEPT_NAME(TEST_ITEM_TB.rev_id), '') RevDept 
+				,IFNULL(MEMBER_TB.dept_seq, '') dept_seq
+	            ,IFNULL(TEST_ITEM_TB.rev_id, '') rev_id
+				,IFNULL(FN_MEM_NAME(TEST_ITEM_TB.rev_id), '') RevName
 				,FN_GET_IMAGE(TEST_ITEM_TB.REV_SIGN_URL,0) REV_SIGN_URL
+				,TEST_ITEM_TB.REV_SIGN_URL ATCH_FILE_ID
 				,SIGN_STATE_CODE
-				,ifnull(fn_code_name(TEST_ITEM_TB.SIGN_STATE_CODE ,'SS'), '-') SIGN_STATE
-				,ifnull(date_format(REV_SIGN_DT, '%Y-%m-%d'), '') REV_SIGN_DT
+				,IFNULL(fn_code_name(TEST_ITEM_TB.SIGN_STATE_CODE ,'SS'), '-') SIGN_STATE
+				,IFNULL(date_format(REV_SIGN_DT, '%Y-%m-%d'), '') REV_SIGN_DT
 				,'미완료' rawYn
-				,ifnull(TEST_SEQ, 0) TEST_SEQ
+				,IFNULL(TEST_SEQ, 0) TEST_SEQ
 				,if(TEST_TB.TEST_SEQ is null, '신청하기',fn_code_name(TEST_ITEM_TB.TEST_TYPE_CODE,'TT')) TEST_STATE
 				/* 반려메모현황 */ 
-				, IFNULL(date_format(TEST_ITEM_REJ_TB.ins_dt, '%Y-%m-%d'),'') rejDtStr
-				, fn_code_name(TEST_ITEM_REJ_TB.TOPIC_CODE,'SR') rejType
+				, IFNULL(DATE_FORMAT(TEST_ITEM_REJ_TB.ins_dt, '%Y-%m-%d'),'') rejDtStr
+				, FN_CODE_NAME(TEST_ITEM_REJ_TB.TOPIC_CODE,'SR') rejType
 				, IFNULL(TEST_ITEM_REJ_TB.memo, '') rejMemo
 			FROM JOB_TB    
 			
@@ -445,7 +446,7 @@
 			APP_NAME=#{appName},
 			<if test="appAgreeSignUrl != null and appAgreeSignUrl != ''">APP_AGREE_SIGN_URL=#{appAgreeSignUrl},</if>
 			APP_AGREE_NAME=#{appAgreeName},
-			<if test="workSignUrl != null and workSignUrl != ''">WORK_SIGN_URL=#{workSignUrl},</if>
+			WORK_SIGN_URL=#{atchFileId},
 			WORK_CHK_YN=#{workChkYn},
 			MOD_CHECK1_YN=#{modCheck1Yn},
 			MOD_CHECK2_YN=#{modCheck2Yn},
@@ -709,7 +710,7 @@
 				#{appAgreeSignUrl},
 				#{workChkYn},
 				#{workName},
-				#{workSignUrl},
+				#{atchFileId},
 				#{modCheck1Yn},
 				#{modCheck2Yn},
 				#{cmpnyMemo}
@@ -775,7 +776,7 @@
    			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
    		</when>
    		<!-- 24	기책서명 -->
-   		<when test="item.searchCode == 24">AND IF (TEST_ITEM_TB.REV_SIGN_URL IS NULL, TEST_ITEM_TB.SIGN_STATE_CODE, '4') = #{item.searchWord}</when>
+   		<when test="item.searchCode == 24">AND IF (IFNULL(TEST_ITEM_TB.REV_SIGN_URL, '') = '', TEST_ITEM_TB.SIGN_STATE_CODE, '4') = #{item.searchWord}</when>
    		<!-- 40	시험규격 -->
  		<when test="item.searchCode == 40">AND IF ((TEST_ITEM_TB.TEST_STNDR_SEQ = 0), TEST_ITEM_TB.TEST_STNDR_TEXT, IFNULL(TEST_STNDR_TB.TEST_STNDR, '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    		<!-- 57	프로젝트상태 -->
@@ -929,7 +930,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 			IFNULL(TEST_ITEM_TB.MODEL, '') AS MODEL,
 			IFNULL(DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%Y-%m-%d'), '') AS ITEM_EST_CMP_DT,
 			TEST_ITEM_TB.SIGN_STATE_CODE AS SIGN_STATE_CODE,
-			IF(ISNULL(TEST_ITEM_TB.REV_SIGN_URL), IFNULL(CODE_SS.TYPE_NAME, '-'), '서명완료') AS SIGN_STATE,
+			IF(IF(TEST_ITEM_TB.REV_SIGN_URL = '', NULL, TEST_ITEM_TB.REV_SIGN_URL) IS NULL, IFNULL(CODE_SS.TYPE_NAME, '-'), '서명완료') AS SIGN_STATE,
 			IFNULL(FN_DEPT_NAME(TEST_TB.INS_MEM_ID), '') AS testMemDept,
 			CONCAT(FN_POS_NAME(TEST_TB.INS_MEM_ID), ' ', FN_MEM_NAME(TEST_TB.INS_MEM_ID)) AS testMem,
 			IFNULL(DATE_FORMAT(TEST_TB.INS_DT, '%Y-%m-%d'), 	'') AS testInDt,
@@ -983,7 +984,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 			IFNULL(TEST_ITEM_TB.MODEL, '') AS MODEL,
 			IFNULL(DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%Y-%m-%d'), '') AS ITEM_EST_CMP_DT,
 			TEST_ITEM_TB.SIGN_STATE_CODE AS SIGN_STATE_CODE,
-			IF(ISNULL(TEST_ITEM_TB.REV_SIGN_URL), IFNULL(CODE_SS.TYPE_NAME, '-'), '서명완료') AS SIGN_STATE,
+			IF(IF(TEST_ITEM_TB.REV_SIGN_URL = '', NULL, TEST_ITEM_TB.REV_SIGN_URL) IS NULL, IFNULL(CODE_SS.TYPE_NAME, '-'), '서명완료') AS SIGN_STATE,
 			IFNULL(FN_DEPT_NAME(TEST_TB.INS_MEM_ID), '') AS testMemDept,
 			CONCAT(FN_POS_NAME(TEST_TB.INS_MEM_ID), ' ', FN_MEM_NAME(TEST_TB.INS_MEM_ID)) AS testMem,
 			IFNULL(DATE_FORMAT(TEST_TB.INS_DT, '%Y-%m-%d'), 	'') AS testInDt,
@@ -1019,8 +1020,8 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 				SIGN_STATE_CODE = '2',
 				REV_SIGN_URL = NULL,
 				</if>
-				<if test="revSignUrl != null and revSignUrl != ''">
-				REV_SIGN_URL = #{revSignUrl}, 
+				<if test="atchFileId != null">
+				REV_SIGN_URL = #{atchFileId}, 
 				REV_SIGN_DT = NOW(),
 				</if>
 				<if test="state.equals('DT')">EST_CMP_DT = <choose><when test="estCmpDt == ''">NULL,</when><otherwise>#{estCmpDt},</otherwise></choose></if>

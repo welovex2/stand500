@@ -32,4 +32,7 @@ public class MfDTO extends MethodMf {
   @Column
   private int picYn = 1;
 
+  @ApiModelProperty(value = "서명파일 아이디", example = "")
+  @Column
+  private String atchFileId;
 }

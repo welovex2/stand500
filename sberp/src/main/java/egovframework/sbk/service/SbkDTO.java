@@ -71,6 +71,10 @@ public class SbkDTO {
     @ApiModelProperty(value = "담당자 아이디 ", example = "welovex2")
     @Column
     private String mngId;
+
+    @ApiModelProperty(value = "서명파일 아이디", example = "")
+    @Column
+    private String atchFileId;
     
   }
 
@@ -213,6 +217,10 @@ public class SbkDTO {
     @Column
     private String mnfctCntry;
    
+    @ApiModelProperty(value = "서명파일 아이디", example = "")
+    @Column
+    private String atchFileId;
+    
     @ApiModelProperty(value = "시험 갯수", example = "")
     private int testItemCnt;
   }

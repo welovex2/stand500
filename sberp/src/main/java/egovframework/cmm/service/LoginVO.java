@@ -130,6 +130,14 @@ public class LoginVO {
   @Column
   private int lockYn;
   
+  @ApiModelProperty(value = "서명 파일아이디", example = "", hidden = true)
+  @Column
+  private String atchFileId;
+  
+  @ApiModelProperty(value = "서명 미리보기 URL", example = "", hidden = true)
+  @Column
+  private String sgnUrl;
+  
   @ApiModelProperty(value = "권한", example = "1", hidden = true)
   @Column
   private List<PowerDTO> power;

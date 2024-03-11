@@ -94,6 +94,10 @@ public class RawData {
   @Column
   private String testSignUrl;
 
+  
+  @ApiModelProperty(value = "시험자서명 파일아이디 ", example = "")
+  @Column
+  private String testAtchFileId;
 
   @ApiModelProperty(value = "기술책임자 ", example = "나승주")
   @Column
@@ -105,6 +109,11 @@ public class RawData {
   private String revSignUrl;
 
 
+  @ApiModelProperty(value = "기술책임자서서명 파일아이디 ", example = "")
+  @Column
+  private String revAtchFileId;
+  
+  
   @ApiModelProperty(value = "시험요구_KC_EMC ", example = "1")
   @Column
   private int tbrKcEmcYn;
