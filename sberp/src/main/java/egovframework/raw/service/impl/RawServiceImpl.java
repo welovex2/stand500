@@ -244,7 +244,7 @@ public class RawServiceImpl implements RawService {
     if (detail != null) {
       // 측정설비
       // 3235
-      if (detail.getTestStndrSeq() == 10) {
+      if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571) {
         detail.setMacList(macList("RA", rawSeq));
         detail.getMacList().addAll(macList("RB", rawSeq));
       } 

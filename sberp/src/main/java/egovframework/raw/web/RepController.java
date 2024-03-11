@@ -193,7 +193,7 @@ public class RepController {
                   if (ObjectUtils.isEmpty(re))
                     re = rawService.reDetail(rawSeq);
                   if (re != null) {
-                    if (detail.getTestStndrSeq() == 10)
+                    if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571)
                       re.setMacList(rawService.macList("RA", rawSeq));
                     else 
                       re.setMacList(rawService.macList("RE2", rawSeq));
@@ -206,7 +206,7 @@ public class RepController {
                   if (ObjectUtils.isEmpty(re))
                     re = rawService.reDetail(rawSeq);
                   if (re != null) {
-                    if (detail.getTestStndrSeq() == 10)
+                    if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571)
                       re.setMacList(rawService.macList("RB", rawSeq));
                     else 
                       re.setMacList(rawService.macList("RE3", rawSeq));
@@ -391,7 +391,7 @@ public class RepController {
                 case 4:
                   re = new ReDTO();
   
-                  if (detail.getTestStndrSeq() == 10) {
+                  if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571) {
                     re.setHz1ResultCode("-1");
                   } else {
                     re.setHz2ResultCode("-1");
@@ -404,7 +404,7 @@ public class RepController {
                   //   9.6 방사성 방해 시험 (1GHz 초과 대역)
                   re = new ReDTO();
                   
-                  if (detail.getTestStndrSeq() == 10) {
+                  if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571) {
                     re.setHz2ResultCode("-1");
                   } else {
                     re.setHz3ResultCode("-1");
@@ -421,7 +421,6 @@ public class RepController {
         } //-- END if methodList
         
         // TEL 규격은 아래 기본정보 없음
-        System.out.println("시험규격="+detail.getTestStndrSeq());
         if (detail.getTestStndrSeq() == 560) {
           detail.setTel(rawService.telDetail(rawSeq));
         }
