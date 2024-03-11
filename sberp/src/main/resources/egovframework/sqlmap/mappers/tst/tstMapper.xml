@@ -51,8 +51,8 @@
 			LEFT JOIN TEST_TB orgNo
 			ON orgNo.TEST_ITEM_SEQ = org.ORG_TEST_ITEM_SEQ
 		            
-		# 특정 시험부
-		WHERE TEST_TB.TEST_TYPE_CODE = #{testTypeCode}
+		# 특정 시험부 #NS면 SF와 함께 카운팅
+		WHERE IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE) = IF (#{testTypeCode} = 'NS', 'SF', #{testTypeCode}) 
 		# 내 신청서의 발급년도
 		AND JOB_TB.SBK_YM = (SELECT
 								JOB_TB.SBK_YM
@@ -63,7 +63,8 @@
 							    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
 							    
 							
-							WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq})
+							WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq}
+							LIMIT 1)
     </selectKey> 
 		INSERT INTO TEST_TB
 		(
@@ -190,10 +191,11 @@
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
 		    DATE_FORMAT(TEST_TB.INS_DT, '%Y-%m-%d') insDtStr,
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
-		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE) ,LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
-		    IF (TEST_TB.TEST_STATE_CODE=5, IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+		    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
+		    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
 		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
 		    IFNULL (DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 		    '미반입' imPoint,
@@ -680,7 +682,8 @@
             FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
                       
 		    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
-		    IF (TEST_TB.TEST_STATE_CODE=5, IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+		    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
+		    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
 			TEST_ITEM_TB.NET_SALES netSales,
 
 			IFNULL (MEMO_CNT, 0) memoCnt,
@@ -786,7 +789,8 @@
             FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
                       
 		    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
-		    IF (TEST_TB.TEST_STATE_CODE=5, IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+		    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
+		    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
 			TEST_ITEM_TB.NET_SALES netSales,
 
 			IFNULL (MEMO_CNT, 0) memoCnt,

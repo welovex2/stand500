@@ -51,7 +51,8 @@
 		    WHEN TEST_TYPE = 'RF' THEN 2
 		    WHEN TEST_TYPE = 'SR' THEN 3
 		    WHEN TEST_TYPE = 'SF' THEN 4
-		    WHEN TEST_TYPE = 'MD' THEN 5
+		    WHEN TEST_TYPE = 'NS' THEN 5
+		    WHEN TEST_TYPE = 'MD' THEN 6
 		END
 	</select>
 
@@ -108,7 +109,8 @@
 		    WHEN TYPE_CD = 'RF' THEN 2
 		    WHEN TYPE_CD = 'SR' THEN 3
 		    WHEN TYPE_CD = 'SF' THEN 4
-		    WHEN TYPE_CD = 'MD' THEN 5
+		    WHEN TYPE_CD = 'NS' THEN 5
+		    WHEN TYPE_CD = 'MD' THEN 6
 		END
 	</select>
 	
@@ -165,7 +167,8 @@
 		    WHEN TYPE_CD = 'RF' THEN 2
 		    WHEN TYPE_CD = 'SR' THEN 3
 		    WHEN TYPE_CD = 'SF' THEN 4
-		    WHEN TYPE_CD = 'MD' THEN 5
+		    WHEN TYPE_CD = 'NS' THEN 5
+		    WHEN TYPE_CD = 'MD' THEN 6
 		END
 	</select>
 	
@@ -276,7 +279,8 @@
 			WHEN TYPE_CD = 'RF' THEN 2
 			WHEN TYPE_CD = 'SR' THEN 3
 			WHEN TYPE_CD = 'SF' THEN 4
-			WHEN TYPE_CD = 'MD' THEN 5
+			WHEN TYPE_CD = 'NS' THEN 5
+		    WHEN TYPE_CD = 'MD' THEN 6
 		END
 		]]>
 	</select>
