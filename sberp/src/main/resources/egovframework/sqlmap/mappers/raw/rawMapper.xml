@@ -491,7 +491,7 @@
         AND CONCAT (
 			      SBK_ID,
 			      '-',
-			      CONCAT (TEST_TB.TEST_TYPE_CODE, LPAD (TEST_TB.TEST_NO, 4, 0))
+			      CONCAT (IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD (TEST_TB.TEST_NO, 4, 0))
 			  ) = #{testId}
 		    
 	</select>
@@ -877,7 +877,7 @@
 		    RAW_TB.SBK_ID,
 		    RAW_TB.RAW_SEQ,
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
-		    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		   	JOB_TB.SBK_REVISION revision,
 		   	TEST_TB.TEST_SEQ,
