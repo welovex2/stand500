@@ -18,8 +18,8 @@
 	<insert id="update" parameterType="imDTO">
 		  UPDATE IM_TB
 		  SET
-		    MEMO = #{memo},
-		    MNG_ID = #{mngId},
+		    <if test="memo != null">MEMO = #{memo},</if>
+		    <if test="memo != null">MNG_ID = #{mngId},</if>
 		    PIC_URL = CASE WHEN IFNULL(PIC_URL, '') = '' THEN #{picUrl} ELSE PIC_URL END,
 		    UDT_MEM_ID = #{udtMemId},
 		    UDT_DT = NOW()
