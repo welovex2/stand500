@@ -2,8 +2,10 @@ package egovframework.tst.web;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -138,40 +140,34 @@ public class TstController {
     /**
      * OR 조건 검색 처리
      */
-    List<String> new25 = new ArrayList<String>();
-    List<String> new22 = new ArrayList<String>();
-    boolean new25Yn = false, new22Yn = false;
-    for (SearchVO search : param.getSearchVO()) {
-      // 1. 시험부(23)
-      if ("23".equals(search.getSearchCode())) {
-        new25Yn = true;
-        new25.add(search.getSearchWord());
-      }
-      // 2. 신청구분(22)
-      else if ("22".equals(search.getSearchCode())) {
-        new22Yn = true;
-        if ("1".equals(search.getSearchWord())) new22.add("SG_NEW_YN");
-        else if ("2".equals(search.getSearchWord())) new22.add("SG_GB_YN");
-        else if ("3".equals(search.getSearchWord())) new22.add("SG_DG_YN");
-        else if ("4".equals(search.getSearchWord())) new22.add("SG_ETC_YN");
-        
-      }
-    }
-    // 받은 searchCode 삭제 후 다시 생성
-    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    // 같은 CODE로 그룹핑
+    Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
     
+    // 받은 searchCode 삭제 후 다시 생성
+//    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+
     SearchVO newSearch = new SearchVO();
-    if (new25Yn) {
+    // 시험부
+    if (reSearch.get("23") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("23");
-      newSearch.setSearchWords(new25);
+      newSearch.setSearchWords(reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
     
-    if (new22Yn) {
+    // 신청구분
+    if (reSearch.get("22") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("22");
-      newSearch.setSearchWords(new22);
+      newSearch.setSearchWords(reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      param.getSearchVO().add(newSearch);
+    }
+    
+    // 시험상태
+    if (reSearch.get("31") != null) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("31");
+      newSearch.setSearchWords(reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
     /**
