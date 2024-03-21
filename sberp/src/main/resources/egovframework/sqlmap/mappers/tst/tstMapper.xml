@@ -284,7 +284,7 @@
 	        		<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 50	시험번호 -->
 					<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
-													    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+													    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
 													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when> 
 					<!-- 64	개별완료요청일 -->
 					<when test="item.searchCode == 64">AND DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
@@ -876,7 +876,7 @@
 						</when>
 						<!-- 50	시험번호 -->
 			       		<when test="item.searchCode == 50">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
-													    			'-',TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0),
+													    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
 													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 		        	</choose>
 				</foreach>
