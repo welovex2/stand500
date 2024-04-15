@@ -171,4 +171,17 @@
 		ORDER BY JOB_MNGR_SEQ DESC
 	</select>
 	
+	<select id="memList" resultType="egovMap">
+		SELECT 
+			ID
+			, MEM_NAME
+			, PHONE
+			, CONCAT(EMAIL, '@standardbank.co.kr') EMAIL
+		FROM MEMBER_TB
+		WHERE 1=1
+		AND STATE != 'D'
+		AND WORK_STATE = '1' /* 재직 */
+        AND LOCK_YN = 0 /* 계정활성 */
+	</select>
+	
 </mapper>

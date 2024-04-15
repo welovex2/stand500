@@ -122,4 +122,14 @@ public class CmmController {
         return list;
     }
     
+    @ApiOperation(value = "사용자 리스트")
+    @GetMapping(value="/mem/list.do")
+    public List<Member> memList() throws Exception {
+        List<Member> list = new ArrayList<Member>();
+        
+        list = cmmService.memList();
+        
+        return list;
+    }
+    
 }

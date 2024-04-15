@@ -112,4 +112,9 @@ public class CmmServiceImpl extends EgovAbstractServiceImpl implements CmmServic
     return cmmMapper.jobMngList(jobSeq);
   }
 
+  @Override
+  public List<Member> memList() {
+    return cmmMapper.memList();
+  }
+
 }

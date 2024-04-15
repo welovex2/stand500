@@ -33,4 +33,6 @@ public interface CmmMapper {
   public boolean insertJobMng(JobMngr req);
 
   public List<Job> jobMngList(int jobSeq);
+
+  public List<Member> memList();
 }
