@@ -59,6 +59,8 @@
     	<typeAlias alias="testRes"		type="egovframework.tst.dto.TestDTO$Res"/>
     	<typeAlias alias="debugDTO"		type="egovframework.tst.dto.DebugDTO"/>
    		<typeAlias alias="debugMemo"	type="egovframework.tst.service.DebugMemo"/>
+    	<typeAlias alias="testMngrDTO"	type="egovframework.tst.dto.TestMngrDTO"/>
+    	<typeAlias alias="TestMngr"		type="egovframework.tst.service.TestMngr"/>
     	
     	<!-- 로데이터 -->
     	<typeAlias alias="rawSearchDTO"	type="egovframework.raw.dto.RawSearchDTO"/>
@@ -104,5 +106,8 @@
     	<typeAlias alias="stsDTO"		type="egovframework.sts.dto.StsDTO"/>
     	<typeAlias alias="stsTestType"	type="egovframework.sts.dto.StsDTO$TestTypeList"/>
     	
+    	<typeAlias alias="tmdDTO"		type="egovframework.sts.dto.TmdDTO"/>
+    	<typeAlias alias="tmdTestMem"	type="egovframework.sts.dto.TmdDTO$TestMemList"/>
+    	<typeAlias alias="tmdTestMon"	type="egovframework.sts.dto.TmdDTO$TestMonList"/>
     </typeAliases>
 </configuration>

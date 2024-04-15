@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.TmdMapper">
+
+	<resultMap type="tmdDTO" id="tmdMap">
+		<id column="TEST_TYPE" property="testType" />
+		<collection property="testMemList" ofType="tmdTestMem">
+			<id column="TEST_MNG_ID" property="testMngId" />
+			<result column="TEST_MEM" property="testMem"/>
+			<result column="eaCnt" property="eaCnt"/>
+			<result column="stand" property="stand"/>
+			<result column="activ" property="activ"/>
+			<result column="mainEaCnt" property="mainEaCnt"/>
+			<result column="mainStand" property="mainStand"/>
+			<result column="mainActiv" property="mainActiv"/>
+			<result column="mainPart" property="mainPart"/>
+			<result column="mainRating" property="mainRating"/>
+			<result column="subEaCnt" property="subEaCnt"/>
+			<result column="subStand" property="subStand"/>
+			<result column="subActiv" property="subActiv"/>
+			<result column="subPart" property="subPart"/>
+			<result column="subRating" property="subRating"/>
+		</collection>
+	</resultMap>
+	<select id="selectMemList" parameterType="comParam" resultMap="tmdMap">
+		# 제품지수 계산값
+		SET @dive = 1000000;
+		
+		SELECT 
+			TEST_TB.TEST_TYPE_CODE,
+			FN_CODE_NAME(TEST_TB.TEST_TYPE_CODE, 'TT') TEST_TYPE,
+			TEST_MNGR_TB.TEST_MNG_ID,
+			FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID) TEST_MEM,
+			
+			count(TEST_MNGR_TB.TEST_MNG_ID) eaCnt,
+			TRUNCATE(SUM(NET_SALES / @dive), 2) stand,
+			TRUNCATE(SUM(NET_SALES / @dive * (1 + ACTIV / 100)), 2) activ,
+			
+			COUNT(CASE WHEN TEST_MNGR_SEQ = 1 THEN 1 END) AS mainEaCnt,
+			TRUNCATE(SUM(CASE WHEN TEST_MNGR_SEQ = 1 THEN NET_SALES / @dive END), 2) mainStand,
+			TRUNCATE(SUM(CASE WHEN TEST_MNGR_SEQ = 1 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) mainActiv,
+			TRUNCATE(AVG(CASE WHEN TEST_MNGR_SEQ = 1 THEN PART_RATE END), 0) mainPart,
+			TRUNCATE(AVG(CASE WHEN TEST_MNGR_SEQ = 1 THEN RATING END), 1) mainRating,
+			
+			COUNT(CASE WHEN TEST_MNGR_SEQ IN (2, 3) THEN 1 END) AS subEaCnt,
+			TRUNCATE(SUM(CASE WHEN TEST_MNGR_SEQ IN (2, 3) THEN NET_SALES / @dive END), 2) subStand,
+			TRUNCATE(SUM(CASE WHEN TEST_MNGR_SEQ IN (2, 3) THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) subActiv,
+			TRUNCATE(AVG(CASE WHEN TEST_MNGR_SEQ IN (2, 3) THEN PART_RATE END), 0) subPart,
+			TRUNCATE(AVG(CASE WHEN TEST_MNGR_SEQ IN (2, 3) THEN RATING END), 1) subRating
+			
+		FROM TEST_TB
+			
+		    /* 시험금액 */
+		    INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		    AND TEST_ITEM_TB.STATE != 'D'
+		    
+		    /* 시험원 */
+		    INNER JOIN TEST_MNGR_TB
+		    ON TEST_TB.TEST_SEQ = TEST_MNGR_TB.TEST_SEQ
+		    AND TEST_MNGR_TB.TEST_MNGR_SEQ BETWEEN 1 AND 3
+		    AND IFNULL(TEST_MNG_ID, '') != ''
+		
+			/* 이름 */
+            INNER JOIN MEMBER_TB
+			ON ID = TEST_MNGR_TB.TEST_MNG_ID
+			AND MEMBER_TB.STATE != 'D'
+			
+		WHERE 1=1
+		
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	        	<choose>
+	        		<!-- 75 평가완료일 -->
+	        		<when test="item.searchCode == 75">AND DATE_FORMAT(TEST_TB.RATING_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 23	시험부 -->
+					<when test="item.searchCode == 23">AND TEST_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+					<!-- 9	시험담당자 -->
+					<when test="item.searchCode == 9">AND IFNULL(MEM_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+				</choose>
+			</foreach>
+		</if>
+		
+		GROUP BY TEST_TB.TEST_TYPE_CODE, TEST_MNGR_TB.TEST_MNG_ID
+		
+		ORDER BY 
+		CASE 
+			WHEN TEST_TB.TEST_TYPE_CODE = 'EM' THEN 1
+			WHEN TEST_TB.TEST_TYPE_CODE = 'RF' THEN 2
+			WHEN TEST_TB.TEST_TYPE_CODE = 'SR' THEN 3
+			WHEN TEST_TB.TEST_TYPE_CODE = 'SF' THEN 4
+			WHEN TEST_TB.TEST_TYPE_CODE = 'NS' THEN 5
+		    WHEN TEST_TB.TEST_TYPE_CODE = 'MD' THEN 6
+		END, FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)
+	</select>
+
+	<resultMap type="tmdDTO" id="tmdMonMap">
+		<id column="TEST_TYPE" property="testType" />
+		<collection property="testMonList" ofType="tmdTestMon">
+			<id column="TEST_MNG_ID" property="testMngId" />
+			<result column="TEST_MEM" property="testMem"/>
+		    <result column="stand1" property="stand1"/>
+		    <result column="activ1" property="activ1"/>
+		    <result column="stand2" property="stand2"/>
+		    <result column="activ2" property="activ2"/>
+		    <result column="stand3" property="stand3"/>
+		    <result column="activ3" property="activ3"/>
+		    <result column="stand4" property="stand4"/>
+		    <result column="activ4" property="activ4"/>
+		    <result column="stand5" property="stand5"/>
+		    <result column="activ5" property="activ5"/>
+		    <result column="stand6" property="stand6"/>
+		    <result column="activ6" property="activ6"/>
+		    <result column="stand7" property="stand7"/>
+		    <result column="activ7" property="activ7"/>
+		    <result column="stand8" property="stand8"/>
+		    <result column="activ8" property="activ8"/>
+		    <result column="stand9" property="stand9"/>
+		    <result column="activ9" property="activ9"/>
+		    <result column="stand10" property="stand10"/>
+		    <result column="activ10" property="activ10"/>
+		    <result column="stand11" property="stand11"/>
+		    <result column="activ11" property="activ11"/>
+		    <result column="stand12" property="stand12"/>
+		    <result column="activ12" property="activ12"/>
+		    <result column="standSum" property="standSum"/>
+		    <result column="activSum" property="activSum"/>
+		</collection>
+	</resultMap>
+	<select id="selectMonList" parameterType="comParam" resultMap="tmdMonMap">
+		# 제품지수 계산값
+		SET @dive = 1000000;
+		
+		SELECT
+			mon.*,
+			IFNULL(stand1, 0) + IFNULL(stand2, 0) + IFNULL(stand3, 0) + IFNULL(stand4, 0) + IFNULL(stand5, 0) + IFNULL(stand6, 0) + 
+			IFNULL(stand7, 0) + IFNULL(stand8, 0) + IFNULL(stand9, 0) + IFNULL(stand10, 0) + IFNULL(stand11, 0) + IFNULL(stand12, 0) AS standSum,
+		    IFNULL(activ1, 0) + IFNULL(activ2, 0) + IFNULL(activ3, 0) + IFNULL(activ4, 0) + IFNULL(activ5, 0) + IFNULL(activ6, 0) + 
+		    IFNULL(activ7, 0) + IFNULL(activ8, 0) + IFNULL(activ9, 0) + IFNULL(activ10, 0) + IFNULL(activ11, 0) + IFNULL(activ12, 0) AS activSum
+		
+		FROM (
+			SELECT 
+				TEST_TB.TEST_TYPE_CODE,
+				FN_CODE_NAME(TEST_TB.TEST_TYPE_CODE, 'TT') TEST_TYPE,
+				TEST_MNGR_TB.TEST_MNG_ID,
+				FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID) TEST_MEM,
+				
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 1 THEN NET_SALES / @dive END), 2) AS stand1,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 1 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ1,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 2 THEN NET_SALES / @dive END), 2) AS stand2,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 2 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ2,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 3 THEN NET_SALES / @dive END), 2) AS stand3,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 3 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ3,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 4 THEN NET_SALES / @dive END), 2) AS stand4,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 4 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ4,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 5 THEN NET_SALES / @dive END), 2) AS stand5,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 5 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ5,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 6 THEN NET_SALES / @dive END), 2) AS stand6,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 6 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ6,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 7 THEN NET_SALES / @dive END), 2) AS stand7,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 7 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ7,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 8 THEN NET_SALES / @dive END), 2) AS stand8,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 8 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ8,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 9 THEN NET_SALES / @dive END), 2) AS stand9,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 9 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ9,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 10 THEN NET_SALES / @dive END), 2) AS stand10,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 10 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ10,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 11 THEN NET_SALES / @dive END), 2) AS stand11,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 11 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ11,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 12 THEN NET_SALES / @dive END), 2) AS stand12,
+				TRUNCATE(SUM(CASE WHEN DATE_FORMAT(TEST_TB.RATING_DT, '%m') = 12 THEN (NET_SALES / @dive) * (1 + TEST_TB.ACTIV / 100) END), 2) AS activ12
+			
+			
+			FROM TEST_TB
+				
+			    /* 시험금액 */
+			    INNER JOIN TEST_ITEM_TB
+			    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			    AND TEST_ITEM_TB.STATE != 'D'
+			    
+			    /* 시험원 */
+			    INNER JOIN TEST_MNGR_TB
+			    ON TEST_TB.TEST_SEQ = TEST_MNGR_TB.TEST_SEQ
+			    AND TEST_MNGR_TB.TEST_MNGR_SEQ BETWEEN 1 AND 3
+			    AND IFNULL(TEST_MNG_ID, '') != ''
+			
+				/* 이름 */
+	            INNER JOIN MEMBER_TB
+				ON ID = TEST_MNGR_TB.TEST_MNG_ID
+				AND MEMBER_TB.STATE != 'D'
+			
+			WHERE 1=1
+			
+			<if test="searchVO != null">
+		        <foreach collection="searchVO" item="item" separator="">
+		        	<choose>
+		        		<!-- 75 평가완료일 -->
+		        		<when test="item.searchCode == 75">AND DATE_FORMAT(TEST_TB.RATING_DT, '%Y')  = #{item.searchWord}</when>
+						<!-- 23	시험부 -->
+						<when test="item.searchCode == 23">AND TEST_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+						<!-- 9	시험담당자 -->
+						<when test="item.searchCode == 9">AND IFNULL(MEM_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					</choose>
+				</foreach>
+			</if>
+		
+			GROUP BY TEST_TB.TEST_TYPE_CODE, TEST_MNGR_TB.TEST_MNG_ID
+			
+					ORDER BY 
+					CASE 
+						WHEN TEST_TB.TEST_TYPE_CODE = 'EM' THEN 1
+						WHEN TEST_TB.TEST_TYPE_CODE = 'RF' THEN 2
+						WHEN TEST_TB.TEST_TYPE_CODE = 'SR' THEN 3
+						WHEN TEST_TB.TEST_TYPE_CODE = 'SF' THEN 4
+						WHEN TEST_TB.TEST_TYPE_CODE = 'NS' THEN 5
+					    WHEN TEST_TB.TEST_TYPE_CODE = 'MD' THEN 6
+					END, FN_MEM_NAME(TEST_MNGR_TB.TEST_MNG_ID)
+		) mon
+	</select>
+	
+</mapper>
