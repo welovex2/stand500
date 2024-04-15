@@ -818,7 +818,18 @@ public class RawController {
           }
         }
 
-        result = rawService.insertEsd(req);
+        try {
+          
+          result = rawService.insertEsd(req);
+          
+        } catch (Exception e) {
+          
+          msg = ResponseMessage.RETRY;
+          log.warn(user.getId() + " :: " + e.toString());
+          log.warn(req.toString());
+          log.warn("");
+          
+        }
 
       } else {
         result = false;
@@ -997,8 +1008,20 @@ public class RawController {
 //          atchFileId = fileMngService.insertFileInf(oneFile);
 //          req.setSignUrl(atchFileId);
 //        }
-
-        result = rawService.insertEft(req);
+        
+        try {
+          
+          result = rawService.insertEft(req);
+          
+        } catch (Exception e) {
+          
+          msg = ResponseMessage.RETRY;
+          log.warn(user.getId() + " :: " + e.toString());
+          log.warn(req.toString());
+          log.warn("");
+          
+        }
+        
 
       } else {
         result = false;
@@ -1086,7 +1109,19 @@ public class RawController {
 //          req.setSignUrl(atchFileId);
 //        }
 
-        result = rawService.insertSurge(req);
+        
+        try {
+          
+          result = rawService.insertSurge(req);
+          
+        } catch (Exception e) {
+          
+          msg = ResponseMessage.RETRY;
+          log.warn(user.getId() + " :: " + e.toString());
+          log.warn(req.toString());
+          log.warn("");
+          
+        }
 
       } else {
         result = false;
@@ -1172,8 +1207,21 @@ public class RawController {
 //          atchFileId = fileMngService.insertFileInf(oneFile);
 //          req.setSignUrl(atchFileId);
 //        }
-
-        result = rawService.insertCs(req);
+        
+        try {
+          
+          result = rawService.insertCs(req);
+          
+        } catch (Exception e) {
+          
+          msg = ResponseMessage.RETRY;
+          log.warn(user.getId() + " :: " + e.toString());
+          log.warn(req.toString());
+          log.warn("");
+          
+        }
+        
+        
 
       } else {
         result = false;

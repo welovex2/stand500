@@ -492,7 +492,7 @@
 			#{hz2MsrmnHour},
 			#{hz2MsrmnMin},
 			#{hz2Sign},
-			#{hz2SignUrl},
+			#{hz2AtchFileId},
 			#{hz2ResultCode},
 			
 			<if test="hz3Vlt10mYn != null and hz3Vlt10mYn != ''">#{hz3Vlt10mYn},</if>
