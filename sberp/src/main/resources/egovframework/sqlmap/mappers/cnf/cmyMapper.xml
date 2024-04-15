@@ -17,7 +17,7 @@
 			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
 			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
 			        		<!-- 2	작성자 -->
-							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.UDT_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
 			        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) like concat('%',LOWER (#{item.searchWord}),'%')</when>
 							<!-- 13	회사연락처 -->
@@ -49,7 +49,7 @@
 					ifnull (FN_CODE_NAME (cntry_code, 'SN'), '') cntry,
 					FN_GET_PHONE_FORMAT (cmpy_phone) cmpy_phone,
 					ifnull (memo, '-') memo,
-					ifnull (FN_MEM_NAME (CMPY_TB.INS_MEM_ID), '') ins_name
+					ifnull (FN_MEM_NAME (CMPY_TB.UDT_MEM_ID), '') ins_name
 				FROM
 					CMPY_TB
 				WHERE
@@ -62,7 +62,7 @@
 			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
 			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
 			        		<!-- 2	작성자 -->
-							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.UDT_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
 			        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) like concat('%',LOWER (#{item.searchWord}),'%')</when>
 							<!-- 13	회사연락처 -->
