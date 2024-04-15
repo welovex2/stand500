@@ -578,7 +578,7 @@ public class QuoController {
 //      try { 
         // 4. XSSFRow 첫번째 Row 가져와서 수정하기
         XSSFRow row = sheet.getRow(3); // 시트의 4번째 Row 를 가져온다
-        row.getCell(8).setCellValue(detail.getVersion().trim());               // 견적서 Ver
+//        row.getCell(8).setCellValue(detail.getVersion().trim());               // 견적서 Ver
         
         row = sheet.getRow(4);  // 견적서 발급번호
         row.getCell(4).setCellValue(detail.getQuoId().trim());               
@@ -589,11 +589,11 @@ public class QuoController {
         
         row = sheet.getRow(11);  // 담당자, 전화번호
         row.getCell(3).setCellValue(detail.getMngName().trim());               
-        row.getCell(8).setCellValue(detail.getCmpyPhone().trim());
+        row.getCell(8).setCellValue(detail.getMngPhone().trim());
         
         row = sheet.getRow(12);  // 작성자, 팩스번호
         row.getCell(3).setCellValue(detail.getMemName().trim());               
-        row.getCell(8).setCellValue(detail.getCmpyFax().trim());
+        row.getCell(8).setCellValue("");
         
         row = sheet.getRow(15);  // 제품명
         row.getCell(3).setCellValue(detail.getPrdctName().trim());
@@ -602,7 +602,7 @@ public class QuoController {
         row = sheet.getRow(17);  // 대상인증
         row.getCell(3).setCellValue(detail.getTrgtCrtfc().trim());
         row = sheet.getRow(18);  // 제품설명
-        row.getCell(3).setCellValue(detail.getPrdInf().trim());
+//        row.getCell(3).setCellValue(detail.getPrdInf().trim());
         
         row = sheet.getRow(19);  // 사용전원?
         row.getCell(9).setCellValue(detail.getPowerSuplyYn() == 1 ? "YES" : "NO");
@@ -655,6 +655,8 @@ public class QuoController {
         row = sheet.getRow(51); // email
         row.getCell(1).setCellValue("E-Mail : ".concat(detail.getEmail().trim()));
         
+        /*
+         * 서명 삭제
         // 사진
         FileVO fileVO = new FileVO();
         
@@ -684,7 +686,7 @@ public class QuoController {
         byte[] bytes = IOUtils.toByteArray(is);
         int picIdx = workbook.addPicture(bytes, XSSFWorkbook.PICTURE_TYPE_PNG);
         is.close();
-        
+
         XSSFCreationHelper helper = workbook.getCreationHelper();
         XSSFDrawing drawing = sheet.createDrawingPatriarch();
         XSSFClientAnchor anchor = helper.createClientAnchor();
@@ -698,6 +700,8 @@ public class QuoController {
         // 이미지 그리기
         XSSFPicture pic = drawing.createPicture(anchor, picIdx);
 //        pic.resize();
+        */
+ 
         
 //      } catch (Exception e) {
 //        log.error(e.getMessage());

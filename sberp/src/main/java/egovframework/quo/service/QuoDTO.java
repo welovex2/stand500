@@ -48,11 +48,11 @@ public class QuoDTO {
 //    @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
     private String mngPhone;
 
-    @ApiModelProperty(value = "팩스 ", example = "02-415-5633")
+    @ApiModelProperty(value = "담당자 이메일 ", example = "")
     @Column
 //    @Pattern(regexp = "^[0-9-]*$", message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
 //    @Size(min = 0, max = 13, message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-    private String mngFax;
+    private String mngEmail;
 
     @ApiModelProperty(value = "제품명 ", example = "블루투스 수신기")
     @Column
@@ -65,18 +65,6 @@ public class QuoDTO {
     @ApiModelProperty(value = "모델명 ", example = "dong-gle")
     @Column
     private String modelName;
-
-    @ApiModelProperty(value = "전화번호 ", example = "")
-    @Column
-//    @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-//    @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-    private String cmpyPhone;
-
-    @ApiModelProperty(value = "팩스번호 ", example = "")
-    @Column
-//    @Pattern(regexp = "^[0-9-]*$", message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-//    @Size(min = 0, max = 13, message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-    private String cmpyFax;
 
     @ApiModelProperty(value = "담당자 아이디 ", example = "welovex2")
     @Column
@@ -225,13 +213,13 @@ public class QuoDTO {
     @Column
     private String mngName;
 
-    @ApiModelProperty(value = "전화번호 ", example = "")
+    @ApiModelProperty(value = "담당자 전화번호 ", example = "")
     @Column
-    private String cmpyPhone;
+    private String mngPhone;
 
-    @ApiModelProperty(value = "팩스번호 ", example = "")
+    @ApiModelProperty(value = "담당자 이메일 ", example = "")
     @Column
-    private String cmpyFax;
+    private String mngEmail;
 
     @ApiModelProperty(value = "제품명 ", example = "")
     @Column

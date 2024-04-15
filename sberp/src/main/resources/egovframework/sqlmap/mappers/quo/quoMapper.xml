@@ -202,7 +202,6 @@
 				PRD_INF,
 				POWER_SUPLY_YN,
 				WGHT_YN,
-				MEMO,
 				VAT_YN,
 				NEED_WEEK,
 				SPCL_CNDTN,
@@ -226,7 +225,6 @@
 				#{prdInf},
 				#{powerSuplyYn},
 				#{wghtYn},
-				#{memo},
 				#{vatYn},
 				#{needWeek},
 				#{spclCndtn},
@@ -254,7 +252,6 @@
 			PRD_INF = #{prdInf},
 			POWER_SUPLY_YN = #{powerSuplyYn},
 			WGHT_YN = #{wghtYn},
-			MEMO = #{memo},
 			VAT_YN = #{vatYn},
 			NEED_WEEK = #{needWeek},
 			SPCL_CNDTN = #{spclCndtn},
@@ -484,10 +481,11 @@
 			CMPY_NAME,
 			MNG_ID,
 			MNG_PHONE,
-			MNG_FAX,
+			MNG_EMAIL,
 			MNG_NAME,
 			PRDCT_NAME,
 			MODEL_NAME,
+			MEMO,
 			INS_MEM_ID,
 			UDT_MEM_ID
 			)
@@ -500,10 +498,11 @@
 		<![CDATA[
 			#{cmpyName},
 			#{mngId},
-			#{cmpyPhone},
-			#{cmpyFax},
+			#{mngPhone},
+			#{mngEmail},
 			#{mngName},
 			#{prdctName}, 
+			#{modelName},
 			#{modelName},
 			#{insMemId},
 			#{udtMemId}
@@ -518,16 +517,17 @@
 				CMPY_MNG_SEQ = #{cmpyMngSeq},
 		<![CDATA[
 				CMPY_NAME = #{cmpyName},
-				MNG_PHONE = #{cmpyPhone},
-				MNG_FAX = #{cmpyFax},
+				MNG_PHONE = #{mngPhone},
+				MNG_EMAIL = #{mngEmail},
 				MNG_NAME = #{mngName},
 				PRDCT_NAME = #{prdctName},
 				MODEL_NAME = #{modelName},
+				MEMO = #{memo},
 				UDT_MEM_ID = #{udtMemId}
 		]]>
 		WHERE 1=1
-		AND JOB_TB.quo_ym = substring(#{quoId},2,4)
-		AND JOB_TB.quo_seq = substring(#{quoId},8,4)
+		AND JOB_TB.QUO_YM = substring(#{quoId},2,4)
+		AND JOB_TB.QUO_SEQ = substring(#{quoId},8,4)
 	</update>
 
 	<update id="updateJobQuo" parameterType="quoReq" >
@@ -561,9 +561,9 @@
 		<result column="cmpyName" property="cmpyName"/>
 		<result column="issue_dt" property="issueDt"/>
 		<result column="MNG_NAME" property="mngName"/>
+		<result column="MNG_PHONE" property="mngPhone"/>
+		<result column="MNG_EMAIL" property="mngEmail"/>
 		<result column="INS_MEM" property="insMem"/>
-		<result column="cmpyPhone" property="cmpyPhone"/>
-		<result column="cmpyFax" property="cmpyFax"/>
 		<result column="mem_name" property="memName"/>
 		<result column="prdct_name" property="prdctName"/>
 		<result column="model_name" property="modelName"/>
@@ -636,11 +636,11 @@
 			,IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle
 			,IFNULL (CMPY_MNG_TB.NAME, '') cmpyMngName
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
-            ,IFNULL (JOB_TB.MNG_NAME, '') MNG_NAME	
             ,FN_MEM_NAME (QUO_TB.INS_MEM_ID) INS_MEM	/* 작성자 추가 */
 			,MEMBER_TB.MEM_NAME							/* 업무담당자 추가 */
-			,IFNULL (JOB_TB.MNG_PHONE, '') CMPYPHONE
-			,IFNULL (JOB_TB.MNG_FAX, '') CMPYFAX
+            ,IFNULL (JOB_TB.MNG_NAME, '') MNG_NAME	
+			,IFNULL (JOB_TB.MNG_PHONE, '') MNG_PHONE
+			,IFNULL (JOB_TB.MNG_EMAIL, '') MNG_EMAIL
             
 			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') EST_CMP_DT
 			,VERSION
@@ -651,7 +651,7 @@
 			,QUO_TB.PRD_INF
 			,QUO_TB.POWER_SUPLY_YN
 			,QUO_TB.WGHT_YN
-			,QUO_TB.MEMO
+			,JOB_TB.MEMO
 			,QUO_TB.ENG_MEMO
 			,QUO_TB.VAT_YN
 			,QUO_TB.NEED_WEEK
