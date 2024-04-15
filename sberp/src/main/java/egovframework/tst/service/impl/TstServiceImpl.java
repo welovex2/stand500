@@ -1,24 +1,23 @@
 package egovframework.tst.service.impl;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
-import egovframework.cmm.service.SearchVO;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.DebugDTO;
-import egovframework.tst.dto.TestDTO;
-import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
+import egovframework.tst.dto.TestItemDTO;
+import egovframework.tst.dto.TestMngrDTO;
 import egovframework.tst.service.DbgMapper;
 import egovframework.tst.service.Test;
 import egovframework.tst.service.TestCate;
+import egovframework.tst.service.TestMngr;
 import egovframework.tst.service.TstMapper;
 import egovframework.tst.service.TstParam;
 import egovframework.tst.service.TstService;
@@ -70,13 +69,47 @@ public class TstServiceImpl implements TstService {
   }
 
   @Override
-  public boolean testMemInsert(Req req) {
-    return tstMapper.testMemInsert(req);
+  @Transactional
+  public boolean testMemInsert(TestMngrDTO req) {
+    
+    boolean result = true;
+    
+    tstMapper.testInfoUpate(req);
+    
+    for (TestMngr detail : req.getItems()) {
+      
+      detail.setTestSeq(req.getTestSeq());
+      detail.setInsMemId(req.getInsMemId());
+      detail.setUdtMemId(req.getUdtMemId());
+      
+      tstMapper.testMemInsert(detail);
+    }
+    
+    return result; 
   }
+  
+  @Override
+  public boolean testMemSatetUpdate(TestMngrDTO req) {
+    
+    boolean result = true;
+    
+    tstMapper.testMemSatetUpdate(req);
+
+    return result; 
+  }
+  
 
   @Override
-  public List<Res> testMemList(String testSeq) {
-    return tstMapper.testMemList(testSeq);
+  public TestMngrDTO testMemList(String testSeq) {
+    
+    // 시험의 기본 정보
+    TestMngrDTO detail = tstMapper.testMemInfo(testSeq);
+    
+    if (!ObjectUtils.isEmpty(detail)) {
+      // 시험의 담당자 정보
+      detail.setItems(tstMapper.testMemList(testSeq));
+    }
+    return detail;
   }
 
   @Override
@@ -158,5 +191,20 @@ public class TstServiceImpl implements TstService {
   public int selectSaleListCnt(ComParam param) {
     return tstMapper.selectSaleListCnt(param);
   }
+  
+
+  @Override
+  public List<Res> selectRevList(ComParam param) {
+    List<Res> result = tstMapper.selectRevList(param);
+    
+    // 번호 매기기
+    for (int i=0; i<result.size(); i++) {
+      result.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    
+    return result; 
+  }
+  
+  
 
 }

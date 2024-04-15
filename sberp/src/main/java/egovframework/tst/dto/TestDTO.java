@@ -156,12 +156,30 @@ public class TestDTO {
     
     @ApiModelProperty(value = "기술책임자", example = "")
     private String revname;
+ 
+    @ApiModelProperty(value = "제품지수", example = "")
+    private float stand;
     
-    @ApiModelProperty(value = "시험담당자", example = "")
-    private String testmngname;
+    @ApiModelProperty(value = "시험담당자1 이름", example = "")
+    private String TestMng1Name;
     
-    @ApiModelProperty(value = "시험담당자 직위", example = "")
-    private String testmngpos;
+    @ApiModelProperty(value = "시험담당자1 참여율", example = "")
+    private String TestMng1Part;
+    
+    @ApiModelProperty(value = "시험담당자2 이름", example = "")
+    private String TestMng2Name;
+    
+    @ApiModelProperty(value = "시험담당자2 참여율", example = "")
+    private String TestMng2Part;
+    
+    @ApiModelProperty(value = "시험담당자3 이름", example = "")
+    private String TestMng3Name;
+    
+    @ApiModelProperty(value = "시험담당자3 참여율", example = "")
+    private String TestMng3Part;
+
+    @ApiModelProperty(value = "평가완료 여부", example = "")
+    private String ratingState;
     
     @ApiModelProperty(value = "고지부담당자", example = "")
     private String memName;

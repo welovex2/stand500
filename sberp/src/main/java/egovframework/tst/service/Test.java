@@ -56,6 +56,31 @@ public class Test {
   @Column
   private String reportMemo;
 
+  
+  @ApiModelProperty(value = "수행지수 ", example = "최초발급")
+  @Column
+  private float activ;
+  
+  
+  @ApiModelProperty(value = "배정자 ", example = "최초발급")
+  @Column
+  private String assignName;
+  
+  
+  @ApiModelProperty(value = "평가자 ", example = "최초발급")
+  @Column
+  private String ratingName;
+  
+  
+  @ApiModelProperty(value = "평가상태:1-확정,0-확정전 ", example = "최초발급")
+  @Column
+  private String ratingState;
+  
+  
+  @ApiModelProperty(value = "평가날짜 ", example = "최초발급")
+  @Column
+  private String ratingDt;
+  
 
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column

@@ -7,9 +7,10 @@ import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
-import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
+import egovframework.tst.dto.TestItemDTO;
+import egovframework.tst.dto.TestMngrDTO;
 
 @Mapper("TstMapper")
 public interface TstMapper {
@@ -26,9 +27,15 @@ public interface TstMapper {
 
   public int selectListCnt(ComParam param);
 
-  public boolean testMemInsert(Req req);
+  public boolean testInfoUpate(TestMngrDTO req);
+  
+  public boolean testMemInsert(TestMngr req);
+  
+  public boolean testMemSatetUpdate(TestMngrDTO req);
 
-  public List<Res> testMemList(String testSeq);
+  public TestMngrDTO testMemInfo(String testSeq);
+  
+  public List<TestMngr> testMemList(String testSeq);
 
   public boolean testStateInsert(Req req);
 
@@ -49,4 +56,6 @@ public interface TstMapper {
   public boolean testStateUpdate(Req req);
   
   public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId, @Param("searchVO") List<SearchVO> param);
+
+  public List<Res> selectRevList(ComParam param);
 }

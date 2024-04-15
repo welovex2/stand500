@@ -6,6 +6,7 @@ import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
+import egovframework.tst.dto.TestMngrDTO;
 
 public interface TstService {
 
@@ -21,9 +22,11 @@ public interface TstService {
 
   List<Res> selectList(ComParam param);
 
-  boolean testMemInsert(Req req);
+  boolean testMemInsert(TestMngrDTO req);
 
-  List<Res> testMemList(String testSeq);
+  TestMngrDTO testMemList(String testSeq);
+  
+  boolean testMemSatetUpdate(TestMngrDTO req);
 
   boolean testStateInsert(Req req);
 
@@ -40,5 +43,7 @@ public interface TstService {
   List<Res> selectSaleList(ComParam param);
 
   int selectSaleListCnt(ComParam param);
+  
+  List<Res> selectRevList(ComParam param);
 
 }
