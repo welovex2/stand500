@@ -163,6 +163,15 @@
 	        STATE = 'U'
 	</insert>
 	
+	<update id="delete">
+		UPDATE CMPY_TB
+		SET
+			STATE = 'D',
+			UDT_MEM_ID = #{udtMemId},
+	        UDT_DT = NOW()
+		WHERE CMPY_SEQ = #{cmpySeq}
+	</update>
+	
 	<insert id="insertMng">
 		INSERT INTO CMPY_MNG_TB
 		(

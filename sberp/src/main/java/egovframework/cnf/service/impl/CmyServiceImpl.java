@@ -59,6 +59,13 @@ public class CmyServiceImpl implements CmyService {
   }
   
   @Override
+  public boolean delete(CmpyDTO req) {
+    
+    return cmyMapper.delete(req);
+    
+  }
+  
+  @Override
   public CmpyDTO detail(int cmpySeq) {
     CmpyDTO detail = cmyMapper.detail(cmpySeq);
     

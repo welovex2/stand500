@@ -13,6 +13,8 @@ public interface CmyMapper {
   int selectListCnt(ComParam param);
 
   boolean insert(CmpyDTO req);
+  
+  boolean delete(CmpyDTO req);
 
   boolean insertMng(@Param("cmpySeq") int cmpySeq, @Param("mngList") List<CmpyMng> sUItems);
 

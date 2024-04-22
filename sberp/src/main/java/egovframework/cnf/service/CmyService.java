@@ -10,6 +10,8 @@ public interface CmyService {
   int selectListCnt(ComParam param);
 
   boolean insert(CmpyDTO req);
+  
+  boolean delete(CmpyDTO req);
 
   CmpyDTO detail(int cmpySeq);
 

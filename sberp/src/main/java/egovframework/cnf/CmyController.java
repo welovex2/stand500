@@ -209,6 +209,36 @@ public class CmyController {
     return res;
   }
 
+  @ApiOperation(value = "협력사/직접고객 삭제")
+  @PostMapping(value = "/{cmpySeq}/delete.do")
+  public BasicResponse delete(@ApiParam(value = "회사 고유번호", required = true, example = "0004") @PathVariable(name = "cmpySeq") int cmpySeq) throws Exception {
+    
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+    CmpyDTO req = new CmpyDTO();
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
+    // 로그인정보
+    req.setUdtMemId(user.getId());
+    req.setCmpySeq(cmpySeq);
+    result = cmyService.delete(req);
+    
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+  
   @ApiOperation(value = "협력사/직접고객 상세보기")
   @GetMapping(value = "/{cmpySeq}/detail.do")
   public BasicResponse detail(@ApiParam(value = "회사 고유번호", required = true,

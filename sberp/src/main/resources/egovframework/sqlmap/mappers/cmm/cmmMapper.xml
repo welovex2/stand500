@@ -23,7 +23,7 @@
 	</select>
 	
 	<select id="cmpyDetail" parameterType="int" resultType="cmpy">
-  		select
+  		SELECT
 			CMPY_SEQ,
 		    CMPY_NAME,
 		    CMPNY_IDNTF,
@@ -34,9 +34,9 @@
 		    CMPY_PHONE,
 		    ADDR,
             ENG_ADDR
-		from CMPY_TB
-		where cmpy_seq = #{cmpySeq}
-		and STATE != 'D';
+		FROM CMPY_TB
+		WHERE CMPY_SEQ = #{cmpySeq}
+		;
 	</select>
 
 	<select id="cmpyMngList" parameterType="int" resultType="egovMap">
