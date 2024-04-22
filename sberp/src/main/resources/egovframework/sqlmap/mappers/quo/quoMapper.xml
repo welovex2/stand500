@@ -556,6 +556,8 @@
 		<result column="cmpy_mng_seq" property="cmpyMngSeq"/>
 		<result column="cmpyTitle" property="cmpyTitle"/>
 		<result column="cmpyMngName" property="cmpyMngName"/>
+		<result column="cmpyMngTel" property="cmpyMngTel"/>
+		<result column="cmpyMngEmail" property="cmpyMngEmail"/>
 		<result column="est_cmp_dt" property="estCmpDt"/>
 		<result column="version" property="version"/>
 		<result column="cmpyName" property="cmpyName"/>
@@ -636,6 +638,8 @@
 			,IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle
 			,IFNULL (CMPY_MNG_TB.NAME, '') cmpyMngName
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
+            ,IFNULL (CMPY_MNG_TB.TEL, '') cmpyMngTel
+            ,IFNULL (CMPY_MNG_TB.EMAIL, '') cmpyMngEmail
             ,FN_MEM_NAME (QUO_TB.INS_MEM_ID) INS_MEM	/* 작성자 추가 */
 			,MEMBER_TB.MEM_NAME							/* 업무담당자 추가 */
             ,IFNULL (JOB_TB.MNG_NAME, '') MNG_NAME	

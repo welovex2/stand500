@@ -205,6 +205,14 @@ public class QuoDTO {
     @Column
     private String cmpyMngName;
     
+    @ApiModelProperty(value = "컨설팅 담당자 휴대번호 ", example = "")
+    @Column
+    private String cmpyMngTel;
+    
+    @ApiModelProperty(value = "컨설팅 담당자 이메일 ", example = "")
+    @Column
+    private String cmpyMngEmail;
+    
     @ApiModelProperty(value = "업체명 ", example = "")
     @Column
     private String cmpyName;
