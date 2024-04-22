@@ -913,6 +913,9 @@
 		    /* 6	고정 > 제조자 / 제조국가 */
 		    SBK_TB.MNFCT_CMPNY MNFCT_CMPNY,
 		    fn_code_name (SBK_TB.MNFCT_CNTRY_CODE, 'SN') MNFCT_CNTRY,
+		    /* 제품라벨 */
+            ATHNT_NMBR,
+			MDL_IDNTF,
 		    /* 1-1. 시험기자재 (제품구분) */
 		    RAW_TB.CLASS_A_YN,
 		    RAW_TB.CLASS_B_YN,

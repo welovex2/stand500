@@ -109,6 +109,16 @@ public class ReportDTO {
   private String mnfctCntry;
 
 
+  @ApiModelProperty(value = "신청기기 인증번호 ", example = "")
+  @Column
+  private String athntNmbr;
+  
+
+  @ApiModelProperty(value = "구성품(모듈) 식별부호 ", example = "")
+  @Column
+  private String mdlIdntf;
+  
+
   @ApiModelProperty(value = "성적서 발급일 ", example = "2023-05-30")
   @Column
   private String reportDt;
