@@ -30,29 +30,48 @@ public class QuoDTO {
     @Column
     private String sbkId;
 
-    @ApiModelProperty(value = "회사 고유번호", example = "1")
+    /**
+     * 신청서 업데이트 후 삭제 예정
+     */
+    @ApiModelProperty(value = "신청사 회사 고유번호", hidden = true)
     @Column
     private int cmpySeq;
-
-    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @ApiModelProperty(value="신청사 담당자 고유번호", hidden = true)
     @Column
     private int cmpyMngSeq;
-    
-    @ApiModelProperty(value = "담당자 이름 ", example = "김담당")
+    @ApiModelProperty(value = "담당자 이름 ", hidden = true)
     @Column
     private String mngName;
-
-    @ApiModelProperty(value = "전화번호 ", example = "02-354-9855")
+    @ApiModelProperty(value = "전화번호 ", hidden = true)
     @Column
-//    @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-//    @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
     private String mngPhone;
-
-    @ApiModelProperty(value = "담당자 이메일 ", example = "")
+    @ApiModelProperty(value = "담당자 이메일 ", hidden = true)
     @Column
-//    @Pattern(regexp = "^[0-9-]*$", message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-//    @Size(min = 0, max = 13, message = "팩스는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
     private String mngEmail;
+    /**
+     * 
+     */
+    
+    @ApiModelProperty(value = "컨설팅 회사 고유번호", example = "1")
+    @Column
+    private int prtnSeq;
+
+    @ApiModelProperty(value="컨설팅 담당자 고유번호", example = "3")
+    @Column
+    private int prtnMngSeq;
+
+    @ApiModelProperty(value = "컨설팅 회사 여부", example = "1")
+    @Column
+    private int prtnYn;
+    
+    @ApiModelProperty(value = "신청사 고유번호", example = "1")
+    @Column
+    private int dirtSeq;
+
+    @ApiModelProperty(value="신청사 담당자 고유번호", example = "3")
+    @Column
+    private int dirtMngSeq;
+
 
     @ApiModelProperty(value = "제품명 ", example = "블루투스 수신기")
     @Column
@@ -112,6 +131,14 @@ public class QuoDTO {
     @Column
     private String sbkId;
 
+    @ApiModelProperty(value = "매출번호", example = "M2405-0001")
+    @Column
+    private String slsId;
+    
+    @ApiModelProperty(value = "업무담당자", example = "a")
+    @Column
+    private String mngId;
+    
     @ApiModelProperty(value = "담당자", example = "김정미")
     @Column
     private String memName;
@@ -192,6 +219,17 @@ public class QuoDTO {
     @Column
     private String payDtStr;
 
+    @ApiModelProperty(value = "최종상태 ", example = "")
+    @Column
+    private String lastState;
+
+    @ApiModelProperty(value = "납입횟수 ", example = "")
+    @Column
+    private int cnt;
+    
+    /**
+     * 신청서 업데이트 후 삭제 예정
+     */
     @ApiModelProperty(value = "고객유형 0001 컨설팅 0002 직고객 0003 없음 ", example = "")
     @Column
     private String cmpyCode;
@@ -235,7 +273,42 @@ public class QuoDTO {
     @ApiModelProperty(value = "담당자 이메일 ", example = "")
     @Column
     private String mngEmail;
-
+    /**
+     * END
+     */
+    
+    @ApiModelProperty(value = "컨설팅 회사 고유번호", example = "1")
+    @Column
+    private int prtnSeq;
+    @ApiModelProperty(value="컨설팅 담당자 고유번호", example = "3")
+    @Column
+    private int prtnMngSeq;
+    @ApiModelProperty(value = "컨설팅 회사 여부", example = "1")
+    @Column
+    private int prtnYn;
+    @ApiModelProperty(value = "신청사 고유번호", example = "1")
+    @Column
+    private int dirtSeq;
+    @ApiModelProperty(value="신청사 담당자 고유번호", example = "3")
+    @Column
+    private int dirtMngSeq;
+    @ApiModelProperty(value = "컨설팅 회사명", example = "")
+    private String prtnName;
+    @ApiModelProperty(value = "컨설팅 담당자명", example = "")
+    private String prtnMngName;
+    @ApiModelProperty(value = "컨설팅담당자 휴대번호", example = "")
+    private String prtnMngTel;
+    @ApiModelProperty(value = "컨설팅담당자 이메일", example = "")
+    private String prtnMngEmail;
+    @ApiModelProperty(value = "신청사 회사명", example = "")
+    private String dirtName;
+    @ApiModelProperty(value = "신청사 담당자명", example = "")
+    private String dirtMngName;
+    @ApiModelProperty(value = "신청사담당자 휴대번호", example = "")
+    private String dirtMngTel;
+    @ApiModelProperty(value = "신청사담당자 이메일", example = "")
+    private String dirtMngEmail;
+    
     @ApiModelProperty(value = "제품명 ", example = "")
     @Column
     private String prdctName;

@@ -169,8 +169,8 @@ public class SlsController {
 
     return res;
   }
-
-  @ApiOperation(value = "매출확정 등록")
+  
+  @ApiOperation(value = "매출확정 등록 (구버전)")
   @PostMapping(value = "/insert.do")
   public BasicResponse slsInsert(@ApiParam(value = "quoId 값, 신청금액 전송") @RequestBody SlsDTO.Req req)
       throws Exception {
@@ -225,6 +225,89 @@ public class SlsController {
         msg = ResponseMessage.RETRY;
         log.warn(user.getId() + " :: " + e.toString());
         log.warn(req.toString());
+        
+      }
+
+    } else {
+      msg = ResponseMessage.UNAUTHORIZED;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+
+  @ApiOperation(value = "신청금액 등록")
+  @PostMapping(value = "/bill/insert.do")
+  public BasicResponse slsInsert(@ApiParam(value = "quoId 값, BILL_SEQ, 신청금액, 요청상태, 사유") @RequestBody List<SlsDTO.Req> list)
+      throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+
+    boolean result = false;
+    String msg = "";
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      
+      try {
+        
+        for (SlsDTO.Req req : list) {
+          
+          // 로그인정보
+          req.setInsMemId(user.getId());
+          req.setUdtMemId(user.getId());
+  
+          System.out.println("===================");
+          System.out.println(req.toString());
+          System.out.println("===================");
+  
+          // 신청금액 필수값 체크
+          if (req.getBill() <= 0) {
+            msg = ResponseMessage.CHECK_DATA;
+          } 
+          else {
+            
+            Quo quo = slsService.selectQuoDetail(req.getQuoId());
+            SlsDTO.Res sls = slsService.selectDetail(req);
+            
+            if (quo == null) throw new Exception(ResponseMessage.NO_DATA); 
+  
+            // 취합견적서에 포함된 견적서는 취합견적서로 이동
+            else if (quo.getChqSeq() > 0) {
+              msg = ResponseMessage.GO_CHQ;
+            }
+            // 기등록된 매출이 있으면 계산서만 발행
+            else if (sls != null) {
+              
+              // 신청금액은 미수금보다 크면 오류
+              if (sls.getArrears() < req.getBill()) {
+                msg = ResponseMessage.ERROR_BILL;
+              } else {
+                req.setSlsId(sls.getSlsId());
+                result = slsService.update(req);
+              }
+              
+            } 
+            else { 
+              
+              // 신청금액은 총 청구액보다 크면 오류
+              if (Integer.parseInt(quo.getTotalVat()) < req.getBill()) {
+                msg = ResponseMessage.ERROR_BILL;
+              } else {
+                req.setQuoStateCode("1"); // 매출확정 코드
+                result = slsService.insert(req);
+              }
+              
+            }
+          }
+          
+        }
+      } catch (Exception e) {
+        
+        msg = ResponseMessage.RETRY;
+        log.warn(user.getId() + " :: " + e.toString());
         
       }
 
@@ -333,21 +416,27 @@ public class SlsController {
     boolean result = true;
     String msg = "";
     List<BillDTO.Res> list = new ArrayList<BillDTO.Res>();
-
+    BillDTO.Res info = new BillDTO.Res();
+    
     list = slsService.selectBillList(slsSeq);
-
-    if (list == null) {
+    info = slsService.selectSlsInfo(slsSeq);
+    
+    if (list == null || info == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).summary(info).data(list).build();
 
     return res;
   }
 
   @ApiOperation(value = "계산서 상태 변경",
-      notes = "계산서 발행여부 : slsId, billSeq, billYn=1 필수\n계산서 발행 작성일 : slsId, billSeq, otherBillDt\n납부상태 변경 : slsId, billSeq, payCode(MP), payDt")
+      notes = "계산서 금액수정 : slsId, billSeq, bill, memo 필수\n"
+          + "계산서 발행여부 : slsId, billSeq, billYn=1 필수\n"
+          + "계산서 발행 작성일 : slsId, billSeq, otherBillDt\n"
+          + "납부상태 변경 : slsId, billSeq, payCode(MP), payDt\n"
+          + "요청승인 : slsId, billSeq, state ")
   @PostMapping(value = "/billInsert.do")
   public BasicResponse billInsert(@RequestBody SlsDTO.Req req) throws Exception {
 
@@ -363,6 +452,10 @@ public class SlsController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
+//      // bill 금액이 있으면 why 필수
+//      if (req.getBill() > 0 && StringUtils.isEmpty(req.getMemo())) {
+//        msg = ResponseMessage.ERROR_WHY;
+//      }
       result = slsService.billInsert(req);
     } else {
       result = false;
@@ -374,21 +467,21 @@ public class SlsController {
     return res;
   }
 
-  @ApiOperation(value = "매출삭제", notes = "")
-  @PostMapping(value = "/delete.do")
-  public BasicResponse delete(@ApiParam(value = "매출 고유번호", required = true,
-      example = "M2303-0002") @RequestBody List<String> slsIds) throws Exception {
-
-    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
-    boolean result = true;
-    String msg = "";
-
-    result = slsService.delete(user.getId(), slsIds);
-
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
-
-    return res;
-  }
+//  @ApiOperation(value = "매출삭제", notes = "")
+//  @PostMapping(value = "/delete.do")
+//  public BasicResponse delete(@ApiParam(value = "매출 고유번호", required = true,
+//      example = "M2303-0002") @RequestBody List<String> slsIds) throws Exception {
+//
+//    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+//    boolean result = true;
+//    String msg = "";
+//
+//    result = slsService.delete(user.getId(), slsIds);
+//
+//    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+//
+//    return res;
+//  }
   
   
   @ApiOperation(value = "매출 메모 추가")

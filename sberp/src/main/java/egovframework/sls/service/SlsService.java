@@ -15,6 +15,8 @@ public interface SlsService {
 
   boolean insert(SlsDTO.Req req);
 
+  boolean update(Req req);
+  
   SlsDTO.Res selectDetail(SlsDTO.Req req);
 
   int selectByTestListCnt(ComParam param);
@@ -38,5 +40,7 @@ public interface SlsService {
   Quo selectQuoDetail(String quoId);
 
   boolean memoUpdate(Req req);
+
+  BillDTO.Res selectSlsInfo(String slsSeq);
 
 }

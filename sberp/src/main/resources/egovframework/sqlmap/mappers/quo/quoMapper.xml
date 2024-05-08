@@ -35,45 +35,8 @@
 			ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
     
 		where 1=1
-		<if test="searchVO != null">
-	        <foreach collection="searchVO" item="item" separator="">
-	       
-	        	<choose>
-					<!-- 1	고객유형 -->
-					<when test="item.searchCode == 1">AND IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-					<!-- 7	고지부담당자 -->
-					<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-					<!-- 4	컨설팅명 -->
-					<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-					<!-- 6	제품명 -->
-					<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-					<!-- 27	모델명 -->
-					<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-					<!-- 12	회사명 -->
-					<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-					<!-- 15	작성일 -->
-					<when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-					<!-- 16	매출확정일 -->
-					<when test="item.searchCode == 16">AND 
-						(DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d') OR
-						DATE_FORMAT(chqSls.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d'))
-					</when>
-					<!-- 19 매출확정자 -->
-					<when test="item.searchCode == 19">AND 
-						(IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%') OR
-						IFNULL(FN_MEM_NAME(chqSls.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%'))
-					</when>
-					<!-- 57	프로젝트상태 -->
-	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
-	        		<!-- 58	프로젝트상태변경일 -->
-	        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-	        		<!-- 5	견적서번호 -->
-					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-					<!-- 61	신청서번호 -->
-					<when test="item.searchCode == 61">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-	        	</choose>
-	        </foreach>
-		</if>
+		<include refid="whereList"/>
+
 	</select>
 	
 	<select id="selectList" parameterType="comParam" resultType="quoRes">
@@ -85,6 +48,7 @@
 				#ROW_NUMBER() OVER(ORDER BY QUO_TB.ins_dt) AS no,
 				JOB_TB.JOB_SEQ,
 				JOB_TB.SECRET_YN,
+				VERSION,
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
 			    CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')) quoId,  
 				FN_MEM_NAME (JOB_TB.MNG_ID) memName,
@@ -95,10 +59,15 @@
                 if(QUO_TB.CHQ_SEQ = 0,
 					IFNULL (FN_MEM_NAME(SLS_TB.CNFRM_ID),''),
                     IFNULL (FN_MEM_NAME(chqSls.CNFRM_ID),'')) cnfrmName,
-			    JOB_TB.CMPY_SEQ, 
-			    IFNULL (FN_CODE_NAME(CMPY_TB.CMPY_CODE,'PT'), '미등록') cmpy_type,
-			    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
-			    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
+			    JOB_TB.PRTN_SEQ, 
+			    JOB_TB.DIRT_SEQ,
+			    
+			    /* 신청서 업데이트 후 삭제 예정 */
+			    FN_CODE_NAME(CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END,'PT') CMPY_TYPE,
+                IFNULL (prtn.CMPY_NAME, '') PRTN_NAME,
+			    IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
+			    #
+			    
 			    JOB_TB.PRDCT_NAME,
 			    IFNULL (JOB_TB.MODEL_NAME, '') MODEL_NAME,
 			    IFNULL (TOTAL_VAT, 0) CHRGS,
@@ -135,57 +104,68 @@
 			    AND QUO_TB.CHQ_SEQ = chqSls.CHQ_SEQ
 			    AND chqSls.STATE != 'D'
 			    
-			    LEFT JOIN CMPY_TB
-				ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-	    		
+			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+	    		LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+                LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
+				
 	    		INNER JOIN (SELECT @rownum:=0) r
 	    		
 			WHERE 1=1
-			<if test="searchVO != null">
-		        <foreach collection="searchVO" item="item" separator="">
-		       
-		        	<choose>
-						<!-- 1	고객유형 -->
-						<when test="item.searchCode == 1">AND IFNULL(CMPY_TB.CMPY_CODE,'9999') = #{item.searchWord}</when>
-						<!-- 7	고지부담당자 -->
-						<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-						<!-- 4	컨설팅명 -->
-						<when test="item.searchCode == 4">AND IFNULL(CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 6	제품명 -->
-						<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 27	모델명 -->
-						<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 12	회사명 -->
-						<when test="item.searchCode == 12">AND IFNULL(JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
-						<!-- 15	작성일 -->
-						<when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-						<!-- 16	매출확정일 -->
-						<when test="item.searchCode == 16">AND 
-							(DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d') OR
-							DATE_FORMAT(chqSls.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d'))
-						</when>
-						<!-- 19 매출확정자 -->
-						<when test="item.searchCode == 19">AND 
-							(IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%') OR
-							IFNULL(FN_MEM_NAME(chqSls.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%'))
-						</when>
-						<!-- 57	프로젝트상태 -->
-		        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
-		        		<!-- 58	프로젝트상태변경일 -->
-		        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
-		        		<!-- 5	견적서번호 -->
-						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-						<!-- 61	신청서번호 -->
-						<when test="item.searchCode == 61">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
-		        	</choose>
-		        </foreach>
-			</if>
+			<include refid="whereList"/>
+			
 	        ORDER BY QUO_TB.INS_DT ASC
 	    ) lst
 	    ORDER BY NO DESC
 		LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
-	
+
+	<sql id="whereList">
+		
+		/* 보안견적서 */
+		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, JOB_TB.MNG_ID = #{memId}, 1)</if>
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	       
+	        	<choose>
+					<!-- 1	고객유형 -->
+					<when test="item.searchCode == 1">AND CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END = #{item.searchWord}</when>
+					<!-- 7	고지부담당자 -->
+					<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 4	컨설팅명 -->
+					<when test="item.searchCode == 4">AND prtn.CMPY_NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 6	제품명 -->
+					<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 27	모델명 -->
+					<when test="item.searchCode == 27">AND IFNULL(JOB_TB.MODEL_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 12	회사명 -->
+					<when test="item.searchCode == 12">AND CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 15	작성일 -->
+					<when test="item.searchCode == 15">AND DATE_FORMAT(QUO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+					<!-- 16	매출확정일 -->
+					<when test="item.searchCode == 16">AND 
+						(DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d') OR
+						DATE_FORMAT(chqSls.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d'))
+					</when>
+					<!-- 19 매출확정자 -->
+					<when test="item.searchCode == 19">AND 
+						(IFNULL(FN_MEM_NAME(SLS_TB.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%') OR
+						IFNULL(FN_MEM_NAME(chqSls.CNFRM_ID),'') LIKE CONCAT('%',#{item.searchWord},'%'))
+					</when>
+					<!-- 57	프로젝트상태 -->
+	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
+	        		<!-- 58	프로젝트상태변경일 -->
+	        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+	        		<!-- 5	견적서번호 -->
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 61	신청서번호 -->
+					<when test="item.searchCode == 61">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 76	보안견적서여부 -->
+	        		<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
+	        	</choose>
+	        </foreach>
+		</if>
+	</sql>
+		
 	<select id="selectRef" parameterType="quoReq" resultType="String">
   		SELECT FN_GET_SEQSTRING('Q',ifnull(#{quoYm},date_format(now(), '%y%m')),'G',#{quoSeq}) FROM DUAL
 	</select>
@@ -231,7 +211,7 @@
 				#{spclCndtn},
 				#{atchFileId},
 				#{quoStateCode},
-				#{version},
+				2, # 견적서 작성양식 리폼건 (#31) 고정값 사용
 				<if test="estCmpDt != null and estCmpDt != ''">
 				#{estCmpDt},
 				</if>
@@ -257,7 +237,6 @@
 			NEED_WEEK = #{needWeek},
 			SPCL_CNDTN = #{spclCndtn},
 			SGN_URL = #{atchFileId},
-			VERSION = #{version},
 			<if test="estCmpDt != null and estCmpDt != ''">
 			EST_CMP_DT = #{estCmpDt},
 			</if>
@@ -477,16 +456,27 @@
 		INSERT INTO JOB_TB
 			(QUO_YM,
 			QUO_SEQ,
+			/* 신청서 업데이트 후 사용 안할 예정 */
 			CMPY_SEQ,
 			CMPY_MNG_SEQ,
 			CMPY_NAME,
-			MNG_ID,
 			MNG_PHONE,
 			MNG_EMAIL,
 			MNG_NAME,
+			#
+			
+			# 견적서 작성양식 리폼건 (#31)
+			PRTN_SEQ,
+			PRTN_MNG_SEQ,
+			PRTN_YN,
+			DIRT_SEQ,
+			DIRT_MNG_SEQ,
+			
+			MNG_ID,
 			PRDCT_NAME,
 			MODEL_NAME,
 			MEMO,
+			SECRET_YN,
 			INS_MEM_ID,
 			UDT_MEM_ID
 			)
@@ -494,17 +484,29 @@
 			(
 			SUBSTRING(#{quoId},2,4),
 			SUBSTRING(#{quoId},8,4),
-			#{cmpySeq},
-			#{cmpyMngSeq},
-		<![CDATA[
+			
+			/* 신청서 업데이트 후 사용 안할 예정 */
+			IF(#{prtnYn} = 1, #{prtnSeq}, #{dirtSeq}),
+			IF(#{prtnYn} = 1, #{prtnMngSeq}, #{dirtMngSeq}),
 			#{cmpyName},
-			#{mngId},
 			#{mngPhone},
 			#{mngEmail},
 			#{mngName},
+			#
+			
+			# 견적서 작성양식 리폼건 (#31)
+			#{prtnSeq},
+			#{prtnMngSeq},
+			#{prtnYn},
+			#{dirtSeq},
+			#{dirtMngSeq},
+			
+		<![CDATA[
+			#{mngId},
 			#{prdctName}, 
 			#{modelName},
-			#{modelName},
+			#{memo},
+			#{secretYn},
 			#{insMemId},
 			#{udtMemId}
 			)
@@ -512,19 +514,30 @@
 	</insert>
 		
 	<update id="updateJob" parameterType="quoReq" >
-			UPDATE JOB_TB
-			SET 
-				CMPY_SEQ = #{cmpySeq},
-				CMPY_MNG_SEQ = #{cmpyMngSeq},
+		UPDATE JOB_TB
+		SET 
+			/* 신청서 업데이트 후 사용 안할 예정 */
+			CMPY_SEQ = IF(#{cmpySeq} = 0, IF(#{prtnYn} = 1, #{prtnSeq}, #{dirtSeq}), #{cmpySeq}),
+			CMPY_MNG_SEQ = IF(#{cmpyMngSeq} = 0, IF(#{prtnYn} = 1, #{prtnMngSeq}, #{dirtMngSeq}), #{cmpyMngSeq}),
+			CMPY_NAME = #{cmpyName},
+			MNG_PHONE = #{mngPhone},
+			MNG_EMAIL = #{mngEmail},
+			MNG_NAME = #{mngName},
+			#
+			
+			# 견적서 작성양식 리폼건 (#31)
+			PRTN_SEQ = #{prtnSeq},
+			PRTN_MNG_SEQ = #{prtnMngSeq},
+			PRTN_YN = #{prtnYn},
+			DIRT_SEQ = #{dirtSeq},
+			DIRT_MNG_SEQ = #{dirtMngSeq},
+			
 		<![CDATA[
-				CMPY_NAME = #{cmpyName},
-				MNG_PHONE = #{mngPhone},
-				MNG_EMAIL = #{mngEmail},
-				MNG_NAME = #{mngName},
-				PRDCT_NAME = #{prdctName},
-				MODEL_NAME = #{modelName},
-				MEMO = #{memo},
-				UDT_MEM_ID = #{udtMemId}
+			PRDCT_NAME = #{prdctName},
+			MODEL_NAME = #{modelName},
+			MEMO = #{memo},
+			SECRET_YN = #{secretYn},
+			UDT_MEM_ID = #{udtMemId}
 		]]>
 		WHERE 1=1
 		AND JOB_TB.QUO_YM = substring(#{quoId},2,4)
@@ -551,7 +564,10 @@
 		<result column="quoId" property="quoId"/>
 		<result column="sbkId" property="sbkId"/>
 		<result column="chqId" property="chqId"/>
+		<result column="slsId" property="slsId"/>
 		<result column="SECRET_YN" property="secretYn"/>
+		
+		<!-- /* 신청서 업데이트 후 삭제 예정 */ -->
 		<result column="cmpyCode" property="cmpyCode"/>
 		<result column="cmpyType" property="cmpyType"/>
 		<result column="cmpy_seq" property="cmpySeq"/>
@@ -560,13 +576,32 @@
 		<result column="cmpyMngName" property="cmpyMngName"/>
 		<result column="cmpyMngTel" property="cmpyMngTel"/>
 		<result column="cmpyMngEmail" property="cmpyMngEmail"/>
-		<result column="est_cmp_dt" property="estCmpDt"/>
-		<result column="version" property="version"/>
 		<result column="cmpyName" property="cmpyName"/>
-		<result column="issue_dt" property="issueDt"/>
 		<result column="MNG_NAME" property="mngName"/>
 		<result column="MNG_PHONE" property="mngPhone"/>
 		<result column="MNG_EMAIL" property="mngEmail"/>
+		<!-- /* 신청서 업데이트 후 삭제 예정 */ -->
+		
+		<!-- # 견적서 작성양식 리폼건 (#31) -->
+		<result column="MNG_ID" property="mngId"/>
+		<result column="PRTN_SEQ" property="prtnSeq"/>
+		<result column="PRTN_MNG_SEQ" property="prtnMngSeq"/>
+		<result column="PRTN_YN" property="prtnYn"/>
+		<result column="PRTN_NAME" property="prtnName"/>
+		<result column="PRTN_MNG_NAME" property="prtnMngName"/>
+		<result column="PRTN_MNG_TEL" property="prtnMngTel"/>
+		<result column="PRTN_MNG_EMAIL" property="prtnMngEmail"/>
+		<result column="DIRT_SEQ" property="dirtSeq"/>
+		<result column="DIRT_MNG_SEQ" property="dirtMngSeq"/>
+		<result column="DIRT_NAME" property="dirtName"/>
+		<result column="DIRT_MNG_NAME" property="dirtMngName"/>
+		<result column="DIRT_MNG_TEL" property="dirtMngTel"/>
+		<result column="DIRT_MNG_EMAIL" property="dirtMngEmail"/>
+		<!-- # 견적서 작성양식 리폼건 (#31) -->
+		
+		<result column="est_cmp_dt" property="estCmpDt"/>
+		<result column="version" property="version"/>
+		<result column="issue_dt" property="issueDt"/>
 		<result column="INS_MEM" property="insMem"/>
 		<result column="mem_name" property="memName"/>
 		<result column="prdct_name" property="prdctName"/>
@@ -589,6 +624,11 @@
 		<result column="dir" property="dir"/>
 		<result column="cp" property="cp"/>
 		<result column="email" property="email"/>
+		
+		<result column="lastState" property="lastState"/>
+		<result column="CNT" property="cnt"/>
+		<result column="billState" property="billState"/>
+		
 		<result column="ARREARS" property="arrears"/>
 		<result column="QUO_STATE_CODE" property="quoStateCode"/>
 		<result column="QUO_MOD_SEQ" property="quoModeSeq"/>
@@ -632,8 +672,9 @@
 			, CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A',''))  QUOID 
             , IFNULL (CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')), '') SBKID
             , IF (QUO_TB.CHQ_SEQ=0, '', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId
-            
-            /* 업체정보 */
+            , FN_GET_SEQSTRING ('M', SLS_TB.SLS_YM, '', SLS_TB.SLS_SEQ) slsId
+			
+			/* 신청서 업데이트 후 삭제 예정 */
             ,IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ),'') CMPY_CODE
 			,FN_CUST_TYPE(JOB_TB.CMPY_SEQ) CMPYTYPE
 			,JOB_TB.CMPY_SEQ
@@ -643,11 +684,30 @@
             ,IFNULL (JOB_TB.CMPY_NAME, '') CMPYNAME
             ,IFNULL (CMPY_MNG_TB.TEL, '') cmpyMngTel
             ,IFNULL (CMPY_MNG_TB.EMAIL, '') cmpyMngEmail
-            ,FN_MEM_NAME (QUO_TB.INS_MEM_ID) INS_MEM	/* 작성자 추가 */
-			,MEMBER_TB.MEM_NAME							/* 업무담당자 추가 */
             ,IFNULL (JOB_TB.MNG_NAME, '') MNG_NAME	
 			,IFNULL (JOB_TB.MNG_PHONE, '') MNG_PHONE
 			,IFNULL (JOB_TB.MNG_EMAIL, '') MNG_EMAIL
+			#
+
+			# 견적서 작성양식 리폼건 (#31)
+			, JOB_TB.MNG_ID
+			, PRTN_SEQ
+			, PRTN_MNG_SEQ
+			, PRTN_YN
+			, IFNULL (PRTN.CMPY_NAME, '') PRTN_NAME
+			, IFNULL (PRTN_MNG.NAME, '') PRTN_MNG_NAME
+			, IFNULL (PRTN_MNG.TEL, '') PRTN_MNG_TEL
+            , IFNULL (PRTN_MNG.EMAIL, '') PRTN_MNG_EMAIL
+            
+			, DIRT_SEQ
+			, DIRT_MNG_SEQ
+			, IFNULL (DIRT.CMPY_NAME, '') DIRT_NAME
+			, IFNULL (DIRT_MNG.NAME, '') DIRT_MNG_NAME
+			, IFNULL (DIRT_MNG.TEL, '') DIRT_MNG_TEL
+            , IFNULL (DIRT_MNG.EMAIL, '') DIRT_MNG_EMAIL			
+						
+            ,FN_MEM_NAME (QUO_TB.INS_MEM_ID) INS_MEM	/* 작성자 추가 */
+			,MEMBER_TB.MEM_NAME							/* 업무담당자 추가 */
             
 			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') EST_CMP_DT
 			,VERSION
@@ -681,6 +741,16 @@
             , IFNULL(DATE_FORMAT(QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'),'') prmsDtStr
             , IFNULL(FN_MEM_NAME (QUO_MOD_TB.PRMS_ID),'') prmsName
             
+            
+           	, CASE 
+           		WHEN SLS_TB.SLS_YM IS NULL THEN '-'
+				WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN '미납' 
+				WHEN SLS_TB.ARREARS = 0 THEN '완납'
+				ELSE '납입중' 
+			END lastState
+			, billCnt.CNT
+		    , IFNULL (FN_CODE_NAME (BILL_TB.STATE, 'MB'), '-') billState
+			    
             , JOB_TB.SBK_REVISION
             
 			, QUO_TB.UDT_DT 
@@ -742,6 +812,7 @@
 			ON SLS_TB.QUO_YM = JOB_TB.QUO_YM
 		    AND SLS_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 		    
+		    
             LEFT JOIN QUO_MOD_TB
             ON QUO_MOD_TB.QUO_MOD_SEQ = (
 								SELECT QUO_MOD_SEQ
@@ -752,14 +823,46 @@
                                 LIMIT 1
             )
             
+           
+           	/* 납입횟수 */                           
+			LEFT JOIN (
+				SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT
+				FROM BILL_TB
+				WHERE BILL_TB.STATE NOT IN ('4','6')
+				GROUP BY SLS_YM, SLS_SEQ
+			) billCnt
+			ON SLS_TB.SLS_YM = billCnt.SLS_YM
+			AND SLS_TB.SLS_SEQ = billCnt.SLS_SEQ
+		    
+		    /* 최근 계산서발행 데이터 */            
+			LEFT JOIN BILL_TB
+			ON BILL_TB.BILL_SEQ = (
+								SELECT BILL_SEQ
+								FROM BILL_TB SUB
+								WHERE SUB.SLS_YM = SLS_TB.SLS_YM
+								AND SUB.SLS_SEQ = SLS_TB.SLS_SEQ
+								ORDER BY BILL_SEQ DESC
+								LIMIT 1
+			)
+			AND BILL_TB.SLS_YM = SLS_TB.SLS_YM
+			AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+				
             LEFT JOIN SBK_TB
             ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
             AND SBK_TB.TYPE = JOB_TB.SBK_TYPE
 			AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ
 			AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
             
+            /* 신청서 업데이트 후 삭제 예정 */
             LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
             LEFT JOIN CMPY_MNG_TB ON JOB_TB.CMPY_MNG_SEQ = CMPY_MNG_TB.CMPY_MNG_SEQ
+            #
+            
+            # 견적서 작성양식 리폼건 (#31)
+            LEFT JOIN CMPY_TB PRTN ON JOB_TB.PRTN_SEQ = PRTN.CMPY_SEQ
+            LEFT JOIN CMPY_MNG_TB PRTN_MNG ON JOB_TB.PRTN_MNG_SEQ = PRTN_MNG.CMPY_MNG_SEQ
+            LEFT JOIN CMPY_TB DIRT ON JOB_TB.DIRT_SEQ = DIRT.CMPY_SEQ
+            LEFT JOIN CMPY_MNG_TB DIRT_MNG ON JOB_TB.DIRT_MNG_SEQ = DIRT_MNG.CMPY_MNG_SEQ
             
         WHERE 1=1
         

@@ -41,7 +41,7 @@ public class Sls {
   private int arrears;
   
 
-  @ApiModelProperty(value = "매출확정자 ", example = "", required = true)
+  @ApiModelProperty(value = "매출확정자 ", example = "", hidden = true)
   @Column
   private String cnfrmId;
 
@@ -51,7 +51,7 @@ public class Sls {
   private String cnfrmDate;
 
   
-  @ApiModelProperty(value = "메모 ", example = "", hidden = true)
+  @ApiModelProperty(value = "메모 ", example = "")
   @Column
   private String memo;
   
@@ -76,7 +76,7 @@ public class Sls {
   private LocalDateTime udtDt;
 
 
-  @ApiModelProperty(value = "상태(I,U,D) ", example = "", hidden = true)
+  @ApiModelProperty(value = "상태 ", example = "")
   @Column
   private String state;
 

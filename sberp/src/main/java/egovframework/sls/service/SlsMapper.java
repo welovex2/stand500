@@ -30,6 +30,8 @@ public interface SlsMapper {
 
   boolean payInsert(PayDTO.Req req);
 
+  BillDTO.Res selectSlsInfo(String slsSeq);
+  
   List<BillDTO.Res> selectBillList(String slsSeq);
 
   boolean billInsert(SlsDTO.Req req);

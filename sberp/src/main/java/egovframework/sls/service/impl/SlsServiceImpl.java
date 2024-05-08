@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.quo.service.Quo;
 import egovframework.sls.service.BillDTO;
+import egovframework.sls.service.BillDTO.Res;
 import egovframework.sls.service.PayDTO;
 import egovframework.sls.service.SlsDTO;
 import egovframework.sls.service.SlsDTO.Req;
@@ -59,11 +60,22 @@ public class SlsServiceImpl implements SlsService {
     // 매출리스트 등록
     result = slsMapper.insert(req);
     
-    // 계산서 발행내역 등록
+    // 계산서 발행내역 등록 
     result = slsMapper.billInsert(req);
 
     // 견적서 상태변경
     result = slsMapper.updateQuoState(req);
+    
+    return result;
+  }
+  
+  @Override
+  @Transactional
+  public boolean update(SlsDTO.Req req) {
+    boolean result = true;
+
+    // 계산서 발행내역 등록 
+    result = slsMapper.billInsert(req);
 
     return result;
   }
@@ -158,6 +170,11 @@ public class SlsServiceImpl implements SlsService {
   @Override
   public boolean memoUpdate(Req req) {
     return slsMapper.memoUpdate(req);
+  }
+
+  @Override
+  public Res selectSlsInfo(String slsSeq) {
+    return slsMapper.selectSlsInfo(slsSeq);
   }
 
 }

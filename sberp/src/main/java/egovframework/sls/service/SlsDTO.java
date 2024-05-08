@@ -21,15 +21,15 @@ public class SlsDTO {
     @Column
     private String quoId;
 
-    @ApiModelProperty(value = "견적서번호", example = "Q2303-G0018")
+    @ApiModelProperty(value = "견적서번호", example = "Q2303-G0018", hidden = true)
     @Column
     private List<String> quoIds;
     
-    @ApiModelProperty(value = "취합견적서번호", example = "CH2305-001")
+    @ApiModelProperty(value = "취합견적서번호", example = "CH2305-001", hidden = true)
     @Column
     private String chqId;
 
-    @ApiModelProperty(value = "견적서상태 :1 매출확정, 2 수정요청, 3 수정허가, 4 수정완료 ", example = "1", required = true)
+    @ApiModelProperty(value = "견적서상태 :1 매출확정, 2 수정요청, 3 수정허가, 4 수정완료 ", example = "1", hidden = true)
     @Column
     private String quoStateCode;
     
@@ -41,24 +41,24 @@ public class SlsDTO {
     @Column
     @NotNull
     private int billSeq;
-    
+ 
     @ApiModelProperty(value = "매출확정 신청금액", example = "1000000")
     @Column
     private int bill;
     
-    @ApiModelProperty(value="계산서발행여부 ", example = "")
+    @ApiModelProperty(value="계산서발행여부 ", example = "", hidden = true)
     @Column
     private int billYn;
     
-    @ApiModelProperty(value="납부상태(공통토드:MP) 01 납부완료(계좌이체) 02 납부완료(가상계좌) 03 납부완료(신용카드) 04 납부완료(기타입력)  ", example = "")
+    @ApiModelProperty(value="납부상태(공통토드:MP) 01 납부완료(계좌이체) 02 납부완료(가상계좌) 03 납부완료(신용카드) 04 납부완료(기타입력)  ", example = "", hidden = true)
     @Column
     private String payCode;
     
-    @ApiModelProperty(value="OTHER_BILL_DT ", example = "")
+    @ApiModelProperty(value="OTHER_BILL_DT ", example = "", hidden = true)
     @Column
     private String otherBillDt;
     
-    @ApiModelProperty(value="납부완료일 ", example = "")
+    @ApiModelProperty(value="납부완료일 ", example = "", hidden = true)
     @Column
     private String payDt;
     
@@ -140,21 +140,33 @@ public class SlsDTO {
     @ApiModelProperty(value = "시험부 ", example = "")
     @Column
     private String testType;
-    
-    @ApiModelProperty(value = "계산서발행내역 ")
-    private List<Bill> billList;
-    
-    @ApiModelProperty(value = "수정요청상태 ", example = "")
-    @Column
-    private String quoState;
 
-    @ApiModelProperty(value = "수정요청상태(일) ", example = "")
+    @ApiModelProperty(value = "계산서 상태", example = "-")
     @Column
-    private String prmsDtStr;
+    private String billState;
+    
+//    @ApiModelProperty(value = "계산서발행내역 ")
+//    private List<Bill> billList;
+//    
+//    @ApiModelProperty(value = "수정요청상태 ", example = "")
+//    @Column
+//    private String quoState;
+//
+//    @ApiModelProperty(value = "수정요청상태(일) ", example = "")
+//    @Column
+//    private String prmsDtStr;
+//
+//    @ApiModelProperty(value = "수정요청상태(이름) ", example = "")
+//    @Column
+//    private String prmsName;
 
-    @ApiModelProperty(value = "수정요청상태(이름) ", example = "")
+    @ApiModelProperty(value = "최종상태 ", example = "")
     @Column
-    private String prmsName;
+    private String lastState;
+
+    @ApiModelProperty(value = "납입횟수 ", example = "")
+    @Column
+    private int cnt;
     
     @ApiModelProperty(value = "삭제가능여부", example = "Y")
     @Column
