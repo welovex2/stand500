@@ -28,4 +28,8 @@ public class ImSubDTO extends ImSub {
   private String modelName;
   private String cmpyTitle;
   private String mngName;
+  
+  @ApiModelProperty(value = "보안견적서 여부", example = "")
+  @Column
+  private int secretYn;
 }

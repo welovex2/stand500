@@ -38,6 +38,7 @@ public class ResponseMessage {
     public static final String DIFFERENT_CONS = "동일한 컨설팅만 취합할 수 있습니다";
     public static final String INSERT_TWO = "2개이상 취합할수 있습니다";
     public static final String GO_CHQ = "취합견적서에서 진행하세요";
+    public static final String SECRET_CHQ = "보안문서는 취합할 수 없습니다";
     
     public static final String MAX_REVISION = "이정도 했으면 신청서를 새로 받읍시다";
     public static final String CHECK_JOB_SEQ = "상태변경할 문서가 없습니다.";

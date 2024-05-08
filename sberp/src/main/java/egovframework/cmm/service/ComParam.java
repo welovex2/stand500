@@ -29,6 +29,12 @@ public class ComParam extends ComPaging {
   @ApiModelProperty(value = "정렬컬럼", example = "공통코드 CO")
   private String sort = "newDesc";
   
+  @ApiModelProperty(value = "로그인사용자", example = "")
+  private String memId = "";
+  
+  @ApiModelProperty(value = "보안문서 접근여부", example = "")
+  private int secretYn;
+  
   @ApiModelProperty(value = "검색 ", example = "")
   private List<SearchVO> searchVO;
 

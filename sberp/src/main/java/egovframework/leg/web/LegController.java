@@ -42,7 +42,7 @@ public class LegController {
   @ApiOperation(value = "시험접수 관리대장",
       notes = "검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n" + " 54    시료반출일,21   시료반입일")
   @GetMapping(value = "/list.do")
-  public BasicResponse ppList(@ModelAttribute ComParam param) throws Exception {
+  public BasicResponse legList(@ModelAttribute ComParam param) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
@@ -61,6 +61,9 @@ public class LegController {
       return res;
     }
 
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));

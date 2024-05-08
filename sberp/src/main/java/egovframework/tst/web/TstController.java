@@ -127,6 +127,9 @@ public class TstController {
     String msg = "";
     List<TestDTO.Res> list = new ArrayList<TestDTO.Res>();
 
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
@@ -216,6 +219,9 @@ public class TstController {
     String msg = "";
     List<Res> list = new ArrayList<Res>();
 
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
@@ -593,6 +599,9 @@ public class TstController {
     String msg = "";
     List<TestDTO.Res> list = new ArrayList<TestDTO.Res>();
 
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;

@@ -131,7 +131,9 @@ public class SbkController {
 
       return res;
     }
-
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     /**
      * OR 조건 검색 처리
      */
@@ -350,6 +352,7 @@ public class SbkController {
     SbkDTO.Res detail = new SbkDTO.Res();
     SbkDTO.Req req = new SbkDTO.Req();
 
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
@@ -361,6 +364,8 @@ public class SbkController {
     }
 
     req.setSbkId(sbkId);
+    req.setMemId(user.getId());
+    req.setSecretYn(user.getSecretYn());
     detail = sbkService.selectDetail(req);
 
     if (detail == null) {

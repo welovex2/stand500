@@ -84,8 +84,9 @@
 			SELECT 
 				#ROW_NUMBER() OVER(ORDER BY QUO_TB.ins_dt) AS no,
 				JOB_TB.JOB_SEQ,
+				JOB_TB.SECRET_YN,
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
-			    FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, TYPE, QUO_TB.QUO_SEQ) quoId, 
+			    CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')) quoId,  
 				FN_MEM_NAME (JOB_TB.MNG_ID) memName,
 			    DATE_FORMAT(QUO_TB.INS_DT, '%Y-%m-%d') insDtStr,
 			    if(QUO_TB.CHQ_SEQ = 0,
@@ -550,6 +551,7 @@
 		<result column="quoId" property="quoId"/>
 		<result column="sbkId" property="sbkId"/>
 		<result column="chqId" property="chqId"/>
+		<result column="SECRET_YN" property="secretYn"/>
 		<result column="cmpyCode" property="cmpyCode"/>
 		<result column="cmpyType" property="cmpyType"/>
 		<result column="cmpy_seq" property="cmpySeq"/>
@@ -580,8 +582,8 @@
 		<result column="spcl_cndtn" property="spclCndtn"/>
 		<result column="cost_total" property="CostTotal"/>
 		<result column="total_vat" property="TotalVat"/>
-		<result column="SGN_URL" property="sgnUrl"/>
-		<result column="ATCH_FILE_ID" property="atchFileId"/>
+<!-- 		<result column="SGN_URL" property="sgnUrl"/> -->
+<!-- 		<result column="ATCH_FILE_ID" property="atchFileId"/> -->
 		<result column="ENG_NAME" property="engName"/>
 		<result column="memPos" property="memPos"/>
 		<result column="dir" property="dir"/>
@@ -626,7 +628,8 @@
 		SELECT
 			QUO_TB.QUO_YM
 			, QUO_TB.QUO_SEQ
-			, FN_GET_SEQSTRING('Q',QUO_TB.QUO_YM,QUO_TB.TYPE,QUO_TB.QUO_SEQ) QUOID 
+			, JOB_TB.SECRET_YN
+			, CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A',''))  QUOID 
             , IFNULL (CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')), '') SBKID
             , IF (QUO_TB.CHQ_SEQ=0, '', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId
             
@@ -662,13 +665,14 @@
 			,QUO_TB.SPCL_CNDTN
 			,QUO_TB.COST_TOTAL
 			,QUO_TB.TOTAL_VAT
-			,FN_GET_IMAGE (QUO_TB.SGN_URL,0) SGN_URL
-			,QUO_TB.SGN_URL ATCH_FILE_ID
+			#,FN_GET_IMAGE (QUO_TB.SGN_URL,0) SGN_URL
+			#,QUO_TB.SGN_URL ATCH_FILE_ID
 			,IFNULL (MEMBER_TB.ENG_NAME, '') ENG_NAME
 			,CONCAT (MEMBER_TB.MEM_NAME, ' ' ,(SELECT IFNULL(NAME, '') FROM POS_TB WHERE POS_TB.POS_SEQ = MEMBER_TB.POS_SEQ LIMIT 1)) memPos
 			,IFNULL (FN_GET_PHONE_FORMAT (MEMBER_TB.TEL), '') dir
 			,IFNULL (FN_GET_PHONE_FORMAT (MEMBER_TB.PHONE), '') cp
 			,CONCAT (MEMBER_TB.id,'@standardbank.co.kr') email
+			
 			
 			, IFNULL(SLS_TB.ARREARS,'') ARREARS
 			, IFNULL(QUO_STATE_CODE, '0') QUO_STATE_CODE
@@ -758,6 +762,9 @@
             LEFT JOIN CMPY_MNG_TB ON JOB_TB.CMPY_MNG_SEQ = CMPY_MNG_TB.CMPY_MNG_SEQ
             
         WHERE 1=1
+        
+        <if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, JOB_TB.MNG_ID = #{memId}, 1)</if>
+        
         <if test="quoId != null and quoId != ''">
 		AND QUO_TB.QUO_YM = SUBSTRING(#{quoId},2,4)
 		AND QUO_TB.QUO_SEQ = SUBSTRING(#{quoId},8,4)

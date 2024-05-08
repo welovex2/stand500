@@ -31,10 +31,27 @@
 		        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = in_sub.IM_ID 
 				LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = out_sub.IM_ID
 				
+				/* 보안견적서 권한 설정 #31 */
+			    LEFT JOIN TEST_MNGR_TB mngr1
+	            ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ
+	            AND mngr1.TEST_MNGR_SEQ = 1
+	            
+	            LEFT JOIN TEST_MNGR_TB mngr2
+	            ON mngr2.TEST_SEQ = TEST_TB.TEST_SEQ
+	            AND mngr2.TEST_MNGR_SEQ = 2
+	            
+	            LEFT JOIN TEST_MNGR_TB mngr3
+	            ON mngr3.TEST_SEQ = TEST_TB.TEST_SEQ
+	            AND mngr3.TEST_MNGR_SEQ = 3
+            
 		WHERE
 		    1 = 1
 		# 재발행 신청서 제외
 		AND SBK_TB.REVISION = 0
+		
+		/* 보안견적서 */
+		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID, mngr1.TEST_MNG_ID, mngr3.TEST_MNG_ID, mngr3.TEST_MNG_ID), 1)</if>
+		
         <if test="searchVO != null">
 	        <foreach collection="searchVO" item="item" separator="">
 	       
@@ -86,6 +103,8 @@
 												    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 	        		<!-- 68	시료접수자 -->
         			<when test="item.searchCode == 68">AND FN_MEM_NAME(in_sub.CARRY_IN_ID) like CONCAT('%',#{item.searchWord},'%')</when>
+        			<!-- 76	보안견적서여부 -->
+	    			<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 				</choose>
 	        </foreach>
         </if>
@@ -99,6 +118,7 @@
 			SELECT
 				
 			    FN_GET_SEQSTRING('SB', SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ) sbkId,
+			    JOB_TB.SECRET_YN,
 			    DATE_FORMAT(SBK_TB.INS_DT, '%Y-%m-%d') RCPT_DT,
 			    /* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
 			    IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT(in_sub.CARRY_IN_DATE, '%Y-%m-%d'),'-')) CARRY_IN_DATE,
@@ -155,12 +175,29 @@
 			        LEFT JOIN IM_SUB_TB in_sub ON in_sub.IM_SUB_SEQ = IM_TOTAL_V.IN_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = in_sub.IM_ID 
 					LEFT JOIN IM_SUB_TB out_sub ON out_sub.IM_SUB_SEQ = IM_TOTAL_V.OUT_SUB_SEQ AND CONCAT ('IM', IM_YM, '-', 'G', LPAD(IM_SEQ,4,0)) = out_sub.IM_ID
 					
+					/* 보안견적서 권한 설정 #31 */
+				    LEFT JOIN TEST_MNGR_TB mngr1
+		            ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ
+		            AND mngr1.TEST_MNGR_SEQ = 1
+		            
+		            LEFT JOIN TEST_MNGR_TB mngr2
+		            ON mngr2.TEST_SEQ = TEST_TB.TEST_SEQ
+		            AND mngr2.TEST_MNGR_SEQ = 2
+		            
+		            LEFT JOIN TEST_MNGR_TB mngr3
+		            ON mngr3.TEST_SEQ = TEST_TB.TEST_SEQ
+		            AND mngr3.TEST_MNGR_SEQ = 3
+	            
 					INNER JOIN (SELECT @rownum:=0) r
 
 			WHERE
 			    1 = 1
 			# 재발행 신청서 제외
 			AND SBK_TB.REVISION = 0
+			
+			/* 보안견적서 */
+    		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID, mngr1.TEST_MNG_ID, mngr3.TEST_MNG_ID, mngr3.TEST_MNG_ID), 1)</if>
+    	
 	        <if test="searchVO != null">
 		        <foreach collection="searchVO" item="item" separator="">
 		       
@@ -212,6 +249,8 @@
 													    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 		        		<!-- 68	시료접수자 -->
 	        			<when test="item.searchCode == 68">AND FN_MEM_NAME(in_sub.CARRY_IN_ID) like CONCAT('%',#{item.searchWord},'%')</when>
+	        			<!-- 76	보안견적서여부 -->
+	    				<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 		        	</choose>
 		        	
 		        </foreach>

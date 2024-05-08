@@ -79,9 +79,9 @@ public class Quo {
   private String spclCndtn;
 
 
-  @ApiModelProperty(value = "서명이미지url ", example = "")
-  @Column
-  private String sgnUrl;
+//  @ApiModelProperty(value = "서명이미지url ", example = "")
+//  @Column
+//  private String sgnUrl;
 
 
   @ApiModelProperty(value = "견적서상태 :1 매출확정, 2 수정요청, 3 수정허가, 4 수정완료 ", example = "0")

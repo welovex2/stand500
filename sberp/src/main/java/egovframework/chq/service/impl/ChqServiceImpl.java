@@ -86,5 +86,10 @@ public class ChqServiceImpl implements ChqService {
 
     return result;
   }
+
+  @Override
+  public int isSecret(List<String> quoIds) {
+    return chqMapper.isSecret(quoIds);
+  }
 	
 }

@@ -16,6 +16,7 @@
 		<result property="authCode" column="authCode"/>		
 		<result property="atchFileId" column="atchFileId"/>
 		<result property="sgnUrl" column="sgnUrl"/>
+		<result property="secretYn" column="secretYn"/>
 	</resultMap>
 	
 	<!-- 일반 로그인 -->
@@ -30,10 +31,15 @@
                 , AUTH_CODE authCode
                 , MEMBER_SIGN_TB.ATCH_FILE_ID atchFileId
                 , FN_GET_IMAGE (MEMBER_SIGN_TB.ATCH_FILE_ID,0) sgnUrl
+                , IF (SECRET_TB.MEM_ID IS NULL, 0, 1) secretYn
              FROM MEMBER_TB
              	
              	LEFT JOIN MEMBER_SIGN_TB
             	ON MEMBER_SIGN_TB.MEMBER_SIGN_SEQ = (SELECT MEMBER_SIGN_SEQ FROM MEMBER_SIGN_TB sub WHERE sub.MEMBER_SEQ = MEMBER_TB.MEMBER_SEQ ORDER BY INS_DT DESC LIMIT 1)
+				
+				LEFT JOIN SECRET_TB
+				ON SECRET_TB.MEM_ID = MEMBER_TB.ID
+				AND SECRET_TB.STATE != 'D'
 				
             WHERE 1=1
               AND ID = #{id}

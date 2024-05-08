@@ -127,7 +127,13 @@ public class ChqController {
       else if (chqService.isChq(quoIds) == 1) {
         result = false;
         msg = ResponseMessage.DUPLICATE_CHQ;
-      } else {
+      } 
+      // 보안견적서가 포함되었는지 확인
+      else if (chqService.isSecret(quoIds) == 1) {
+        result = false;
+        msg = ResponseMessage.SECRET_CHQ;
+      } 
+      else {
 
         // 취합견적서 생성
         req.setQuoIds(quoIds);

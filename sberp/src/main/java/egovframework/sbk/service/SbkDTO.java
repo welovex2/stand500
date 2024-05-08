@@ -76,6 +76,13 @@ public class SbkDTO {
     @Column
     private String atchFileId;
     
+    @ApiModelProperty(value = "보안견적서 여부", example = "")
+    @Column
+    private int secretYn;
+    
+    @ApiModelProperty(value = "로그인사용자", example = "")
+    private String memId = "";
+    
   }
 
   @Getter
@@ -223,6 +230,10 @@ public class SbkDTO {
     
     @ApiModelProperty(value = "시험 갯수", example = "")
     private int testItemCnt;
+    
+    @ApiModelProperty(value = "보안견적서 여부", example = "")
+    @Column
+    private int secretYn;
   }
 
 }

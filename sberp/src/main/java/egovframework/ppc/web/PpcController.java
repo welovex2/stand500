@@ -74,6 +74,9 @@ public class PpcController {
     
     List<PpDTO> list = new ArrayList<PpDTO>();
 
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -301,6 +304,7 @@ public class PpcController {
         // 신청서 생성
         req.setInsMemId(user.getId());
         req.setUdtMemId(user.getId());
+        req.setMngId(user.getId());
         result = sbkService.insert(req);
 
         // 신청서 정보 보내주기

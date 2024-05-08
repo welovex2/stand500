@@ -101,6 +101,8 @@ public class QuoController {
       return res;
     }
     
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -150,6 +152,7 @@ public class QuoController {
     QuoDTO.Res detail = new QuoDTO.Res();
     QuoDTO.Req req = new QuoDTO.Req();
 
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
@@ -160,6 +163,8 @@ public class QuoController {
 
       return res;
     }
+    req.setMemId(user.getId());
+    req.setSecretYn(user.getSecretYn());
     
     req.setQuoId(quoId);
     detail = quoService.selectDetail(req);

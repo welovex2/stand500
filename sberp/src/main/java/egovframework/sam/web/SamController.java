@@ -228,6 +228,9 @@ public class SamController {
       return res;
     }
 
+    param.setMemId(user.getId());
+    param.setSecretYn(user.getSecretYn());
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));

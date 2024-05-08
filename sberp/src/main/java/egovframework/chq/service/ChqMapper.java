@@ -30,4 +30,6 @@ public interface ChqMapper {
   boolean delete(@Param("memId") String memId, @Param("chqId") String chqIds);
 
   boolean deletQuo(@Param("memId") String memId, @Param("chqId") String chqIds);
+
+  int isSecret(@Param("quoIds") List<String> quoIds);
 }

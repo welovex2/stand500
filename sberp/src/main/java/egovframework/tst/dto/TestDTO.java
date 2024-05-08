@@ -190,6 +190,10 @@ public class TestDTO {
     @ApiModelProperty(value = "참고메모", example = "")
     private String memo;
     
+    @ApiModelProperty(value = "보안견적서 여부", example = "")
+    @Column
+    private int secretYn;
+    
     @ApiModelProperty(value = "성적서발급일작성일", example = "")
     private String reportDtInsDt;
     

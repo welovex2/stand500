@@ -22,4 +22,6 @@ public interface ChqService {
 
   boolean delete(String memId, List<String> chqIds);
 
+  int isSecret(List<String> quoIds);
+
 }

@@ -74,6 +74,13 @@ public class QuoDTO {
     @Column
     private String atchFileId;
     
+    @ApiModelProperty(value = "보안견적서 여부", example = "")
+    @Column
+    private int secretYn;
+    
+    @ApiModelProperty(value = "로그인사용자", example = "")
+    private String memId = "";
+    
     @ApiModelProperty(value = "시험항목 및 비용 ", example = "")
     @Column
     private List<TestItem> testItems;
@@ -263,10 +270,10 @@ public class QuoDTO {
     @ApiModelProperty(value = "프로젝트 상태", example = "")
     @Column
     private String stateCode;
-
-    @ApiModelProperty(value = "서명파일 아이디", example = "")
+    
+    @ApiModelProperty(value = "보안견적서 여부", example = "")
     @Column
-    private String atchFileId;
+    private int secretYn;
     
     @ApiModelProperty(value = "시험항목리스트", example = "[]")
     @Column

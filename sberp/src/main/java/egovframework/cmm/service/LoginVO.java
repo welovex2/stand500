@@ -138,6 +138,10 @@ public class LoginVO {
   @Column
   private String sgnUrl;
   
+  @ApiModelProperty(value = "보안문서 권한", example = "", hidden = true)
+  @Column
+  private int secretYn;
+  
   @ApiModelProperty(value = "권한", example = "1", hidden = true)
   @Column
   private List<PowerDTO> power;

@@ -336,4 +336,19 @@
 		AND QUO_TB.CHQ_SEQ = substring(#{chqId}, 8, 3)
 	</update>
 		
+	<select id="isSecret" parameterType="List" resultType="int">
+		SELECT 
+			IF(SUM(JOB_TB.SECRET_YN) = 0,0,1)
+		FROM QUO_TB
+			
+			LEFT JOIN JOB_TB
+		    ON QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		    AND QUO_TB.QUO_YM = JOB_TB.QUO_YM
+		
+		WHERE 1=1
+		AND
+		<foreach collection="quoIds" item="quoId"  open="(" close=")" separator="or">
+		(QUO_TB.quo_ym = substring(#{quoId},2,4) and QUO_TB.quo_seq = substring(#{quoId},8,4))
+		</foreach>
+	</select>
 </mapper>

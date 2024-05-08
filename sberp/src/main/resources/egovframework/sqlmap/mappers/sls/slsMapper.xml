@@ -95,6 +95,7 @@
 		<result column="no" property="no"/>
 		<result column="chqId" property="chqId"/>
 		<result column="quoId" property="quoId"/>
+		<result column="SECRET_YN" property="secretYn"/>
 		<result column="cnfrmDtStr" property="cnfrmDtStr"/>
 		<result column="cnfrmName" property="cnfrmName"/>
 		<result column="cmpy_type" property="cmpyType"/>

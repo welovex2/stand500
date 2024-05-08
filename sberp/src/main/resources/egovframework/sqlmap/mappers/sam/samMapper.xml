@@ -149,6 +149,8 @@
 		    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
 		WHERE
 		    1 = 1
+		/* 보안견적서 */
+		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, JOB_TB.MNG_ID = #{memId}, 1)</if>
         <if test="searchVO != null">
 	        <foreach collection="searchVO" item="item" separator="">
 	       
@@ -167,6 +169,8 @@
 		        	<when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 		        	<!-- 55	시료담당자 -->
 					<when test="item.searchCode == 55">AND FN_MEM_NAME (IM_TB.MNG_ID) like concat('%',#{item.searchWord},'%')</when>
+					<!-- 76	보안견적서여부 -->
+	  				<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 				</choose>
 	        </foreach>
         </if>
@@ -180,6 +184,7 @@
 				
 			    SBK_ID,
 			    CONCAT (IM_TB.SBK_ID, '-M', LPAD (IM_SUB_SEQ, 2, 0)) IM_SUB_ID,
+			    JOB_TB.SECRET_YN,
 			    DATE_FORMAT(STR_TO_DATE (
                     concat (SBK_TB.APP_YEAR, LPAD (SBK_TB.APP_MON, 2, 0), LPAD (SBK_TB.APP_DAY, 2, 0)),
                     '%Y%m%d'
@@ -210,6 +215,8 @@
 			    #INNER JOIN (SELECT @rownum:=0) r
 			WHERE
 			    1 = 1
+			/* 보안견적서 */
+			<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, JOB_TB.MNG_ID = #{memId}, 1)</if>
 	        <if test="searchVO != null">
 		        <foreach collection="searchVO" item="item" separator="">
 		       
@@ -228,6 +235,8 @@
 			        	<when test="item.searchCode == 27">AND IFNULL (JOB_TB.MODEL_NAME, '') like concat('%',#{item.searchWord},'%')</when>
 			        	<!-- 55	시료담당자 -->
 						<when test="item.searchCode == 55">AND FN_MEM_NAME (IM_TB.MNG_ID) like concat('%',#{item.searchWord},'%')</when>
+						<!-- 76	보안견적서여부 -->
+	    				<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 		        	</choose>
 		        	
 		        </foreach>

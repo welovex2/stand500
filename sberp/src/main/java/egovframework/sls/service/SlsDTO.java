@@ -159,5 +159,9 @@ public class SlsDTO {
     @ApiModelProperty(value = "삭제가능여부", example = "Y")
     @Column
     private String canDelete;
+    
+    @ApiModelProperty(value = "보안견적서 여부", example = "")
+    @Column
+    private int secretYn;
   }
 }
