@@ -592,6 +592,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertSurge(SurgeDTO req) {
 
     boolean result = true;
@@ -650,6 +651,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertCs(CsDTO req) {
 
     boolean result = true;
@@ -710,6 +712,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertMf(MfDTO req) {
 
     boolean result = true;
@@ -745,6 +748,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertVdip(VdipDTO req) {
 
     boolean result = true;
@@ -778,6 +782,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertCti(CtiDTO req) {
 
     boolean result = true;
@@ -812,6 +817,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertClk(ClkDTO req) {
 
     boolean result = true;
@@ -838,6 +844,7 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertDp(DpDTO req) {
 
     boolean result = true;
