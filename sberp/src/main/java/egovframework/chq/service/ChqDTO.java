@@ -109,6 +109,10 @@ public class ChqDTO extends Chq {
     @Column
     private String vatYn;
     
+    @ApiModelProperty(value = "견적서 버전 ", example = "")
+    @Column
+    private String version;
+    
     @ApiModelProperty(value = "시험항목리스트", example = "[]")
     @Column
     private List<TestItem> items;

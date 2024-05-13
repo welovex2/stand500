@@ -635,10 +635,11 @@
 		<result column="quoId" property="quoId"/>
 		<result column="quoInsDtStr" property="quoInsDtStr"/>
 		<result column="SECRET_YN" property="secretYn"/>
+		<result column="VERSION" property="version"/>
 		<result column="carryInDt" property="carryInDt"/>
 		<result column="estCmpDt" property="estCmpDt"/>
-		<result column="cmpyTitle" property="cmpyTitle"/>
-		<result column="cmpyName" property="cmpyName"/>
+		<result column="PRTN_NAME" property="prtnName"/>
+		<result column="DIRT_NAME" property="dirtName"/>
 		<result column="prdctName" property="prdctName"/>
       	<result column="modelName" property="modelName"/>
 		<result column="sgText" property="sgText"/>
@@ -683,6 +684,7 @@
 		    DATE_FORMAT(SBK_TB.INS_DT, '%Y-%m-%d') sbkInsDtStr,
 			
 			JOB_TB.SECRET_YN,
+			QUO_TB.VERSION, 
 			
 			/* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
 			IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT(IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-')) carryInDt,

@@ -234,6 +234,10 @@ public class SbkDTO {
     @ApiModelProperty(value = "보안견적서 여부", example = "")
     @Column
     private int secretYn;
+    
+    @ApiModelProperty(value = "VERSION ", example = "1")
+    @Column
+    private String version;
   }
 
 }

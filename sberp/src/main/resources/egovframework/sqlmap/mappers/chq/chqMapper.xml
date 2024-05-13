@@ -188,6 +188,7 @@
 	<resultMap type="chqSub" id="chqMap">
 		<id column="quoId" property="quoId"/>
 		<result column="sbkId" property="sbkId"/>
+		<result column="VERSION" property="version"/>
 		<result column="cnfrmDtStr" property="cnfrmDtStr"/>
 		<result column="cmpyTitle" property="cmpyTitle"/>
 		<result column="CMPY_NAME" property="cmpyName"/>
@@ -208,6 +209,7 @@
 		SELECT
 			FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, type, QUO_TB.quo_seq) quoId,
 			CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')) sbkId,
+			QUO_TB.VERSION,
 			IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			IFNULL (JOB_TB.CMPY_NAME, '') CMPY_NAME,
