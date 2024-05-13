@@ -101,6 +101,12 @@ public class SlsDTO {
     @Column
     private String cmpyTitle;
 
+    @ApiModelProperty(value = "컨설팅 회사명", example = "")
+    private String prtnName;
+    
+    @ApiModelProperty(value = "신청사 회사명", example = "")
+    private String dirtName;
+    
     @ApiModelProperty(value = "업체명 ", example = "")
     @Column
     private String cmpyName;
@@ -144,6 +150,10 @@ public class SlsDTO {
     @ApiModelProperty(value = "계산서 상태", example = "-")
     @Column
     private String billState;
+
+    @ApiModelProperty(value = "납부 상태", example = "-")
+    @Column
+    private String payState;
     
 //    @ApiModelProperty(value = "계산서발행내역 ")
 //    private List<Bill> billList;

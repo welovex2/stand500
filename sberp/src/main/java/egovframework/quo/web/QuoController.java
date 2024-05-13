@@ -367,11 +367,15 @@ public class QuoController {
               result = false;
               msg = ResponseMessage.ERROR_BILL;
             } else {
-              result = quoService.updateStatus(req);
+               result = quoService.updateStatus(req);
             }
           }
         } else {
-          result = quoService.updateStatus(req);
+          // 구버전 견적서 수정은 허용되지 않음
+          // result = quoService.updateStatus(req);
+          result = false;
+          msg = "더이상 견적서 수정요청 기능을 사용할 수 없습니다.";
+          
         }
       } catch (Exception e) {
         

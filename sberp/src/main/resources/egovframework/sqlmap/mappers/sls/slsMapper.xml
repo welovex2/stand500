@@ -32,29 +32,21 @@
 
 			    INNER JOIN MEMBER_TB ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
 			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-			   
+			    LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+                LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
+                
 			    /* 납입횟수 */                           
 				LEFT JOIN (
-					SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT
+					SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT, 
+							SUM(IF (BILL_YN = 0, 1, 0)) BillState, 
+							SUM(IF (PAY_CODE IS NULL, 1, 0)) payState, 
+							SUM(IF (STATE IN ('1', '3', '6'), 1, 0)) state
 					FROM BILL_TB
 					WHERE BILL_TB.STATE NOT IN ('4','6')
 					GROUP BY SLS_YM, SLS_SEQ
 				) billCnt
 				ON SLS_TB.SLS_YM = billCnt.SLS_YM
 				AND SLS_TB.SLS_SEQ = billCnt.SLS_SEQ
-			    
-			    /* 최근 계산서발행 데이터 */            
-				LEFT JOIN BILL_TB
-				ON BILL_TB.BILL_SEQ = (
-									SELECT BILL_SEQ
-									FROM BILL_TB SUB
-									WHERE SUB.SLS_YM = SLS_TB.SLS_YM
-									AND SUB.SLS_SEQ = SLS_TB.SLS_SEQ
-									ORDER BY BILL_SEQ DESC
-									LIMIT 1
-				)
-				AND BILL_TB.SLS_YM = SLS_TB.SLS_YM
-				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
 			        
 			WHERE
 			    1 = 1
@@ -83,17 +75,8 @@
 			    ON QUO_TB.QUO_YM = items.QUO_YM
 			    AND QUO_TB.quo_seq = items.QUO_SEQ
 			    
-			    /* 최근 계산서발행 데이터 */    
-                LEFT JOIN BILL_TB
-				ON BILL_TB.BILL_SEQ = (
-									SELECT BILL_SEQ
-									FROM BILL_TB SUB
-									WHERE SUB.SLS_YM = SLS_TB.SLS_YM
-									AND SUB.SLS_SEQ = SLS_TB.SLS_SEQ
-									ORDER BY BILL_SEQ DESC
-									LIMIT 1
-				)
-				AND BILL_TB.SLS_YM = SLS_TB.SLS_YM
+			    LEFT JOIN BILL_TB
+				ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
 				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
                    
 			    INNER JOIN JOB_TB 
@@ -102,7 +85,7 @@
 			    AND JOB_TB.STATE != 'D'
 			    
 			    INNER JOIN MEMBER_TB ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
-			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+			    LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
 			    
 			WHERE
 			    1 = 1
@@ -119,11 +102,14 @@
 		<result column="chqId" property="chqId"/>
 		<result column="quoId" property="quoId"/>
 		<result column="SECRET_YN" property="secretYn"/>
+		<result column="VERSION" property="version"/>
 		<result column="cnfrmDtStr" property="cnfrmDtStr"/>
 		<result column="cnfrmName" property="cnfrmName"/>
 		<result column="cmpy_type" property="cmpyType"/>
 		<result column="cmpyTitle" property="cmpyTitle"/>
 		<result column="cmpyName" property="cmpyName"/>
+		<result column="DIRT_NAME" property="dirtName"/>
+		<result column="PRTN_NAME" property="prtnName"/>
 		<result column="PRDCT_NAME" property="prdctName"/>
 		<result column="CHRGS" property="chrgs"/>
 		<result column="NET_SALES" property="netSales"/>
@@ -133,8 +119,10 @@
 		<result column="lastState" property="lastState"/>
 		<result column="CNT" property="cnt"/>
 		<result column="billState" property="billState"/>
-		
+		<result column="payState" property="payState"/>
+		<result column="state" property="state"/>
 		<result column="canDelete" property="canDelete"/>
+		
 <!-- 		<collection property="billList" ofType="billRes"> -->
 <!--         	<id column="BILL_SEQ" property="billSeq"/> -->
 <!--         	<result column="BILL" property="bill"/> -->
@@ -163,6 +151,7 @@
 			    ) chqId,
 			    CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')) quoId,
 			    JOB_TB.SECRET_YN,
+			    QUO_TB.VERSION,
 			    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			    MEMBER_TB.MEM_NAME cnfrmName,
 			    
@@ -177,21 +166,25 @@
 			    IFNULL (TOTAL_VAT, 0) CHRGS,
 			    IFNULL (items.NET_SALES, 0) NET_SALES,
 			    IFNULL (ARREARS, items.NET_SALES) ARREARS,
-			                
+			          
+			    /*            
 			    BILL_SEQ,
 			    IF (BILL_YN=1, '발행완료', '미발행') BILL_YN,
 			    IFNULL (DATE_FORMAT(OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
-			    #IFNULL (CONCAT(FN_CODE_NAME (PAY_CODE, 'MP'),' (',DATE_FORMAT(PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
+			    IFNULL (CONCAT(FN_CODE_NAME (PAY_CODE, 'MP'),' (',DATE_FORMAT(PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
+			    */
+			    
 			    SLS_TB.MEMO,
-			                
 			    CASE 
 					WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN '미납' 
 					WHEN SLS_TB.ARREARS = 0 THEN '완납'
 					ELSE '납입중' 
 				END lastState,
 				billCnt.CNT,
-			    IFNULL (FN_CODE_NAME (BILL_TB.STATE, 'MB'), '-') billState
-			                
+			    IF (IFNULL (billCnt.BillState, 1) > 0, '미발행', '-') BillState,
+                IF (IFNULL (billCnt.payState, 1) > 0, '미납', '-') payState,
+                IF (IFNULL (billCnt.state, 0) > 0, '요청', '-') state,
+			    'N' canDelete
 			                
 			    #IFNULL (fn_code_name (QUO_MOD_TB.STATE_CODE, 'MM'), '-') quoState,
 			    #IFNULL (DATE_FORMAT(QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), DATE_FORMAT(QUO_MOD_TB.INS_DT, '%Y-%m-%d')) prmsDtStr,
@@ -222,28 +215,18 @@
 			   	LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
                 LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
                 
-			    /* 납입횟수 */                           
+                /* 납입횟수 */   
 				LEFT JOIN (
-					SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT
+					SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT, 
+							SUM(IF (BILL_YN = 0, 1, 0)) BillState, 
+							SUM(IF (PAY_CODE IS NULL, 1, 0)) payState, 
+							SUM(IF (STATE IN ('1', '3', '6'), 1, 0)) state
 					FROM BILL_TB
 					WHERE BILL_TB.STATE NOT IN ('4','6')
 					GROUP BY SLS_YM, SLS_SEQ
 				) billCnt
 				ON SLS_TB.SLS_YM = billCnt.SLS_YM
 				AND SLS_TB.SLS_SEQ = billCnt.SLS_SEQ
-			    
-			    /* 최근 계산서발행 데이터 */            
-				LEFT JOIN BILL_TB
-				ON BILL_TB.BILL_SEQ = (
-									SELECT BILL_SEQ
-									FROM BILL_TB SUB
-									WHERE SUB.SLS_YM = SLS_TB.SLS_YM
-									AND SUB.SLS_SEQ = SLS_TB.SLS_SEQ
-									ORDER BY BILL_SEQ DESC
-									LIMIT 1
-				)
-				AND BILL_TB.SLS_YM = SLS_TB.SLS_YM
-				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
 			        
 			WHERE
 			    1 = 1
@@ -267,6 +250,7 @@
 			        )
 			    ) chqId,
 			    GROUP_CONCAT(FN_GET_SEQSTRING ('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ) SEPARATOR ', ') quoId,
+			    '0' version,
 			    JOB_TB.SECRET_YN,
 			    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			    MEMBER_TB.MEM_NAME cnfrmName,
@@ -281,20 +265,25 @@
 			    SUM(items.NET_SALES) NET_SALES,
 			    IFNULL (ARREARS, SUM(items.CHRGS)) ARREARS,
 			    
+			    /*
 			    BILL_SEQ,
 			    IF (BILL_YN=1, '발행완료', '미발행') BILL_YN,
 			    IFNULL (DATE_FORMAT(OTHER_BILL_DT, '%Y-%m-%d'), '변경') OTHER_BILL_DT,
-			    #IFNULL(CONCAT(fn_code_name (PAY_CODE, 'MP'),' (', DATE_FORMAT(PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
+			    IFNULL(CONCAT(fn_code_name (PAY_CODE, 'MP'),' (', DATE_FORMAT(PAY_DT, '%y-%m-%d'),')'), '미납') PAY_CODE,
+			    */
 			    SLS_TB.MEMO,
                    
 
                 CASE 
-					WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN '미납' 
+					WHEN SLS_TB.SLS_TOTAL = SLS_TB.ARREARS THEN '미납' 
 					WHEN SLS_TB.ARREARS = 0 THEN '완납'
 					ELSE '납입중' 
 				END lastState,
                 '0' CNT,
-			    '-' billState
+			    IF (IFNULL (BILL_TB.BILL_YN, 0) = 0, '미발행', '-') BillState,
+                IF (IFNULL (BILL_TB.PAY_CODE, 0) = 0, '미납', '-') payState,
+                IF (IFNULL (BILL_TB.STATE, 0) IN ('1','3','5'), '요청', '-') state,
+			    IF (SLS_TB.SLS_TOTAL=SLS_TB.ARREARS,'Y','N') canDelete
 			    
 			FROM SLS_TB
 			    
@@ -311,17 +300,8 @@
 			    ON QUO_TB.QUO_YM = items.QUO_YM
 			    AND QUO_TB.quo_seq = items.QUO_SEQ
 			    
-			    /* 최근 계산서발행 데이터 */    
                 LEFT JOIN BILL_TB
-				ON BILL_TB.BILL_SEQ = (
-									SELECT BILL_SEQ
-									FROM BILL_TB SUB
-									WHERE SUB.SLS_YM = SLS_TB.SLS_YM
-									AND SUB.SLS_SEQ = SLS_TB.SLS_SEQ
-									ORDER BY BILL_SEQ DESC
-									LIMIT 1
-				)
-				AND BILL_TB.SLS_YM = SLS_TB.SLS_YM
+				ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
 				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
                    
 			    INNER JOIN JOB_TB 
@@ -372,11 +352,11 @@
 						<if test="item.searchWord == 1">AND ARREARS != 0</if>
 					</when>
 					<!-- 28	납부상태 -->
-					<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
+					<when test="item.searchCode == 28">AND IFNULL (billCnt.payState, 1) = #{item.searchWord}</when>
 					<!-- 29	발행여부 -->
-					<when test="item.searchCode == 29">AND IFNULL(BILL_YN, '0') = #{item.searchWord}</when>
+					<when test="item.searchCode == 29">AND IFNULL (billCnt.BillState, 1) = #{item.searchWord}</when>
 					<!-- 5	견적서번호 -->
-					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0), IF(JOB_TB.SECRET_YN=1,'-A','')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 69 취합견적서번호 -->
 					<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
 													        '',
@@ -395,7 +375,17 @@
 					<when test="item.searchCode == 72">AND DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 76	보안견적서여부 -->
 	    			<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
-	
+					<!-- 77	매출최종상태 -->
+					<when test="item.searchCode == 77">AND 
+															CASE 
+																WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN 1
+																WHEN SLS_TB.ARREARS = 0 THEN 2
+																ELSE 3
+															END = #{item.searchWord}
+					</when>
+					<!-- 78	매출요청상태 -->
+	    			<when test="item.searchCode == 78">AND IFNULL (billCnt.state, 1) = #{item.searchWord}</when>
+	    			
 	        	</choose>
 			</foreach>
 		</if>
@@ -424,11 +414,11 @@
 						<if test="item.searchWord == 1">AND ARREARS != 0</if>
 					</when>
 					<!-- 28	납부상태 -->
-					<when test="item.searchCode == 28">AND IFNULL(PAY_CODE, '0') = #{item.searchWord}</when>
+					<when test="item.searchCode == 28">AND IF (IFNULL(PAY_CODE, '0') = 0, 1, 0) = #{item.searchWord}</when>
 					<!-- 29	발행여부 -->
-					<when test="item.searchCode == 29">AND IFNULL(BILL_YN, '0') = #{item.searchWord}</when>
+					<when test="item.searchCode == 29">AND IF (IFNULL(BILL_YN, '0') = 0, 1, 0) = #{item.searchWord}</when>
 					<!-- 5	견적서번호 -->
-					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0), IF(JOB_TB.SECRET_YN=1,'-A','')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 69 취합견적서번호 -->
 					<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
 													        '',
@@ -447,6 +437,16 @@
 					<when test="item.searchCode == 72">AND DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 76	보안견적서여부 -->
 	    			<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
+	    			<!-- 77	매출최종상태 -->
+					<when test="item.searchCode == 77">AND 
+															CASE 
+																WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN 1
+																WHEN SLS_TB.ARREARS = 0 THEN 2
+																ELSE 3
+															END = #{item.searchWord}
+					</when>
+					<!-- 78	매출요청상태 -->
+	    			<when test="item.searchCode == 78">AND BILL_TB.STATE = #{item.searchWord}</when>
 	    			
 	        	</choose>
 			</foreach>
@@ -610,7 +610,7 @@
 	       			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
 	       		</when>
        			<!-- 5	견적서번호 -->
-				<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+				<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0), IF(JOB_TB.SECRET_YN=1,'-A','')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 				<!-- 69 취합견적서번호 -->
 				<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
 												        '',
@@ -643,6 +643,7 @@
 											)) chqId,
 	            CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')) quoId, 
 	            JOB_TB.SECRET_YN,
+	            QUO_TB.VERSION,
 	            IFNULL(date_format(SLS_TB.CNFRM_DT, '%Y-%m-%d'),'') cnfrmDtStr,
 	            MEMBER_TB.MEM_NAME cnfrmName,
 	            IFNULL(FN_CODE_NAME(CMPY_TB.CMPY_CODE,'PT'), '미등록') cmpy_type,
@@ -712,7 +713,7 @@
 			       			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
 			       		</when>
 		  				<!-- 5	견적서번호 -->
-						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+						<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0), IF(JOB_TB.SECRET_YN=1,'-A','')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 						<!-- 69 취합견적서번호 -->
 						<when test="item.searchCode == 69">AND IF ( QUO_TB.CHQ_SEQ = 0,
 														        '',
@@ -782,7 +783,7 @@
 				WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN '미납' 
 				WHEN SLS_TB.ARREARS = 0 THEN '완납'
                 ELSE '납입중' END lastState,
-			COUNT(BILL_TB.BILL_SEQ) CNT,
+			SUM(IF (BILL_TB.STATE NOT IN ('4','6'), 1, 0)) CNT,
 			QUO_TB.TOTAL_VAT,
 			SLS_TB.ARREARS,
 			FN_GET_SEQSTRING ('M', SLS_TB.SLS_YM, '', SLS_TB.SLS_SEQ) slsId
@@ -798,8 +799,7 @@
 			AND QUO_TB.QUO_SEQ = SLS_TB.QUO_SEQ
             
 		WHERE 1=1
-        AND BILL_TB.STATE NOT IN ('4','6')
-		AND BILL_TB.SLS_YM = SUBSTRING(#{slsId},2,4)
+       AND BILL_TB.SLS_YM = SUBSTRING(#{slsId},2,4)
 		AND BILL_TB.SLS_SEQ = SUBSTRING(#{slsId},7,4)
 	</select>
 	
@@ -813,14 +813,14 @@
 		    BILL,
             BILL_YN,
 		    IF (BILL_YN = 1, '발행완료', '미발행') billYnStr,
-		    IFNULL (DATE_FORMAT(BILL_TB.BILL_DT, '%y-%m-%d'),'') BILL_DT,
+		    IFNULL (DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%y-%m-%d'), DATE_FORMAT(BILL_TB.BILL_DT, '%y-%m-%d')) BILL_DT,
 		    IFNULL (FN_MEM_NAME (BILL_ID),'') BILL_ID,
             IF (PAY_CODE IS NOT NULL, 1, 0) payYn,
 		    IFNULL (FN_CODE_NAME (PAY_CODE, 'MP'), '미납') PAY_CODE,
-		    IFNULL (DATE_FORMAT(BILL_TB.PAY_DT, '%Y-%m-%d'),'') PAY_DT,
+		    IFNULL (DATE_FORMAT(BILL_TB.PAY_DT, '%y-%m-%d'),'') PAY_DT,
 		    IFNULL (FN_MEM_NAME (PAY_ID),'') pay_id,
             IFNULL (FN_CODE_NAME (BILL_TB.STATE, 'MB'), '') STATE,
-            BILL_TB.STATE STATE_CODE,
+            IFNULL (BILL_TB.STATE, '0') STATE_CODE,
             IFNULL (BILL_TB.MEMO, '') MEMO
 		FROM
 		    BILL_TB
@@ -861,7 +861,7 @@
 							    QUO_TB.CHQ_YM,
 							    QUO_TB.CHQ_SEQ),#{bill}),
 			#{memo},
-			#{state},
+			0,
 			#{insMemId},
 			#{udtMemId}
 		)
@@ -926,21 +926,20 @@
 	
 	<update id="update" parameterType="slsReq">
 		UPDATE SLS_TB
-		SET
-			ARREARS = ARREARS-(SELECT
-								    BILL
-								FROM
-								    BILL_TB
-								WHERE
-								    SLS_YM = substring(#{slsId},2,4)
-								    AND SLS_SEQ = substring(#{slsId},7,4)
-								    AND BILL_SEQ = #{billSeq}),
-			UDT_MEM_ID = #{udtMemId},
-			UDT_DT = NOW(),
-			STATE = 'U'
-			
-		WHERE SLS_TB.SLS_YM = SUBSTRING(#{slsId},2,4)
-		AND SLS_TB.SLS_SEQ = SUBSTRING(#{slsId},7,4)
+		INNER JOIN (
+		    SELECT SLS_TB.SLS_YM, SLS_TB.SLS_SEQ, IF(QUO_TB.QUO_SEQ IS NULL, 0, QUO_TB.TOTAL_VAT - COALESCE(SUM(BILL_TB.BILL), 0)) AS NEW_ARREARS
+		    FROM SLS_TB
+		    LEFT JOIN QUO_TB ON SLS_TB.QUO_YM = QUO_TB.QUO_YM AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+		    LEFT JOIN BILL_TB ON SLS_TB.SLS_YM = BILL_TB.SLS_YM AND SLS_TB.SLS_SEQ = BILL_TB.SLS_SEQ
+		    WHERE SLS_TB.SLS_YM = substring(#{slsId},2,4)
+		    AND SLS_TB.SLS_SEQ = substring(#{slsId},7,4)
+		    AND BILL_TB.PAY_CODE IS NOT NULL
+		    AND BILL_TB.state != '6'
+		    GROUP BY SLS_YM, SLS_SEQ
+		) AS NEW_VALUES 
+		ON SLS_TB.SLS_YM = NEW_VALUES.SLS_YM AND SLS_TB.SLS_SEQ = NEW_VALUES.SLS_SEQ
+		
+		SET SLS_TB.ARREARS = NEW_VALUES.NEW_ARREARS;
 	</update>
 	
 	<select id="selectQuoIdList" parameterType="String" resultType="String">

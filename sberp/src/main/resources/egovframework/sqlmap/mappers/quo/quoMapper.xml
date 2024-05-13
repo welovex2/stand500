@@ -31,10 +31,11 @@
 		    AND QUO_TB.CHQ_SEQ = chqSls.CHQ_SEQ
 		    AND chqSls.STATE != 'D'
 			    
-		    LEFT JOIN CMPY_TB
-			ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-    
-		where 1=1
+		    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+    		LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+            LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
+                
+		WHERE 1=1
 		<include refid="whereList"/>
 
 	</select>
@@ -63,7 +64,11 @@
 			    JOB_TB.DIRT_SEQ,
 			    
 			    /* 신청서 업데이트 후 삭제 예정 */
-			    FN_CODE_NAME(CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END,'PT') CMPY_TYPE,
+			    FN_CODE_NAME (
+			    	IF (VERSION = 1, 
+			    					IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ), '9999')
+									, CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END)
+				, 'PT') CMPY_TYPE,
                 IFNULL (prtn.CMPY_NAME, '') PRTN_NAME,
 			    IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 			    #
@@ -128,7 +133,9 @@
 	       
 	        	<choose>
 					<!-- 1	고객유형 -->
-					<when test="item.searchCode == 1">AND CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END = #{item.searchWord}</when>
+					<when test="item.searchCode == 1">AND IF (VERSION = 1, 
+											    					IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ), '9999')
+																	, CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END) = #{item.searchWord}</when>
 					<!-- 7	고지부담당자 -->
 					<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 4	컨설팅명 -->
@@ -156,7 +163,7 @@
 	        		<!-- 58	프로젝트상태변경일 -->
 	        		<when test="item.searchCode == 58">AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 	        		<!-- 5	견적서번호 -->
-					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0), IF(JOB_TB.SECRET_YN=1,'-A','')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 61	신청서번호 -->
 					<when test="item.searchCode == 61">AND CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 76	보안견적서여부 -->
@@ -662,6 +669,7 @@
        	 	<result column="CNSLT_FEE" property="cnsltFee"/>
        	 	<result column="OTSRC_FEE" property="otsrcFee"/>
        	 	<result column="NET_SALES" property="netSales"/>
+       	 	<result column="CANCEL_FEE" property="cancelFee"/>
         </collection>
 	</resultMap>
 	<select id="selectDetail" parameterType="String" resultMap="quoMap">
@@ -783,6 +791,7 @@
 			,TEST_ITEM_TB.CNSLT_FEE
 			,TEST_ITEM_TB.OTSRC_FEE
 			,TEST_ITEM_TB.NET_SALES
+			,TEST_ITEM_TB.CANCEL_FEE
 		FROM QUO_TB
 			
 		    INNER JOIN JOB_TB

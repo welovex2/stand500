@@ -61,6 +61,7 @@
    		<typeAlias alias="debugMemo"	type="egovframework.tst.service.DebugMemo"/>
     	<typeAlias alias="testMngrDTO"	type="egovframework.tst.dto.TestMngrDTO"/>
     	<typeAlias alias="TestMngr"		type="egovframework.tst.service.TestMngr"/>
+    	<typeAlias alias="cancelDTO"	type="egovframework.tst.dto.CanCelDTO"/>
     	
     	<!-- 로데이터 -->
     	<typeAlias alias="rawSearchDTO"	type="egovframework.raw.dto.RawSearchDTO"/>

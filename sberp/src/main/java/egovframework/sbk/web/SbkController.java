@@ -80,7 +80,9 @@ public class SbkController {
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
-
+    req.setMemId(user.getId());
+    req.setSecretYn(user.getSecretYn());
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {

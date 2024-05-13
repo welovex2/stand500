@@ -112,13 +112,19 @@ public class SlsServiceImpl implements SlsService {
   }
 
   @Override
+  @Transactional
   public boolean billInsert(SlsDTO.Req req) {
     
+    
+    boolean result = true;
+    
+    result = slsMapper.billInsert(req);
     // 납부가 완료되면 매출리스트 미수금액 조정
     if (!StringUtils.isEmpty(req.getPayCode())) {
       slsMapper.update(req);
     }
-    return slsMapper.billInsert(req);
+    
+    return result;
   }
 
   @Override

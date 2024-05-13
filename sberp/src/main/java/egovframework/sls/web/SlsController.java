@@ -282,12 +282,12 @@ public class SlsController {
             else if (sls != null) {
               
               // 신청금액은 미수금보다 크면 오류
-              if (sls.getArrears() < req.getBill()) {
-                msg = ResponseMessage.ERROR_BILL;
-              } else {
+//              if (sls.getArrears() < req.getBill()) {
+//                msg = ResponseMessage.ERROR_BILL;
+//              } else {
                 req.setSlsId(sls.getSlsId());
                 result = slsService.update(req);
-              }
+//              }
               
             } 
             else { 
@@ -467,21 +467,21 @@ public class SlsController {
     return res;
   }
 
-//  @ApiOperation(value = "매출삭제", notes = "")
-//  @PostMapping(value = "/delete.do")
-//  public BasicResponse delete(@ApiParam(value = "매출 고유번호", required = true,
-//      example = "M2303-0002") @RequestBody List<String> slsIds) throws Exception {
-//
-//    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
-//    boolean result = true;
-//    String msg = "";
-//
-//    result = slsService.delete(user.getId(), slsIds);
-//
-//    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
-//
-//    return res;
-//  }
+  @ApiOperation(value = "매출삭제", notes = "")
+  @PostMapping(value = "/delete.do")
+  public BasicResponse delete(@ApiParam(value = "매출 고유번호", required = true,
+      example = "M2303-0002") @RequestBody List<String> slsIds) throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+
+    result = slsService.delete(user.getId(), slsIds);
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
   
   
   @ApiOperation(value = "매출 메모 추가")
