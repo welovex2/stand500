@@ -45,4 +45,6 @@ public class ResponseMessage {
     public static final String CHECK_JOB_SEQ = "상태변경할 문서가 없습니다.";
     
     public static final String CHECK_RATE_SUM = "참여율 합은 100%가 되어야 합니다.";
+    public static final String CHECK_TEST_STATE = "시험취소가 확정되어 상태변경이 불가합니다.";
+    
 }

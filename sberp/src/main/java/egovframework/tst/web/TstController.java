@@ -24,6 +24,7 @@ import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sls.service.SlsSummary;
 import egovframework.sys.service.TestStndr;
+import egovframework.tst.dto.CanCelDTO;
 import egovframework.tst.dto.TestDTO;
 import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.dto.TestItemDTO;
@@ -431,10 +432,25 @@ public class TstController {
 
     boolean result = false;
     String msg = "";
-
+    TestDTO.Res detail = new TestDTO.Res();
+    
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
+      
+      // 최신 상태가 시험취소(확정)이면 상태변경 불가능
+      detail = tstService.checkTestState(req.getTestSeq());
+      if (detail != null) {
+        if ("19".equals(detail.getStateCode()) && detail.getCancelFee() > 0) {
+          result = false;
+          msg = ResponseMessage.CHECK_TEST_STATE;
+          
+          BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+          return res;
+        }
+      }
+      
       result = tstService.testStateInsert(req);
     } else {
       result = false;
@@ -680,4 +696,51 @@ public class TstController {
     return res;
   }
 
+  @ApiOperation(value = "시험취소 내역")
+  @GetMapping(value = "/cancel/detail.do")
+  public BasicResponse canCelDetail(@ApiParam(value = "시험규격 고유번호", required = true) @RequestParam(value = "testItemSeq") int testItemSeq) throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+    CanCelDTO detail = new CanCelDTO();
+
+    detail = tstService.cancelInfo(testItemSeq);
+
+    if (detail == null) {
+      result = false;
+      msg = ResponseMessage.NO_DATA;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "시험취소 등록")
+  @PostMapping(value = "/cancel/insert.do")
+  public BasicResponse cancelInsert(@RequestBody CanCelDTO req) throws Exception {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+
+    // 로그인정보
+    req.setInsMemId(user.getId());
+    req.setUdtMemId(user.getId());
+
+    boolean result = false;
+    String msg = "";
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      result = tstService.cancelInsert(req);
+    } else {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+  
 }

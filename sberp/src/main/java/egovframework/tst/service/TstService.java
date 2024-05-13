@@ -6,6 +6,7 @@ import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
+import egovframework.tst.dto.CanCelDTO;
 import egovframework.tst.dto.TestMngrDTO;
 
 public interface TstService {
@@ -32,6 +33,8 @@ public interface TstService {
 
   List<Res> testStateList(String testSeq);
 
+  Res checkTestState(int testSeq);
+  
   boolean testBoardInsert(Req req);
 
   List<Res> testBoardList(String testSeq);
@@ -46,4 +49,7 @@ public interface TstService {
   
   List<Res> selectRevList(ComParam param);
 
+  public CanCelDTO cancelInfo(int testSeq);
+
+  boolean cancelInsert(CanCelDTO req);
 }

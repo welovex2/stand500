@@ -436,6 +436,26 @@
 		order by TEST_STATE_SEQ desc
 	</select>
 	
+	<select id="checkTestState" parameterType="int" resultType="testRes">
+		SELECT
+		
+			TEST_STATE_TB.STATE_CODE,
+            IFNULL (TEST_ITEM_TB.CANCEL_FEE, 0) CANCEL_FEE
+		    
+		FROM TEST_STATE_TB
+		
+			INNER JOIN TEST_TB
+            ON TEST_STATE_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+            
+			INNER JOIN TEST_ITEM_TB
+            ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+            
+		WHERE 1=1
+		AND TEST_STATE_TB.TEST_SEQ = #{testSeq}
+		ORDER BY TEST_STATE_SEQ DESC
+        LIMIT 1
+	</select>
+	
 	<insert id="testStateInsert" parameterType="testReq" useGeneratedKeys="true" keyProperty="testStateSeq">
 		INSERT INTO TEST_STATE_TB
 		(
@@ -581,7 +601,9 @@
 				AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
                 
                 LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-                
+				LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+	            LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
+            
                 INNER JOIN TEST_ITEM_TB on JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
 			    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ and TEST_ITEM_TB.STATE != 'D'
                 
@@ -667,9 +689,11 @@
        	 	<result column="test_type" property="testType"/>
        	 	<result column="testMem" property="testMem"/>
        	 	<result column="testInDt" property="testInDt"/>
+       	 	<result column="TEST_STATE_CODE" property="testStateCode"/>
        	 	<result column="testState" property="testState"/>
        	 	<result column="addDay" property="addDay"/>
        	 	<result column="netSales" property="netSales"/>
+       	 	<result column="cancelFixYn" property="cancelFixYn"/>
        	 	<result column="memoCnt" property="memoCnt"/>
         </collection>
 	</resultMap>
@@ -693,8 +717,8 @@
 		    
             JOB_TB.CMPY_SEQ,
 		    IFNULL (CODE_PT.TYPE_NAME, '미등록') cmpyType,
-		    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
-		    IFNULL (JOB_TB.CMPY_NAME, '') cmpyName,
+		    IFNULL (prtn.CMPY_NAME, '') PRTN_NAME,
+			IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 		    JOB_TB.PRDCT_NAME prdctName,
             JOB_TB.MODEL_NAME modelName,
                      
@@ -706,7 +730,46 @@
 		        IF (SG_ETC_YN = 1, '기술기준외 변경', null)
 		    ) sgText,
 		    
-		    <include refid="subSelect" />
+			COUNT(TEST_TB.TEST_SEQ) testCnt,
+		    
+		/* 시험항목 및 비용 */
+	    TEST_TB.TEST_SEQ,
+	    IFNULL (DATE_FORMAT(TEST_TB.INS_DT, '%y-%m-%d'), '') testInDt,
+	    IFNULL (DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%y-%m-%d'), '-') testEstCmpDt,
+	    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+   			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
+   			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
+	    TEST_ITEM_TB.TEST_ITEM_SEQ,
+	    cate1.TEST_CATE_SEQ crtfc1,
+	    cate2.TEST_CATE_SEQ crtfc2,
+	    cate3.TEST_CATE_SEQ crtfc3,
+	    cate4.TEST_CATE_SEQ crtfc4,
+	    cate1.NAME crtfc1Name,
+	    IFNULL (cate2.NAME, '') crtfc2Name,
+	    IFNULL (cate3.NAME, '') crtfc3Name,
+	    IFNULL (cate4.NAME, '') crtfc4Name,
+                    
+	    TEST_STNDR_TB.TEST_STNDR_SEQ,
+	    IF (TEST_ITEM_TB.TEST_STNDR_SEQ=0, TEST_ITEM_TB.TEST_STNDR_TEXT, IFNULL (TEST_STNDR_TB.TEST_STNDR, '')) TEST_STNDR,
+	    
+	    TEST_ITEM_TB.MEMO,
+	    IFNULL (CODE_TT.TYPE_NAME, '') TEST_TYPE,
+	   
+	
+	    IF (FN_MEM_NAME(mngr1.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(mngr1.TEST_MNG_ID)) testMem,
+		FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
+                     
+        TEST_TB.TEST_STATE_CODE,
+	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
+	    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
+	    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+	    IF (CANCEL_FEE != 0, 'Y', 'N') cancelFixYn,
+		TEST_ITEM_TB.NET_SALES netSales,
+
+		IFNULL (MEMO_CNT, 0) memoCnt,
+        JOB_TB.JOB_SEQ,
+        IFNULL (CODE_CP.TYPE_NAME, '') stateCode,
+   		IFNULL (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt
                      
 		FROM
 		    SBK_TB
@@ -721,7 +784,9 @@
 			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
                     
             LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-		    
+		    LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+            LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
+                
             INNER JOIN TEST_ITEM_TB on JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
 		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ and TEST_ITEM_TB.STATE != 'D'
             INNER JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
@@ -867,9 +932,11 @@
 	    IF (FN_MEM_NAME(mngr1.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(mngr1.TEST_MNG_ID)) testMem,
 		FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
                      
+        TEST_TB.TEST_STATE_CODE,
 	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
 	    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
 	    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+	    IF (CANCEL_FEE != 0, 'Y', 'N') cancelFixYn,
 		TEST_ITEM_TB.NET_SALES netSales,
 
 		IFNULL (MEMO_CNT, 0) memoCnt,
@@ -913,13 +980,13 @@
 					<!-- 57	프로젝트상태 -->
 	        		<when test="item.searchCode == 57">AND JOB_TB.STATE_CODE = #{item.searchWord}</when>
 	        		<!-- 5	견적서번호 -->
-					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0)) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 5">AND CONCAT ('Q', QUO_TB.QUO_YM, '-' , QUO_TB.TYPE, LPAD(QUO_TB.QUO_SEQ,4,0), IF(JOB_TB.SECRET_YN=1,'-A','')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 61	신청서번호 -->
 					<when test="item.searchCode == 61">AND CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
 					<!-- 4	컨설팅명 -->
-					<when test="item.searchCode == 4">AND IFNULL (CMPY_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 4">AND prtn.CMPY_NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 12	회사명 -->
-					<when test="item.searchCode == 12">AND IFNULL (JOB_TB.CMPY_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 12">AND CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 6	제품명 -->
 					<when test="item.searchCode == 6">AND IFNULL (JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 27-모델명 -->
@@ -1083,5 +1150,66 @@
     		<if test="sort == 'addDayAsc'">IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT), 0) ASC</if>
     		<if test="sort == 'addDayDesc'">IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT), 0) DESC</if>
 	</sql>
+	
+	<select id="cancelInfo" parameterType="int" resultType="canCelDTO">
+		SELECT 
+		
+			FN_DEPT_NAME(TEST_STATE_TB.INS_MEM_ID) insPos,
+		    ins.MEM_NAME insName,
+            TEST_STATE_TB.memo,
+            
+            TEST_ITEM_TB.CHRGS,
+            TEST_ITEM_TB.NET_SALES,
+            TEST_ITEM_TB.CANCEL_FEE
+		
+		FROM TEST_TB
+			INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			
+		    INNER JOIN TEST_STATE_TB
+		    ON TEST_STATE_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+		    AND TEST_STATE_TB.STATE_CODE = TEST_TB.TEST_STATE_CODE
+		    
+		    INNER JOIN MEMBER_TB ins
+			ON TEST_STATE_TB.INS_MEM_ID = ins.ID
+		            
+		WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq}
+		ORDER BY TEST_STATE_TB.INS_DT DESC
+        LIMIT 1
+	</select>
+	
+	<update id="cancelInsert" parameterType="canCelDTO">
+		UPDATE TEST_ITEM_TB
+		
+		SET 
+			TEST_ITEM_TB.NET_SALES = #{netSales},
+		    TEST_ITEM_TB.CANCEL_FEE = CHRGS - #{netSales}
+		
+		WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq}
+	</update>
+	
+	<update id="cancelQuoUpdate" parameterType="canCelDTO">
+		<selectKey keyProperty="costTotal" resultType="int" order="BEFORE">
+	        SELECT SUM(IF (CANCEL_FEE != 0, NET_SALES, CHRGS)) FROM QUO_TB
+		        INNER JOIN TEST_ITEM_TB
+	     		ON TEST_ITEM_TB.QUO_YM = QUO_TB.QUO_YM
+			    AND TEST_ITEM_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+	            AND TEST_ITEM_TB.STATE != 'D'
+	         WHERE (QUO_TB.QUO_YM, QUO_TB.QUO_SEQ) = (SELECT QUO_YM, QUO_SEQ FROM TEST_ITEM_TB WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq})
+	    </selectKey>
+	    
+	    UPDATE QUO_TB
+	    	INNER JOIN TEST_ITEM_TB
+     		ON TEST_ITEM_TB.QUO_YM = QUO_TB.QUO_YM
+		    AND TEST_ITEM_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+            AND TEST_ITEM_TB.STATE != 'D'
+         SET 
+         	QUO_TB.COST_TOTAL = #{costTotal},
+			QUO_TB.TOTAL_VAT = IF (VAT_YN = 1,  #{costTotal} * 1.1, #{costTotal})
+	     WHERE (QUO_TB.QUO_YM, QUO_TB.QUO_SEQ) = (SELECT QUO_YM, QUO_SEQ FROM TEST_ITEM_TB WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq})       
+	</update>
+	
+	<select id="checkStateInfo" parameterType="int">
+	</select>
 	
 </mapper>

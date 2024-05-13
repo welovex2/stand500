@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
+import egovframework.tst.dto.CanCelDTO;
 import egovframework.tst.dto.DebugDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
@@ -205,6 +206,27 @@ public class TstServiceImpl implements TstService {
     return result; 
   }
   
+  @Override
+  public CanCelDTO cancelInfo(int testItemSeq) {
+    return tstMapper.cancelInfo(testItemSeq);
+  }
+
+  @Override
+  @Transactional
+  public boolean cancelInsert(CanCelDTO req) {
+    
+    boolean result = true;
+    
+    result = tstMapper.cancelInsert(req);
+    result = tstMapper.cancelQuoUpdate(req);
+    
+    return result;
+  }
+
+  @Override
+  public Res checkTestState(int testSeq) {
+    return tstMapper.checkTestState(testSeq);
+  }
   
 
 }

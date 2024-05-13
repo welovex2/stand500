@@ -191,13 +191,24 @@ public class TestDTO {
     private String memo;
     
     @ApiModelProperty(value = "보안견적서 여부", example = "")
-    @Column
     private int secretYn;
+    
+    @ApiModelProperty(value = "VERSION ", example = "1")
+    private String version;
+    
+    @ApiModelProperty(value = "컨설팅 회사명", example = "")
+    private String prtnName;
+    
+    @ApiModelProperty(value = "신청사 회사명", example = "")
+    private String dirtName;
     
     @ApiModelProperty(value = "성적서발급일작성일", example = "")
     private String reportDtInsDt;
     
     @ApiModelProperty(value = "성적서발급일작성자", example = "")
     private String reportDtInsName;
+    
+    @ApiModelProperty(value = "시험취소금액", example = "")
+    private int cancelFee;
   }
 }

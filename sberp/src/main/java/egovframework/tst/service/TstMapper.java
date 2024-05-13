@@ -7,6 +7,7 @@ import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
+import egovframework.tst.dto.CanCelDTO;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.dto.TestItemDTO;
@@ -58,4 +59,12 @@ public interface TstMapper {
   public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId, @Param("searchVO") List<SearchVO> param);
 
   public List<Res> selectRevList(ComParam param);
+  
+  public CanCelDTO cancelInfo(int testItemSeq);
+
+  public boolean cancelInsert(CanCelDTO req);
+  
+  public boolean cancelQuoUpdate(CanCelDTO req);
+
+  public Res checkTestState(int testSeq);
 }

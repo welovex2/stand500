@@ -76,6 +76,10 @@ public class TestItemDTO extends TestItem {
   @Column
   private int testSeq;
 
+  @ApiModelProperty(value = "시험상태 코드 ", example = "")
+  @Column
+  private String testStateCode;
+  
   @ApiModelProperty(value = "시험상태 ", example = "")
   @Column
   private String testState;
@@ -101,4 +105,7 @@ public class TestItemDTO extends TestItem {
   
   @ApiModelProperty(value = "서명파일 아이디", example = "")
   private String atchFileId;
+  
+  @ApiModelProperty(value = "시험취소확정여부", example = "")
+  private String cancelFixYn;
 }

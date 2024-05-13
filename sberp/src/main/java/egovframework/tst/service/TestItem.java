@@ -133,7 +133,12 @@ public class TestItem {
   @Column
   private int netSales;
 
+  
+  @ApiModelProperty(value = "취소금액")
+  @Column
+  private int cancelFee;
 
+  
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;
