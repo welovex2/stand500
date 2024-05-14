@@ -440,7 +440,7 @@
 	    			<!-- 77	매출최종상태 -->
 					<when test="item.searchCode == 77">AND 
 															CASE 
-																WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN 1
+																WHEN SLS_TB.TOTAL_VAT = SLS_TB.ARREARS THEN 1
 																WHEN SLS_TB.ARREARS = 0 THEN 2
 																ELSE 3
 															END = #{item.searchWord}

@@ -526,10 +526,10 @@
 			/* 신청서 업데이트 후 사용 안할 예정 */
 			CMPY_SEQ = IF(#{cmpySeq} = 0, IF(#{prtnYn} = 1, #{prtnSeq}, #{dirtSeq}), #{cmpySeq}),
 			CMPY_MNG_SEQ = IF(#{cmpyMngSeq} = 0, IF(#{prtnYn} = 1, #{prtnMngSeq}, #{dirtMngSeq}), #{cmpyMngSeq}),
-			CMPY_NAME = #{cmpyName},
-			MNG_PHONE = #{mngPhone},
-			MNG_EMAIL = #{mngEmail},
-			MNG_NAME = #{mngName},
+			CMPY_NAME = IF(#{cmpyName} IS NULL, CMPY_NAME, #{cmpyName}),
+			MNG_PHONE = IF(#{mngPhone} IS NULL, MNG_PHONE, #{mngPhone}),
+			MNG_EMAIL = IF(#{mngEmail} IS NULL, MNG_EMAIL, #{mngEmail}),
+			MNG_NAME = IF(#{mngName} IS NULL, MNG_NAME, #{mngName}),
 			#
 			
 			# 견적서 작성양식 리폼건 (#31)

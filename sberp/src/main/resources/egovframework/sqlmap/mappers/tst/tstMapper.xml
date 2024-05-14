@@ -757,7 +757,7 @@
 	   
 	
 	    IF (FN_MEM_NAME(mngr1.TEST_MNG_ID)='', '미배정', FN_MEM_NAME(mngr1.TEST_MNG_ID)) testMem,
-		FN_MEM_NAME (SBK_TB.INS_MEM_ID) mngName,
+		FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
                      
         TEST_TB.TEST_STATE_CODE,
 	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
