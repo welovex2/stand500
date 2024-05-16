@@ -27,4 +27,6 @@ public interface CmyMapper {
   List<CmpyMng> selectMngList(int cmpySeq);
 
   List<CmpyDTO> selectSameName(@Param("cmpyCode") String cmpyCode, @Param("cmpyName") String cmpyName);
+  
+  int selectAllSameName(CmpyDTO req);
 }

@@ -36,6 +36,10 @@ public class CmyServiceImpl implements CmyService {
   @Transactional 
   public boolean insert(CmpyDTO req) {
     
+    if (cmyMapper.selectAllSameName(req) > 0) {
+      return false;
+    }
+    
     cmyMapper.insert(req);
     
     if (req.getMngList() != null) {
