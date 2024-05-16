@@ -543,7 +543,11 @@ public class QuoController {
     QuoDTO.Res detail = new QuoDTO.Res();
     QuoDTO.Req req = new QuoDTO.Req();
     EngQuoDTO engDetail = new EngQuoDTO();
-
+    
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    
+    req.setMemId(user.getId());
+    req.setSecretYn(user.getSecretYn());
     req.setQuoId(quoId);
     detail = quoService.selectDetail(req);
 
