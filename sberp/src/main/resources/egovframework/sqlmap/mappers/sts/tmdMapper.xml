@@ -6,6 +6,7 @@
 		<id column="TEST_TYPE" property="testType" />
 		<collection property="testMemList" ofType="tmdTestMem">
 			<id column="TEST_MNG_ID" property="testMngId" />
+			<result column="TEST_TYPE_CODE" property="testTypeCode"/>
 			<result column="TEST_MEM" property="testMem"/>
 			<result column="eaCnt" property="eaCnt"/>
 			<result column="stand" property="stand"/>

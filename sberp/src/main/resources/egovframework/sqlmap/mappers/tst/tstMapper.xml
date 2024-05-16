@@ -45,7 +45,7 @@
 		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
 		    
 			LEFT JOIN TEST_ITEM_TB org
-			ON org.TEST_TYPE_CODE = TEST_TB.TEST_TYPE_CODE
+			ON IF (org.TEST_TYPE_CODE = 'NS', 'SF', org.TEST_TYPE_CODE) = TEST_TB.TEST_TYPE_CODE
 			AND org.TEST_ITEM_SEQ = #{testItemSeq}
 			
 			LEFT JOIN TEST_TB orgNo
@@ -316,6 +316,8 @@
 	        		<when test="item.searchCode == 73">AND IFNULL (RATING_STATE, '0') = #{item.searchWord}</when>
 	        		<!-- 74	평가담당자 -->
 					<when test="item.searchCode == 74">AND IFNULL(FN_MEM_NAME(TEST_TB.RATING_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 75 평가완료일 -->
+	        		<when test="item.searchCode == 75">AND DATE_FORMAT(TEST_TB.RATING_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 76	보안견적서여부 -->
 	    			<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 	        	</choose>
@@ -858,7 +860,9 @@
 			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
                     
             LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-		    
+		    LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+            LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
+            
             INNER JOIN TEST_ITEM_TB on JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
 		    AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ and TEST_ITEM_TB.STATE != 'D'
             INNER JOIN TEST_TB on TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ

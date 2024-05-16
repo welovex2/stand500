@@ -24,6 +24,9 @@ public class TmdDTO {
   @ApiModel(value = "TmdDTO.Res", description = "시험원 데이터")
   public static class TestMemList {
     
+    @ApiModelProperty(value="시험부서코드 ", example = "")
+    private String testTypeCode;
+    
     @ApiModelProperty(value="시험원 아이디 ", example = "")
     private String testMngId;
     @ApiModelProperty(value="시험원명 ", example = "")
