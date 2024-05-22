@@ -8,7 +8,7 @@
         
         <!-- 쿼리로그 -->
         <RollingFile name="FILE_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/dailyLog.log"
-        						 filePattern="logs/${date:yyyy}/${date:MM}/dailyLog_%d{yyyyMMdd}.log">
+        						 filePattern="logs/${date:yyyy}/${date:MM}/dailyLog_%d{yyyyMMdd}-%i.log">
 	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
 			<Policies>
 				<SizeBasedTriggeringPolicy size="10MB" /> <!-- 10MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
