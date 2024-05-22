@@ -26,10 +26,20 @@
 			</Policies>
    		</RollingFile>
    		
+   		<!-- 로데이터 로그 -->
+   		<RollingFile name="RD_MARKER_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/rdLog.log"
+        						 filePattern="logs/${date:yyyy}/${date:MM}/rdLog_%d{yyyyMMdd}-%i.log">
+	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="10MB" /> <!-- 10MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
+				<TimeBasedTriggeringPolicy interval="1" /><!-- 일별 로그 파일 생성-->
+			</Policies>
+   		</RollingFile>
+   		
     </Appenders>
     
     <Loggers>
-        <Root level="INFO" >
+        <Root level="DEBUG" >
             <appender-ref ref="console" />
         </Root>
 		<!-- Query Loggers -->
@@ -61,9 +71,23 @@
 		<!-- 프로젝트 로그 -->
 		<logger name="egovframework" level="WARN" additivity="false">
 			<appender-ref ref="ERROR_APPENDER"/>
+			<appender-ref ref="console" />
 		</logger>
 		<logger name="java.sql" level="WARN" additivity="false">
 			<appender-ref ref="ERROR_APPENDER"/>
+			<appender-ref ref="console" />
+		</logger>
+		<logger name="org.springframework.transaction" level="WARN" additivity="false">
+			<appender-ref ref="ERROR_APPENDER"/>
+			<appender-ref ref="console" />
+		</logger>
+
+		<logger name="egovframework" level="INFO" additivity="false">
+			<appender-ref ref="RD_MARKER_APPENDER">
+				<Filters>
+					<MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+				</Filters>
+			</appender-ref>
 		</logger>
 				
     </Loggers>

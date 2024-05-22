@@ -10,6 +10,8 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,6 +90,8 @@ public class RawController {
   @Resource(name = "MacService")
   private MacService macService;
 
+  private static final Marker RD_MARKER = MarkerFactory.getMarker("RD_MARKER");
+  
   @ApiOperation(value = "로데이터 작성여부 확인")
   @GetMapping(value = "/{rawSeq}/regState.do")
   public BasicResponse regState(@ApiParam(value = "로데이터 고유번호", required = true,
@@ -324,9 +328,9 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -335,7 +339,7 @@ public class RawController {
 
     for (ConstraintViolation<RawData> violation : violations) {
       msg = violation.getMessage();
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
 
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
@@ -508,9 +512,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("CE");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -520,7 +524,7 @@ public class RawController {
     for (ConstraintViolation<CeDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -621,9 +625,9 @@ public class RawController {
       if (!StringUtils.isEmpty(req.getHz3ResultCode())) req.setMacType("RE3");
     }
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -633,7 +637,7 @@ public class RawController {
     for (ConstraintViolation<ReDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -732,9 +736,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("ED");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -744,7 +748,7 @@ public class RawController {
     for (ConstraintViolation<EsdDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -878,9 +882,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("RS");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -890,7 +894,7 @@ public class RawController {
     for (ConstraintViolation<RsDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -971,9 +975,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("ET");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -983,7 +987,7 @@ public class RawController {
     for (ConstraintViolation<EftDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1071,9 +1075,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("SG");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1083,7 +1087,7 @@ public class RawController {
     for (ConstraintViolation<SurgeDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1170,9 +1174,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("CS");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1182,7 +1186,7 @@ public class RawController {
     for (ConstraintViolation<CsDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1270,9 +1274,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("MF");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1282,7 +1286,7 @@ public class RawController {
     for (ConstraintViolation<MfDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1358,9 +1362,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("VD");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1370,7 +1374,7 @@ public class RawController {
     for (ConstraintViolation<VdipDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1426,9 +1430,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("CK");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1438,7 +1442,7 @@ public class RawController {
     for (ConstraintViolation<ClkDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1515,9 +1519,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("DP");
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1608,9 +1612,9 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1790,9 +1794,9 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
     
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1802,7 +1806,7 @@ public class RawController {
     for (ConstraintViolation<ImgDTO> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -1921,9 +1925,9 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    
+    log.info(RD_MARKER, req.toString());
+    
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1933,7 +1937,7 @@ public class RawController {
     for (ConstraintViolation<FileRaw> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println("violation ERROR::" + msg);
+      log.info(RD_MARKER, "violation ERROR::" + msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
