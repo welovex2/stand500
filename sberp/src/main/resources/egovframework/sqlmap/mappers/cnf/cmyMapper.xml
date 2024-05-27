@@ -84,7 +84,7 @@
 	
 	<insert id="insert" parameterType="cmpyDTO">
 	    <selectKey resultType="int" keyProperty="cmpySeq" order="AFTER">
-	        SELECT MAX(CMPY_SEQ) cmpySeq FROM CMPY_TB WHERE CMPY_CODE = #{cmpyCode}
+	        SELECT IF(#{cmpySeq}=0, MAX(CMPY_SEQ), #{cmpySeq}) cmpySeq FROM CMPY_TB WHERE CMPY_CODE = #{cmpyCode}
 	    </selectKey>
 	    INSERT INTO CMPY_TB
 	    (
