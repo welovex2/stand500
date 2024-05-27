@@ -182,6 +182,7 @@
 		AND STATE != 'D'
 		AND WORK_STATE = '1' /* 재직 */
         AND LOCK_YN = 0 /* 계정활성 */
+        ORDER BY MEM_NAME
 	</select>
 	
 </mapper>
