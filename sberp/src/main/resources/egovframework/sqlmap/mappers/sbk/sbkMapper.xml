@@ -23,6 +23,13 @@
 			IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			IFNULL (CMPY_MNG_TB.NAME, '') cmpyMngName,
 			
+			/* 업체/신청사 신버젼 */
+			PRTN_SEQ,
+			PRTN_MNG_SEQ,
+			PRTN_YN,
+			DIRT_SEQ,
+			DIRT_MNG_SEQ,
+			
 			/* 신청인 */
 			JOB_TB.CMPY_NAME,
 			SBK_TB.BSNS_RGNMB,
@@ -273,14 +280,24 @@
 			SBK_YM,
 			SBK_TYPE,
 			SBK_SEQ,
+			
+			/* 구버전 */
 			CMPY_SEQ,
 			CMPY_MNG_SEQ,
 			CMPY_NAME,
-			MNG_ID,
 			MNG_NAME,
 			MNG_PHONE,
 			MNG_FAX,
 			MNG_EMAIL,
+
+			/* 신버전 */
+			PRTN_SEQ,
+			PRTN_MNG_SEQ,
+			PRTN_YN,
+			DIRT_SEQ,
+			DIRT_MNG_SEQ,			
+						
+			MNG_ID,
 			PRDCT_NAME,
 			MODEL_NAME,
 			INS_MEM_ID,
@@ -291,33 +308,50 @@
 			SUBSTRING(#{sbkId},3,2),
 			SUBSTRING(#{sbkId},6,1),
 			SUBSTRING(#{sbkId},7,4),
+			
+			/* 구버전 */
 			#{cmpySeq},
 			#{cmpyMngSeq},
-		<![CDATA[
 			#{cmpyName},
-			#{mngId},
 			#{mngName},
 			#{mngPhone},
 			#{mngFax},
 			#{mngEmail},
+			
+			/* 신버전 */
+			#{prtnSeq},
+			#{prtnMngSeq},
+			#{prtnYn},
+			#{dirtSeq},
+			#{dirtMngSeq},
+			
+			#{mngId},
 			#{prdctName},
 			#{modelName},
 			#{insMemId},
 			#{udtMemId}
 		)
-		]]>
 	</insert>
 
 	<update id="updateJob" parameterType="sbkReq" >
 		UPDATE JOB_TB
 		SET
+			/* 구버전 */
 			CMPY_SEQ = #{cmpySeq},
 			CMPY_MNG_SEQ = #{cmpyMngSeq},
 			CMPY_NAME = #{cmpyName},
-			MNG_NAME = #{mngName},
+			MNG_NAME = IF(#{mngName} IS NULL, MNG_NAME, #{mngName}),
 			MNG_PHONE = #{mngPhone},
 			MNG_FAX = #{mngFax},
 			MNG_EMAIL = #{mngEmail},
+			
+			/* 신버전 */
+			PRTN_SEQ = #{prtnSeq},
+			PRTN_MNG_SEQ = #{prtnMngSeq},
+			PRTN_YN = #{prtnYn},
+			DIRT_SEQ = #{dirtSeq},
+			DIRT_MNG_SEQ = #{dirtMngSeq},
+			
 			PRDCT_NAME = #{prdctName}, 
 			MODEL_NAME = #{modelName},
 			UDT_MEM_ID = #{udtMemId},
@@ -335,6 +369,13 @@
 			SBK_YM = SUBSTRING(#{sbkId},3,2),
 			SBK_TYPE = SUBSTRING(#{sbkId},6,1),
 			SBK_SEQ = SUBSTRING(#{sbkId},7,4),
+			
+			CMPY_NAME = #{cmpyName},
+			MNG_NAME = #{mngName},
+			MNG_EMAIL = #{mngEmail},
+			MNG_PHONE = #{mngPhone},
+			MNG_FAX = #{mngFax},
+			
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE JOB_TB.QUO_YM = SUBSTRING(#{quoId},2,4)
@@ -1103,6 +1144,35 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		    
 		WHERE 1=1 AND SBK_HIS_TB.SBK_ID = #{sbkId}
 		ORDER BY SBK_HIS_TB.INS_DT DESC
+	</select>
+	
+	<select id="selectDirtInfo" parameterType="sbkReq" resultType="sbkRes">
+		SELECT
+		
+			CMPY_TB.CMPY_NAME,
+			BSNS_RGNMB,
+			RPRSN,
+			CRPRT_RGNMB,
+			ADDR address,
+			RSDNT_RGNMB,
+			NAME mngName,
+			TEL mngTel,
+			PHONE mngPhone,
+			FAX mngFax,
+			EMAIL mngEmail
+		
+		
+		FROM JOB_TB
+			LEFT JOIN CMPY_TB
+		    ON JOB_TB.DIRT_SEQ = CMPY_TB.CMPY_SEQ
+		    
+		    LEFT JOIN CMPY_MNG_TB
+		    ON JOB_TB.DIRT_SEQ = CMPY_MNG_TB.CMPY_SEQ
+		    AND JOB_TB.DIRT_MNG_SEQ = CMPY_MNG_TB.CMPY_MNG_SEQ
+		    
+		WHERE 1=1
+		AND JOB_TB.QUO_YM = SUBSTRING(#{quoId},2,4)
+		AND JOB_TB.QUO_SEQ = SUBSTRING(#{quoId},8,4)	
 	</select>
 	
 </mapper>

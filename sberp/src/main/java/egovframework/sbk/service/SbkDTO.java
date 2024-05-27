@@ -56,6 +56,26 @@ public class SbkDTO {
     @Column
     private String mngFax;
 
+    @ApiModelProperty(value = "컨설팅 회사 고유번호", example = "1")
+    @Column
+    private int prtnSeq;
+
+    @ApiModelProperty(value="컨설팅 담당자 고유번호", example = "3")
+    @Column
+    private int prtnMngSeq;
+
+    @ApiModelProperty(value = "컨설팅 회사 여부", example = "1")
+    @Column
+    private int prtnYn;
+    
+    @ApiModelProperty(value = "신청사 고유번호", example = "1")
+    @Column
+    private int dirtSeq;
+
+    @ApiModelProperty(value="신청사 담당자 고유번호", example = "3")
+    @Column
+    private int dirtMngSeq;
+    
     @ApiModelProperty(value = "업체명 ", example = " ")
     @Column
     private String cmpyName;
@@ -181,6 +201,22 @@ public class SbkDTO {
     @ApiModelProperty(value = "컨설팅 담당자명 ", example = "")
     @Column
     private String cmpyMngName;
+    
+    @ApiModelProperty(value = "컨설팅 회사 고유번호", example = "1")
+    @Column
+    private int prtnSeq;
+    @ApiModelProperty(value="컨설팅 담당자 고유번호", example = "3")
+    @Column
+    private int prtnMngSeq;
+    @ApiModelProperty(value = "컨설팅 회사 여부", example = "1")
+    @Column
+    private int prtnYn;
+    @ApiModelProperty(value = "신청사 고유번호", example = "1")
+    @Column
+    private int dirtSeq;
+    @ApiModelProperty(value="신청사 담당자 고유번호", example = "3")
+    @Column
+    private int dirtMngSeq;
     
     @ApiModelProperty(value = "작성자", example = "김정미")
     @Column

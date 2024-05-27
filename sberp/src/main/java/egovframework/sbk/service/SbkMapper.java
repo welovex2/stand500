@@ -7,6 +7,7 @@ import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO.Req;
+import egovframework.sbk.service.SbkDTO.Res;
 import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItemRej;
 
@@ -42,5 +43,7 @@ public interface SbkMapper {
   boolean signRejectInsert(TestItemRej req);
 
   List<HisDTO> hisList(String sbkId);
+
+  Res selectDirtInfo(Req req);
 
 }

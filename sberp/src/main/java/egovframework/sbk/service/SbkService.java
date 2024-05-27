@@ -10,22 +10,24 @@ import egovframework.tst.service.TestItemRej;
 
 public interface SbkService {
 
-	SbkDTO.Res selectDetail(Req req);
+  SbkDTO.Res selectDetail(Req req);
 
-	boolean insert(Req req) throws Exception;
+  boolean insert(Req req) throws Exception;
 
-	boolean update(Req sbk);
+  boolean update(Req sbk);
 
-	int selectListCnt(ComParam param);
+  int selectListCnt(ComParam param);
 
-	List<Res> selectList(ComParam param) throws Exception;
+  List<Res> selectList(ComParam param) throws Exception;
 
-	boolean updateTestItemSign(TestItemDTO req);
+  boolean updateTestItemSign(TestItemDTO req);
 
-	List<TestItemRej> signRejectList(String testItemSeq);
+  List<TestItemRej> signRejectList(String testItemSeq);
 
-	boolean signRejectInsert(TestItemRej req);
+  boolean signRejectInsert(TestItemRej req);
 
-	List<HisDTO> hisList(String sbkId);
+  List<HisDTO> hisList(String sbkId);
+
+  Res selectDirtInfo(Req req);
 
 }

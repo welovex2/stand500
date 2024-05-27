@@ -124,4 +124,9 @@ public class SbkServiceImpl implements SbkService {
 		return sbkMapper.hisList(sbkId);
 	}
 
+  @Override
+  public Res selectDirtInfo(Req req) {
+    return sbkMapper.selectDirtInfo(req);
+  }
+
 }

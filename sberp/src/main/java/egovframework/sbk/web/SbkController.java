@@ -92,6 +92,20 @@ public class SbkController {
         msg = ResponseMessage.DUPLICATE_SBK;
       } else {
 
+        // 직고객 정보가 있는 경우 직고객 정보 초기 셋팅해주지 뭐
+        detail = sbkService.selectDirtInfo(req);
+        req.setCmpyName(detail.getCmpyName());
+        req.setBsnsRgnmb(detail.getBsnsRgnmb());
+        req.setRprsn(detail.getRprsn());
+        req.setCrprtRgnmb(detail.getCrprtRgnmb());
+        req.setAddress(detail.getAddress());
+        req.setRsdntRgnmb(detail.getRsdntRgnmb());
+        req.setMngName(detail.getMngName());
+        req.setMngTel(detail.getMngTel());
+        req.setMngPhone(detail.getMngPhone());
+        req.setMngEmail(detail.getMngEmail());
+        req.setMngFax(detail.getMngFax());
+        
         // 신청서 생성
         result = sbkService.insert(req);
 
