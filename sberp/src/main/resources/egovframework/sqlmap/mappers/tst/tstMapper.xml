@@ -1080,8 +1080,8 @@
 			IF (FN_MEM_NAME(mngr3.TEST_MNG_ID) = '', '', CONCAT(mngr3.PART_RATE, '%')) TestMng3Part,
 			CASE RATING_STATE 
 				WHEN 1 THEN '평가완료'
-				WHEN 0 THEN '평가<br/>미완료'
-				ELSE '해당없음' END RATING_STATE, 
+				WHEN -1 THEN '해당없음'
+				ELSE '평가<br/>미완료' END RATING_STATE, 
 			
 		    FN_MEM_NAME (JOB_TB.MNG_ID) memName,
 		    IF (JOB_TB.SBK_REVISION=0, 
