@@ -533,11 +533,11 @@
 			#
 			
 			# 견적서 작성양식 리폼건 (#31)
-			PRTN_SEQ = #{prtnSeq},
-			PRTN_MNG_SEQ = #{prtnMngSeq},
-			PRTN_YN = #{prtnYn},
-			DIRT_SEQ = #{dirtSeq},
-			DIRT_MNG_SEQ = #{dirtMngSeq},
+			PRTN_SEQ = IF(#{dirtSeq} = 0, PRTN_SEQ, #{prtnSeq}),
+			PRTN_MNG_SEQ = IF(#{dirtSeq} = 0, PRTN_MNG_SEQ, #{prtnMngSeq}),
+			PRTN_YN = IF(#{dirtSeq} = 0, PRTN_YN, #{prtnYn}),
+			DIRT_SEQ = IF(#{dirtSeq} = 0, DIRT_SEQ, #{dirtSeq}),
+			DIRT_MNG_SEQ = IF(#{dirtSeq} = 0, DIRT_MNG_SEQ, #{dirtMngSeq}),
 			
 		<![CDATA[
 			PRDCT_NAME = #{prdctName},
