@@ -79,6 +79,12 @@ public class QuoServiceImpl implements QuoService {
   @Override
   public List<Res> selectList(ComParam param) throws Exception {
     List<Res> list = quoMapper.selectList(param);
+    
+    // 번호 매기기
+    for (int i=0; i<list.size(); i++) {
+      list.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    
     return list;
   }
 
