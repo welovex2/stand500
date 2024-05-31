@@ -120,6 +120,16 @@ public class MethodTel {
   private int cmntBYn;
 
 
+  @ApiModelProperty(value = "시험자의견_B_YN ", example = "")
+  @Column
+  private String cmntEtc;
+
+
+  @ApiModelProperty(value = "시험자의견_B_YN ", example = "")
+  @Column
+  private int cmntEtcYn;
+
+  
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;

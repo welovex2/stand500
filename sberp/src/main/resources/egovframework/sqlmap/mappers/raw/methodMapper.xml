@@ -2296,7 +2296,7 @@
 			MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 			SIGN, SIGN_URL, 
 			RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
-			CMNT_A_YN, CMNT_B_YN, 
+			CMNT_A_YN, CMNT_B_YN, CMNT_ETC, CMNT_ETC_YN,
 			INS_MEM_ID, UDT_MEM_ID
 		)
 		VALUES
@@ -2306,7 +2306,7 @@
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
 			#{sign}, #{atchFileId}, 
 			#{resultCode}, #{resultPassCode}, #{resultResetCode}, #{resultNoPassCode}, #{resultNewPassCode},
-			#{cmntAYn}, #{cmntBYn},
+			#{cmntAYn}, #{cmntBYn}, #{cmntEtc},#{cmntEtcYn},
 			#{insMemId}, #{udtMemId}
 		)
 		ON DUPLICATE KEY UPDATE
@@ -2328,6 +2328,8 @@
 			RESULT_NEW_PASS_CODE = #{resultNewPassCode},
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_B_YN = #{cmntBYn}, 
+			CMNT_ETC = #{cmntEtc}, 
+			CMNT_ETC_YN = #{cmntEtcYn},
 			UDT_DT = NOW(),
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
@@ -2338,7 +2340,7 @@
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
-			CMNT_A_YN, CMNT_B_YN
+			CMNT_A_YN, CMNT_B_YN, CMNT_ETC, CMNT_ETC_YN
 		FROM METHOD_TEL_TB
 		WHERE 1=1
 		AND RAW_SEQ = #{rawSeq}
