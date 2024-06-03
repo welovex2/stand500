@@ -1149,18 +1149,17 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 	<select id="selectDirtInfo" parameterType="sbkReq" resultType="sbkRes">
 		SELECT
 		
-			CMPY_TB.CMPY_NAME,
-			BSNS_RGNMB,
-			RPRSN,
-			CRPRT_RGNMB,
-			ADDR address,
-			RSDNT_RGNMB,
-			NAME mngName,
-			TEL mngTel,
-			PHONE mngPhone,
-			FAX mngFax,
-			EMAIL mngEmail
-		
+			IFNULL(CMPY_TB.CMPY_NAME, '') CMPY_NAME,
+			IFNULL(BSNS_RGNMB, '') BSNS_RGNMB,
+			IFNULL(RPRSN, '') RPRSN,
+			IFNULL(CRPRT_RGNMB, '') CRPRT_RGNMB,
+			IFNULL(ADDR, '') address,
+			IFNULL(RSDNT_RGNMB, '') RSDNT_RGNMB,
+			IFNULL(NAME, '') mngName,
+			IFNULL(TEL, '') mngTel,
+			IFNULL(PHONE, '') mngPhone,
+			IFNULL(FAX, '') mngFax,
+			IFNULL(EMAIL, '') mngEmail
 		
 		FROM JOB_TB
 			LEFT JOIN CMPY_TB
