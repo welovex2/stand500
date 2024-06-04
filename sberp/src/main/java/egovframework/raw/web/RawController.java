@@ -536,7 +536,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
         
@@ -649,7 +655,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    }
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -760,7 +772,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -906,7 +924,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -999,7 +1023,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1099,7 +1129,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1198,7 +1234,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1298,7 +1340,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1386,7 +1434,13 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1454,7 +1508,13 @@ public class RawController {
     if (req.getRawSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1542,7 +1602,13 @@ public class RawController {
     if (req.getRawSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    // 장비 데이터 필수 체크
+    else if (req.getMacList().size() == 0) {
+      result = false;
+      msg = ResponseMessage.CHECK_MAC;
+    }
+    else {
 
       if (isAuthenticated) {
 
@@ -1635,7 +1701,8 @@ public class RawController {
     if (req.getRawSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } else {
+    } 
+    else {
 
       if (isAuthenticated) {
 
