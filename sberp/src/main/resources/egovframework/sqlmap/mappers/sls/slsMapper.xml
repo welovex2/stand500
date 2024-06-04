@@ -942,6 +942,22 @@
 		SET SLS_TB.ARREARS = NEW_VALUES.NEW_ARREARS;
 	</update>
 	
+	<update id="updateSub" parameterType="slsReq">
+		UPDATE SLS_TB
+		INNER JOIN (
+		    SELECT SLS_TB.SLS_YM, SLS_TB.SLS_SEQ, IF(QUO_TB.QUO_SEQ IS NULL, 0, QUO_TB.TOTAL_VAT) AS NEW_ARREARS
+            FROM SLS_TB
+            LEFT JOIN QUO_TB ON SLS_TB.QUO_YM = QUO_TB.QUO_YM AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+		    WHERE SLS_TB.SLS_YM = substring(#{slsId},2,4)
+		    AND SLS_TB.SLS_SEQ = substring(#{slsId},7,4)
+		    GROUP BY SLS_YM, SLS_SEQ
+		) AS NEW_VALUES 
+		ON SLS_TB.SLS_YM = NEW_VALUES.SLS_YM AND SLS_TB.SLS_SEQ = NEW_VALUES.SLS_SEQ
+		
+		SET SLS_TB.ARREARS = NEW_VALUES.NEW_ARREARS;
+	</update>
+	
+	
 	<select id="selectQuoIdList" parameterType="String" resultType="String">
 		SELECT
 			FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, type, QUO_TB.quo_seq) quoId

@@ -119,9 +119,15 @@ public class SlsServiceImpl implements SlsService {
     boolean result = true;
     
     result = slsMapper.billInsert(req);
-    // 납부가 완료되면 매출리스트 미수금액 조정
-    if (!StringUtils.isEmpty(req.getPayCode())) {
-      slsMapper.update(req);
+    // 납부가 완료되면 매출리스트 미수금액 조정 + 납부취소승인이 되면 미수금액 조정
+    if (!StringUtils.isEmpty(req.getPayCode()) || "6".equals(req.getState())) {
+      int cnt = slsMapper.update(req);
+      System.out.println(cnt);
+      
+      // 계산할 기납부금액이 없을때 초기화
+      if (cnt == 0) {
+        slsMapper.updateSub(req);
+      }
     }
     
     return result;

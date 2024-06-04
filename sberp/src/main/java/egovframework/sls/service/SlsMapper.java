@@ -44,7 +44,9 @@ public interface SlsMapper {
 
   List<String> selectQuoIdList(Req req);
 
-  boolean update(Req req);
+  int update(Req req);
+  
+  int updateSub(Req req);
 
   Quo selectQuoDetail(String quoId);
 
