@@ -39,7 +39,7 @@
     </Appenders>
     
     <Loggers>
-        <Root level="DEBUG" >
+        <Root level="INFO" >
             <appender-ref ref="console" />
         </Root>
 		<!-- Query Loggers -->
