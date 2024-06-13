@@ -100,6 +100,7 @@ public class SbkController {
         req.setCrprtRgnmb(detail.getCrprtRgnmb());
         req.setAddress(detail.getAddress());
         req.setRsdntRgnmb(detail.getRsdntRgnmb());
+        req.setCmpnyIdntf(detail.getCmpnyIdntf());
         req.setMngName(detail.getMngName());
         req.setMngTel(detail.getMngTel());
         req.setMngPhone(detail.getMngPhone());
