@@ -83,8 +83,11 @@
 			#{udtMemId}
 		)
 		ON DUPLICATE KEY UPDATE
+		
+			<if test='"U".equals(state)'>
 		    TEST_STNDR = #{testStndr},
 		    MEMO = #{memo},
+		    </if>
 		    UDT_MEM_ID = #{udtMemId},
 	        UDT_DT = NOW(),
 	        STATE = #{state}
