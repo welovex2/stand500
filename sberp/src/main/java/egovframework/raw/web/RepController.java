@@ -138,6 +138,7 @@ public class RepController {
         
         CeDTO ce = null;
         ReDTO re = null;
+        boolean totalResult = true;
         if (!ObjectUtils.isEmpty(detail.getMethodList())) {
           for (int i = 0; i < detail.getMethodList().size(); i++) {
     
@@ -154,6 +155,8 @@ public class RepController {
                     ce = rawService.ceDetail(rawSeq);
                   if (ce != null) {
                     ce.setMacList(rawService.macList("CA", rawSeq));
+                    
+                    if ("0".equals(ce.getResultCode())) totalResult = false;
                   }
                   detail.setCe1(ce);
                   break;
@@ -164,6 +167,8 @@ public class RepController {
                     ce = rawService.ceDetail(rawSeq);
                   if (ce != null) {
                     ce.setMacList(rawService.macList("CA", rawSeq));
+                    
+                    if ("0".equals(ce.getResultCode())) totalResult = false;
                   }
                   detail.setCe2(ce);
                   break;
@@ -174,6 +179,8 @@ public class RepController {
                     ce = rawService.ceDetail(rawSeq);
                   if (ce != null) {
                     ce.setMacList(rawService.macList("CB", rawSeq));
+                    
+                    if ("0".equals(ce.getResultCode())) totalResult = false;
                   }
                   detail.setCe3(ce);
                   break;
@@ -184,6 +191,8 @@ public class RepController {
                     ce = rawService.ceDetail(rawSeq);
                   if (ce != null) {
                     ce.setMacList(rawService.macList("CB", rawSeq));
+                    
+                    if ("0".equals(ce.getResultCode())) totalResult = false;
                   }
                   detail.setCe4(ce);
                   break;
@@ -197,6 +206,8 @@ public class RepController {
                       re.setMacList(rawService.macList("RA", rawSeq));
                     else 
                       re.setMacList(rawService.macList("RE2", rawSeq));
+                    
+                    if ("0".equals(re.getHz1ResultCode())) totalResult = false;
                   }
                   detail.setRe1(re);
                   break;
@@ -210,46 +221,66 @@ public class RepController {
                       re.setMacList(rawService.macList("RB", rawSeq));
                     else 
                       re.setMacList(rawService.macList("RE3", rawSeq));
+                    
+                    if ("0".equals(re.getHz2ResultCode())) totalResult = false;
                   }
                   detail.setRe2(re);
                   break;
                 //   9.7 정전기 방전 시험
                 case 6:
                   detail.setEsd(rawService.esdDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getEsd()) && "0".equals(detail.getEsd().getResultCode())) totalResult = false;
                   break;
                 //   9.8 방사성 RF 전자기장 시험
                 case 7:
                   detail.setRs(rawService.rsDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getRs()) && "0".equals(detail.getRs().getResultCode())) totalResult = false;
                   break;
                 //   9.9 전기적 빠른 과도현상 시험
                 case 8:
                   detail.setEft(rawService.eftDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getEft()) && "0".equals(detail.getEft().getResultCode())) totalResult = false;
                   break;
                 //   9.10 서지 시험
                 case 9:
                   detail.setSurge(rawService.surgeDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getSurge()) && "0".equals(detail.getSurge().getResultCode())) totalResult = false;
                   break;
                 //   9.11 전도성 RF 전자기장 시험
                 case 10:
                   detail.setCs(rawService.csDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getCs()) && "0".equals(detail.getCs().getResultCode())) totalResult = false;
                   break;
                 //   9.12 전원 주파수 자기장 시험
                 case 11:
                   detail.setMf(rawService.mfDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getMf()) && "0".equals(detail.getMf().getResultCode())) totalResult = false;
                   break;
                 //   9.13 전압 강하 및 순간 정전 시험
                 case 12:
                   detail.setVdip(rawService.vdipDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getVdip()) && "0".equals(detail.getVdip().getResultCode())) totalResult = false;
                   break;
                 
                 //   Click
                 case 13:
                   detail.setClk(rawService.clkDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getClk()) && "0".equals(detail.getClk().getResultCode())) totalResult = false;
                   break;
                   
                 //   DP
                 case 14:
                   detail.setDp(rawService.dpDetail(rawSeq));
+                  
+                  if (!ObjectUtils.isEmpty(detail.getDp()) && "0".equals(detail.getDp().getResultCode())) totalResult = false;
                   break;
   
                 //   RE (9 ㎑ ~ 30 ㎒)
@@ -260,6 +291,8 @@ public class RepController {
                     re = rawService.reDetail(rawSeq);
                   if (re != null) {
                     re.setMacList(rawService.macList("RE1", rawSeq));
+                    
+                    if ("0".equals(re.getHz3ResultCode())) totalResult = false;
                   }
                   detail.setRe0(re);
                   break;
@@ -423,7 +456,13 @@ public class RepController {
         // TEL 규격은 아래 기본정보 없음
         if (detail.getTestStndrSeq() == 560) {
           detail.setTel(rawService.telDetail(rawSeq));
+          
+          if (!ObjectUtils.isEmpty(detail.getTel()) && "0".equals(detail.getTel().getResultCode())) totalResult = false;
         }
+        
+
+        // 성적서 적합/부적합
+        detail.setResult(totalResult);
         //-- END 시험항목
   
         // 시험장면 사진

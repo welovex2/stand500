@@ -470,5 +470,8 @@ public class ReportDTO {
   
   @ApiModelProperty(value = "시험규격", example = "")
   private int testStndrSeq;
+  
+  @ApiModelProperty(value = "적합/부적합", example = "")
+  private boolean result;
 
 }
