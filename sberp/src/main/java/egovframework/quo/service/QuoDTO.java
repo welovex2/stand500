@@ -309,6 +309,9 @@ public class QuoDTO {
     @ApiModelProperty(value = "신청사담당자 이메일", example = "")
     private String dirtMngEmail;
     
+    @ApiModelProperty(value = "신청구분", example = "신규, 동일기자재")
+    private String sgText;
+    
     @ApiModelProperty(value = "제품명 ", example = "")
     @Column
     private String prdctName;

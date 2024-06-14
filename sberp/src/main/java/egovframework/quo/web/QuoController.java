@@ -45,6 +45,7 @@ import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.quo.dto.EngQuoDTO;
@@ -103,6 +104,38 @@ public class QuoController {
     
     param.setMemId(user.getId());
     param.setSecretYn(user.getSecretYn());
+    
+    /**
+     * OR 조건 검색 처리
+     */
+    List<String> new22 = new ArrayList<String>();
+    boolean new22Yn = false;
+    for (SearchVO search : param.getSearchVO()) {
+      
+      if ("22".equals(search.getSearchCode())) {
+        new22Yn = true;
+        if ("1".equals(search.getSearchWord())) new22.add("SG_NEW_YN");
+        else if ("2".equals(search.getSearchWord())) new22.add("SG_GB_YN");
+        else if ("3".equals(search.getSearchWord())) new22.add("SG_DG_YN");
+        else if ("4".equals(search.getSearchWord())) new22.add("SG_ETC_YN");
+        
+      }
+      
+    }
+    // 받은 searchCode 삭제 후 다시 생성
+    param.getSearchVO().stream().filter(x -> "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+
+    SearchVO newSearch = new SearchVO();
+    if (new22Yn) {
+      newSearch = new SearchVO();
+      newSearch.setSearchCode("22");
+      newSearch.setSearchWords(new22);
+      param.getSearchVO().add(newSearch);
+    }
+    /**
+     * -- END OR 조건 검색 처리
+     */
+    
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));

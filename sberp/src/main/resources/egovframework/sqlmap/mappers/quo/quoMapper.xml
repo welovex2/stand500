@@ -11,7 +11,9 @@
 		    ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
 		    AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ
 		    
-		    
+		    LEFT JOIN SBK_TB
+		    ON SBK_TB.SBK_YM = JOB_TB.SBK_YM AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION AND JOB_TB.STATE != 'D'
+			    
 		    LEFT JOIN (
 				SELECT QUO_YM, QUO_SEQ, sum(CHRGS) CHRGS, sum(NET_SALES) NET_SALES
 				FROM TEST_ITEM_TB
@@ -74,6 +76,12 @@
 			    IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 			    #
 			    
+			    CONCAT_WS(',', 
+				if((SBK_TB.SG_NEW_YN = 1), '신규', NULL),
+				if((SBK_TB.SG_GB_YN = 1), '기변', NULL),
+				if((SBK_TB.SG_DG_YN = 1), '동일', NULL),
+				if((SBK_TB.SG_ETC_YN = 1), '기외', NULL)) AS sgText,
+				
 			    JOB_TB.PRDCT_NAME,
 			    IFNULL (JOB_TB.MODEL_NAME, '') MODEL_NAME,
 			    IFNULL (TOTAL_VAT, 0) CHRGS,
@@ -88,8 +96,10 @@
 				
 			    INNER JOIN QUO_TB
 			    ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
-			    AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ
+			    AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 			    
+			    LEFT JOIN SBK_TB
+			    ON SBK_TB.SBK_YM = JOB_TB.SBK_YM AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION AND JOB_TB.STATE != 'D'
 			    
 			    LEFT JOIN (
 					SELECT QUO_YM, QUO_SEQ, SUM(CHRGS) CHRGS, SUM(NET_SALES) NET_SALES
@@ -140,6 +150,10 @@
 																	, CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END) = #{item.searchWord}</when>
 					<!-- 7	고지부담당자 -->
 					<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT ('%',#{item.searchWord},'%')</when>
+					<!-- 22	신청구분 -->
+					<when test="item.searchCode == 22">AND 1 IN 
+						<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">${sub}</foreach>
+					</when>
 					<!-- 4	컨설팅명 -->
 					<when test="item.searchCode == 4">AND prtn.CMPY_NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 6	제품명 -->
