@@ -48,7 +48,7 @@
 			    
                 HS_CD,
 			    
-			    IFNULL (FN_MEM_NAME(PP_TB.INS_MEM_ID), '') INS_NAME,
+			    IFNULL (FN_MEM_NAME(PP_TB.UDT_MEM_ID), '') UDT_NAME,
 	    		IFNULL (FN_CODE_NAME (PP_TB.STATE_CODE, 'CK'), '변경') stateCode,
 	    		IFNULL (DATE_FORMAT(PP_TB.STATE_UDT_DT, '%Y-%m-%d'), '') stateUdtDt,
 			    FN_LAST_PP_MENO(PP_TB.pp_ym, PP_TB.pp_seq) LAST_MEMO,
@@ -107,8 +107,8 @@
 			        <when test="item.searchCode == 60">AND BL LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			        <!-- 61-신청서번호 -->
 			        <when test="item.searchCode == 60">AND SBK_ID LIKE CONCAT('%',#{item.searchWord},'%')</when>
-					<!-- 7	고지부담당자 -->
-					<when test="item.searchCode == 7">AND FN_MEM_NAME(PP_TB.ins_mem_id) like CONCAT('%',#{item.searchWord},'%')</when>
+					<!-- 2 작성자 -->
+					<when test="item.searchCode == 2">AND FN_MEM_NAME(PP_TB.UDT_MEM_ID) like CONCAT('%',#{item.searchWord},'%')</when>
 			        <!-- 15-작성일 -->
 			        <when test="item.searchCode == 15">AND date_format(PP_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 			        <!-- 59-신청일 -->
