@@ -1,6 +1,7 @@
 package egovframework.sts.dto;
 
 import java.util.List;
+import egovframework.sts.dto.StsDTO.TestTypeList;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
@@ -125,5 +126,66 @@ public class TmdDTO {
     private float standSum;
     @ApiModelProperty(value="합계 수행지수 ", example = "")
     private float activSum;
+  }
+  
+  @Getter
+  @Setter
+  @ApiModel(value = "TmdDTO.Res", description = "시험월별 현황")
+  public static class TestResultList {
+    
+    @ApiModelProperty(value="시험원 아이디 ", example = "")
+    private String testMngId;
+    @ApiModelProperty(value="시험원명 ", example = "")
+    private String testMem;
+    
+    @ApiModelProperty(value="월별 데이터 ", example = "")
+    private List<TestMonList> testMonList;
+    
+    @Getter
+    @Setter
+    @ApiModel(value = "TmdDTO.Res", description = "시험월별 데이터")
+    public static class TestMonList {
+      
+      @ApiModelProperty(value="현황월 ", example = "")
+      private int baseMon;
+      
+      @ApiModelProperty(value="완료율 ", example = "")
+      private String endRate = "-";
+      @ApiModelProperty(value="취소율 ", example = "")
+      private String celRate = "-";
+      
+      @ApiModelProperty(value="메인/서브 데이터 ", example = "")
+      private List<TestTypeList> testTypeList;
+      
+      @Getter
+      @Setter
+      @ApiModel(value = "TmdDTO.Res", description = "메인/서브별 데이터")
+      public static class TestTypeList {
+        
+        @ApiModelProperty(value="메인/서브 ", example = "")
+        private String type;
+  
+        @ApiModelProperty(value="시험배정 건수 ", example = "")
+        private int inCnt;
+        @ApiModelProperty(value="시험중 건수 ", example = "")
+        private int ingCnt;
+        @ApiModelProperty(value="디버깅 건수 ", example = "")
+        private int debCnt;
+        @ApiModelProperty(value="홀딩 건수 ", example = "")
+        private int holCnt;
+        @ApiModelProperty(value="RD작성완료 건수 ", example = "")
+        private int rdCnt;
+        @ApiModelProperty(value="시험취소 건수 ", example = "")
+        private int celCnt;
+        @ApiModelProperty(value="프로젝트완료 건수 ", example = "")
+        private int endCnt;
+        @ApiModelProperty(value="프로젝트완료 금액 ", example = "")
+        private float endAmt;
+        @ApiModelProperty(value="프로젝트완료 참여율 ", example = "")
+        private float endPart;
+      }
+      
+    }
+    
   }
 }

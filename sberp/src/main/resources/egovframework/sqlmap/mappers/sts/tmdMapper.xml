@@ -219,4 +219,102 @@
 		) mon
 	</select>
 	
+	<resultMap type="tmdResult" id="tmdResultMap">
+		<id column="testMem" property="testMem" />
+		<id column="testMngId" property="testMngId" />
+		
+		<collection property="testMonList" ofType="tmdMonResult">
+			<id column="baseMon" property="baseMon" />
+			
+			<collection property="testTypeList" ofType="tmdTypeResult">
+				<id column="type" property="type" />
+				<result column="inCnt" property="inCnt"/>
+				<result column="ingCnt" property="ingCnt"/>
+				<result column="debCnt" property="debCnt"/>
+				<result column="holCnt" property="holCnt"/>
+				<result column="rdCnt" property="rdCnt"/>
+				<result column="celCnt" property="celCnt"/>
+				<result column="endCnt" property="endCnt"/>
+				<result column="endAmt" property="endAmt"/>
+				<result column="endPart" property="endPart"/>
+			</collection>
+		</collection>
+	</resultMap>
+	<select id="selectResultList" parameterType="comParam" resultMap="tmdResultMap">
+		#시험원 월별 평가표(종속) - 기본
+		SELECT
+		
+			MEM_NAME testMem, 
+		    ID testMngId,
+		    baseMon,
+		    
+		    CASE TEST_MNGR_SEQ WHEN 1 THEN 'main' WHEN 2 THEN 'sub' WHEN 3 THEN 'sub' END type,
+			COUNT(TEST_TB.TEST_SEQ) inCnt,
+			SUM(IF (TEST_TB.TEST_STATE_CODE=2,1,0)) ingCnt,
+			SUM(IF (TEST_TB.TEST_STATE_CODE=3,1,0)) debCnt,
+			SUM(IF (TEST_TB.TEST_STATE_CODE=4,1,0)) holCnt,
+			SUM(IF (TEST_TB.TEST_STATE_CODE=6,1,0)) rdCnt,
+			SUM(IF (TEST_TB.TEST_STATE_CODE=19,1,0)) celCnt,
+			SUM(IF (TEST_TB.TEST_STATE_CODE=18,1,0)) endCnt,
+		    TRUNCATE (SUM(IF (TEST_TB.TEST_STATE_CODE=18,NET_SALES,0) * IF (TEST_TB.TEST_STATE_CODE=18,PART_RATE,0)) / 1000000, 0) endAmt,
+			TRUNCATE (SUM(IF (TEST_TB.TEST_STATE_CODE=18,PART_RATE,0)) / SUM(IF (TEST_TB.TEST_STATE_CODE=18,1,0)), 2) endPart
+		    
+		FROM  MEMBER_TB
+		
+	<![CDATA[	
+			INNER JOIN
+			      (
+				/* 날짜 테이블 */
+				SELECT 
+					seq baseMon
+				FROM (SELECT @num := @num + 1 AS seq
+					  FROM information_schema.tables a
+						, (SELECT @num := 0) c
+					 ) T
+				WHERE 1=1
+			    AND seq <=  12
+				 
+			) T
+	]]>
+			      
+			LEFT JOIN TEST_MNGR_TB
+			ON TEST_MNGR_TB.TEST_MNG_ID = MEMBER_TB.ID
+			AND TEST_MNGR_SEQ IN (1, 2, 3)
+			          
+			          
+			LEFT JOIN TEST_TB
+			ON TEST_MNGR_TB.TEST_SEQ = TEST_TB.TEST_SEQ
+			AND DATE_FORMAT(TEST_TB.INS_DT, '%Y') = <if test="searchVO != null">
+												        <foreach collection="searchVO" item="item" separator="">
+												        	<choose>
+												        		<!-- 18 시험배정일 -->
+												        		<when test="item.searchCode == 18">#{item.searchWord}</when>
+															</choose>
+														</foreach>
+													</if>
+			AND T.baseMon = DATE_FORMAT(TEST_TB.INS_DT, '%m')
+			
+			LEFT JOIN TEST_ITEM_TB
+            ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		              
+		WHERE 1=1
+		# 시험부서
+		AND DEPT_SEQ IN (5, 6, 7)
+		
+		<if test="searchVO != null">
+		     <foreach collection="searchVO" item="item" separator="">
+		     	<choose>
+		     		<!-- 23	시험부 -->
+					<when test="item.searchCode == 23">AND DEPT_SEQ = #{item.searchWord}</when>
+					<!-- 9	시험담당자 -->
+					<when test="item.searchCode == 9">AND IFNULL(MEM_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+				</choose>
+			</foreach>
+		</if>
+														
+		GROUP BY MEMBER_TB.ID, baseMon, IF(TEST_MNGR_SEQ = 1,1,2)
+		ORDER BY MEMBER_TB.MEM_NAME, MEMBER_TB.ID, baseMon, IF(TEST_MNGR_SEQ = 1,1,2)
+	</select>
+	
+	
 </mapper>

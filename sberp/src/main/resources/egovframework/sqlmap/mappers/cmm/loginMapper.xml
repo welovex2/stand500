@@ -93,16 +93,17 @@
 	
 	<!-- 메뉴별 권한 얻기 -->
 	<select id="getAuthList" parameterType="String" resultType="powerDTO">
-		select
-			menu_seq,
-			menu_name,
-			menu_code,
+		SELECT
+			MENU_SEQ,
+			MENU_NAME,
+			MENU_CODE,
+			DIS_ORDR,
 			${authCode}_r_yn rYn,
 			${authCode}_w_yn wYn
-		from POWER_TB
-		where 1=1
+		FROM POWER_TB
+		WHERE 1=1
 		AND STATE != 'D'
-		order by DIS_ORDR asc
+		ORDER BY DIS_ORDR ASC
 	</select>
 
 </mapper>

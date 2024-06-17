@@ -14,6 +14,7 @@ import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sts.dto.TmdDTO;
+import egovframework.sts.dto.TmdDTO.TestResultList;
 import egovframework.sts.service.TmdService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -87,6 +88,39 @@ public class TmdController {
 
     // 검색할 날짜가 있는지 필수 체크
     list = tmdService.selectMonList(param);
+
+    if (list == null) {
+      result = false;
+      msg = ResponseMessage.NO_DATA;
+    }
+
+    BasicResponse res =
+        BasicResponse.builder().result(result).message(msg).data(list).build();
+    return res;
+  }
+  
+  @ApiOperation(value = "시험원 월별 현황", notes = "75-평가완료일/23-시험부/9-시험담당자")
+  @GetMapping(value = "/result/monList.do")
+  public BasicResponse resultMonList(@ModelAttribute ComParam param) throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    boolean result = true;
+    String msg = "";
+
+    List<TestResultList> list = new ArrayList<TestResultList>();
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+
+    list = tmdService.selectResultList(param);
 
     if (list == null) {
       result = false;

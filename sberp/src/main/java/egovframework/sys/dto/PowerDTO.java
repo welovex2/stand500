@@ -27,6 +27,12 @@ public class PowerDTO {
   private String menuCode;
   
   
+  @ApiModelProperty(value="MENU_CODE ", example = "", required = true)
+  @Column
+  @NotNull
+  private int disOrdr;
+  
+  
   @ApiModelProperty(value="읽기권한 ", example = "", required = true)
   @Column
   private boolean rYn;

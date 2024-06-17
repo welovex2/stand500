@@ -9,4 +9,6 @@ public interface TmdService {
   public List<TmdDTO> selectMemList(ComParam param);
   
   public List<TmdDTO> selectMonList(ComParam param);
+  
+  public List<TmdDTO.TestResultList> selectResultList(ComParam param);
 }

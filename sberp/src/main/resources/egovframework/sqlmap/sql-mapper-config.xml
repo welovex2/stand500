@@ -110,5 +110,9 @@
     	<typeAlias alias="tmdDTO"		type="egovframework.sts.dto.TmdDTO"/>
     	<typeAlias alias="tmdTestMem"	type="egovframework.sts.dto.TmdDTO$TestMemList"/>
     	<typeAlias alias="tmdTestMon"	type="egovframework.sts.dto.TmdDTO$TestMonList"/>
+    	<typeAlias alias="tmdResult"	type="egovframework.sts.dto.TmdDTO$TestResultList"/>
+    	<typeAlias alias="tmdMonResult" type="egovframework.sts.dto.TmdDTO$TestResultList$TestMonList"/>
+    	<typeAlias alias="tmdTypeResult" type="egovframework.sts.dto.TmdDTO$TestResultList$TestMonList$TestTypeList"/>
+    	
     </typeAliases>
 </configuration>
