@@ -355,7 +355,7 @@ public class SbkController {
       msg = ResponseMessage.UNAUTHORIZED;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(req.getSbkId()).build();
 
     return res;
   }

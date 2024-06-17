@@ -348,7 +348,7 @@ public class QuoController {
       msg = ResponseMessage.UNAUTHORIZED;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(req.getQuoId()).build();
 
     return res;
   }
