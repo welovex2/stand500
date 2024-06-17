@@ -384,7 +384,7 @@
 															END = #{item.searchWord}
 					</when>
 					<!-- 78	매출요청상태 -->
-	    			<when test="item.searchCode == 78">AND IFNULL (billCnt.state, 1) = #{item.searchWord}</when>
+	    			<when test="item.searchCode == 78">AND IFNULL (billCnt.state, 0) = #{item.searchWord}</when>
 	    			
 	        	</choose>
 			</foreach>
@@ -440,7 +440,7 @@
 	    			<!-- 77	매출최종상태 -->
 					<when test="item.searchCode == 77">AND 
 															CASE 
-																WHEN SLS_TB.TOTAL_VAT = SLS_TB.ARREARS THEN 1
+																WHEN SLS_TB.SLS_TOTAL = SLS_TB.ARREARS THEN 1
 																WHEN SLS_TB.ARREARS = 0 THEN 2
 																ELSE 3
 															END = #{item.searchWord}
