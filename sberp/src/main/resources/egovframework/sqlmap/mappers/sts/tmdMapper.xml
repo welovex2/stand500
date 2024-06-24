@@ -299,7 +299,9 @@
 		              
 		WHERE 1=1
 		# 시험부서
-		AND DEPT_SEQ IN (5, 6, 7)
+		AND DEPT_SEQ IN (5, 6, 15, 16, 17)
+		# 제외 시험원 (기책배정)
+		AND ID NOT IN ('comsaf', 'comsar', 'comemc')
 		
 		<if test="searchVO != null">
 		     <foreach collection="searchVO" item="item" separator="">
