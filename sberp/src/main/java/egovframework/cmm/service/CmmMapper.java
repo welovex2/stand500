@@ -35,4 +35,6 @@ public interface CmmMapper {
   public List<Job> jobMngList(int jobSeq);
 
   public List<Member> memList();
+
+  public List<Member> mngList();
 }

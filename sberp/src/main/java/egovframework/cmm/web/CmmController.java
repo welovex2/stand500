@@ -132,4 +132,14 @@ public class CmmController {
         return list;
     }
     
+    @ApiOperation(value = "업무담당자 리스트")
+    @GetMapping(value="/mng/list.do")
+    public List<Member> mngList() throws Exception {
+        List<Member> list = new ArrayList<Member>();
+        
+        list = cmmService.mngList();
+        
+        return list;
+    }
+    
 }

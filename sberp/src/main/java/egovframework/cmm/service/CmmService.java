@@ -32,4 +32,6 @@ public interface CmmService {
   public List<Job> jobMngList(int jobSeq);
 
   public List<Member> memList();
+
+  public List<Member> mngList();
 }

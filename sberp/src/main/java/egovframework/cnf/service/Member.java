@@ -62,10 +62,16 @@ public class Member {
   @Column
   private String posName;
 
+  
   @ApiModelProperty(value = "기술책임자 여부 ", example = "")
   @Column
   private int revYn;
 
+
+  @ApiModelProperty(value = "업무당당자 여부 ", example = "")
+  @Column
+  private int mngYn;
+  
   
   @ApiModelProperty(value = "email ", example = "")
   @Column
