@@ -14,8 +14,6 @@
 <%@ page import="org.apache.commons.fileupload.servlet.ServletFileUpload"%>
 <%
 
-out.println("eeeeeeeeeeeeeeeeeeee : ");
-
 	// 로컬경로에 파일 저장하기 ============================================
 	String sFileInfo = "";
 
@@ -30,7 +28,8 @@ out.println("eeeeeeeeeeeeeeeeeeee : ");
 		String defaultPath = request.getServletContext().getRealPath("/");
 	
 		// 파일 기본경로 _ 상세경로
-		String path = defaultPath + "/upload/";
+// 		String path = defaultPath + "/upload/";
+		String path = "webapps/upload/";
 		
 // 		System.out.println("defaultPath : "+defaultPath);
 	
@@ -68,7 +67,7 @@ out.println("eeeeeeeeeeeeeeeeeeee : ");
 // 	// 		}
 // 	// 	}
 	
-		sFileInfo += "&bNewLine=true&sFileName="+ name+"&sFileURL="+"/api/upload/"+realname;
+		sFileInfo += "&bNewLine=true&sFileName="+ name+"&sFileURL="+"/upload/"+realname;
 		out.println(sFileInfo);
 	}
 	

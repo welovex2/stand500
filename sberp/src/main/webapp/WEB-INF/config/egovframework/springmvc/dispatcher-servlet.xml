@@ -40,6 +40,8 @@
 <!-- 	<mvc:default-servlet-handler /> -->
 	<mvc:resources mapping="/resources/**" location="/resources/"/>
 	<!-- END swegger -->
+	
+	<mvc:default-servlet-handler />
 
     <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
         <property name="webBindingInitializer">
