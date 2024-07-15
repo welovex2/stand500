@@ -1,6 +1,7 @@
 package egovframework.tst.web;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -438,9 +439,11 @@ public class TstController {
 
     if (isAuthenticated) {
       
-      // 최신 상태가 시험취소(확정)이면 상태변경 불가능
+      // 상태 변경할 수 없는 것 체크
       detail = tstService.checkTestState(req.getTestSeq());
       if (detail != null) {
+        
+        // 최신 상태가 시험취소(확정)이면 상태변경 불가능
         if ("19".equals(detail.getStateCode()) && detail.getCancelFee() > 0) {
           result = false;
           msg = ResponseMessage.CHECK_TEST_STATE;
@@ -449,6 +452,25 @@ public class TstController {
 
           return res;
         }
+        // 최신 상태가 프로젝트완료이면 상태변경 불가능
+        else if ("18".equals(detail.getStateCode())) {
+          result = false;
+          msg = ResponseMessage.CHECK_TEST_STATE_END;
+          
+          BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+          return res;
+        }
+      }
+      
+      // 사유 필수 입력 체크
+      if (Arrays.asList("5", "19", "3", "4").contains(req.getStateCode()) && "".equals(req.getMemo().trim())) {
+        result = false;
+        msg = ResponseMessage.ERROR_WHY;
+        
+        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+        return res;
       }
       
       result = tstService.testStateInsert(req);
