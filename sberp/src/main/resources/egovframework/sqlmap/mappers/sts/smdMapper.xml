@@ -1,0 +1,817 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.SmdMapper">
+
+	<resultMap type="smdDTO" id="smdMap">
+		<id column="memId" property="memId" />
+		<result column="memName" property="memName"/>
+		<collection property="stateList" ofType="monState">
+			<id column="typeCode" property="typeCode" />
+			<result column="mon1Cnt" property="mon1Cnt"/>
+			<result column="mon1Amt" property="mon1Amt"/>
+			
+			<result column="mon2Cnt" property="mon2Cnt"/>
+			<result column="mon2Amt" property="mon2Amt"/>
+			
+			<result column="mon3Cnt" property="mon3Cnt"/>
+			<result column="mon3Amt" property="mon3Amt"/>
+			
+			<result column="mon4Cnt" property="mon4Cnt"/>
+			<result column="mon4Amt" property="mon4Amt"/>
+			
+			<result column="mon5Cnt" property="mon5Cnt"/>
+			<result column="mon5Amt" property="mon5Amt"/>
+			
+			<result column="mon6Cnt" property="mon6Cnt"/>
+			<result column="mon6Amt" property="mon6Amt"/>
+			
+			<result column="mon7Cnt" property="mon7Cnt"/>
+			<result column="mon7Amt" property="mon7Amt"/>
+			
+			<result column="mon8Cnt" property="mon8Cnt"/>
+			<result column="mon8Amt" property="mon8Amt"/>
+			
+			<result column="mon9Cnt" property="mon9Cnt"/>
+			<result column="mon9Amt" property="mon9Amt"/>
+			
+			<result column="mon10Cnt" property="mon10Cnt"/>
+			<result column="mon10Amt" property="mon10Amt"/>
+			
+			<result column="mon11Cnt" property="mon11Cnt"/>
+			<result column="mon11Amt" property="mon11Amt"/>
+			
+			<result column="mon12Cnt" property="mon12Cnt"/>
+			<result column="mon12Amt" property="mon12Amt"/>
+		</collection>
+	</resultMap>
+	
+	<select id="selectSaleList" parameterType="comParam" resultMap="smdMap">
+		
+	SELECT * FROM
+	( 
+		<include refid="trgSql"/>
+		
+		UNION
+		
+		<include refid="inSql"/>
+		
+		UNION
+		
+		<include refid="celSql"/>
+		
+		UNION
+		
+		<include refid="endSql"/>
+		
+		UNION
+		
+		<include refid="dhSql"/>
+		
+		UNION
+		
+		<include refid="billSql"/>
+		
+		UNION
+		
+		<include refid="paySql"/>
+		
+		
+		<choose>
+			<when test="'sg'.equals(searchCode)">
+				ORDER BY memName ASC
+			</when>
+			<when test="'tm'.equals(searchCode)">
+				ORDER BY memId ASC
+			</when>
+		</choose>
+		
+	) tt
+	WHERE 1=1
+
+	</select>
+	
+		
+	<sql id="trgSql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			<include refid="selectGubun"/>
+		    0 AS mon1Cnt,
+		    0 AS mon2Cnt,
+		    0 AS mon3Cnt,
+		    0 AS mon4Cnt,
+		    0 AS mon5Cnt,
+		    0 AS mon6Cnt,
+		    0 AS mon7Cnt,
+		    0 AS mon8Cnt,
+		    0 AS mon9Cnt,
+		    0 AS mon10Cnt,
+		    0 AS mon11Cnt,
+		    0 AS mon12Cnt,
+			SUM(JAN) AS mon1Amt,
+		    SUM(FEB) AS mon2Amt,
+		    SUM(MAR) AS mon3Amt,
+		    SUM(APR) AS mon4Amt,
+		    SUM(MAY) AS mon5Amt,
+		    SUM(JUN) AS mon6Amt,
+		    SUM(JUL) AS mon7Amt,
+		    SUM(AUG) AS mon8Amt,
+		    SUM(SEP) AS mon9Amt,
+		    SUM(OCT) AS mon10Amt,
+		    SUM(NOV) AS mon11Amt,
+		    SUM(`DEC`) AS mon12Amt,
+		    'trg' typeCode
+		    
+		FROM MEMBER_TB
+		
+		    # 목표
+			INNER JOIN TARGET_TB
+    		ON MEM_ID = MEMBER_TB.ID
+		    AND YEAR = <if test="searchVO != null">
+					        <foreach collection="searchVO" item="item" separator="">
+					        	<choose>
+					        		<!-- 20 완료일 -->
+					        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+								</choose>
+							</foreach>
+						</if>
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="inSql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+
+			<include refid="selectGubun"/>
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 1, 1, 0)) AS mon1Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 2, 1, 0)) AS mon2Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 3, 1, 0)) AS mon3Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 4, 1, 0)) AS mon4Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 5, 1, 0)) AS mon5Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 6, 1, 0)) AS mon6Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 7, 1, 0)) AS mon7Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 8, 1, 0)) AS mon8Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 9, 1, 0)) AS mon9Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 10, 1, 0)) AS mon10Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 11, 1, 0)) AS mon11Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 12, 1, 0)) AS mon12Cnt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 4, NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 5, NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 6, NET_SALES, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 7, NET_SALES, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 8, NET_SALES, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 9, NET_SALES, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 10, NET_SALES, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 11, NET_SALES, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 12, NET_SALES, 0)) / 10000, 0) AS mon12Amt,
+		    'in' typeCode
+		FROM MEMBER_TB
+		
+			# 시험접수
+		    INNER JOIN JOB_TB
+		    ON JOB_TB.MNG_ID = MEMBER_TB.ID
+		   
+		    INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		    
+		    INNER JOIN TEST_TB
+		    ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
+		    AND DATE_FORMAT(TEST_TB.INS_DT, '%Y') = <if test="searchVO != null">
+												        <foreach collection="searchVO" item="item" separator="">
+												        	<choose>
+												        		<!-- 20 완료일 -->
+												        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+															</choose>
+														</foreach>
+													</if>
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="celSql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			<include refid="selectGubun"/>
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, 1, 0)) AS mon1Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, 1, 0)) AS mon2Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, 1, 0)) AS mon3Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 4, 1, 0)) AS mon4Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 5, 1, 0)) AS mon5Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 6, 1, 0)) AS mon6Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 7, 1, 0)) AS mon7Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 8, 1, 0)) AS mon8Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 9, 1, 0)) AS mon9Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 10, 1, 0)) AS mon10Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 11, 1, 0)) AS mon11Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 12, 1, 0)) AS mon12Cnt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 4, NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 5, NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 6, NET_SALES, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 7, NET_SALES, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 8, NET_SALES, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 9, NET_SALES, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 10, NET_SALES, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 11, NET_SALES, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 12, NET_SALES, 0)) / 10000, 0) AS mon12Amt,
+		    'cel' typeCode
+		FROM MEMBER_TB
+		
+			# 시험취소
+		    INNER JOIN JOB_TB
+		    ON JOB_TB.MNG_ID = MEMBER_TB.ID
+		   
+		    INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		    
+		    LEFT JOIN TEST_TB
+		    ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
+		    AND DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%Y') = <if test="searchVO != null">
+														        <foreach collection="searchVO" item="item" separator="">
+														        	<choose>
+														        		<!-- 20 완료일 -->
+														        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+																	</choose>
+																</foreach>
+															</if>
+		    AND TEST_TB.TEST_STATE_CODE = 19
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="endSql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			<include refid="selectGubun"/>
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, 1, 0)) AS mon1Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, 1, 0)) AS mon2Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, 1, 0)) AS mon3Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 4, 1, 0)) AS mon4Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 5, 1, 0)) AS mon5Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 6, 1, 0)) AS mon6Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 7, 1, 0)) AS mon7Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 8, 1, 0)) AS mon8Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 9, 1, 0)) AS mon9Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 10, 1, 0)) AS mon10Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 11, 1, 0)) AS mon11Cnt,
+		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 12, 1, 0)) AS mon12Cnt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 4, NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 5, NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 6, NET_SALES, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 7, NET_SALES, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 8, NET_SALES, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 9, NET_SALES, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 10, NET_SALES, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 11, NET_SALES, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 12, NET_SALES, 0)) / 10000, 0) AS mon12Amt,
+		    'end' typeCode
+		FROM MEMBER_TB
+		
+			INNER JOIN JOB_TB
+		    ON JOB_TB.MNG_ID = MEMBER_TB.ID
+		   
+		    INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		    
+		    # 프로젝트완료
+		    LEFT JOIN TEST_TB
+		    ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
+		    AND DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%Y') = <if test="searchVO != null">
+														        <foreach collection="searchVO" item="item" separator="">
+														        	<choose>
+														        		<!-- 20 완료일 -->
+														        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+																	</choose>
+																</foreach>
+															</if>
+		    AND TEST_TB.TEST_STATE_CODE = 18
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="dhSql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			<include refid="selectGubun"/>
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 1 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon1Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 2 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon2Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 3 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon3Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 4 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon4Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 5 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon5Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 6 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon6Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 7 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon7Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 8 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon8Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 9 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon9Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 10 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon10Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 11 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon11Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 12 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon12Cnt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 4, NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 5, NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 6, NET_SALES, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 7, NET_SALES, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 8, NET_SALES, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 9, NET_SALES, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 10, NET_SALES, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 11, NET_SALES, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 12, NET_SALES, 0)) / 10000, 0) AS mon12Amt,
+		    'dh' typeCode
+		FROM MEMBER_TB
+		
+		    # 대행
+			LEFT JOIN JOB_TB
+		    ON JOB_TB.MNG_ID = MEMBER_TB.ID
+		    AND DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y') = <if test="searchVO != null">
+													        <foreach collection="searchVO" item="item" separator="">
+													        	<choose>
+													        		<!-- 20 완료일 -->
+													        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+																</choose>
+															</foreach>
+														</if>
+		    AND JOB_TB.STATE_CODE = 'J'
+		   
+		    LEFT JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			AND TEST_ITEM_TB.TEST_TYPE_CODE = 'DH'
+		    AND TEST_ITEM_TB.STATE != 'D'
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="billSql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			<include refid="selectGubun"/>
+		    0 AS mon1Cnt,
+		    0 AS mon2Cnt,
+		    0 AS mon3Cnt,
+		    0 AS mon4Cnt,
+		    0 AS mon5Cnt,
+		    0 AS mon6Cnt,
+		    0 AS mon7Cnt,
+		    0 AS mon8Cnt,
+		    0 AS mon9Cnt,
+		    0 AS mon10Cnt,
+		    0 AS mon11Cnt,
+		    0 AS mon12Cnt,
+			TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 1, BILL, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 2, BILL, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 3, BILL, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 4, BILL, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 5, BILL, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 6, BILL, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 7, BILL, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 8, BILL, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 9, BILL, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 10, BILL, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 11, BILL, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.BILL_DT, '%m') = 12, BILL, 0)) / 10000, 0) AS mon12Amt,
+		    'bill' typeCode
+		FROM MEMBER_TB
+		
+		    # 계산서
+			LEFT JOIN SLS_TB
+		    ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
+		      
+		    LEFT JOIN BILL_TB
+		    ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+		    AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+		    AND DATE_FORMAT(BILL_TB.BILL_DT, '%Y') = <if test="searchVO != null">
+												        <foreach collection="searchVO" item="item" separator="">
+												        	<choose>
+												        		<!-- 20 완료일 -->
+												        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+															</choose>
+														</foreach>
+													</if>
+			AND BILL_TB.BILL_YN = 1
+		    AND BILL_TB.STATE NOT IN (4,6)
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="paySql">
+		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			<include refid="selectGubun"/>
+		    0 AS mon1Cnt,
+		    0 AS mon2Cnt,
+		    0 AS mon3Cnt,
+		    0 AS mon4Cnt,
+		    0 AS mon5Cnt,
+		    0 AS mon6Cnt,
+		    0 AS mon7Cnt,
+		    0 AS mon8Cnt,
+		    0 AS mon9Cnt,
+		    0 AS mon10Cnt,
+		    0 AS mon11Cnt,
+		    0 AS mon12Cnt,
+			TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 1, BILL, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 2, BILL, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 3, BILL, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 4, BILL, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 5, BILL, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 6, BILL, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 7, BILL, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 8, BILL, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 9, BILL, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 10, BILL, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 11, BILL, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 12, BILL, 0)) / 10000, 0) AS mon12Amt,
+		    'pay' typeCode
+		FROM MEMBER_TB
+		
+		    # 계산서
+			LEFT JOIN SLS_TB
+		    ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
+		      
+		    LEFT JOIN BILL_TB
+		    ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+		    AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+		    AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y') = <if test="searchVO != null">
+												        <foreach collection="searchVO" item="item" separator="">
+												        	<choose>
+												        		<!-- 20 완료일 -->
+												        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+															</choose>
+														</foreach>
+													</if>
+			AND BILL_TB.PAY_CODE IS NOT NULL
+		    AND BILL_TB.STATE NOT IN (4,6)
+		            
+		WHERE MNG_YN = 1
+		
+		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+	</sql>
+	
+	<sql id="selectGubun">
+	<choose>
+		<when test="'sg'.equals(searchCode)">
+			ID memId,
+			MEM_NAME memName,
+		</when>
+		<when test="'tm'.equals(searchCode)">
+			CASE 
+				WHEN ID IN ('jyunj', 'jeon')
+					THEN '팀1'
+		        WHEN ID IN ('silva', 'zlklz')
+					THEN '팀2'    
+				WHEN ID IN ('jaecie')
+					THEN '팀3'   
+				WHEN ID IN ('leewk','jayjee','hkkim')
+					THEN '팀4' 
+				WHEN ID IN ('dubby82','cyberjjm')
+					THEN '팀5' 
+			END memId,
+			GROUP_CONCAT(DISTINCT MEM_NAME) memName,
+		</when>
+		<when test="'sm'.equals(searchCode)">
+			'total' memId,
+			'전체' memName,
+		</when>
+	</choose>
+	</sql>
+	
+	<sql id="groupby">
+	<choose>
+		<when test="'sg'.equals(searchCode)">
+			GROUP BY memId
+		</when>
+		<when test="'tm'.equals(searchCode)">
+			GROUP BY 
+			CASE 
+				WHEN ID IN ('jyunj', 'jeon')
+					THEN '팀1'
+		        WHEN ID IN ('silva', 'zlklz')
+					THEN '팀2'    
+				WHEN ID IN ('jaecie')
+					THEN '팀3'   
+				WHEN ID IN ('leewk','jayjee','hkkim')
+					THEN '팀4' 
+				WHEN ID IN ('dubby82','cyberjjm')
+					THEN '팀5' 
+			END
+		</when>
+	</choose>
+	</sql>
+	
+	
+	<insert id="insert" parameterType="List">
+		<foreach collection="req" item="item" separator=";">
+			UPDATE TARGET_TB
+			SET
+			    JAN = #{item.mon1},
+			    FEB = #{item.mon2},
+			    MAR = #{item.mon3},
+			    APR = #{item.mon4},
+			    MAY = #{item.mon5},
+			    JUN = #{item.mon6},
+			    JUL = #{item.mon7},
+			    AUG = #{item.mon8},
+			    SEP = #{item.mon9},
+			    OCT = #{item.mon10},
+			    NOV = #{item.mon11},
+			    `DEC` = #{item.mon12}
+			WHERE MEM_ID = #{item.memId} AND YEAR = #{item.year}
+		</foreach>
+	</insert>
+</mapper>
