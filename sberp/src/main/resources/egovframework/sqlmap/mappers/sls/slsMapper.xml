@@ -184,7 +184,8 @@
 			    IF (IFNULL (billCnt.BillState, 1) > 0, '미발행', '-') BillState,
                 IF (IFNULL (billCnt.payState, 1) > 0, '미납', '-') payState,
                 IF (IFNULL (billCnt.state, 0) > 0, '요청', '-') state,
-			    'N' canDelete
+			    'N' canDelete,
+			    uptDt orderDt
 			                
 			    #IFNULL (fn_code_name (QUO_MOD_TB.STATE_CODE, 'MM'), '-') quoState,
 			    #IFNULL (DATE_FORMAT(QUO_MOD_TB.PRMS_DT, '%Y-%m-%d'), DATE_FORMAT(QUO_MOD_TB.INS_DT, '%Y-%m-%d')) prmsDtStr,
@@ -227,7 +228,16 @@
 				) billCnt
 				ON SLS_TB.SLS_YM = billCnt.SLS_YM
 				AND SLS_TB.SLS_SEQ = billCnt.SLS_SEQ
-			        
+			    
+			    /* 정렬 */   
+				INNER JOIN (
+					SELECT SLS_YM, SLS_SEQ, MAX(UDT_DT) uptDt
+					FROM BILL_TB
+					GROUP BY SLS_YM, SLS_SEQ
+				) billOrder
+				ON SLS_TB.SLS_YM = billOrder.SLS_YM
+				AND SLS_TB.SLS_SEQ = billOrder.SLS_SEQ
+				 
 			WHERE
 			    1 = 1
 			    AND SLS_TB.STATE != 'D'
@@ -283,7 +293,8 @@
 			    IF (IFNULL (BILL_TB.BILL_YN, 0) = 0, '미발행', '-') BillState,
                 IF (IFNULL (BILL_TB.PAY_CODE, 0) = 0, '미납', '-') payState,
                 IF (IFNULL (BILL_TB.STATE, 0) IN ('1','3','5'), '요청', '-') state,
-			    IF (SLS_TB.SLS_TOTAL=SLS_TB.ARREARS,'Y','N') canDelete
+			    IF (SLS_TB.SLS_TOTAL=SLS_TB.ARREARS,'Y','N') canDelete,
+			    SLS_TB.INS_DT orderDt
 			    
 			FROM SLS_TB
 			    
@@ -319,7 +330,8 @@
 			    <include refid="whereListChq"/>
 			
                 GROUP BY SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ
-                ORDER BY slsId ASC
+        
+        	ORDER BY orderDt ASC
 		) lst
 		
 		INNER JOIN (SELECT @rownum:=0) r
@@ -784,7 +796,7 @@
 				WHEN SLS_TB.ARREARS = 0 THEN '완납'
                 ELSE '납입중' END lastState,
 			SUM(IF (BILL_TB.STATE NOT IN ('4','6'), 1, 0)) CNT,
-			QUO_TB.TOTAL_VAT,
+			IF(SLS_TB.CHQ_SEQ IS NULL, QUO_TB.TOTAL_VAT, SLS_TB.SLS_TOTAL) TOTAL_VAT,
 			SLS_TB.ARREARS,
 			FN_GET_SEQSTRING ('M', SLS_TB.SLS_YM, '', SLS_TB.SLS_SEQ) slsId
             
@@ -794,7 +806,7 @@
             ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
 			AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
         
-			INNER JOIN QUO_TB
+			LEFT JOIN QUO_TB
             ON QUO_TB.QUO_YM = SLS_TB.QUO_YM
 			AND QUO_TB.QUO_SEQ = SLS_TB.QUO_SEQ
             
