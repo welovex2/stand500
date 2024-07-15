@@ -24,6 +24,8 @@ public interface QuoMapper {
   public boolean updateJob(Req quo);
 
   public boolean updateJobQuo(Req quo);
+  
+  public boolean updateArrears(Req quo);
 
   public List<Res> selectList(ComParam param);
 

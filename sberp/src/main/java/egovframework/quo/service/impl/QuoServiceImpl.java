@@ -119,6 +119,9 @@ public class QuoServiceImpl implements QuoService {
 
     // 업무서 공통 정보
     quoMapper.updateJob(quo);
+    
+    // 매출확정 후 잔금계산
+    quoMapper.updateArrears(quo);
 
     return result;
   }
