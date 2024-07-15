@@ -69,7 +69,7 @@ public class SbkController {
 
   @ApiOperation(value = "본건 신청서 작성")
   @PostMapping(value = "/makeSbk.do")
-  public BasicResponse makeSbk(@ApiParam(value = "quoId 값만 전송") @RequestBody SbkDTO.Req req)
+  public BasicResponse makeSbk(@ApiParam(value = "quoId, type (G:일반, M:의료) 전송") @RequestBody SbkDTO.Req req)
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();

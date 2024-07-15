@@ -10,6 +10,7 @@
 			SBK_TB.REVISION,
 			CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) sbkId ,
 			IFNULL (CONCAT (FN_GET_SEQSTRING('Q', JOB_TB.QUO_YM, 'G', JOB_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')), '') quoId, 
+			SBK_TB.TYPE,
 			QUO_TB.VERSION,
 			IFNULL(DATE_FORMAT(SBK_TB.EST_CMP_DT, '%Y-%m-%d'), '-') estCmpDt,
 			FN_MEM_NAME(JOB_TB.MNG_ID) MEM_NAME,	/* 업무담당자 추가 */
@@ -807,7 +808,7 @@
 		<!-- 25	시험배정 -->
 		<when test="item.searchCode == 25">AND 
 			CASE 
-				WHEN (TEST_TB.TEST_SEQ = 0 AND IFNULL(TEST_ITEM_TB.TEST_TYPE_CODE,'') != 'DH') THEN '1' 
+				WHEN (IFNULL(TEST_TB.TEST_SEQ, 0) = 0 AND IFNULL(TEST_ITEM_TB.TEST_TYPE_CODE,'') != 'DH') THEN '1' 
 				WHEN (TEST_ITEM_TB.TEST_TYPE_CODE = 'DH') THEN '3' 
 				ELSE '2' END = #{item.searchWord}
 		</when>
