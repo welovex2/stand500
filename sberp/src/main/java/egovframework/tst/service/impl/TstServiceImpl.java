@@ -227,6 +227,21 @@ public class TstServiceImpl implements TstService {
   public Res checkTestState(int testSeq) {
     return tstMapper.checkTestState(testSeq);
   }
+
+  @Override
+  public boolean checkInsert(Req req) {
+    return tstMapper.checkInsert(req);
+  }
+
+  @Override
+  public int selectCheckInfo(String testSeq) {
+    return tstMapper.selectCheckInfo(testSeq);
+  }
+
+  @Override
+  public boolean saleMemoInsert(Req req) {
+    return tstMapper.saleMemoInsert(req);
+  }
   
 
 }

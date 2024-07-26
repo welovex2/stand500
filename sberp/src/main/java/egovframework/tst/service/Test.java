@@ -81,6 +81,9 @@ public class Test {
   @Column
   private String ratingDt;
   
+  @ApiModelProperty(value = "게시판글 확인요청 ", example = "")
+  @Column
+  private int checkYn;
 
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column

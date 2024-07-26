@@ -108,4 +108,8 @@ public class TestItemDTO extends TestItem {
   
   @ApiModelProperty(value = "시험취소확정여부", example = "")
   private String cancelFixYn;
+  
+  @ApiModelProperty(value = "게시판글 확인요청 ", example = "")
+  @Column
+  private int checkYn;
 }

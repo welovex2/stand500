@@ -52,4 +52,10 @@ public interface TstService {
   public CanCelDTO cancelInfo(int testSeq);
 
   boolean cancelInsert(CanCelDTO req);
+
+  boolean checkInsert(Req req);
+
+  int selectCheckInfo(String testSeq);
+
+  boolean saleMemoInsert(Req req);
 }

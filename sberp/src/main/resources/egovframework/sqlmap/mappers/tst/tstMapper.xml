@@ -150,6 +150,7 @@
 		    '미반입' imPoint,
 		    '0' imSeq,
 		    CMPY_NAME,
+		    TEST_TB.CHECK_YN checkYn,
 		    TEST_ITEM_TB.PRODUCT,
 			CONCAT_WS(',', IF(SG_NEW_YN=1,'신규',NULL),IF(SG_GB_YN=1,'기변',NULL),IF(SG_ETC_YN=1,'기외',NULL)) sgText,
 			cate1.NAME crtfc1Name,
@@ -561,7 +562,10 @@
 			TEST_RPRT_N_YN,
 			ELCTR_TEST_C_YN,
 			ELCTR_TEST_K_YN,
-			ELCTR_TEST_N_YN
+			ELCTR_TEST_N_YN,
+			
+			/* 고지부메모 추가*/
+			JOB_TB.MEMO saleMemo
 		
 		FROM SBK_TB	
 			
@@ -669,6 +673,7 @@
 		<result column="DIRT_NAME" property="dirtName"/>
 		<result column="prdctName" property="prdctName"/>
       	<result column="modelName" property="modelName"/>
+      	<result column="saleMemo" property="saleMemo"/>
 		<result column="sgText" property="sgText"/>
 		<result column="mngName" property="mngName"/>
 		<result column="job_seq" property="jobSeq"/>
@@ -677,6 +682,7 @@
        	<result column="testCnt" property="testCnt"/>
 		<collection property="items" ofType="testItemDTO">
         	<id column="test_item_seq" property="testItemSeq"/>
+	      	<result column="checkYn" property="checkYn"/>
         	<result column="test_seq" property="testSeq"/>
         	<result column="testId" property="testId"/>
         	<result column="testEstCmpDt" property="estCmpDt"/>
@@ -726,13 +732,19 @@
 			IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 		    JOB_TB.PRDCT_NAME prdctName,
             JOB_TB.MODEL_NAME modelName,
-                     
+			
+			CONCAT(
+				IF (CHAR_LENGTH(JOB_TB.MEMO) > (COUNT(TEST_TB.TEST_SEQ) * 55), '...', ''),
+				RIGHT(REPLACE(REPLACE(JOB_TB.MEMO, '\r\n', ''),'\n',''), COUNT(TEST_TB.TEST_SEQ) * 55)
+			) saleMemo,
+			TEST_TB.CHECK_YN checkYn,
+			
 		    CONCAT_WS (
 		        ',',
 		        IF (SG_NEW_YN = 1, '신규', null),
-		        IF (SG_GB_YN = 1, '기술기준 변경', null),
-		        IF (SG_DG_YN = 1, '동일기자재', null),
-		        IF (SG_ETC_YN = 1, '기술기준외 변경', null)
+		        IF (SG_GB_YN = 1, '기변', null),
+		        IF (SG_DG_YN = 1, '동일', null),
+		        IF (SG_ETC_YN = 1, '기외', null)
 		    ) sgText,
 		    
 			COUNT(TEST_TB.TEST_SEQ) testCnt,
@@ -914,6 +926,7 @@
 	<sql id="subSelect">
 	    /* 시험항목 및 비용 */
 	    TEST_TB.TEST_SEQ,
+	    TEST_TB.CHECK_YN checkYn,
 	    IFNULL (DATE_FORMAT(TEST_TB.INS_DT, '%y-%m-%d'), '') testInDt,
 	    IFNULL (DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%y-%m-%d'), '-') estCmpDt,
 	    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
@@ -1025,6 +1038,8 @@
 												    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 76	보안견적서여부 -->
 				    <when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
+				    <!-- 79	고지부메모 -->
+				    <when test="item.searchCode == 79">AND JOB_TB.MEMO LIKE CONCAT('%',#{item.searchWord},'%')</when>
 	        	</choose>
 			</foreach>
 		</if>
@@ -1053,6 +1068,7 @@
 		    '미반입' imPoint,
 		    '0' imSeq,
 		    CMPY_NAME,
+		    TEST_TB.CHECK_YN checkYn,
 		    TEST_ITEM_TB.PRODUCT,
 			CONCAT_WS(',', IF(SG_NEW_YN=1,'신규',NULL),IF(SG_GB_YN=1,'기변',NULL),IF(SG_ETC_YN=1,'기외',NULL)) sgText,
 			cate1.NAME crtfc1Name,
@@ -1219,7 +1235,33 @@
 	     WHERE (QUO_TB.QUO_YM, QUO_TB.QUO_SEQ) = (SELECT QUO_YM, QUO_SEQ FROM TEST_ITEM_TB WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq})       
 	</update>
 	
-	<select id="checkStateInfo" parameterType="int">
+	<update id="checkInsert" parameterType="testReq">
+		UPDATE TEST_TB
+		SET
+			CHECK_YN = #{checkYn},
+			CHECK_ID = #{udtMemId}
+		WHERE TEST_SEQ = #{testSeq}
+	</update>
+	
+	<select id="selectCheckInfo" parameterType="String" resultType="int">
+		SELECT
+			CHECK_YN
+		FROM TEST_TB
+		WHERE TEST_SEQ = #{testSeq}
 	</select>
+	
+	<update id="saleMemoInsert" parameterType="testReq" >
+		UPDATE JOB_TB
+		SET
+<![CDATA[			
+			MEMO = #{saleMemo},
+			UDT_MEM_ID = #{udtMemId},
+			UDT_DT = NOW()
+]]>			
+		WHERE JOB_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND JOB_TB.SBK_TYPE = SUBSTRING(#{sbkId},6,1)
+		AND JOB_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND JOB_TB.SBK_REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
+	</update>
 	
 </mapper>

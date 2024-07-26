@@ -31,6 +31,13 @@ public class TestDTO {
     @ApiModelProperty(value = "시험담당자 ID ", example = "c")
     @Column
     private String testMngId;
+    
+    @ApiModelProperty(value = "신청서번호", example = " ")
+    @Column
+    private String sbkId;
+    
+    @ApiModelProperty(value = "고지부메모", example = "")
+    private String saleMemo;
   }
 
   @Getter
@@ -189,6 +196,9 @@ public class TestDTO {
      
     @ApiModelProperty(value = "참고메모", example = "")
     private String memo;
+    
+    @ApiModelProperty(value = "고지부메모", example = "")
+    private String saleMemo;
     
     @ApiModelProperty(value = "보안견적서 여부", example = "")
     private int secretYn;

@@ -543,13 +543,16 @@ public class TstController {
     List<TestDTO.Res> list = new ArrayList<TestDTO.Res>();
 
     list = tstService.testBoardList(testSeq);
-
+    
     if (list == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
+    
+    // 확인요망여부
+    int checkYn = tstService.selectCheckInfo(testSeq);
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).summary(checkYn).build();
 
     return res;
   }
@@ -755,6 +758,58 @@ public class TstController {
 
     if (isAuthenticated) {
       result = tstService.cancelInsert(req);
+    } else {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "시험게시판 확인요망", notes = "testSeq:시험고유항목, checkYn:확인요망여부")
+  @PostMapping(value = "/check/insert.do")
+  public BasicResponse testCheckInsert(@RequestBody TestDTO.Req req) throws Exception {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+
+    // 로그인정보
+    req.setInsMemId(user.getId());
+    req.setUdtMemId(user.getId());
+
+    boolean result = false;
+    String msg = "";
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      result = tstService.checkInsert(req);
+    } else {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "시험게시판 고지부메모", notes = "sbkId:신청서번호, saleMemo:고지부메모")
+  @PostMapping(value = "/saleMemo/insert.do")
+  public BasicResponse saleMemoInsert(@RequestBody TestDTO.Req req) throws Exception {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+
+    // 로그인정보
+    req.setInsMemId(user.getId());
+    req.setUdtMemId(user.getId());
+
+    boolean result = false;
+    String msg = "";
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+
+    if (isAuthenticated) {
+      result = tstService.saleMemoInsert(req);
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;

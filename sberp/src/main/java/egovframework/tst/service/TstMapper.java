@@ -67,4 +67,10 @@ public interface TstMapper {
   public boolean cancelQuoUpdate(CanCelDTO req);
 
   public Res checkTestState(int testSeq);
+
+  public boolean checkInsert(Req req);
+  
+  public int selectCheckInfo(String testSeq);
+
+  public boolean saleMemoInsert(Req req);
 }

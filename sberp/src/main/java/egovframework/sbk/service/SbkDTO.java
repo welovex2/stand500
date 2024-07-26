@@ -103,6 +103,10 @@ public class SbkDTO {
     @ApiModelProperty(value = "로그인사용자", example = "")
     private String memId = "";
     
+    @ApiModelProperty(value = "고지부메모 ", example = "고지부메모")
+    @Column
+    private String saleMemo;
+    
   }
 
   @Getter
@@ -274,6 +278,10 @@ public class SbkDTO {
     @ApiModelProperty(value = "VERSION ", example = "1")
     @Column
     private String version;
+    
+    @ApiModelProperty(value = "고지부메모 ", example = "고지부메모")
+    @Column
+    private String saleMemo;
   }
 
 }
