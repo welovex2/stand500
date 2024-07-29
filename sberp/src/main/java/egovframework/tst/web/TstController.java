@@ -444,7 +444,7 @@ public class TstController {
       if (detail != null) {
         
         // 최신 상태가 시험취소(확정)이면 상태변경 불가능
-        if ("19".equals(detail.getStateCode()) && detail.getCancelFee() > 0) {
+        if ("19".equals(detail.getStateCode()) && detail.getCancelYn() == 1) {
           result = false;
           msg = ResponseMessage.CHECK_TEST_STATE;
           

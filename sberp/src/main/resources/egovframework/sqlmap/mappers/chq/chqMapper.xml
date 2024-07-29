@@ -203,6 +203,7 @@
 			<result column="FEE" property="fee"/>
        	 	<result column="LCNS_TAX" property="lcnsTax"/>
        	 	<result column="TEST_FEE" property="testFee"/>
+       	 	<result column="cancelFixYn" property="cancelFixYn"/>
 		</collection>
 	</resultMap>
 	<select id ="selectDetail" parameterType="String" resultMap="chqMap">
@@ -225,7 +226,8 @@
 			) TEST_TYPE,
 			FEE,
 			LCNS_TAX,
-			TEST_FEE,
+			IF (CANCEL_YN = 1, NET_SALES, TEST_FEE) TEST_FEE,
+			IF (CANCEL_YN = 1, '취소', '정상') cancelFixYn,
 			IF(QUO_TB.VAT_YN=1,'O','') VAT_YN
 		FROM
 			CHQ_TB
@@ -281,8 +283,8 @@
 		            count(1) cnt,
 		            sum(TEST_ITEM_TB.FEE) FEE,
 		            sum(TEST_ITEM_TB.LCNS_TAX) LCNS_TAX,
-		            sum(TEST_ITEM_TB.TEST_FEE) TEST_FEE,
-		            sum(TEST_ITEM_TB.CHRGS) COST_TOTAL,
+		            sum(IF (CANCEL_YN = 1, NET_SALES, TEST_FEE)) TEST_FEE,
+		            QUO_TB.COST_TOTAL COST_TOTAL,
 		            sum(TEST_ITEM_TB.SPCL_DSCNT) SPCL_DSCNT,
 		            QUO_TB.TOTAL_VAT TOTAL_VAT
 		        FROM

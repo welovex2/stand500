@@ -446,7 +446,8 @@
 		SELECT
 		
 			TEST_STATE_TB.STATE_CODE,
-            IFNULL (TEST_ITEM_TB.CANCEL_FEE, 0) CANCEL_FEE
+            IFNULL (TEST_ITEM_TB.CANCEL_FEE, 0) CANCEL_FEE,
+            CANCEL_YN 
 		    
 		FROM TEST_STATE_TB
 		
@@ -780,7 +781,7 @@
 	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
 	    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
 	    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
-	    IF (CANCEL_FEE != 0, 'Y', 'N') cancelFixYn,
+	    IF (CANCEL_YN = 1, 'Y', 'N') cancelFixYn,
 		TEST_ITEM_TB.NET_SALES netSales,
 
 		IFNULL (MEMO_CNT, 0) memoCnt,
@@ -956,7 +957,7 @@
 	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
 	    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
 	    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
-	    IF (CANCEL_FEE != 0, 'Y', 'N') cancelFixYn,
+	    IF (CANCEL_YN = 1, 'Y', 'N') cancelFixYn,
 		TEST_ITEM_TB.NET_SALES netSales,
 
 		IFNULL (MEMO_CNT, 0) memoCnt,
@@ -1209,14 +1210,15 @@
 		
 		SET 
 			TEST_ITEM_TB.NET_SALES = #{netSales},
-		    TEST_ITEM_TB.CANCEL_FEE = CHRGS - #{netSales}
+		    TEST_ITEM_TB.CANCEL_FEE = CHRGS - #{netSales},
+		    CANCEL_YN = 1
 		
 		WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq}
 	</update>
 	
 	<update id="cancelQuoUpdate" parameterType="canCelDTO">
 		<selectKey keyProperty="costTotal" resultType="int" order="BEFORE">
-	        SELECT SUM(IF (CANCEL_FEE != 0, NET_SALES, CHRGS)) FROM QUO_TB
+	        SELECT SUM(IF (CANCEL_YN = 1, NET_SALES, CHRGS)) FROM QUO_TB
 		        INNER JOIN TEST_ITEM_TB
 	     		ON TEST_ITEM_TB.QUO_YM = QUO_TB.QUO_YM
 			    AND TEST_ITEM_TB.QUO_SEQ = QUO_TB.QUO_SEQ

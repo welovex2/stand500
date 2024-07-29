@@ -708,6 +708,7 @@
        	 	<result column="OTSRC_FEE" property="otsrcFee"/>
        	 	<result column="NET_SALES" property="netSales"/>
        	 	<result column="CANCEL_FEE" property="cancelFee"/>
+       	 	<result column="cancelFixYn" property="cancelFixYn"/>
         </collection>
 	</resultMap>
 	<select id="selectDetail" parameterType="String" resultMap="quoMap">
@@ -830,6 +831,7 @@
 			,TEST_ITEM_TB.OTSRC_FEE
 			,TEST_ITEM_TB.NET_SALES
 			,TEST_ITEM_TB.CANCEL_FEE
+			,IF (CANCEL_YN = 1, 'Y', 'N') cancelFixYn
 		FROM QUO_TB
 			
 		    INNER JOIN JOB_TB

@@ -220,5 +220,8 @@ public class TestDTO {
     
     @ApiModelProperty(value = "시험취소금액", example = "")
     private int cancelFee;
+    
+    @ApiModelProperty(value = "시험취소확정여부", example = "")
+    private int cancelYn;
   }
 }
