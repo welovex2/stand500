@@ -41,7 +41,7 @@
 			INDST_MF_YN,
 			INDST_SL_YN,
 			INDST_IP_YN,
-			IF (DIRT_MNG_SEQ = -1, MNG_NAME, IFNULL (DIRT_MNG.NAME, '')) MNG_NAME,
+			IF (IFNULL(DIRT_MNG_SEQ, 0) = 0, MNG_NAME, IFNULL (DIRT_MNG.NAME, '')) MNG_NAME,
 			JOB_TB.MNG_EMAIL,
 			FN_GET_PHONE_FORMAT (IFNULL(MNG_TEL, '')) MNG_TEL,
 			FN_GET_PHONE_FORMAT (IFNULL(JOB_TB.MNG_FAX, '')) MNG_FAX,
@@ -170,6 +170,9 @@
 			select
 				@rownum:=@rownum+1 as no
 				/* 시험항목 및 비용 */
+				,IFNULL(CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')), '미배정') testId
 				,TEST_ITEM_TB.test_item_seq
 				,B.test_cate_seq crtfc1
 				,B.name crtfc1Name
