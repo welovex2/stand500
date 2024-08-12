@@ -589,12 +589,8 @@
 		FROM MEMBER_TB
 		
 		    # 계산서
-			LEFT JOIN SLS_TB
-		    ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
-		      
 		    LEFT JOIN BILL_TB
-		    ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
-		    AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+		    ON BILL_TB.INS_MEM_ID = MEMBER_TB.ID
 		    AND DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%Y') = <if test="searchVO != null">
 												        <foreach collection="searchVO" item="item" separator="">
 												        	<choose>
@@ -605,6 +601,11 @@
 													</if>
 			AND BILL_TB.BILL_YN = 1
 		    AND BILL_TB.STATE NOT IN (4,6)
+
+			LEFT JOIN SLS_TB
+		    ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+		    AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+		    AND SLS_TB.STATE != 'D'
 		            
 		WHERE MNG_YN = 1
 		
@@ -682,12 +683,8 @@
 		FROM MEMBER_TB
 		
 		    # 계산서
-			LEFT JOIN SLS_TB
-		    ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
-		      
 		    LEFT JOIN BILL_TB
-		    ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
-		    AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+		    ON BILL_TB.INS_MEM_ID = MEMBER_TB.ID
 		    AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y') = <if test="searchVO != null">
 												        <foreach collection="searchVO" item="item" separator="">
 												        	<choose>
@@ -699,6 +696,11 @@
 			AND BILL_TB.PAY_CODE IS NOT NULL
 		    AND BILL_TB.STATE NOT IN (4,6)
 		            
+			LEFT JOIN SLS_TB
+		    ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+		    AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+		    AND SLS_TB.STATE != 'D'
+		      
 		WHERE MNG_YN = 1
 		
 		<if test="!'sm'.equals(searchCode)">
