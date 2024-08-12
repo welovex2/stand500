@@ -47,12 +47,19 @@
 				) billCnt
 				ON SLS_TB.SLS_YM = billCnt.SLS_YM
 				AND SLS_TB.SLS_SEQ = billCnt.SLS_SEQ
-			        
+			    
+			    /* 검색 */
+                LEFT JOIN BILL_TB
+				ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+				  
 			WHERE
 			    1 = 1
 			    AND SLS_TB.STATE != 'D'
 			    
 				<include refid="whereList"/>
+				
+				GROUP BY SLS_TB.SLS_YM, SLS_TB.SLS_SEQ
 				
 			UNION ALL
             
@@ -237,13 +244,20 @@
 				) billOrder
 				ON SLS_TB.SLS_YM = billOrder.SLS_YM
 				AND SLS_TB.SLS_SEQ = billOrder.SLS_SEQ
+				
+				/* 검색 */
+                LEFT JOIN BILL_TB
+				ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
 				 
 			WHERE
 			    1 = 1
 			    AND SLS_TB.STATE != 'D'
 				
 				<include refid="whereList"/>
-			
+				
+				GROUP BY SLS_TB.SLS_YM, SLS_TB.SLS_SEQ
+				
 			UNION ALL
 			
 			/* 취합견적서 */
@@ -259,7 +273,8 @@
 			            LPAD (SLS_TB.CHQ_SEQ, 3, 0)
 			        )
 			    ) chqId,
-			    GROUP_CONCAT(FN_GET_SEQSTRING ('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ) SEPARATOR ', ') quoId,
+			    #GROUP_CONCAT(FN_GET_SEQSTRING ('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ) SEPARATOR ', ') quoId,
+			    '-' quoId,
 			    '0' version,
 			    JOB_TB.SECRET_YN,
 			    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
@@ -384,7 +399,7 @@
 					<!-- 71 납부완료일 -->
 					<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 72 계산서발행일 -->
-					<when test="item.searchCode == 72">AND DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 72">AND DATE_FORMAT(IFNULL (BILL_TB.OTHER_BILL_DT, BILL_TB.BILL_DT), '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 76	보안견적서여부 -->
 	    			<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 					<!-- 77	매출최종상태 -->
@@ -446,7 +461,7 @@
 					<!-- 71 납부완료일 -->
 					<when test="item.searchCode == 71">AND DATE_FORMAT(BILL_TB.PAY_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 72 계산서발행일 -->
-					<when test="item.searchCode == 72">AND DATE_FORMAT(BILL_TB.OTHER_BILL_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+					<when test="item.searchCode == 72">AND DATE_FORMAT(IFNULL (BILL_TB.OTHER_BILL_DT, BILL_TB.BILL_DT), '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 76	보안견적서여부 -->
 	    			<when test="item.searchCode == 76">AND JOB_TB.SECRET_YN = #{item.searchWord}</when>
 	    			<!-- 77	매출최종상태 -->
