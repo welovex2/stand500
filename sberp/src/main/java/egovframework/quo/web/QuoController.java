@@ -3,6 +3,7 @@ package egovframework.quo.web;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -756,9 +757,12 @@ public class QuoController {
     }
     
     // 6. 파일다운로드로 저장하기
+    String fileName = URLEncoder.encode(quoId + "_견적서" + detail.getCmpyName().trim() + "_" + detail.getModelName() + "_" + detail.getTrgtCrtfc(), "UTF-8");
+    fileName = fileName.replaceAll("\\+", "%20");
+    
     response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     // 응답이 파일 타입이라는 것을 명시
-    response.setHeader("Content-Disposition", "attachment;filename=" + quoId + ".xlsx");
+    response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
     ServletOutputStream servletOutputStream = response.getOutputStream();
 //    XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
     workbook.setForceFormulaRecalculation(true);

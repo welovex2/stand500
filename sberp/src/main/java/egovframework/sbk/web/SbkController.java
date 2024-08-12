@@ -1,6 +1,7 @@
 package egovframework.sbk.web;
 
 import java.io.FileInputStream;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -585,10 +586,11 @@ public class SbkController {
     
     SbkDTO.Req req = new SbkDTO.Req();
     SbkDTO.Res detail = new SbkDTO.Res();
+    String fileName = sbkId.concat("_신청서_");
     
     req.setSbkId(sbkId);
     detail = sbkService.selectDetail(req);
-
+    
     // 1. FileInputStream 으로 파일 읽기
     FileInputStream inputStream = new FileInputStream(filePath);
     
@@ -599,41 +601,44 @@ public class SbkController {
     XSSFSheet sheet = workbook.getSheetAt(0);
 
     if (detail != null) {
-  
+      
+      fileName = URLEncoder.encode(fileName.concat(detail.getCmpyName()).concat("_").concat(detail.getModelName()), "UTF-8");
+      fileName = fileName.replaceAll("\\+", "%20");
+      
       // 4. XSSFRow 첫번째 Row 가져와서 수정하기
-      XSSFRow row = sheet.getRow(2); // 시트의 첫번째 Row 를 가져온다
-      row.getCell(3).setCellValue(detail.getCmpyName().trim());               // 회사명
-      row.getCell(10).setCellValue(detail.getBsnsRgnmb().trim());      // 사업자등록번호
+      XSSFRow row = sheet.getRow(4); // 5 행
+      row.getCell(5).setCellValue(detail.getCmpyName().trim());               // 회사명 (F)
+      row.getCell(19).setCellValue(detail.getBsnsRgnmb().trim());      // 사업자등록번호 (T)
       
-      row = sheet.getRow(3);
-      row.getCell(3).setCellValue(detail.getRprsn().trim());               // 대표자
+      row = sheet.getRow(5); // 6 행
+      row.getCell(5).setCellValue(detail.getRprsn().trim());               // 대표자
       
-      row = sheet.getRow(4);
-      row.getCell(3).setCellValue(detail.getAddress().trim());                 // 주소
+      row = sheet.getRow(7); // 8 행
+      row.getCell(5).setCellValue(detail.getAddress().trim());                 // 주소
       
-      row = sheet.getRow(6);
-      row.getCell(4).setCellValue(detail.getMngName().trim());          // 담당자 이름
-      row.getCell(10).setCellValue(detail.getMngEmail().trim());       // 담당자 이메일
+      row = sheet.getRow(8); // 9 행
+      row.getCell(8).setCellValue(detail.getMngName().trim());          // 담당자 이름 (I)
+      row.getCell(19).setCellValue(detail.getMngEmail().trim());       // 담당자 이메일 (T)
       
-      row = sheet.getRow(7);
-      row.getCell(4).setCellValue(detail.getMngPhone().trim());          // 담당자 전화
-      row.getCell(7).setCellValue(detail.getMngTel().trim());        // 담당자 핸드폰
-      row.getCell(11).setCellValue(detail.getMngFax().trim());         // 담당자 팩스
+      row = sheet.getRow(9); // 10 행
+      row.getCell(8).setCellValue(detail.getMngPhone().trim());          // 담당자 전화
+      row.getCell(14).setCellValue(detail.getMngTel().trim());        // 담당자 핸드폰 (O)
+      row.getCell(23).setCellValue(detail.getMngFax().trim());         // 담당자 팩스 (X)
       
-      row = sheet.getRow(8);
-      row.getCell(3).setCellValue(detail.getPrdctName().trim());               // 제품명
+      row = sheet.getRow(10); // 11 행
+      row.getCell(5).setCellValue(detail.getPrdctName().trim());               // 제품명
+      row.getCell(19).setCellValue(detail.getModelName().trim());               // 모델명
       
-      row = sheet.getRow(9);
-      row.getCell(3).setCellValue(detail.getModelName().trim());               // 모델명
-      row.getCell(10).setCellValue(detail.getAthntNmbr().trim());            // 인증번호
+      row = sheet.getRow(14); // 15 행
+      row.getCell(19).setCellValue(detail.getAthntNmbr().trim());            // 인증번호
       
       // 신청서 엑셀 다운로드 기능 (#18) 파생모델란 추가
-      row = sheet.getRow(10);
-      row.getCell(10).setCellValue(detail.getExtendModel().trim());               // 파생모델
+      row = sheet.getRow(11); // 12 행
+      row.getCell(5).setCellValue(detail.getExtendModel().trim());               // 파생모델
       
-      row = sheet.getRow(15);
-      row.getCell(3).setCellValue(detail.getMnfctCmpny().trim());               // 회사명
-      row.getCell(10).setCellValue(detail.getMnfctCntry().trim());              // 제조국
+      row = sheet.getRow(16); // 17 행
+      row.getCell(5).setCellValue(detail.getMnfctCmpny().trim());               // 회사명
+      row.getCell(19).setCellValue(detail.getMnfctCntry().trim());              // 제조국
       
       
       
@@ -654,7 +659,8 @@ public class SbkController {
     // 6. 파일다운로드로 저장하기
     response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     // 응답이 파일 타입이라는 것을 명시
-    response.setHeader("Content-Disposition", "attachment;filename=" + sbkId + ".xlsx");
+    //response.setHeader("Content-Disposition", "attachment;filename=" + sbkId + ".xlsx");
+    response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
     ServletOutputStream servletOutputStream = response.getOutputStream();
 //    XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
     workbook.setForceFormulaRecalculation(true);
