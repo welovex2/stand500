@@ -898,30 +898,37 @@
 			BILL_YN = 1,
 			BILL_DT = NOW(),
 			BILL_ID = #{udtMemId},
+			UDT_DT = NOW(),
 			</if>
 			<if test="bill > 0">
 			# 계산서 금액수정
 			BILL = #{bill},
 			UDT_MEM_ID = #{udtMemId},
 			STATE = 0,
+			UDT_DT = NOW(),
 			</if>
 			<if test="payCode != null and payCode != ''">
 			# 납부상태
 			PAY_CODE = #{payCode},
 			PAY_DT = #{payDt},
 			PAY_ID = #{udtMemId},
+			UDT_DT = NOW(),
 			</if>
 			<if test="otherBillDt != null and otherBillDt != ''">
 			# 계산서 발행 작성일
 			OTHER_BILL_DT = #{otherBillDt},
+			UDT_DT = NOW(),
 			</if>
 			<if test="state != null and state != ''">
 			# 요청승인
 			STATE = #{state},
-			UDT_MEM_ID = #{udtMemId},
+			UDT_DT = NOW(),
 			</if>
-			<if test="memo != null and memo != ''">MEMO = #{memo},</if>
-			UDT_DT = NOW()
+			<if test="memo != null and memo != ''">
+			MEMO = #{memo},
+			UDT_DT = NOW(),
+			</if>
+			UDT_MEM_ID = #{udtMemId}
 	</insert>
 	
 	<select id="selectQuoId" parameterType="String" resultType="String">
