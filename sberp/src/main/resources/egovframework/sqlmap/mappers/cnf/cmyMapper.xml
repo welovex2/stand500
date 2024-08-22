@@ -305,4 +305,226 @@
 		AND CMPY_NAME COLLATE utf8_bin = TRIM(#{cmpyName});
 	</select>
 	
+	<select id="selectCmdList" parameterType="comParam" resultType="cmdSub">
+		SET @sindt:= <if test="searchVO != null">
+					        <foreach collection="searchVO" item="item" separator="">
+					        	<choose>
+					        		<!-- 18 시험배정일 -->
+					        		<when test="item.searchCode == 18">#{item.searchWord}</when>
+								</choose>
+							</foreach>
+						</if>;
+		SET @scseq:= <if test="searchVO != null">
+					        <foreach collection="searchVO" item="item" separator="">
+					        	<choose>
+					        		<!-- 4 컨설팅 -->
+					        		<when test="item.searchCode == 4">#{item.searchWord}</when>
+								</choose>
+							</foreach>
+						</if>;
+						
+		SELECT
+            
+           
+			CONCAT(CAST(T.baseDt AS UNSIGNED), '월') mon,
+            CMPY_TB.CMPY_SEQ,
+            SUM(IF (CMPY_TB.CMPY_SEQ = @scseq, 1, 0)) inCnt,
+            TRUNCATE(SUM(IF (CMPY_TB.CMPY_SEQ = @scseq, NET_SALES, 0)) / 10000, 0) inAmt,
+			TRUNCATE(sls.BILL / 10000, 0) pay,
+			TRUNCATE(sls.ARREARS / 10000, 0) arr
+                  
+			FROM (
+				/* 날짜 테이블 */
+				SELECT 
+					LPAD(seq, 2, '0') baseDt
+				FROM (SELECT @num := @num + 1 AS seq
+					  FROM information_schema.tables a
+						 , information_schema.tables b
+						 , (SELECT @num := 0) c
+					 ) T
+				WHERE 1=1
+				AND seq between 1 and 12
+			) T
+      
+				# 해당월에 접수된 시험
+				LEFT JOIN TEST_TB
+				ON T.baseDt = DATE_FORMAT(TEST_TB.INS_DT, '%m')
+				AND DATE_FORMAT(TEST_TB.INS_DT, '%Y') = @sindt
+				
+				
+				LEFT JOIN TEST_ITEM_TB
+				ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
+				AND TEST_ITEM_TB.STATE != 'D'
+
+				LEFT JOIN JOB_TB
+				ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+				AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+
+              
+				# 해당월에 매출확정
+				LEFT JOIN (
+				
+					SELECT
+						cnfrmDt, SUM(IF (PAY_DT IS NOT NULL, BILL, 0)) BILL, SUM(ARREARS) ARREARS, PAY_DT
+                        
+					FROM (
+						SELECT DATE_FORMAT(SLS_TB.CNFRM_DT, '%m') cnfrmDt, SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ, BILL, ARREARS, PAY_DT
+						FROM SLS_TB
+						
+						INNER JOIN BILL_TB
+						ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+						AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+						AND BILL_TB.STATE NOT IN (4,6)
+						
+						
+						INNER JOIN QUO_TB 
+						ON SLS_TB.CHQ_YM = QUO_TB.CHQ_YM
+						AND SLS_TB.CHQ_SEQ = QUO_TB.CHQ_SEQ
+						
+						INNER JOIN JOB_TB
+						ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+						AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+						
+						WHERE PRTN_SEQ = @scseq
+						AND SLS_TB.STATE != 'D'
+						AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y') = @sindt
+	                          
+						GROUP BY SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ, DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m')
+						
+						UNION ALL
+						
+						SELECT 
+					   
+						DATE_FORMAT(SLS_TB.CNFRM_DT, '%m') cnfrmDt, SLS_TB.QUO_YM, SLS_TB.QUO_YM, sum(BILL) BILL, SUM(ARREARS) ARREARS, PAY_DT
+						FROM SLS_TB
+						
+						INNER JOIN BILL_TB
+						ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+						AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+						AND BILL_TB.STATE NOT IN (4,6)
+												
+						
+						INNER JOIN QUO_TB 
+						ON SLS_TB.QUO_YM = QUO_TB.QUO_YM
+						AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+						
+						INNER JOIN JOB_TB
+						ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+						AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+						
+						
+						WHERE JOB_TB.PRTN_SEQ = @scseq
+						AND SLS_TB.STATE != 'D'
+						AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y') = @sindt
+	                          
+						GROUP BY DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m')
+					) tmp
+					GROUP BY cnfrmDt
+					
+				) sls
+				ON T.baseDt = sls.cnfrmDt
+				                        						                        
+				LEFT JOIN CMPY_TB 
+				ON PRTN_SEQ = CMPY_TB.CMPY_SEQ AND CMPY_CODE = '0000'  AND CMPY_TB.STATE != 'D' and CMPY_TB.CMPY_SEQ = @scseq
+              
+	
+          GROUP BY T.baseDt
+	</select>
+	
+	<select id="selectCmdTotal" parameterType="comParam" resultType="cmdSub">
+		SET @scseq:= <if test="searchVO != null">
+					        <foreach collection="searchVO" item="item" separator="">
+					        	<choose>
+					        		<!-- 4 컨설팅 -->
+					        		<when test="item.searchCode == 4">#{item.searchWord}</when>
+								</choose>
+							</foreach>
+						</if>;
+						
+		SELECT
+		
+			'총 계' mon,
+			CMPY_TB.CMPY_SEQ,
+			SUM(IF (CMPY_TB.CMPY_SEQ = @scseq, 1, 0)) inCnt,
+			TRUNCATE(SUM(IF (CMPY_TB.CMPY_SEQ = @scseq, NET_SALES, 0)) / 10000, 0) inAmt,
+			pay,
+			arr
+		    
+		FROM CMPY_TB
+		
+			INNER JOIN JOB_TB
+		    ON JOB_TB.PRTN_SEQ = CMPY_TB.CMPY_SEQ
+		    
+		    INNER JOIN TEST_ITEM_TB
+			ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+			AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		    AND TEST_ITEM_TB.STATE != 'D'
+		    
+			INNER JOIN TEST_TB
+			ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
+		
+			# 매출확정
+			LEFT JOIN (
+		
+					SELECT 
+							PRTN_SEQ,
+							TRUNCATE(SUM(IF (PAY_DT IS NOT NULL, BILL, 0)) / 10000, 0) pay,
+							TRUNCATE(SUM(ARREARS) / 10000, 0) arr
+					FROM (
+						SELECT JOB_TB.PRTN_SEQ, SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ, SUM(QUO_TB.TOTAL_VAT) BILL, ARREARS, PAY_DT
+						FROM SLS_TB
+		
+						INNER JOIN BILL_TB
+						ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+						AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+						AND BILL_TB.STATE NOT IN (4,6)
+		
+		
+						INNER JOIN QUO_TB
+						ON SLS_TB.CHQ_YM = QUO_TB.CHQ_YM
+						AND SLS_TB.CHQ_SEQ = QUO_TB.CHQ_SEQ
+		
+						INNER JOIN JOB_TB
+						ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+						AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		
+						WHERE PRTN_SEQ = @scseq
+						AND SLS_TB.STATE != 'D'
+		
+		
+						GROUP BY SLS_TB.CHQ_YM, SLS_TB.CHQ_SEQ
+		
+						UNION ALL
+		
+						SELECT
+		
+						JOB_TB.PRTN_SEQ, SLS_TB.QUO_YM, SLS_TB.QUO_YM, SUM(BILL) BILL, SUM(ARREARS) ARREARS, PAY_DT
+						FROM SLS_TB
+		
+						INNER JOIN BILL_TB
+						ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+						AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+						AND BILL_TB.STATE NOT IN (4,6)
+		
+		
+						INNER JOIN QUO_TB
+						ON SLS_TB.QUO_YM = QUO_TB.QUO_YM
+						AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+		
+						INNER JOIN JOB_TB
+						ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+						AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+		
+		
+						WHERE JOB_TB.PRTN_SEQ = @scseq
+						AND SLS_TB.STATE != 'D'
+						
+						) t
+			) sls
+		    ON sls.PRTN_SEQ = CMPY_TB.CMPY_SEQ
+		
+		 
+		    WHERE CMPY_TB.CMPY_SEQ = @scseq
+	</select>
+	
 </mapper>

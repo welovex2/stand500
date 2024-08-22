@@ -107,6 +107,8 @@
     	<typeAlias alias="stsDTO"		type="egovframework.sts.dto.StsDTO"/>
     	<typeAlias alias="stsTestType"	type="egovframework.sts.dto.StsDTO$TestTypeList"/>
     	
+    	<typeAlias alias="cmdDTO"		type="egovframework.sts.dto.CmdDTO"/>
+    	<typeAlias alias="cmdSub"		type="egovframework.sts.dto.CmdDTO$Sub"/>
     	<typeAlias alias="smdDTO"		type="egovframework.sts.dto.SmdDTO$memState"/>
     	<typeAlias alias="monState"		type="egovframework.sts.dto.SmdDTO$MonState"/>
     	<typeAlias alias="tmdDTO"		type="egovframework.sts.dto.TmdDTO"/>

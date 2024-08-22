@@ -13,6 +13,9 @@ import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.CmyMapper;
 import egovframework.cnf.service.CmyService;
+import egovframework.sts.dto.CmdDTO;
+import egovframework.sts.dto.StsDTO;
+import egovframework.sts.dto.CmdDTO.Sub;
 
 @Service("CmyService")
 public class CmyServiceImpl implements CmyService {
@@ -83,6 +86,32 @@ public class CmyServiceImpl implements CmyService {
   @Override
   public List<CmpyDTO> selectSameName(String cmpyCode, String cmpyName) {
     return cmyMapper.selectSameName(cmpyCode, cmpyName);
+  }
+
+  @Override
+  public List<CmdDTO.Sub> selectCmdList(ComParam param) {
+    
+    List<CmdDTO.Sub> result = cmyMapper.selectCmdList(param);
+    
+    /**
+     * 날짜별 합계 리스트에 추가
+     */
+    CmdDTO.Sub year = new CmdDTO.Sub();
+    
+    year.setMon("년 계");
+    year.setInCnt((int) result.stream().mapToInt(amt -> amt.getInCnt()).summaryStatistics().getSum());
+    year.setInAmt((long) result.stream().mapToLong(amt -> amt.getInAmt()).summaryStatistics().getSum());
+    year.setPay((long) result.stream().mapToLong(amt -> amt.getPay()).summaryStatistics().getSum());
+    year.setArr((long) result.stream().mapToLong(amt -> amt.getArr()).summaryStatistics().getSum());
+    
+    result.add(year);
+    
+    /**
+     * 총합계 리스트에 추가
+     */
+    result.add(cmyMapper.selectCmdTotal(param));
+    
+    return result;
   }
 
 }

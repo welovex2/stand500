@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.CmdMapper">
+	
+	<select id="selectList" parameterType="comParam" resultType="cmdDTO">
+		
+		SET @smonth:= <choose>
+			        		<when test="searchWord != '' and searchWord != null">DATE_FORMAT(CONCAT(#{searchWord},'01'), '%Y%m%d')</when>
+			        		<otherwise>NOW()</otherwise>
+						</choose>;
+		
+		SELECT
+				CMPY_TB.CMPY_SEQ,
+	            CMPY_TB.CMPY_NAME,
+	           
+	            SUM(IF (TEST_TB.TEST_SEQ IS NOT NULL, 1, 0)) AS totalCnt,
+	            TRUNCATE(SUM(IF (TEST_TB.TEST_SEQ IS NOT NULL, NET_SALES, 0)) / 10000, 0) AS totalAmt,
+	            SUM(IF (TEST_TB.TEST_STATE_CODE=3, 1, 0)) AS totalDeb,
+	            SUM(IF (TEST_TB.TEST_STATE_CODE=4, 1, 0)) AS totalHol,
+	                        
+			    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 5 MONTH), '%Y%m'), 1, 0)) AS mon1Cnt,
+			    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 4 MONTH), '%Y%m'), 1, 0)) AS mon2Cnt,
+			    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 3 MONTH), '%Y%m'), 1, 0)) AS mon3Cnt,
+			    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 2 MONTH), '%Y%m'), 1, 0)) AS mon4Cnt,
+			    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 1 MONTH), '%Y%m'), 1, 0)) AS mon5Cnt,
+			    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(@smonth, '%Y%m'), 1, 0)) AS mon6Cnt,
+	            
+	
+			    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 5 MONTH), '%Y%m'), NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+			    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 4 MONTH), '%Y%m'), NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+			    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 3 MONTH), '%Y%m'), NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+			    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 2 MONTH), '%Y%m'), NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+			    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 1 MONTH), '%Y%m'), NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+			    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%Y%m') = DATE_FORMAT(@smonth, '%Y%m'), NET_SALES, 0)) / 10000, 0) AS mon6Amt
+		            
+		            
+		FROM CMPY_TB
+		
+		
+			LEFT JOIN JOB_TB
+		    ON PRTN_SEQ = CMPY_TB.CMPY_SEQ
+		
+			LEFT JOIN TEST_ITEM_TB
+			ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+			AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			AND TEST_ITEM_TB.STATE != 'D'
+		    
+			LEFT JOIN TEST_TB
+			ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
+			
+		            
+		WHERE CMPY_CODE = '0000'   
+		AND CMPY_TB.STATE != 'D'
+		
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	       
+	        	<choose>
+	        		<!-- 12	회사명 -->
+	        		<when test="item.searchCode == 12">AND LOWER (CMPY_TB.CMPY_NAME) LIKE CONCAT('%',LOWER (#{item.searchWord}),'%')</when>
+				</choose>
+			</foreach>
+		</if>
+				
+		GROUP BY CMPY_TB.CMPY_SEQ
+		ORDER BY CMPY_TB.CMPY_NAME
+	</select>
+		
+		
+	<select id="selectPayList" parameterType="comParam" resultType="cmdDTO">
+		
+		SET @smonth:= <choose>
+			        		<when test="searchWord != '' and searchWord != null">DATE_FORMAT(CONCAT(#{searchWord},'01'), '%Y%m%d')</when>
+			        		<otherwise>NOW()</otherwise>
+						</choose>;
+						
+		SELECT
+		
+			PRTN_SEQ CMPY_SEQ,
+		    CMPY_NAME,
+		    
+		    TRUNCATE(SUM(IF (PAY_DT IS NOT NULL, BILL, 0)) / 10000, 0) AS totalPay,
+		    TRUNCATE(SUM(ARREARS) / 10000, 0) AS totalArr,
+		    
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 5 MONTH), '%Y%m'), IF (PAY_DT IS NOT NULL, BILL, 0), 0)) / 10000, 0) AS mon1Pay,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 4 MONTH), '%Y%m'), IF (PAY_DT IS NOT NULL, BILL, 0), 0)) / 10000, 0) AS mon2Pay,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 3 MONTH), '%Y%m'), IF (PAY_DT IS NOT NULL, BILL, 0), 0)) / 10000, 0) AS mon3Pay,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 2 MONTH), '%Y%m'), IF (PAY_DT IS NOT NULL, BILL, 0), 0)) / 10000, 0) AS mon4Pay,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 1 MONTH), '%Y%m'), IF (PAY_DT IS NOT NULL, BILL, 0), 0)) / 10000, 0) AS mon5Pay,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(@smonth, '%Y%m'), IF (PAY_DT IS NOT NULL, BILL, 0), 0)) / 10000, 0) AS mon6Pay,
+		    
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 5 MONTH), '%Y%m'), ARREARS, 0)) / 10000, 0) AS mon1Arr,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 4 MONTH), '%Y%m'), ARREARS, 0)) / 10000, 0) AS mon2Arr,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 3 MONTH), '%Y%m'), ARREARS, 0)) / 10000, 0) AS mon3Arr,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 2 MONTH), '%Y%m'), ARREARS, 0)) / 10000, 0) AS mon4Arr,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(DATE_SUB(@smonth, INTERVAL 1 MONTH), '%Y%m'), ARREARS, 0)) / 10000, 0) AS mon5Arr,
+			TRUNCATE(SUM(IF (DATE_FORMAT(CNFRM_DT, '%Y%m') = DATE_FORMAT(@smonth, '%Y%m'), ARREARS, 0)) / 10000, 0) AS mon6Arr
+		    
+		FROM (
+			SELECT 
+			
+				JOB_TB.PRTN_SEQ,
+				CMPY_TB.CMPY_NAME,
+				PAY_DT,
+				SLS_TB.CNFRM_DT,
+				QUO_TB.TOTAL_VAT TOTAL_VAT,
+				ARREARS,
+				BILL_TB.BILL
+			
+			FROM SLS_TB
+			
+			
+				INNER JOIN QUO_TB
+				ON SLS_TB.QUO_YM = QUO_TB.QUO_YM
+				AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+				
+				INNER JOIN JOB_TB
+				ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+				AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+				    
+				INNER JOIN BILL_TB
+				ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+				AND BILL_TB.STATE NOT IN (4,6)
+				
+				INNER JOIN CMPY_TB
+				ON JOB_TB.PRTN_SEQ = CMPY_TB.CMPY_SEQ
+				AND CMPY_TB.STATE != 'D'
+				AND cmpy_code = '0000'   
+			
+			WHERE SLS_TB.STATE != 'D'  
+			
+			UNION ALL
+			
+			SELECT 
+			
+				JOB_TB.PRTN_SEQ,
+				CMPY_TB.CMPY_NAME,
+				PAY_DT,
+				SLS_TB.CNFRM_DT,
+				SUM(QUO_TB.TOTAL_VAT) TOTAL_VAT,
+				ARREARS,
+				BILL_TB.BILL
+			
+			FROM SLS_TB
+			
+				INNER JOIN QUO_TB
+				ON SLS_TB.CHQ_YM = QUO_TB.CHQ_YM
+				AND SLS_TB.CHQ_SEQ =QUO_TB.CHQ_SEQ
+				
+				
+				INNER JOIN JOB_TB
+				ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+				AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+				
+				INNER JOIN BILL_TB
+				ON BILL_TB.SLS_YM = SLS_TB.SLS_YM
+				AND BILL_TB.SLS_SEQ = SLS_TB.SLS_SEQ
+				AND BILL_TB.STATE NOT IN (4,6)
+				
+				INNER JOIN CMPY_TB
+				ON JOB_TB.PRTN_SEQ = CMPY_TB.CMPY_SEQ
+				AND CMPY_TB.STATE != 'D'
+				AND cmpy_code = '0000' 
+			
+			WHERE SLS_TB.STATE != 'D'
+			
+			GROUP BY SLS_TB.SLS_YM, SLS_TB.SLS_SEQ
+		) bill
+		
+		
+		WHERE 1=1
+		<if test="searchVO != null">
+	        <foreach collection="searchVO" item="item" separator="">
+	       
+	        	<choose>
+	        		<!-- 12	회사명 -->
+	        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) LIKE CONCAT('%',LOWER (#{item.searchWord}),'%')</when>
+				</choose>
+			</foreach>
+		</if>
+		
+		GROUP BY PRTN_SEQ
+	</select>
+</mapper>

@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
+import egovframework.sts.dto.CmdDTO;
 
 @Mapper("CmyMapper")
 public interface CmyMapper {
@@ -29,4 +30,9 @@ public interface CmyMapper {
   List<CmpyDTO> selectSameName(@Param("cmpyCode") String cmpyCode, @Param("cmpyName") String cmpyName);
   
   int selectAllSameName(CmpyDTO req);
+  
+  List<CmdDTO.Sub> selectCmdList(ComParam param);
+  
+  CmdDTO.Sub selectCmdTotal(ComParam param);
+  
 }

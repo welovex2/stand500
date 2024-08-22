@@ -35,6 +35,7 @@ import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmyService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.sts.dto.CmdDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -308,6 +309,37 @@ public class CmyController {
       msg = ResponseMessage.NO_DATA;
     }
 
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "협력사 통계")
+  @GetMapping(value = "/cmd/list.do")
+  public BasicResponse selectCmdList(@ModelAttribute ComParam param) throws Exception {
+    boolean result = true;
+    String msg = "";
+    List<CmdDTO.Sub> list = new ArrayList<CmdDTO.Sub>();
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+      
+      BasicResponse res =
+          BasicResponse.builder().result(result).message(msg).build();
+
+      return res;
+    }
+    
+    list = cmyService.selectCmdList(param);
+
+    if (list == null) {
+      result = false;
+      msg = ResponseMessage.NO_DATA;
+    }
+
+    
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
 
     return res;
