@@ -38,6 +38,11 @@ public class SmdDTO {
     @ApiModelProperty(value="타입 ", example = "")
     private String typeCode;
     
+    @ApiModelProperty(value="총 건수 ", example = "")
+    private long totalCnt;
+    @ApiModelProperty(value="총 금액 ", example = "")
+    private long totalAmt;
+    
     @ApiModelProperty(value="1월 건수 ", example = "")
     private int mon1Cnt;
     @ApiModelProperty(value="1월 금액 ", example = "")
