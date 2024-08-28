@@ -7,6 +7,10 @@
 		<result column="memName" property="memName"/>
 		<collection property="stateList" ofType="monState">
 			<id column="typeCode" property="typeCode" />
+			
+			<result column="totalCnt" property="totalCnt"/>
+			<result column="totalAmt" property="totalAmt"/>
+			
 			<result column="mon1Cnt" property="mon1Cnt"/>
 			<result column="mon1Amt" property="mon1Amt"/>
 			
@@ -95,6 +99,8 @@
 		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
 		SELECT
 			<include refid="selectGubun"/>
+			
+			0 AS totalCnt,
 		    0 AS mon1Cnt,
 		    0 AS mon2Cnt,
 		    0 AS mon3Cnt,
@@ -107,6 +113,8 @@
 		    0 AS mon10Cnt,
 		    0 AS mon11Cnt,
 		    0 AS mon12Cnt,
+		    
+		    SUM(JAN + FEB + MAR + APR + MAY + JUN + JUL + AUG + SEP + OCT + NOV + `DEC`) AS totalAmt,
 			SUM(JAN) AS mon1Amt,
 		    SUM(FEB) AS mon2Amt,
 		    SUM(MAR) AS mon3Amt,
@@ -183,6 +191,8 @@
 		SELECT
 
 			<include refid="selectGubun"/>
+			
+			COUNT(1) AS totalCnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 1, 1, 0)) AS mon1Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 2, 1, 0)) AS mon2Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 3, 1, 0)) AS mon3Cnt,
@@ -195,6 +205,8 @@
 		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 10, 1, 0)) AS mon10Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 11, 1, 0)) AS mon11Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 12, 1, 0)) AS mon12Cnt,
+		    
+		    TRUNCATE(SUM(NET_SALES) / 10000, 0) AS totalAmt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.INS_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
@@ -277,6 +289,8 @@
 		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
 		SELECT
 			<include refid="selectGubun"/>
+			
+			COUNT(1) AS totalCnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, 1, 0)) AS mon1Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, 1, 0)) AS mon2Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, 1, 0)) AS mon3Cnt,
@@ -289,6 +303,8 @@
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 10, 1, 0)) AS mon10Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 11, 1, 0)) AS mon11Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 12, 1, 0)) AS mon12Cnt,
+		    
+		    TRUNCATE(SUM(IF (CANCEL_YN = 1, NET_SALES, 0)) / 10000, 0) AS totalAmt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1 AND CANCEL_YN = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2 AND CANCEL_YN = 1, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3 AND CANCEL_YN = 1, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
@@ -312,7 +328,7 @@
 		    ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
 		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 		    
-		    LEFT JOIN TEST_TB
+		    INNER JOIN TEST_TB
 		    ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
 		    AND DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%Y') = <if test="searchVO != null">
 														        <foreach collection="searchVO" item="item" separator="">
@@ -372,6 +388,8 @@
 		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
 		SELECT
 			<include refid="selectGubun"/>
+			
+			COUNT(1) AS totalCnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, 1, 0)) AS mon1Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, 1, 0)) AS mon2Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, 1, 0)) AS mon3Cnt,
@@ -384,6 +402,8 @@
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 10, 1, 0)) AS mon10Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 11, 1, 0)) AS mon11Cnt,
 		    SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 12, 1, 0)) AS mon12Cnt,
+		    
+		    TRUNCATE(SUM(NET_SALES) / 10000, 0) AS totalAmt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
@@ -407,7 +427,7 @@
 		    AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 		    
 		    # 프로젝트완료
-		    LEFT JOIN TEST_TB
+		    INNER JOIN TEST_TB
 		    ON TEST_TB.TEST_ITEM_SEQ =  TEST_ITEM_TB.TEST_ITEM_SEQ
 		    AND DATE_FORMAT(TEST_TB.TEST_STATE_DT, '%Y') = <if test="searchVO != null">
 														        <foreach collection="searchVO" item="item" separator="">
@@ -467,18 +487,22 @@
 		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
 		SELECT
 			<include refid="selectGubun"/>
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 1 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon1Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 2 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon2Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 3 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon3Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 4 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon4Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 5 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon5Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 6 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon6Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 7 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon7Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 8 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon8Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 9 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon9Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 10 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon10Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 11 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon11Cnt,
-		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 12 and TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon12Cnt,
+			
+			SUM(IF(TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS totalCnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 1 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon1Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 2 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon2Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 3 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon3Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 4 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon4Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 5 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon5Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 6 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon6Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 7 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon7Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 8 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon8Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 9 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon9Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 10 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon10Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 11 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon11Cnt,
+		    SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 12 AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL, 1, 0)) AS mon12Cnt,
+		    
+		    TRUNCATE(SUM(NET_SALES) / 10000, 0) AS totalAmt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 1, NET_SALES, 0)) / 10000, 0) AS mon1Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 2, NET_SALES, 0)) / 10000, 0) AS mon2Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%m') = 3, NET_SALES, 0)) / 10000, 0) AS mon3Amt,
@@ -561,6 +585,8 @@
 		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
 		SELECT
 			<include refid="selectGubun"/>
+			
+			0 AS totalCnt,
 		    0 AS mon1Cnt,
 		    0 AS mon2Cnt,
 		    0 AS mon3Cnt,
@@ -573,6 +599,8 @@
 		    0 AS mon10Cnt,
 		    0 AS mon11Cnt,
 		    0 AS mon12Cnt,
+		    
+		    TRUNCATE(SUM(BILL) / 10000, 0) AS totalAmt,
 			TRUNCATE(SUM(IF (DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%m') = 1, BILL, 0)) / 10000, 0) AS mon1Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%m') = 2, BILL, 0)) / 10000, 0) AS mon2Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(IFNULL(OTHER_BILL_DT,BILL_TB.BILL_DT), '%m') = 3, BILL, 0)) / 10000, 0) AS mon3Amt,
@@ -655,6 +683,8 @@
 		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
 		SELECT
 			<include refid="selectGubun"/>
+			
+			0 AS totalCnt,
 		    0 AS mon1Cnt,
 		    0 AS mon2Cnt,
 		    0 AS mon3Cnt,
@@ -667,6 +697,8 @@
 		    0 AS mon10Cnt,
 		    0 AS mon11Cnt,
 		    0 AS mon12Cnt,
+		    
+		    TRUNCATE(SUM(BILL) / 10000, 0) AS totalAmt,
 			TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 1, BILL, 0)) / 10000, 0) AS mon1Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 2, BILL, 0)) / 10000, 0) AS mon2Amt,
 		    TRUNCATE(SUM(IF (DATE_FORMAT(BILL_TB.PAY_DT, '%m') = 3, BILL, 0)) / 10000, 0) AS mon3Amt,
