@@ -63,7 +63,7 @@
                 if(QUO_TB.CHQ_SEQ = 0,
 					IFNULL (FN_MEM_NAME(SLS_TB.CNFRM_ID),''),
                     IFNULL (FN_MEM_NAME(chqSls.CNFRM_ID),'')) cnfrmName,
-			    JOB_TB.PRTN_SEQ, 
+			    prtn.CMPY_SEQ PRTN_SEQ, 
 			    JOB_TB.DIRT_SEQ,
 			    
 			    /* 신청서 업데이트 후 삭제 예정 */
@@ -121,7 +121,7 @@
 			    AND chqSls.STATE != 'D'
 			    
 			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-	    		LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+	    		LEFT JOIN CMPY_TB prtn ON prtn.CMPY_SEQ = IF(JOB_TB.PRTN_YN = 1 AND JOB_TB.CMPY_SEQ != JOB_TB.PRTN_SEQ, JOB_TB.CMPY_SEQ, JOB_TB.PRTN_SEQ)
                 LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
 				
 	    		#INNER JOIN (SELECT @rownum:=0) r
