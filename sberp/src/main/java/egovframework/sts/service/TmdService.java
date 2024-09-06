@@ -11,4 +11,8 @@ public interface TmdService {
   public List<TmdDTO> selectMonList(ComParam param);
   
   public List<TmdDTO.TestResultList> selectResultList(ComParam param);
+
+  public List<TmdDTO.TestAction> selectTestList(ComParam param);
+
+  public int selectTestListCnt(ComParam param);
 }

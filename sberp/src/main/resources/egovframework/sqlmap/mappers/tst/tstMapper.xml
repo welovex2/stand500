@@ -467,6 +467,7 @@
 		INSERT INTO TEST_STATE_TB
 		(
 			TEST_SEQ,
+			TEST_SUB_SEQ, /* 시험부 로그 페이지 (#41) */
 			STATE_CODE,
 			MEMO,
 			INS_MEM_ID,
@@ -475,6 +476,10 @@
 		VALUES
 		(
 			#{testSeq},
+			COALESCE(
+        		(SELECT MAX(sub.TEST_SUB_SEQ) + 1 FROM TEST_STATE_TB sub WHERE sub.TEST_SEQ = #{testSeq}),
+        		1
+    		),
 			#{stateCode},
 			#{memo},
 			#{insMemId},

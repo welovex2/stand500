@@ -20,6 +20,9 @@ public class TmdDTO {
   @ApiModelProperty(value="시험 월별 데이터 ", example = "")
   private List<TestMonList> testMonList;
   
+  @ApiModelProperty(value="시험 액션 로그 ", example = "")
+  private List<TestAction> testActionList;
+  
   @Getter
   @Setter
   @ApiModel(value = "TmdDTO.Res", description = "시험원 데이터")
@@ -188,4 +191,36 @@ public class TmdDTO {
     }
     
   }
+
+  
+  @Getter
+  @Setter
+  @ApiModel(value = "TmdDTO.TestActionList", description = "시험 액션 로그")
+  public static class TestAction {
+    
+    @ApiModelProperty(value="액션일자 ", example = "")
+    private String instDtStr;
+    @ApiModelProperty(value="액션부서 ", example = "")
+    private String insPos;
+    @ApiModelProperty(value="액션자 ", example = "")
+    private String insName;
+    @ApiModelProperty(value="시험번호 ", example = "")
+    private String testId;
+    @ApiModelProperty(value="시험부 ", example = "")
+    private String testType;
+    @ApiModelProperty(value="시험담당 ", example = "")
+    private String TestMng1Name;
+    @ApiModelProperty(value="업무담당 ", example = "")
+    private String mngName;
+    @ApiModelProperty(value="이전시험상태 ", example = "")
+    private String prevState;
+    @ApiModelProperty(value="현재시험상태 ", example = "")
+    private String currState;
+    @ApiModelProperty(value="히스토리 ", example = "")
+    private String memo;
+  }
+
+  
 }
+
+

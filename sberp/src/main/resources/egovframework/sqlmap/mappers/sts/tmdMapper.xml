@@ -318,5 +318,275 @@
 		ORDER BY MEMBER_TB.MEM_NAME, MEMBER_TB.ID, baseMon, IF(TEST_MNGR_SEQ = 1,1,2)
 	</select>
 	
+	<select id="selectActionListCnt" parameterType="comParam" resultType="int">
+		
+		SELECT COUNT(1) FROM
+		(
+		
+		SELECT 
+		
+		    DATE_FORMAT(curr.INS_DT, '%Y-%m-%d %T') instDtStr,
+		    FN_DEPT_NAME(curr.INS_MEM_ID) insPos,
+		    FN_MEM_NAME(curr.INS_MEM_ID) insName,
+		    
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+				    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
+				    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
+							
+			FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
+			FN_MEM_NAME(mngr1.TEST_MNG_ID) TestMng1Name,
+			
+			FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
+		     
+			prevCode.TYPE_NAME prevState,
+			currCode.TYPE_NAME currState,
+			curr.MEMO
+		    
+		FROM 
+		    TEST_STATE_TB curr
+		
+			INNER JOIN TEST_TB ON TEST_TB.TEST_SEQ = curr.TEST_SEQ
+			INNER JOIN TEST_ITEM_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+			
+			# 액션자
+			INNER JOIN MEMBER_TB ins ON curr.INS_MEM_ID = ins.ID
+			
+			LEFT JOIN TEST_MNGR_TB mngr1 ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+		            
+		LEFT JOIN 
+		    TEST_STATE_TB prev 
+		    ON curr.TEST_SEQ = prev.TEST_SEQ 
+		    AND prev.TEST_SUB_SEQ = curr.TEST_SUB_SEQ + 1
+		    
+		INNER JOIN 
+		    COMCODE_TB currCode 
+		    ON curr.STATE_CODE = currCode.TYPE_CD 
+		    AND currCode.TOP_CD = 'TS'
+		LEFT JOIN 
+		    COMCODE_TB prevCode 
+		    ON prev.STATE_CODE = prevCode.TYPE_CD 
+		    AND prevCode.TOP_CD = 'TS'
+		
+		WHERE 1=1
+		AND curr.TEST_STATE_SEQ != 0
+	
+	<if test="searchVO != null">
+       <foreach collection="searchVO" item="item" separator="">
+	       	<choose>
+			<!-- 15	액션일 -->
+			<when test="item.searchCode == 15">AND DATE_FORMAT(curr.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<!-- 73	히스토리여부 -->
+	        <when test="item.searchCode == 73">AND IF (curr.MEMO = '', '0', '1') = #{item.searchWord}</when>
+	        <!-- 51	액션부서 -->
+			<when test="item.searchCode == 51">AND ins.DEPT_SEQ = #{item.searchWord}</when>
+	        <!-- 2	액션자 -->
+			<when test="item.searchCode == 2">AND FN_MEM_NAME(curr.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 23	시험부 -->
+      		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+			<!-- 9	시험담당자 -->
+			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 7	고지부담당자 -->
+			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			</choose>
+		</foreach>
+	</if>
+		
+		UNION ALL
+		
+		SELECT
+			DATE_FORMAT(TEST_MEMO_TB.INS_DT, '%Y-%m-%d %T') instDtStr,
+			FN_DEPT_NAME(TEST_MEMO_TB.INS_MEM_ID) insPos,
+		    ins.MEM_NAME insName,
+            
+            CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
+			
+            
+            FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
+            FN_MEM_NAME(mngr1.TEST_MNG_ID) TestMng1Name,
+            
+            FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
+            
+            '-' prevState,
+            '-' currState,
+            
+		    TEST_MEMO_TB.MEMO
+		    
+		FROM TEST_MEMO_TB
+			
+            # 액션자
+			INNER JOIN MEMBER_TB ins
+			ON TEST_MEMO_TB.INS_MEM_ID = ins.ID
+			
+            INNER JOIN TEST_TB ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
+            INNER JOIN TEST_ITEM_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+            INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+            
+            LEFT JOIN TEST_MNGR_TB mngr1 ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+            
+		where 1=1
+	
+	<if test="searchVO != null">
+       <foreach collection="searchVO" item="item" separator="">
+	       	<choose>
+			<!-- 15	액션일 -->
+			<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_MEMO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<!-- 73	히스토리여부 -->
+	        <when test="item.searchCode == 73">AND IF (TEST_MEMO_TB.MEMO = '', '0', '1') = #{item.searchWord}</when>
+	        <!-- 51	액션부서 -->
+			<when test="item.searchCode == 51">AND ins.DEPT_SEQ = #{item.searchWord}</when>
+	        <!-- 2	액션자 -->
+			<when test="item.searchCode == 2">AND ins.MEM_NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 23	시험부 -->
+      		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+      		<!-- 9	시험담당자 -->
+			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 7	고지부담당자 -->
+			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			</choose>
+		</foreach>
+	</if>
+	
+        AND TEST_MEMO_TB.memo not like '[시험상태변경]%'
+		
+		) cnt	
+	</select>
+	
+	<select id="selectActionList" parameterType="comParam" resultType="tmdTestAction">
+		SELECT 
+		
+		    DATE_FORMAT(curr.INS_DT, '%Y-%m-%d %T') instDtStr,
+		    FN_DEPT_NAME(curr.INS_MEM_ID) insPos,
+		    FN_MEM_NAME(curr.INS_MEM_ID) insName,
+		    
+		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+				    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
+				    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
+							
+			FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
+			FN_MEM_NAME(mngr1.TEST_MNG_ID) TestMng1Name,
+			
+			FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
+		     
+			IFNULL(prevCode.TYPE_NAME, '') prevState,
+			currCode.TYPE_NAME currState,
+			curr.MEMO
+		    
+		FROM 
+		    TEST_STATE_TB curr
+		
+			INNER JOIN TEST_TB ON TEST_TB.TEST_SEQ = curr.TEST_SEQ
+			INNER JOIN TEST_ITEM_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+			
+			# 액션자
+			INNER JOIN MEMBER_TB ins ON curr.INS_MEM_ID = ins.ID
+			
+			LEFT JOIN TEST_MNGR_TB mngr1 ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+		            
+		LEFT JOIN 
+		    TEST_STATE_TB prev 
+		    ON curr.TEST_SEQ = prev.TEST_SEQ 
+		    AND prev.TEST_SUB_SEQ = curr.TEST_SUB_SEQ - 1
+		    
+		INNER JOIN 
+		    COMCODE_TB currCode 
+		    ON curr.STATE_CODE = currCode.TYPE_CD 
+		    AND currCode.TOP_CD = 'TS'
+		LEFT JOIN 
+		    COMCODE_TB prevCode 
+		    ON prev.STATE_CODE = prevCode.TYPE_CD 
+		    AND prevCode.TOP_CD = 'TS'
+		
+		WHERE 1=1
+		AND curr.TEST_STATE_SEQ != 0
+	
+	<if test="searchVO != null">
+       <foreach collection="searchVO" item="item" separator="">
+	       	<choose>
+			<!-- 15	액션일 -->
+			<when test="item.searchCode == 15">AND DATE_FORMAT(curr.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<!-- 73	히스토리여부 -->
+	        <when test="item.searchCode == 73">AND IF (curr.MEMO = '', '0', '1') = #{item.searchWord}</when>
+	        <!-- 51	액션부서 -->
+			<when test="item.searchCode == 51">AND ins.DEPT_SEQ = #{item.searchWord}</when>
+	        <!-- 2	액션자 -->
+			<when test="item.searchCode == 2">AND FN_MEM_NAME(curr.INS_MEM_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 23	시험부 -->
+      		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+			<!-- 9	시험담당자 -->
+			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 7	고지부담당자 -->
+			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			</choose>
+		</foreach>
+	</if>
+		
+		UNION ALL
+		
+		SELECT
+			DATE_FORMAT(TEST_MEMO_TB.INS_DT, '%Y-%m-%d %T') instDtStr,
+			FN_DEPT_NAME(TEST_MEMO_TB.INS_MEM_ID) insPos,
+		    ins.MEM_NAME insName,
+            
+            CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
+		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
+			
+            
+            FN_CODE_NAME (TEST_ITEM_TB.TEST_TYPE_CODE,'TT') TEST_TYPE,
+            FN_MEM_NAME(mngr1.TEST_MNG_ID) TestMng1Name,
+            
+            FN_MEM_NAME (JOB_TB.MNG_ID) mngName,
+            
+            '-' prevState,
+            '-' currState,
+            
+		    TEST_MEMO_TB.MEMO
+		    
+		FROM TEST_MEMO_TB
+			
+            # 액션자
+			INNER JOIN MEMBER_TB ins
+			ON TEST_MEMO_TB.INS_MEM_ID = ins.ID
+			
+            INNER JOIN TEST_TB ON TEST_TB.TEST_SEQ = TEST_MEMO_TB.TEST_SEQ
+            INNER JOIN TEST_ITEM_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+            INNER JOIN JOB_TB ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+            
+            LEFT JOIN TEST_MNGR_TB mngr1 ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+            
+		where 1=1
+	
+	<if test="searchVO != null">
+       <foreach collection="searchVO" item="item" separator="">
+	       	<choose>
+			<!-- 15	액션일 -->
+			<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_MEMO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<!-- 73	히스토리여부 -->
+	        <when test="item.searchCode == 73">AND IF (TEST_MEMO_TB.MEMO = '', '0', '1') = #{item.searchWord}</when>
+	        <!-- 51	액션부서 -->
+			<when test="item.searchCode == 51">AND ins.DEPT_SEQ = #{item.searchWord}</when>
+	        <!-- 2	액션자 -->
+			<when test="item.searchCode == 2">AND ins.MEM_NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 23	시험부 -->
+      		<when test="item.searchCode == 23">AND TEST_ITEM_TB.TEST_TYPE_CODE = #{item.searchWord}</when>
+      		<!-- 9	시험담당자 -->
+			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 7	고지부담당자 -->
+			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			</choose>
+		</foreach>
+	</if>
+	
+        AND TEST_MEMO_TB.memo not like '[시험상태변경]%'
+       
+
+		ORDER BY instDtStr DESC
+		LIMIT #{pageUnit} OFFSET #{firstIndex};
+		
+	</select>
 	
 </mapper>

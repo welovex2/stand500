@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import egovframework.cmm.service.ComParam;
 import egovframework.sts.dto.TmdDTO;
+import egovframework.sts.dto.TmdDTO.TestAction;
 import egovframework.sts.dto.TmdDTO.TestResultList;
 import egovframework.sts.dto.TmdDTO.TestResultList.TestMonList;
 import egovframework.sts.dto.TmdDTO.TestResultList.TestMonList.TestTypeList;
@@ -83,6 +84,23 @@ public class TmdServiceImpl implements TmdService {
     }
     
     return result;
+  }
+
+  @Override
+  public List<TestAction> selectTestList(ComParam param) {
+
+    List<TestAction> result = new ArrayList<TestAction>();
+    
+    // 상태변경 내역
+    List<TestAction> stateList = tmdMapper.selectActionList(param);
+    result.addAll(stateList);
+    
+    return result;
+  }
+
+  @Override
+  public int selectTestListCnt(ComParam param) {
+    return tmdMapper.selectActionListCnt(param);
   }
     
 }
