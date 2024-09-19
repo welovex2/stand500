@@ -36,7 +36,7 @@ public class ResponseMessage {
     public static final String DUPLICATE_CHQ = "이미등록된 취합견적서가 있습니다";
     
     public static final String DUPLICATE_CNFRMED = "매출확정이된 견적서가 포함되어 있습니다";
-    public static final String DIFFERENT_CONS = "동일한 컨설팅만 취합할 수 있습니다";
+    public static final String DIFFERENT_CONS = "동일한 업체로만 취합할 수 있습니다";
     public static final String INSERT_TWO = "2개이상 취합할수 있습니다";
     public static final String GO_CHQ = "취합견적서에서 진행하세요";
     public static final String SECRET_CHQ = "보안문서는 취합할 수 없습니다";

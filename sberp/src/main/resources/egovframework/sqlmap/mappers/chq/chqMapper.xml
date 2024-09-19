@@ -126,35 +126,38 @@
 			lst.*
 		FROM (
 			SELECT
-			    IFNULL (DATE_FORMAT(CHQ_TB.ins_dt, '%Y-%m-%d'), '') insDtStr,
-			    concat (
+			    IFNULL (DATE_FORMAT(CHQ_TB.INS_DT, '%Y-%m-%d'), '') insDtStr,
+			    CONCAT (
 			        'CH',
 			        CHQ_TB.CHQ_YM,
 			        '-',
 			        LPAD (CHQ_TB.CHQ_SEQ, 3, 0)
 			    ) chqId,
-			    FN_MEM_NAME (CHQ_TB.ins_mem_id) memName,
+			    FN_MEM_NAME (CHQ_TB.INS_MEM_ID) memName,
 			    IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
+			    
+			    FN_CODE_NAME (
+			    	IF (VERSION = 1, 
+			    					IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ), '9999')
+									, CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END)
+				, 'PT') CMPY_TYPE,
+				
 			    IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			    SUM(QUO_TB.TOTAL_VAT) CHRGS,
 			    SUM(items.NET_SALES) NET_SALES
-			FROM
-			    CHQ_TB
-			    INNER JOIN QUO_TB on QUO_TB.CHQ_YM = CHQ_TB.CHQ_YM
-			    AND QUO_TB.CHQ_SEQ = CHQ_TB.CHQ_SEQ
-			    LEFT JOIN SLS_TB on SLS_TB.chq_ym = QUO_TB.chq_ym AND SLS_TB.chq_seq = QUO_TB.chq_seq
-			    AND SLS_TB.state != 'D'
+			FROM CHQ_TB
+			    
+			    INNER JOIN QUO_TB ON QUO_TB.CHQ_YM = CHQ_TB.CHQ_YM AND QUO_TB.CHQ_SEQ = CHQ_TB.CHQ_SEQ
+			    LEFT JOIN SLS_TB ON SLS_TB.CHQ_YM = QUO_TB.CHQ_YM AND SLS_TB.CHQ_SEQ = QUO_TB.CHQ_SEQ AND SLS_TB.STATE != 'D'
                 INNER JOIN (
-					SELECT QUO_YM, QUO_SEQ, sum(CHRGS) CHRGS, sum(NET_SALES) NET_SALES
+					SELECT QUO_YM, QUO_SEQ, SUM(CHRGS) CHRGS, SUM(NET_SALES) NET_SALES
 					FROM TEST_ITEM_TB
-			        where state != 'D'
-			        group by QUO_YM, QUO_SEQ
+			        WHERE STATE != 'D'
+			        GROUP BY QUO_YM, QUO_SEQ
 			    ) items
 			    ON QUO_TB.QUO_YM = items.QUO_YM
 			    AND QUO_TB.quo_seq = items.QUO_SEQ
-			    INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
-			    AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ
-			    AND JOB_TB.state != 'D'
+			    INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ AND JOB_TB.state != 'D'
 			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
 			WHERE
 			    CHQ_TB.state != 'D'
@@ -181,7 +184,7 @@
 				CHQ_TB.CHQ_YM,
 				CHQ_TB.CHQ_SEQ
 		) lst
-		ORDER BY NO desc
+		ORDER BY NO DESC
 		LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
 	
@@ -213,7 +216,7 @@
 			QUO_TB.VERSION,
 			IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
-			IFNULL (JOB_TB.CMPY_NAME, '') CMPY_NAME,
+			IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') CMPY_NAME,
 			PRDCT_NAME,
 			/* 시험항목 및 비용 */
 			TEST_ITEM_TB.TEST_ITEM_SEQ,
@@ -244,6 +247,7 @@
 			AND JOB_TB.STATE != 'D'
 			
 			LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+			LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
 			LEFT JOIN TEST_STNDR_TB ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
 			LEFT JOIN TEST_CATE_TB A ON TEST_ITEM_TB.CRTF_TYPE_SEQ = A.TEST_CATE_SEQ
 			LEFT JOIN TEST_CATE_TB B ON A.TOP_DEPTH_SEQ = B.TEST_CATE_SEQ
@@ -273,40 +277,36 @@
 		            CHQ_TB.CHQ_YM,
 		            CHQ_TB.CHQ_SEQ,
 		            IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
-		            IFNULL (DATE_FORMAT(CHQ_TB.ins_dt, '%Y-%m-%d'), '') insDtStr,
-		            concat (
-		                FN_DEPT_NAME (CHQ_TB.ins_mem_id),
+		            IFNULL (DATE_FORMAT(CHQ_TB.INS_DT, '%Y-%m-%d'), '') insDtStr,
+		            CONCAT (
+		                FN_DEPT_NAME (CHQ_TB.INS_MEM_ID),
 		                ' ',
-		                FN_MEM_NAME (CHQ_TB.ins_mem_id)
+		                FN_MEM_NAME (CHQ_TB.INS_MEM_ID)
 		            ) memName,
 		            IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
-		            count(1) cnt,
-		            sum(TEST_ITEM_TB.FEE) FEE,
-		            sum(TEST_ITEM_TB.LCNS_TAX) LCNS_TAX,
-		            sum(IF (CANCEL_YN = 1, NET_SALES, TEST_FEE)) TEST_FEE,
+		            COUNT(1) cnt,
+		            SUM(TEST_ITEM_TB.FEE) FEE,
+		            SUM(TEST_ITEM_TB.LCNS_TAX) LCNS_TAX,
+		            SUM(IF (CANCEL_YN = 1, NET_SALES, TEST_FEE)) TEST_FEE,
 		            QUO_TB.COST_TOTAL COST_TOTAL,
-		            sum(TEST_ITEM_TB.SPCL_DSCNT) SPCL_DSCNT,
+		            SUM(TEST_ITEM_TB.SPCL_DSCNT) SPCL_DSCNT,
 		            QUO_TB.TOTAL_VAT TOTAL_VAT
-		        FROM
-		            CHQ_TB
-		            INNER JOIN QUO_TB on QUO_TB.CHQ_YM = CHQ_TB.CHQ_YM
-		            AND QUO_TB.CHQ_SEQ = CHQ_TB.CHQ_SEQ
-		            LEFT JOIN SLS_TB on SLS_TB.quo_ym = QUO_TB.quo_ym
-		            AND SLS_TB.quo_seq = QUO_TB.quo_seq
-		            INNER JOIN TEST_ITEM_TB on QUO_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
-		            AND QUO_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
-		            AND TEST_ITEM_TB.state != 'D'
-		            INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
-		            AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ
-		            AND JOB_TB.state != 'D'
+		        FROM CHQ_TB
+		            
+		            INNER JOIN QUO_TB ON QUO_TB.CHQ_YM = CHQ_TB.CHQ_YM AND QUO_TB.CHQ_SEQ = CHQ_TB.CHQ_SEQ
+		            LEFT JOIN SLS_TB ON SLS_TB.QUO_YM = QUO_TB.QUO_YM AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+		            INNER JOIN TEST_ITEM_TB on QUO_TB.QUO_YM = TEST_ITEM_TB.QUO_YM AND QUO_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ AND TEST_ITEM_TB.state != 'D'
+		            INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM AND QUO_TB.quo_seq = JOB_TB.QUO_SEQ AND JOB_TB.STATE != 'D'
+		            
 		            LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
-		            LEFT JOIN TEST_STNDR_TB on TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
-		            LEFT JOIN TEST_CATE_TB A on TEST_ITEM_TB.CRTF_TYPE_SEQ = A.test_cate_seq
-		            LEFT JOIN TEST_CATE_TB B on A.TOP_DEPTH_SEQ = B.test_cate_seq
+		            LEFT JOIN TEST_STNDR_TB ON TEST_ITEM_TB.TEST_STNDR_SEQ = TEST_STNDR_TB.TEST_STNDR_SEQ
+		            LEFT JOIN TEST_CATE_TB A on TEST_ITEM_TB.CRTF_TYPE_SEQ = A.TEST_CATE_SEQ
+		            LEFT JOIN TEST_CATE_TB B on A.TOP_DEPTH_SEQ = B.TEST_CATE_SEQ
+		        
 		        WHERE
 		            CHQ_TB.state != 'D'
-		            and CHQ_TB.CHQ_YM = substring(#{chqId}, 3, 4)
-		            and CHQ_TB.CHQ_SEQ = substring(#{chqId}, 8, 3)
+		            AND CHQ_TB.CHQ_YM = SUBSTRING(#{chqId}, 3, 4)
+		            AND CHQ_TB.CHQ_SEQ = SUBSTRING(#{chqId}, 8, 3)
 		        GROUP BY
 		            QUO_TB.QUO_YM,
 		            QUO_TB.QUO_SEQ
