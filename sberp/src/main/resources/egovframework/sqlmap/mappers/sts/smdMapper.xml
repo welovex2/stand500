@@ -789,18 +789,7 @@ SELECT
 			memName,
 		</when>
 		<when test="'tm'.equals(searchCode)">
-			CASE 
-				WHEN memId IN ('jyunj', 'jeon')
-					THEN '팀1'
-		        WHEN memId IN ('silva', 'zlklz')
-					THEN '팀2'    
-				WHEN memId IN ('jaecie')
-					THEN '팀3'   
-				WHEN memId IN ('leewk','jayjee','hkkim')
-					THEN '팀4' 
-				WHEN memId IN ('dubby82','cyberjjm')
-					THEN '팀5' 
-			END memId,
+			memId,
 			GROUP_CONCAT(DISTINCT memName) memName,
 		</when>
 		<when test="'sm'.equals(searchCode)">
@@ -1043,19 +1032,7 @@ FROM
 			GROUP BY memId
 		</when>
 		<when test="'tm'.equals(searchCode)">
-			GROUP BY 
-			CASE 
-				WHEN memId IN ('jyunj', 'jeon')
-					THEN '팀1'
-		        WHEN memId IN ('silva', 'zlklz')
-					THEN '팀2'    
-				WHEN memId IN ('jaecie')
-					THEN '팀3'   
-				WHEN memId IN ('leewk','jayjee','hkkim')
-					THEN '팀4' 
-				WHEN memId IN ('dubby82','cyberjjm')
-					THEN '팀5' 
-			END
+			GROUP BY memId
 		</when>
 	</choose>
 
