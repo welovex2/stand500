@@ -52,7 +52,7 @@
 				#ROW_NUMBER() OVER(ORDER BY QUO_TB.ins_dt) AS no,
 				JOB_TB.JOB_SEQ,
 				JOB_TB.SECRET_YN,
-				VERSION,
+				QUO_TB.VERSION,
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
 			    CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')) quoId,  
 				FN_MEM_NAME (JOB_TB.MNG_ID) memName,
@@ -68,7 +68,7 @@
 			    
 			    /* 신청서 업데이트 후 삭제 예정 */
 			    FN_CODE_NAME (
-			    	IF (VERSION = 1, 
+			    	IF (QUO_TB.VERSION = 1, 
 			    					IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ), '9999')
 									, CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END)
 				, 'PT') CMPY_TYPE,
@@ -145,7 +145,7 @@
 	       
 	        	<choose>
 					<!-- 1	고객유형 -->
-					<when test="item.searchCode == 1">AND IF (VERSION = 1, 
+					<when test="item.searchCode == 1">AND IF (QUO_TB.VERSION = 1, 
 											    					IFNULL ((SELECT CMPY_CODE FROM CMPY_TB WHERE CMPY_SEQ = JOB_TB.CMPY_SEQ), '9999')
 																	, CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END) = #{item.searchWord}</when>
 					<!-- 7	고지부담당자 -->
@@ -600,6 +600,7 @@
         ON BILL_TB.BILL_SEQ = NEW_VALUES.BILL_SEQ
                 
 		SET SLS_TB.ARREARS = NEW_VALUES.NEW_ARREARS,
+			SLS_TB.END_DT = IF (NEW_VALUES.NEW_ARREARS = 0, NOW(), SLS_TB.END_DT),
             BILL_TB.UDT_DT = IF (SLS_TB.ARREARS = NEW_VALUES.NEW_ARREARS, BILL_TB.UDT_DT, NOW());
 	</update>
 		
@@ -757,7 +758,7 @@
 			,MEMBER_TB.MEM_NAME							/* 업무담당자 추가 */
             
 			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') EST_CMP_DT
-			,VERSION
+			,QUO_TB.VERSION
 			,DATE_FORMAT(QUO_TB.ISSUE_DT, '%Y-%m-%d') ISSUE_DT 
 			,JOB_TB.PRDCT_NAME
 			,JOB_TB.MODEL_NAME

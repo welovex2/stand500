@@ -79,6 +79,9 @@
 		
 		<include refid="paySql"/>
 		
+		UNION
+		
+		<include refid="netSql"/>
 		
 		<choose>
 			<when test="'sg'.equals(searchCode)">
@@ -775,6 +778,287 @@
 		</if>
 		
 		<include refid="groupby"/>
+	</sql>
+
+	<sql id="netSql">
+SELECT
+			
+      <choose>
+		<when test="'sg'.equals(searchCode)">
+			memId,
+			memName,
+		</when>
+		<when test="'tm'.equals(searchCode)">
+			CASE 
+				WHEN memId IN ('jyunj', 'jeon')
+					THEN '팀1'
+		        WHEN memId IN ('silva', 'zlklz')
+					THEN '팀2'    
+				WHEN memId IN ('jaecie')
+					THEN '팀3'   
+				WHEN memId IN ('leewk','jayjee','hkkim')
+					THEN '팀4' 
+				WHEN memId IN ('dubby82','cyberjjm')
+					THEN '팀5' 
+			END memId,
+			GROUP_CONCAT(DISTINCT memName) memName,
+		</when>
+		<when test="'sm'.equals(searchCode)">
+			'total' memId,
+			'전체' memName,
+		</when>
+	</choose>
+            
+			0 AS totalCnt,
+		    0 AS mon1Cnt,
+		    0 AS mon2Cnt,
+		    0 AS mon3Cnt,
+		    0 AS mon4Cnt,
+		    0 AS mon5Cnt,
+		    0 AS mon6Cnt,
+		    0 AS mon7Cnt,
+		    0 AS mon8Cnt,
+		    0 AS mon9Cnt,
+		    0 AS mon10Cnt,
+		    0 AS mon11Cnt,
+		    0 AS mon12Cnt,
+            
+            SUM(totalAmt) AS totalAmt,
+            SUM(mon1Amt) AS mon1Amt,
+		    SUM(mon2Amt) AS mon2Amt,
+		    SUM(mon3Amt) AS mon3Amt,
+		    SUM(mon4Amt) AS mon4Amt,
+		    SUM(mon5Amt) AS mon5Amt,
+		    SUM(mon6Amt) AS mon6Amt,
+		    SUM(mon7Amt) AS mon7Amt,
+		    SUM(mon8Amt) AS mon8Amt,
+		    SUM(mon9Amt) AS mon9Amt,
+		    SUM(mon10Amt) AS mon10Amt,
+		    SUM(mon11Amt) AS mon11Amt,
+		    SUM(mon12Amt) AS mon12Amt,
+		    
+            'net' typeCode
+            
+
+FROM
+(
+        # 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			
+            <include refid="selectGubun"/>
+            
+		    TRUNCATE(SUM(items.NET_SALES) / 10000, 0) AS totalAmt,
+			TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 1, items.NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 2, items.NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 3, items.NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 4, items.NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 5, items.NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 6, items.NET_SALES, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 7, items.NET_SALES, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 8, items.NET_SALES, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 9, items.NET_SALES, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 10, items.NET_SALES, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 11, items.NET_SALES, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 12, items.NET_SALES, 0)) / 10000, 0) AS mon12Amt
+            
+		FROM MEMBER_TB
+		
+		    INNER JOIN JOB_TB 
+			ON JOB_TB.MNG_ID = MEMBER_TB.ID
+            AND JOB_TB.STATE != 'D'
+                
+            INNER JOIN QUO_TB 
+			ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+            
+		    # 완납매출
+			INNER JOIN SLS_TB
+            ON SLS_TB.QUO_YM = QUO_TB.QUO_YM
+			AND SLS_TB.QUO_SEQ = QUO_TB.QUO_SEQ
+            AND ARREARS = 0
+            AND DATE_FORMAT(SLS_TB.END_DT, '%Y') = <if test="searchVO != null">
+												        <foreach collection="searchVO" item="item" separator="">
+												        	<choose>
+												        		<!-- 20 완료일 -->
+												        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+															</choose>
+														</foreach>
+													</if>
+		    AND SLS_TB.STATE != 'D'
+			
+			LEFT JOIN (
+				SELECT QUO_YM, QUO_SEQ, SUM(CHRGS) CHRGS, SUM(NET_SALES) NET_SALES
+				FROM TEST_ITEM_TB
+				WHERE STATE != 'D'
+				GROUP BY QUO_YM, QUO_SEQ
+			) items
+			ON QUO_TB.QUO_YM = items.QUO_YM
+			AND QUO_TB.quo_seq = items.QUO_SEQ
+                
+		WHERE MNG_YN = 1
+        
+        <if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+        
+        union all
+        
+        		# 기준 : 사용자 리스트에서 업무 담당자가 해당되어 있는 사용자
+		SELECT
+			
+            <include refid="selectGubun"/>
+            
+		    TRUNCATE(SUM(items.NET_SALES) / 10000, 0) AS totalAmt,
+			TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 1, items.NET_SALES, 0)) / 10000, 0) AS mon1Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 2, items.NET_SALES, 0)) / 10000, 0) AS mon2Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 3, items.NET_SALES, 0)) / 10000, 0) AS mon3Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 4, items.NET_SALES, 0)) / 10000, 0) AS mon4Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 5, items.NET_SALES, 0)) / 10000, 0) AS mon5Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 6, items.NET_SALES, 0)) / 10000, 0) AS mon6Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 7, items.NET_SALES, 0)) / 10000, 0) AS mon7Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 8, items.NET_SALES, 0)) / 10000, 0) AS mon8Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 9, items.NET_SALES, 0)) / 10000, 0) AS mon9Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 10, items.NET_SALES, 0)) / 10000, 0) AS mon10Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 11, items.NET_SALES, 0)) / 10000, 0) AS mon11Amt,
+		    TRUNCATE(SUM(IF (DATE_FORMAT(SLS_TB.END_DT, '%m') = 12, items.NET_SALES, 0)) / 10000, 0) AS mon12Amt
+            
+		FROM MEMBER_TB
+		
+            INNER JOIN JOB_TB 
+			ON JOB_TB.MNG_ID = MEMBER_TB.ID
+            AND JOB_TB.STATE != 'D'
+            
+            # 취합견적서    
+            INNER JOIN QUO_TB 
+			ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
+			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+            
+		    # 완납매출
+			INNER JOIN SLS_TB
+            ON SLS_TB.CHQ_YM = QUO_TB.CHQ_YM
+			AND SLS_TB.CHQ_SEQ = QUO_TB.CHQ_SEQ
+            AND ARREARS = 0
+            AND DATE_FORMAT(SLS_TB.END_DT, '%Y') = <if test="searchVO != null">
+												        <foreach collection="searchVO" item="item" separator="">
+												        	<choose>
+												        		<!-- 20 완료일 -->
+												        		<when test="item.searchCode == 20">#{item.searchWord}</when>
+															</choose>
+														</foreach>
+													</if>
+		    AND SLS_TB.STATE != 'D'
+			
+			LEFT JOIN (
+				SELECT QUO_YM, QUO_SEQ, SUM(CHRGS) CHRGS, SUM(NET_SALES) NET_SALES
+				FROM TEST_ITEM_TB
+				WHERE STATE != 'D'
+				GROUP BY QUO_YM, QUO_SEQ
+			) items
+			ON QUO_TB.QUO_YM = items.QUO_YM
+			AND QUO_TB.quo_seq = items.QUO_SEQ
+                
+		WHERE MNG_YN = 1
+        
+        		<if test="!'sm'.equals(searchCode)">
+			<if test="searchVO != null">
+			     <foreach collection="searchVO" item="item" separator="">
+			     	<choose>
+						<!-- 7	고지부담당자 -->
+						<when test="item.searchCode == 7">
+							<choose>
+								<when test="'sg'.equals(searchCode)">
+									AND ID = #{item.searchWord}
+								</when>
+								<when test="'tm'.equals(searchCode)">
+							        AND CASE 
+											WHEN ID IN ('jyunj', 'jeon')
+												THEN '팀1'
+									        WHEN ID IN ('silva', 'zlklz')
+												THEN '팀2'    
+											WHEN ID IN ('jaecie')
+												THEN '팀3'   
+											WHEN ID IN ('leewk','jayjee','hkkim')
+												THEN '팀4' 
+											WHEN ID IN ('dubby82','cyberjjm')
+												THEN '팀5' 
+										END = (
+							        CASE 
+							            WHEN #{item.searchWord} IN ('jyunj', 'jeon') THEN '팀1'
+							            WHEN #{item.searchWord} IN ('silva', 'zlklz') THEN '팀2'
+							            WHEN #{item.searchWord} IN ('jaecie') THEN '팀3'
+							            WHEN #{item.searchWord} IN ('leewk', 'jayjee', 'hkkim') THEN '팀4'
+							            WHEN #{item.searchWord} IN ('dubby82', 'cyberjjm') THEN '팀5'
+							        END
+									)
+								</when>
+							</choose>
+						</when>
+					</choose>
+				</foreach>
+			</if>	
+		</if>
+		
+		<include refid="groupby"/>
+) endNet
+
+	<choose>
+		<when test="'sg'.equals(searchCode)">
+			GROUP BY memId
+		</when>
+		<when test="'tm'.equals(searchCode)">
+			GROUP BY 
+			CASE 
+				WHEN memId IN ('jyunj', 'jeon')
+					THEN '팀1'
+		        WHEN memId IN ('silva', 'zlklz')
+					THEN '팀2'    
+				WHEN memId IN ('jaecie')
+					THEN '팀3'   
+				WHEN memId IN ('leewk','jayjee','hkkim')
+					THEN '팀4' 
+				WHEN memId IN ('dubby82','cyberjjm')
+					THEN '팀5' 
+			END
+		</when>
+	</choose>
+
 	</sql>
 	
 	<sql id="selectGubun">
