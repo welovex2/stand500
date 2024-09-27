@@ -357,7 +357,7 @@
 		LEFT JOIN 
 		    TEST_STATE_TB prev 
 		    ON curr.TEST_SEQ = prev.TEST_SEQ 
-		    AND prev.TEST_SUB_SEQ = curr.TEST_SUB_SEQ + 1
+		    AND prev.TEST_SUB_SEQ = curr.TEST_SUB_SEQ - 1
 		    
 		INNER JOIN 
 		    COMCODE_TB currCode 
@@ -375,7 +375,7 @@
        <foreach collection="searchVO" item="item" separator="">
 	       	<choose>
 			<!-- 15	액션일 -->
-			<when test="item.searchCode == 15">AND DATE_FORMAT(curr.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<when test="item.searchCode == 15">AND curr.INS_DT BETWEEN #{item.startDate} AND DATE_ADD(#{item.endDate}, INTERVAL 1 DAY)</when>
 			<!-- 73	히스토리여부 -->
 	        <when test="item.searchCode == 73">AND IF (curr.MEMO = '', '0', '1') = #{item.searchWord}</when>
 	        <!-- 51	액션부서 -->
@@ -432,7 +432,7 @@
        <foreach collection="searchVO" item="item" separator="">
 	       	<choose>
 			<!-- 15	액션일 -->
-			<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_MEMO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<when test="item.searchCode == 15">AND TEST_MEMO_TB.INS_DT BETWEEN #{item.startDate} AND DATE_ADD(#{item.endDate}, INTERVAL 1 DAY)</when>
 			<!-- 73	히스토리여부 -->
 	        <when test="item.searchCode == 73">AND IF (TEST_MEMO_TB.MEMO = '', '0', '1') = #{item.searchWord}</when>
 	        <!-- 51	액션부서 -->
@@ -507,7 +507,7 @@
        <foreach collection="searchVO" item="item" separator="">
 	       	<choose>
 			<!-- 15	액션일 -->
-			<when test="item.searchCode == 15">AND DATE_FORMAT(curr.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<when test="item.searchCode == 15">AND curr.INS_DT BETWEEN #{item.startDate} AND DATE_ADD(#{item.endDate}, INTERVAL 1 DAY)</when>
 			<!-- 73	히스토리여부 -->
 	        <when test="item.searchCode == 73">AND IF (curr.MEMO = '', '0', '1') = #{item.searchWord}</when>
 	        <!-- 51	액션부서 -->
@@ -564,7 +564,7 @@
        <foreach collection="searchVO" item="item" separator="">
 	       	<choose>
 			<!-- 15	액션일 -->
-			<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_MEMO_TB.INS_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			<when test="item.searchCode == 15">AND TEST_MEMO_TB.INS_DT BETWEEN #{item.startDate} AND DATE_ADD(#{item.endDate}, INTERVAL 1 DAY)</when>
 			<!-- 73	히스토리여부 -->
 	        <when test="item.searchCode == 73">AND IF (TEST_MEMO_TB.MEMO = '', '0', '1') = #{item.searchWord}</when>
 	        <!-- 51	액션부서 -->
