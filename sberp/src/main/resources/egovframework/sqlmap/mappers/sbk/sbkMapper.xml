@@ -113,6 +113,10 @@
 			
 			MOD_CHECK1_YN, MOD_CHECK2_YN,
 			
+			/* ver2 */
+			SBK_TB.VERSION sbkVersion, EXTEND_MODEL_MEMO, CF_CB_YN, TEST_BS_YN, TEST_BJ_YN, TEST_DH_YN, TEST_HJ_YN, CNFRM1_YN, CNFRM2_YN, MOD_CHECK_YN, IM_CHECK_YN,
+			DOC_AN_YN, DOC_TP_YN, DOC_LD_YN, DOC_ET_YN, DOC_ET,
+    
 			im.inCnt, im.outCnt
 				
 		FROM SBK_TB
@@ -514,7 +518,25 @@
 			MOD_CHECK1_YN=#{modCheck1Yn},
 			MOD_CHECK2_YN=#{modCheck2Yn},
 			CMPNY_MEMO=#{cmpnyMemo},
-			REVISION_MEMO=#{revisionMemo}
+			REVISION_MEMO=#{revisionMemo},
+			
+			/* ver2 */
+			EXTEND_MODEL_MEMO = #{extendModelMemo},
+		    CF_CB_YN = #{cfCbYn},
+		    TEST_BS_YN = #{testBsYn},
+		    TEST_BJ_YN = #{testBjYn},
+		    TEST_DH_YN = #{testDhYn},
+		    TEST_HJ_YN = #{testHjYn},
+		    CNFRM1_YN = #{cnfrm1Yn},
+		    CNFRM2_YN = #{cnfrm2Yn},
+		    MOD_CHECK_YN = #{modCheckYn},
+		    IM_CHECK_YN = #{imCheckYn},
+	        DOC_AN_YN = #{docAnYn},
+    		DOC_TP_YN = #{docTpYn},
+    		DOC_LD_YN = #{docLdYn},
+    		DOC_ET_YN = #{docEtYn},
+    		DOC_ET = #{docEt}
+    
 			
 		WHERE SBK_YM = SUBSTRING(#{sbkId},3,2)
 		AND TYPE = SUBSTRING(#{sbkId},6,1)
@@ -649,7 +671,24 @@
 				WORK_SIGN_URL,
 				MOD_CHECK1_YN,
 				MOD_CHECK2_YN,
-				CMPNY_MEMO
+				CMPNY_MEMO,
+				
+				/* ver2 */
+			    EXTEND_MODEL_MEMO, 
+			    CF_CB_YN, 
+			    TEST_BS_YN, 
+			    TEST_BJ_YN, 
+			    TEST_DH_YN, 
+			    TEST_HJ_YN, 
+			    CNFRM1_YN, 
+			    CNFRM2_YN, 
+			    MOD_CHECK_YN, 
+			    IM_CHECK_YN, 
+			    DOC_AN_YN, 
+			    DOC_TP_YN, 
+			    DOC_LD_YN, 
+			    DOC_ET_YN, 
+			    DOC_ET
 			)
 			VALUES
 			(
@@ -774,7 +813,25 @@
 				#{atchFileId},
 				#{modCheck1Yn},
 				#{modCheck2Yn},
-				#{cmpnyMemo}
+				#{cmpnyMemo},
+				
+				/* ver2 */
+			    #{extendModelMemo}, 
+			    #{cfCbYn}, 
+			    #{testBsYn}, 
+			    #{testBjYn}, 
+			    #{testDhYn}, 
+			    #{testHjYn}, 
+			    #{cnfrm1Yn}, 
+			    #{cnfrm2Yn}, 
+			    #{modCheckYn}, 
+			    #{imCheckYn}, 
+			    #{docAnYn}, 
+			    #{docTpYn}, 
+			    #{docLdYn}, 
+			    #{docEtYn}, 
+			    #{docEt}
+			    
 			);
 
 	</insert>
@@ -903,6 +960,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		<result column="no" property="no"/>
 		<result column="job_seq" property="jobSeq"/>
 		<result column="type" property="type"/>
+		<result column="VERSION" property="version"/>
 		<result column="SECRET_YN" property="secretYn"/>
 		<result column="stateCode" property="stateCode"/>
 		<result column="stateUdtDt" property="stateUdtDt"/>
@@ -959,6 +1017,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 			SBK_TB.SBK_YM AS SBK_YM,
 			SBK_TB.SBK_SEQ AS SBK_SEQ,
 			SBK_TB.TYPE AS TYPE,
+			SBK_TB.VERSION,
 			JOB_TB.SECRET_YN,
 			IFNULL(CODE_CP.TYPE_NAME, '변경') AS stateCode,
 			IFNULL(DATE_FORMAT(JOB_TB.STATE_UDT_DT, '%Y-%m-%d'), '') AS stateUdtDt,

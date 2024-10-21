@@ -53,6 +53,7 @@
 				JOB_TB.JOB_SEQ,
 				JOB_TB.SECRET_YN,
 				QUO_TB.VERSION,
+				SBK_TB.VERSION sbkVersion,
 				IF (QUO_TB.CHQ_SEQ=0, '-', CONCAT ('CH',QUO_TB.CHQ_YM,'-',LPAD(QUO_TB.CHQ_SEQ,3,0))) chqId,
 			    CONCAT (FN_GET_SEQSTRING('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ), IF(JOB_TB.SECRET_YN=1,'-A','')) quoId,  
 				FN_MEM_NAME (JOB_TB.MNG_ID) memName,
@@ -647,6 +648,7 @@
 		
 		<result column="est_cmp_dt" property="estCmpDt"/>
 		<result column="version" property="version"/>
+		<result column="sbkVersion" property="sbkVersion"/>
 		<result column="issue_dt" property="issueDt"/>
 		<result column="INS_MEM" property="insMem"/>
 		<result column="mem_name" property="memName"/>
@@ -759,6 +761,7 @@
             
 			,DATE_FORMAT(QUO_TB.EST_CMP_DT, '%Y-%m-%d') EST_CMP_DT
 			,QUO_TB.VERSION
+			,SBK_TB.VERSION sbkVersion
 			,DATE_FORMAT(QUO_TB.ISSUE_DT, '%Y-%m-%d') ISSUE_DT 
 			,JOB_TB.PRDCT_NAME
 			,JOB_TB.MODEL_NAME

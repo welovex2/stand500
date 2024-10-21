@@ -192,6 +192,7 @@
 		<id column="quoId" property="quoId"/>
 		<result column="sbkId" property="sbkId"/>
 		<result column="VERSION" property="version"/>
+		<result column="sbkVersion" property="sbkVersion"/>
 		<result column="cnfrmDtStr" property="cnfrmDtStr"/>
 		<result column="cmpyTitle" property="cmpyTitle"/>
 		<result column="CMPY_NAME" property="cmpyName"/>
@@ -211,9 +212,10 @@
 	</resultMap>
 	<select id ="selectDetail" parameterType="String" resultMap="chqMap">
 		SELECT
-			FN_GET_SEQSTRING ('Q', QUO_TB.quo_ym, type, QUO_TB.quo_seq) quoId,
+			FN_GET_SEQSTRING ('Q', QUO_TB.QUO_YM, QUO_TB.TYPE, QUO_TB.QUO_SEQ) quoId,
 			CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0), IF(SBK_REVISION > 0, CONCAT ('-',SBK_REVISION), '')) sbkId,
 			QUO_TB.VERSION,
+			SBK_TB.VERSION sbkVersion,
 			IFNULL (DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y-%m-%d'), '') cnfrmDtStr,
 			IFNULL (CMPY_TB.CMPY_NAME, '') cmpyTitle,
 			IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') CMPY_NAME,
@@ -245,6 +247,8 @@
 			INNER JOIN JOB_TB ON QUO_TB.QUO_YM = JOB_TB.QUO_YM
 			AND QUO_TB.QUO_SEQ = JOB_TB.QUO_SEQ
 			AND JOB_TB.STATE != 'D'
+			
+			LEFT JOIN SBK_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
 			
 			LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
 			LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ

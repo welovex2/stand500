@@ -183,6 +183,7 @@
 			SELECT
 				
 			    SBK_ID,
+			    SBK_TB.VERSION sbkVersion,
 			    CONCAT (IM_TB.SBK_ID, '-M', LPAD (IM_SUB_SEQ, 2, 0)) IM_SUB_ID,
 			    JOB_TB.SECRET_YN,
 			    DATE_FORMAT(STR_TO_DATE (

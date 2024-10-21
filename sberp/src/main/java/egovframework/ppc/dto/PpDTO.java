@@ -27,4 +27,8 @@ public class PpDTO extends Pp {
   @ApiModelProperty(value = "컨설팅명 ", example = "")
   @Column
   private String cmpyTitle;
+  
+  @ApiModelProperty(value = "VERSION ", example = "1")
+  @Column
+  private String sbkVersion;
 }

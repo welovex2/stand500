@@ -536,6 +536,7 @@
 		
 			CONCAT ('SB', SBK_TB.SBK_YM, '-' , SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0), IF(REVISION > 0, CONCAT ('-',REVISION), '')) sbkId,
 			SBK_TB.REVISION,
+			SBK_TB.VERSION sbkVersion,
 			
 			/* 신청기기 */
 			JOB_TB.PRDCT_NAME,
@@ -673,6 +674,7 @@
 		<result column="quoInsDtStr" property="quoInsDtStr"/>
 		<result column="SECRET_YN" property="secretYn"/>
 		<result column="VERSION" property="version"/>
+		<result column="sbkVersion" property="sbkVersion"/>
 		<result column="carryInDt" property="carryInDt"/>
 		<result column="estCmpDt" property="estCmpDt"/>
 		<result column="PRTN_NAME" property="prtnName"/>
@@ -726,6 +728,7 @@
 			
 			JOB_TB.SECRET_YN,
 			QUO_TB.VERSION, 
+			SBK_TB.VERSION sbkVersion,
 			
 			/* 현장시험일 경우에는 시료반입일에 현장시험 노출 */
 			IF (TEST_PLACE_OUT_YN=1,'현장시험',IFNULL (DATE_FORMAT(IM_TB.CARRY_IN_DATE, '%Y-%m-%d'),'-')) carryInDt,

@@ -17,6 +17,7 @@ public class ImSubDTO extends ImSub {
   private int no;
   
   private String sbkId;
+  private String sbkVersion;
   private String imSubId;
   private String rcptDt;
   private String carryInName;

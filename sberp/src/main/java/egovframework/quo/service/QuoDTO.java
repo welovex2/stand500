@@ -351,6 +351,10 @@ public class QuoDTO {
     @Column
     private int secretYn;
     
+    @ApiModelProperty(value = "VERSION ", example = "1")
+    @Column
+    private String sbkVersion;
+    
     @ApiModelProperty(value = "시험항목리스트", example = "[]")
     @Column
     private List<TestItemDTO> items;

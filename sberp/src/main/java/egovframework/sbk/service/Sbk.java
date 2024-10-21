@@ -620,4 +620,68 @@ public class Sbk {
   @ApiModelProperty(value = "재발행 사유 ", example = "")
   @Column
   private String revisionMemo;
+  
+  @ApiModelProperty(value = "파생모델 차이점 (ver2)", example = "")
+  @Column
+  private String extendModelMemo;
+
+  @ApiModelProperty(value = "CB (ver2)", example = "")
+  @Column
+  private int cfCbYn;
+
+  @ApiModelProperty(value = "시험항목-방수 (ver2)", example = "")
+  @Column
+  private int testBsYn;
+
+  @ApiModelProperty(value = "시험항목 - 방진 (ver2)", example = "")
+  @Column
+  private int testBjYn;
+
+  @ApiModelProperty(value = "시험항목-승인대행 (ver2)", example = "")
+  @Column
+  private int testDhYn;
+
+  @ApiModelProperty(value = "시험항목-화질 (ver2)", example = "")
+  @Column
+  private int testHjYn;
+
+  @ApiModelProperty(value = "적합성 진술 요구 동의 (ver2)", example = "")
+  @Column
+  private int cnfrm1Yn;
+
+  @ApiModelProperty(value = "의사결정 요구 동의 (ver2)", example = "")
+  @Column
+  private int cnfrm2Yn;
+
+  @ApiModelProperty(value = "보완 동의 (ver2)", example = "")
+  @Column
+  private int modCheckYn;
+
+  @ApiModelProperty(value = "시료폐기 동의 (ver2)", example = "")
+  @Column
+  private int imCheckYn;
+  
+  @ApiModelProperty(value = "안테나사양서", example = "1")
+  @Column
+  private Integer docAnYn;
+
+  @ApiModelProperty(value = "테스트프로그램", example = "1")
+  @Column
+  private Integer docTpYn;
+
+  @ApiModelProperty(value = "라벨도안", example = "1")
+  @Column
+  private Integer docLdYn;
+
+  @ApiModelProperty(value = "기타", example = "1")
+  @Column
+  private Integer docEtYn;
+
+  @ApiModelProperty(value = "기타내용", example = "기타 내용")
+  @Column
+  private String docEt;
+  
+  @ApiModelProperty(value = "VERSION ", example = "1")
+  @Column
+  private String sbkVersion;
 }

@@ -206,6 +206,10 @@ public class TestDTO {
     @ApiModelProperty(value = "VERSION ", example = "1")
     private String version;
     
+    @ApiModelProperty(value = "VERSION ", example = "1")
+    @Column
+    private String sbkVersion;
+    
     @ApiModelProperty(value = "컨설팅 회사명", example = "")
     private String prtnName;
     
