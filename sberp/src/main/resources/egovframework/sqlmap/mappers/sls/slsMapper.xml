@@ -282,7 +282,7 @@
 			    
 			    FN_CODE_NAME(CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END,'PT') CMPY_TYPE,
                 prtn.CMPY_NAME PRTN_NAME,
-			    '-' DIRT_NAME,
+			    IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 			    '-' PRDCT_NAME,
                    
 			    /* 견적서 수정 바로 연동되야할때 사용 */
@@ -337,6 +337,7 @@
 			    
 			    INNER JOIN MEMBER_TB ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
 			    LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+			    LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
 			    
 			WHERE
 			    1 = 1
