@@ -64,12 +64,18 @@ public class MemServiceImpl implements MemService {
   public boolean updatePassword(LoginVO vo) throws Exception {
     boolean result = true;
 
-    // 현재 비밀번호 확인
-    vo.setPassword(EgovFileScrty.encryptPassword(vo.getPassword(), vo.getId()));
-    String pass = memMapper.searchPassword(vo);
-    if (pass == null || "".equals(pass)) {
-      return false;
+    // 초기비밀번호 확인은 현재비밀번호 확인 안함 (초기비밀번호는 현재비밀번호 입력하지 않음)
+    if (!StringUtils.isEmpty(vo.getPassword()) && !StringUtils.isEmpty(vo.getNewPassword())) {
+    
+      // 현재 비밀번호 확인
+      vo.setPassword(EgovFileScrty.encryptPassword(vo.getPassword(), vo.getId()));
+      String pass = memMapper.searchPassword(vo);
+      if (pass == null || "".equals(pass)) {
+        return false;
+      }
+    
     }
+    
 
     // 변경된 비밀번호 저장
     vo.setPassword(EgovFileScrty.encryptPassword(vo.getNewPassword(), vo.getId()));

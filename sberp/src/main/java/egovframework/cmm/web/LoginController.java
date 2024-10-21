@@ -124,9 +124,24 @@ public class LoginController {
 
     boolean loginPolicyYn = true;
 
+    
     if (resultVO != null && resultVO.getId() != null && !resultVO.getId().equals("")
         && resultVO.getLockYn() == 0) {
 
+      // 0. 초기 비밀번호 확인
+      String rePass = EgovFileScrty.encryptPassword(resultVO.getId().concat("300"), resultVO.getId());
+      if (resultVO.getPassword().equals(rePass)) {
+        
+        result = false;
+        msg = "CHANGEPW";
+        
+        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+        return res;
+        
+      }
+      
+      
       // 1-1. 권한정보 가져오기
       if (!StringUtils.isEmpty(resultVO.getAuthCode())) {
         List<PowerDTO> resultAuth = loginService.getAuthList(resultVO.getAuthCode());

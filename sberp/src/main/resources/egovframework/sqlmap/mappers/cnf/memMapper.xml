@@ -35,7 +35,7 @@
 				</if>
 	</select>
 
-	<select id="selectList" parameterType="comParam" resultType="egovMap">
+	<select id="selectList" parameterType="comParam" resultType="member">
 		set @rownum:=0;
 		
 		SELECT
@@ -48,6 +48,7 @@
 					IFNULL (DATE_FORMAT(MEMBER_TB.IN_DT, '%Y-%m-%d'), '') inDt,
 					FN_DEPT_NAME (id) deptName,
 					id,
+					password,
 					mem_name,
 					ifnull(eng_name, '') eng_name,
 					FN_POS_NAME (id) posName,

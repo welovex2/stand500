@@ -222,7 +222,9 @@ public class MemController {
     if ("".contentEquals(msg)) {
 
       // 세션에서 현재 로그인한 아이디 가져오기
-      loginVO.setId(resultVO.getId());
+      if (StringUtils.isEmpty(loginVO.getId()))
+          loginVO.setId(resultVO.getId());
+      
       result = memService.updatePassword(loginVO);
 
       if (result)

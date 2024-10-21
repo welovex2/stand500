@@ -5,7 +5,7 @@
 	<!-- 로그인 처리를 위한 resultMap -->
 	<resultMap id="login" type="loginVO">
 		<result property="id" column="id"/>
-<!-- 		<result property="name" column="name"/> -->
+		<result property="password" column="password"/>
 <!-- 		<result property="ihidNum" column="ihidNum"/> -->
 		<result property="empName" column="memName"/>
 		<result property="deptName" column="deptName"/>
@@ -23,6 +23,7 @@
 	<select id="actionLogin" resultMap="login">
 		<![CDATA[
            SELECT ID id
+           		, PASSWORD password
                 , MEM_NAME memName
                 , FN_DEPT_NAME(ID) deptName
                 , FN_POS_NAME(ID) position
