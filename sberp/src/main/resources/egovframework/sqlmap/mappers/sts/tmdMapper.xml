@@ -388,6 +388,8 @@
 			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			<!-- 7	고지부담당자 -->
 			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 31	시험상태 -->
+			<when test="item.searchCode == 31">AND curr.STATE_CODE = #{item.searchWord}</when>
 			</choose>
 		</foreach>
 	</if>
@@ -445,6 +447,8 @@
 			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			<!-- 7	고지부담당자 -->
 			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 31	시험상태 -->
+			<when test="item.searchCode == 31">AND 1 != 1</when> 
 			</choose>
 		</foreach>
 	</if>
@@ -519,7 +523,9 @@
 			<!-- 9	시험담당자 -->
 			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			<!-- 7	고지부담당자 -->
-			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 31	시험상태 -->
+			<when test="item.searchCode == 31">AND curr.STATE_CODE = #{item.searchWord}</when>
 			</choose>
 		</foreach>
 	</if>
@@ -576,7 +582,9 @@
       		<!-- 9	시험담당자 -->
 			<when test="item.searchCode == 9">AND FN_MEM_NAME(mngr1.TEST_MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			<!-- 7	고지부담당자 -->
-			<when test="item.searchCode == 7">and FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<when test="item.searchCode == 7">AND FN_MEM_NAME(JOB_TB.MNG_ID) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+			<!-- 31	시험상태 -->
+			<when test="item.searchCode == 31">AND 1 != 1</when> 
 			</choose>
 		</foreach>
 	</if>
