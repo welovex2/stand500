@@ -13,6 +13,10 @@ import lombok.ToString;
 @ToString
 public class Member {
 
+  @ApiModelProperty(value = "no ", example = "")
+  @Column
+  private int no;
+  
   @ApiModelProperty(value = "MEMBER_SEQ ", example = "")
   @Column
   private int memberSeq;
@@ -92,6 +96,9 @@ public class Member {
   @Column
   private String workState;
 
+  @ApiModelProperty(value = "재직상태 (공통코드 : CW) ", example = "")
+  @Column
+  private String workSate;
   
   @ApiModelProperty(value = "계정잠김상태 ", example = "")
   @Column
