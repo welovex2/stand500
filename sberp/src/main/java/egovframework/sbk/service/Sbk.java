@@ -663,19 +663,19 @@ public class Sbk {
   
   @ApiModelProperty(value = "안테나사양서", example = "1")
   @Column
-  private Integer docAnYn;
+  private int docAnYn;
 
   @ApiModelProperty(value = "테스트프로그램", example = "1")
   @Column
-  private Integer docTpYn;
+  private int docTpYn;
 
   @ApiModelProperty(value = "라벨도안", example = "1")
   @Column
-  private Integer docLdYn;
+  private int docLdYn;
 
   @ApiModelProperty(value = "기타", example = "1")
   @Column
-  private Integer docEtYn;
+  private int docEtYn;
 
   @ApiModelProperty(value = "기타내용", example = "기타 내용")
   @Column

@@ -305,6 +305,14 @@ public class PpcController {
         req.setInsMemId(user.getId());
         req.setUdtMemId(user.getId());
         req.setMngId(user.getId());
+        
+        // 동의사항 기본셋팅
+        req.setCusInfoAgreeYn(1);
+        req.setCnfrm1Yn(1);
+        req.setCnfrm2Yn(0);
+        req.setModCheckYn(1);
+        req.setImCheckYn(1);
+        
         result = sbkService.insert(req);
 
         // 신청서 정보 보내주기

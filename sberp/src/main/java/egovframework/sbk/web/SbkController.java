@@ -108,6 +108,13 @@ public class SbkController {
         req.setMngEmail(detail.getMngEmail());
         req.setMngFax(detail.getMngFax());
         
+        // 동의사항 기본셋팅
+        req.setCusInfoAgreeYn(1);
+        req.setCnfrm1Yn(1);
+        req.setCnfrm2Yn(0);
+        req.setModCheckYn(1);
+        req.setImCheckYn(1);
+        
         // 신청서 생성
         result = sbkService.insert(req);
 
