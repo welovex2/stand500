@@ -62,6 +62,10 @@ public class SlsDTO {
     @Column
     private String payDt;
     
+    @ApiModelProperty(value="입금자명 ", example = "", hidden = true)
+    @Column
+    private String payer;
+    
   }
 
   @Getter
@@ -103,6 +107,9 @@ public class SlsDTO {
 
     @ApiModelProperty(value = "컨설팅 회사명", example = "")
     private String prtnName;
+    
+    @ApiModelProperty(value = "컨설팅 회사명", example = "")
+    private String prtnSeq;
     
     @ApiModelProperty(value = "신청사 회사명", example = "")
     private String dirtName;

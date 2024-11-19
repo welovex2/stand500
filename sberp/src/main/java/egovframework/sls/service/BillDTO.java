@@ -39,6 +39,10 @@ public class BillDTO {
     @Column
     private long arrears;    
     
+    @ApiModelProperty(value = "납부한 금액 ", example = "")
+    @Column
+    private long totalPay;
+    
     @ApiModelProperty(value = "매출번호", example = "M2303-0002")
     @Column
     private String slsId;

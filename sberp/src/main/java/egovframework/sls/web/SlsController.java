@@ -452,10 +452,17 @@ public class SlsController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-//      // bill 금액이 있으면 why 필수
-//      if (req.getBill() > 0 && StringUtils.isEmpty(req.getMemo())) {
-//        msg = ResponseMessage.ERROR_WHY;
-//      }
+      
+      // 납부저장이면, 입금자 필수
+      if (!StringUtils.isEmpty(req.getPayCode()) && StringUtils.isEmpty(req.getPayer())) {
+        result = false;
+        msg = ResponseMessage.ERROR_PAYER;
+        
+        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+
+        return res;
+      }
+      
       result = slsService.billInsert(req);
     } else {
       result = false;

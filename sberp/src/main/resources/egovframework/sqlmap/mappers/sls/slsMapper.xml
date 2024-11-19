@@ -40,9 +40,9 @@
 					SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT, 
 							SUM(IF (BILL_YN = 0, 1, 0)) BillState, 
 							SUM(IF (PAY_CODE IS NULL, 1, 0)) payState, 
-							SUM(IF (STATE IN ('1', '3', '6'), 1, 0)) state
+							SUM(IF (STATE IN ('1', '3', '5', '7'), 1, 0)) state
 					FROM BILL_TB
-					WHERE BILL_TB.STATE NOT IN ('4','6')
+					WHERE BILL_TB.STATE NOT IN ('4','6','8')
 					GROUP BY SLS_YM, SLS_SEQ
 				) billCnt
 				ON SLS_TB.SLS_YM = billCnt.SLS_YM
@@ -117,6 +117,7 @@
 		<result column="cmpyName" property="cmpyName"/>
 		<result column="DIRT_NAME" property="dirtName"/>
 		<result column="PRTN_NAME" property="prtnName"/>
+		<result column="PRTN_SEQ" property="prtnSeq"/>
 		<result column="PRDCT_NAME" property="prdctName"/>
 		<result column="CHRGS" property="chrgs"/>
 		<result column="NET_SALES" property="netSales"/>
@@ -164,6 +165,7 @@
 			    
 			    FN_CODE_NAME(CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END,'PT') CMPY_TYPE,
                 prtn.CMPY_NAME PRTN_NAME,
+                prtn.CMPY_SEQ PRTN_SEQ,
 			    IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 			    
 			    JOB_TB.PRDCT_NAME,
@@ -228,9 +230,9 @@
 					SELECT SLS_YM, SLS_SEQ, COUNT(BILL_TB.BILL_SEQ) CNT, 
 							SUM(IF (BILL_YN = 0, 1, 0)) BillState, 
 							SUM(IF (PAY_CODE IS NULL, 1, 0)) payState, 
-							SUM(IF (STATE IN ('1', '3', '6'), 1, 0)) state
+							SUM(IF (STATE IN ('1', '3', '5', '7'), 1, 0)) state
 					FROM BILL_TB
-					WHERE BILL_TB.STATE NOT IN ('4','6')
+					WHERE BILL_TB.STATE NOT IN ('4','6','8')
 					GROUP BY SLS_YM, SLS_SEQ
 				) billCnt
 				ON SLS_TB.SLS_YM = billCnt.SLS_YM
@@ -282,6 +284,7 @@
 			    
 			    FN_CODE_NAME(CASE PRTN_YN WHEN 1 THEN '0000' WHEN 0 THEN '1000' ELSE '9999' END,'PT') CMPY_TYPE,
                 prtn.CMPY_NAME PRTN_NAME,
+                prtn.CMPY_SEQ PRTN_SEQ, 
 			    IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') DIRT_NAME,
 			    '-' PRDCT_NAME,
                    
@@ -413,6 +416,8 @@
 					</when>
 					<!-- 78	매출요청상태 -->
 	    			<when test="item.searchCode == 78">AND IFNULL (billCnt.state, 0) = #{item.searchWord}</when>
+	    			<!-- 80	매출요청상태 -->
+	    			<when test="item.searchCode == 80">AND IFNULL (BILL_TB.PAYER, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 	    			
 	        	</choose>
 			</foreach>
@@ -475,6 +480,8 @@
 					</when>
 					<!-- 78	매출요청상태 -->
 	    			<when test="item.searchCode == 78">AND BILL_TB.STATE = #{item.searchWord}</when>
+	    			<!-- 80	매출요청상태 -->
+	    			<when test="item.searchCode == 80">AND IFNULL (BILL_TB.PAYER, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 	    			
 	        	</choose>
 			</foreach>
@@ -811,9 +818,10 @@
 				WHEN QUO_TB.TOTAL_VAT = SLS_TB.ARREARS THEN '미납' 
 				WHEN SLS_TB.ARREARS = 0 THEN '완납'
                 ELSE '납입중' END lastState,
-			SUM(IF (BILL_TB.STATE NOT IN ('4','6'), 1, 0)) CNT,
+			SUM(IF (BILL_TB.STATE NOT IN ('4','6','8'), 1, 0)) CNT,
 			IF(SLS_TB.CHQ_SEQ IS NULL, QUO_TB.TOTAL_VAT, SLS_TB.SLS_TOTAL) TOTAL_VAT,
 			SLS_TB.ARREARS,
+			IF(SLS_TB.CHQ_SEQ IS NULL, QUO_TB.TOTAL_VAT, SLS_TB.SLS_TOTAL) - SLS_TB.ARREARS TOTAL_PAY,
 			FN_GET_SEQSTRING ('M', SLS_TB.SLS_YM, '', SLS_TB.SLS_SEQ) slsId
             
 		FROM BILL_TB
@@ -833,7 +841,7 @@
 	
 	<select id="selectBillList" parameterType="String" resultType="egovMap">
 		SELECT
-		    CASE WHEN BILL_TB.STATE IN ('4','6') THEN '취소' ELSE '납입' END  NUM,
+		    CASE WHEN BILL_TB.STATE IN ('4','6','8') THEN '취소' ELSE '납입' END  NUM,
             MEMBER_TB.MEM_NAME INS_NAME,
             DATE_FORMAT(BILL_TB.INS_DT, '%y-%m-%d') instDtStr,
 		    
@@ -847,6 +855,7 @@
 		    IFNULL (FN_CODE_NAME (PAY_CODE, 'MP'), '미납') PAY_CODE,
 		    IFNULL (DATE_FORMAT(BILL_TB.PAY_DT, '%y-%m-%d'),'') PAY_DT,
 		    IFNULL (FN_MEM_NAME (PAY_ID),'') pay_id,
+		    IFNULL (PAYER, '') PAYER,
             IFNULL (FN_CODE_NAME (BILL_TB.STATE, 'MB'), '') STATE,
             IFNULL (BILL_TB.STATE, '0') STATE_CODE,
             IFNULL (BILL_TB.MEMO, '') MEMO
@@ -913,6 +922,7 @@
 			PAY_CODE = #{payCode},
 			PAY_DT = #{payDt},
 			PAY_ID = #{udtMemId},
+			PAYER = #{payer},
 			UDT_DT = NOW(),
 			</if>
 			<if test="otherBillDt != null and otherBillDt != ''">
