@@ -1,5 +1,6 @@
 package egovframework.sts.dto;
 
+import javax.persistence.Column;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,10 @@ import lombok.Setter;
 public class CmdDTO {
 
 
+  @ApiModelProperty(value = "게시글번호", example = "1")
+  @Column
+  private int no;
+  
   @ApiModelProperty(value="아이디 ", example = "")
   private String cmpySeq;
 
