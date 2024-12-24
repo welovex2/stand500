@@ -220,4 +220,22 @@ public class MethodVdip {
   @Column
   private String vol3Cmnt;
 
+  @ApiModelProperty(value = "", example = "")
+  @Column
+  private String vol4ResultCode;
+
+
+  @ApiModelProperty(value = "", example = "")
+  @Column
+  private String vol4CmntCode;
+
+
+  @ApiModelProperty(value = "", example = "")
+  @Column
+  private String vol4Cmnt;
+
+  @ApiModelProperty(value = "", example = "")
+  @Column
+  private String vol4Type;
+  
 }
