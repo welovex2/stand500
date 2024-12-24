@@ -32,7 +32,12 @@ public class RawSpec {
 	@Column
 	private String memo;
 
-
+	
+    @ApiModelProperty(value="순번 ", example = "")
+    @Column
+    private int ordr;
+    
+    
 	@ApiModelProperty(value="상태(I,U,D) ", example = "", hidden = true)
 	@Column
 	private String state;

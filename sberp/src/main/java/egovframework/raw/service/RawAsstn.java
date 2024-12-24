@@ -48,7 +48,13 @@ public class RawAsstn {
 	@ApiModelProperty(value="비고 ", example = "")
 	@Column
 	private String memo;
+	
+	
+    @ApiModelProperty(value="순번 ", example = "")
+    @Column
+    private int ordr;
 
+    
 	@ApiModelProperty(value="상태", notes="I:신규등록, U:수정, D:삭제한 항목", example = "")
 	@Column
 	private String state;

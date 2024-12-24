@@ -178,14 +178,16 @@
 		(
 			RAW_SEQ,
 			ITEM,
-			MEMO
+			MEMO,
+			ORDR
 		)
 		VALUES
 		<foreach collection="rawSpecList" item="item" separator=",">
 		(
 			#{rawSeq},
 			#{item.item},
-			#{item.memo}
+			#{item.memo},
+			#{item.ordr}
 		)
 		</foreach>
 	</insert>
@@ -196,6 +198,7 @@
 			SET
 				ITEM = #{item.item},
 				MEMO = #{item.memo},
+				ORDR = #{item.ordr},
 				STATE = #{item.state}
 			WHERE SPEC_SEQ = #{item.specSeq}
 		</foreach>
@@ -258,7 +261,8 @@
 			MODEL,
 			SERIAL_NO,
 			MNFCT_CMPNY,
-			MEMO
+			MEMO,
+			ORDR
 		)
 		VALUES
 		<foreach collection="rawAsstnList" item="item" separator=",">
@@ -268,7 +272,8 @@
 			#{item.model},
 			#{item.serialNo},
 			#{item.mnfctCmpny},
-			#{item.memo}
+			#{item.memo},
+			#{item.ordr}
 		)
 		</foreach>
 	</insert>
@@ -282,6 +287,7 @@
 			SERIAL_NO = #{item.serialNo},
 			MNFCT_CMPNY = #{item.mnfctCmpny},
 			MEMO = #{item.memo},
+			ORDR = #{item.ordr},
 			STATE = #{item.state}
 		WHERE ASSTN_SEQ = #{item.asstnSeq}
 		</foreach>
@@ -304,7 +310,8 @@
 			MODEL,
 			SERIAL_NO,
 			MNFCT_CMPNY,
-			MEMO
+			MEMO,
+			ORDR
 		)
 		VALUES
 		<foreach collection="rawSysList" item="item" separator=",">
@@ -314,7 +321,8 @@
 			#{item.model},
 			#{item.serialNo},
 			#{item.mnfctCmpny},
-			#{item.memo}
+			#{item.memo},
+			#{item.ordr}
 		)
 		</foreach>
 	</insert>
@@ -328,6 +336,7 @@
 			SERIAL_NO = #{item.serialNo},
 			MNFCT_CMPNY = #{item.mnfctCmpny},
 			MEMO = #{item.memo},
+			ORDR = #{item.ordr},
 			STATE = #{item.state}
 		WHERE SYS_SEQ = #{item.sysSeq}		
 		</foreach>
@@ -352,7 +361,8 @@
 			DT_NAME,
 			DT_PORT,
 			CS_M,
-			CS_YN
+			CS_YN,
+			ORDR
 		)
 		VALUES
 		<foreach collection="rawCableList" item="item" separator=",">
@@ -364,7 +374,8 @@
 			#{item.dtName},
 			#{item.dtPort},
 			#{item.csM},
-			#{item.csYn}
+			#{item.csYn},
+			#{item.ordr}
 		)
 		</foreach>
 	</insert>
@@ -380,6 +391,7 @@
 			DT_PORT = #{item.dtPort},
 			CS_M = #{item.csM},
 			CS_YN = #{item.csYn},
+			ORDR = #{item.ordr},
 			STATE = #{item.state}
 		WHERE CABLE_SEQ = #{item.cableSeq}
 		</foreach>
@@ -671,11 +683,13 @@
 		SELECT SPEC_SEQ,
 		    ITEM,
 		    MEMO,
+		    ORDR,
 		    STATE
 		FROM RAW_SPEC_TB
 		WHERE 1=1
 		AND STATE != 'D'
 		AND RAW_SEQ = #{rawSeq}
+		ORDER BY ORDR, SPEC_SEQ
 	</select>
 	
 	<select id="asstnList" parameterType="int" resultType="egovMap">
@@ -685,11 +699,13 @@
 		    SERIAL_NO,
 		    MNFCT_CMPNY,
 		    MEMO,
+		    ORDR,
 		    STATE
 		FROM RAW_ASSTN_TB
 		WHERE 1=1
 		AND STATE != 'D'
 		AND RAW_SEQ = #{rawSeq}
+		ORDER BY ORDR, ASSTN_SEQ
 	</select>
 	
 	<select id="sysList" parameterType="int" resultType="egovMap">
@@ -699,11 +715,13 @@
 		    SERIAL_NO,
 		    MNFCT_CMPNY,
 		    MEMO,
+		    ORDR,
 		    STATE
 		FROM RAW_SYS_TB
 		WHERE 1=1
 		AND STATE != 'D'
 		AND RAW_SEQ = #{rawSeq}
+		ORDER BY ORDR, SYS_SEQ
 	</select>
 	
 	<select id="cableList" parameterType="int" resultType="egovMap">
@@ -715,11 +733,13 @@
 		    DT_PORT,
 		    CS_M,
 		    CS_YN,
+		    ORDR,
 		    STATE
 		FROM RAW_CABLE_TB
 		WHERE 1=1
 		AND STATE != 'D'
 		AND RAW_SEQ = #{rawSeq}
+		ORDER BY ORDR, CABLE_SEQ
 	</select>
 	
 	<insert id="insertMethod">

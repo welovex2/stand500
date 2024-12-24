@@ -58,7 +58,13 @@ public class RawCable {
 	@ApiModelProperty(value="케이블규격_차폐여부 (1:Shi, 0:UnShi) ", example = "")
 	@Column
 	private String csYn;
+	
+	
+    @ApiModelProperty(value="순번 ", example = "")
+    @Column
+    private int ordr;
 
+    
 	@ApiModelProperty(value="상태", notes="I:신규등록, U:수정, D:삭제한 항목", example = "")
 	@Column
 	private String state;
