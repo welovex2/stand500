@@ -25,5 +25,10 @@ public class PowServiceImpl implements PowService {
     powMapper.insert(list);
     return true;
   }
+  
+  @Override
+  public Power.AuthCode selectMemDetail() {
+    return powMapper.selectMemDetail();
+  }
 
 }

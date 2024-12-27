@@ -3,24 +3,19 @@ package egovframework.sys.web;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import egovframework.cmm.service.BasicResponse;
-import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.ResponseMessage;
-import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sys.service.PowService;
@@ -66,8 +61,12 @@ public class PowController {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
+    
+    // 권한별 사용자 리스트 조회
+    Power.AuthCode mem = powService.selectMemDetail();
+    
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).summary(mem).build();
 
     return res;
   }

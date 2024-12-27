@@ -11,4 +11,5 @@ public interface PowMapper {
 
   void insert(@Param("req") List<Power> req);
 
+  Power.AuthCode selectMemDetail();
 }

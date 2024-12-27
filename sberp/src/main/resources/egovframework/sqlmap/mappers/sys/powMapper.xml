@@ -87,5 +87,27 @@
 		  WHERE MENU_SEQ = #{item.menuSeq}
 		 </foreach>
 	</insert>
+	
+	<select id="selectMemDetail" resultType="PowerAuth">
+		SELECT
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P01' THEN mem_name END), '') AS P01,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P02' THEN mem_name END), '') AS P02,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P03' THEN mem_name END), '') AS P03,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P04' THEN mem_name END), '') AS P04,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P05' THEN mem_name END), '') AS P05,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P06' THEN mem_name END), '') AS P06,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P07' THEN mem_name END), '') AS P07,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P08' THEN mem_name END), '') AS P08,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P09' THEN mem_name END), '') AS P09,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P10' THEN mem_name END), '') AS P10,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P11' THEN mem_name END), '') AS P11,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P12' THEN mem_name END), '') AS P12,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P13' THEN mem_name END), '') AS P13,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P14' THEN mem_name END), '') AS P14,
+		    IFNULL(GROUP_CONCAT(CASE WHEN auth_code = 'P15' THEN mem_name END), '') AS P15
+		FROM MEMBER_TB
+		WHERE 1=1
+		AND WORK_STATE = 1
+	</select>
 		
 </mapper>

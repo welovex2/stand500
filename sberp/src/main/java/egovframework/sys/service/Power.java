@@ -3,6 +3,8 @@ package egovframework.sys.service;
 import java.time.LocalDateTime;
 import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
+import egovframework.sbk.service.Sbk;
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -195,5 +197,56 @@ public class Power {
   @ApiModelProperty(value = "상태(I,U,D) ", example = "", hidden = true)
   @Column
   private String state;
+  
+  @Getter
+  @Setter
+  @ToString(callSuper = true)
+  @ApiModel(value = "Power.AuthCode", description = "권한종류")
+  public static class AuthCode {
+    @ApiModelProperty(value = "P01", example = "")
+    private String p01;
+
+    @ApiModelProperty(value = "P02", example = "")
+    private String p02;
+
+    @ApiModelProperty(value = "P03", example = "")
+    private String p03;
+
+    @ApiModelProperty(value = "P04", example = "")
+    private String p04;
+
+    @ApiModelProperty(value = "P05", example = "")
+    private String p05;
+
+    @ApiModelProperty(value = "P06", example = "")
+    private String p06;
+
+    @ApiModelProperty(value = "P07", example = "")
+    private String p07;
+
+    @ApiModelProperty(value = "P08", example = "")
+    private String p08;
+
+    @ApiModelProperty(value = "P09", example = "")
+    private String p09;
+
+    @ApiModelProperty(value = "P10", example = "")
+    private String p10;
+
+    @ApiModelProperty(value = "P11", example = "")
+    private String p11;
+
+    @ApiModelProperty(value = "P12", example = "")
+    private String p12;
+
+    @ApiModelProperty(value = "P13", example = "")
+    private String p13;
+
+    @ApiModelProperty(value = "P14", example = "")
+    private String p14;
+
+    @ApiModelProperty(value = "P15", example = "")
+    private String p15;    
+  }
 
 }
