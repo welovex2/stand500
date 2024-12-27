@@ -119,5 +119,8 @@
     	<typeAlias alias="tmdTypeResult" type="egovframework.sts.dto.TmdDTO$TestResultList$TestMonList$TestTypeList"/>
     	<typeAlias alias="tmdTestAction" type="egovframework.sts.dto.TmdDTO$TestAction"/>
     	
+    	<!-- 권한 -->
+    	<typeAlias alias="PowerAuth"	type="egovframework.sys.service.Power$AuthCode"/>
+    	
     </typeAliases>
 </configuration>
