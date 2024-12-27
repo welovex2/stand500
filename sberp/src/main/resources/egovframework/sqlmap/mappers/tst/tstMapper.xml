@@ -1092,7 +1092,8 @@
 		    
 		    /* 시험원배정 변경 (#29) */
 		    TRUNCATE(TEST_ITEM_TB.NET_SALES / 1000000, 2) stand,
-		    TRUNCATE((TEST_ITEM_TB.NET_SALES / 1000000) + (TEST_ITEM_TB.NET_SALES / 1000000) * (TEST_TB.ACTIV / 100), 2) activ,
+		    #TRUNCATE((TEST_ITEM_TB.NET_SALES / 1000000) + (TEST_ITEM_TB.NET_SALES / 1000000) * (TEST_TB.ACTIV / 100), 2) activ,
+		    TEST_TB.ACTIV,
             IFNULL (FN_MEM_NAME(TEST_TB.ASSIGN_ID), '-') assignName,
 		    IFNULL (FN_MEM_NAME(TEST_TB.RATING_ID), '-') ratingName,            
             IFNULL (FN_MEM_NAME(TEST_ITEM_TB.REV_ID), '-') revName,		
