@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.wrp.service.WrpMapper">
+
+	<select id="getDetail" parameterType="String" resultType="WeekResult">
+		SELECT
+		    TEST_TYPE_CODE,
+		    FN_CODE_NAME(TEST_TYPE_CODE, 'TT') TEST_TYPE,
+		    SUM(CASE WHEN test_state_code = 0 THEN 1 ELSE 0 END) AS twt, #-
+		    SUM(CASE WHEN test_state_code = 1 THEN 1 ELSE 0 END) AS tin, #접수
+		    SUM(CASE WHEN test_state_code = 2 THEN 1 ELSE 0 END) AS ing, #시험중
+		    SUM(CASE WHEN test_state_code = 3 THEN 1 ELSE 0 END) AS deb, #디버깅
+		    SUM(CASE WHEN test_state_code = 4 THEN 1 ELSE 0 END) AS hol, #홀딩
+		    SUM(CASE WHEN test_state_code = 5 THEN 1 ELSE 0 END) AS rdd, #RD지연
+		    SUM(CASE WHEN test_state_code = 21 THEN 1 ELSE 0 END) AS rdc #RD검토99%
+		FROM
+		    TEST_TB
+		WHERE
+		    ins_dt BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND NOW()
+		AND TEST_TYPE_CODE = #{testTypeCode}
+		GROUP BY
+		    TEST_TYPE_CODE
+	</select>
+	
+	<select id="getWeekList" parameterType="String" resultType="weekRepSub">
+		<![CDATA[
+		SELECT 
+		    TEST_ITEM_TB.TEST_TYPE_CODE,
+		    FN_CODE_NAME(TEST_ITEM_TB.TEST_TYPE_CODE, 'TT') TEST_TYPE,
+		    week_numbers.week AS week, -- 최근 4주 (1, 2, 3, 4)
+		    WEEK(TEST_STATE_TB.INS_DT, 1) AS week_number, -- 주차 (ISO 주차 기준)
+		    SUM(CASE WHEN STATE_CODE = 1 THEN 1 ELSE 0 END) AS inCnt, -- 시험접수
+		    TRUNCATE(SUM(IF (STATE_CODE = 1, NET_SALES, 0)) / 10000, 0) inAmt,
+		    SUM(CASE WHEN STATE_CODE = 6 THEN 1 ELSE 0 END) AS rdCnt, -- RD작성완료
+		    SUM(CASE WHEN STATE_CODE = 7 THEN 1 ELSE 0 END) AS rdcCnt, -- RD검토완료
+		    SUM(CASE WHEN STATE_CODE = 18 THEN 1 ELSE 0 END) AS endCnt, -- 프로젝트완료
+		    TRUNCATE(SUM(IF (STATE_CODE = 18, NET_SALES, 0)) / 10000, 0) endAmt,
+		    SUM(CASE WHEN STATE_CODE = 19 THEN 1 ELSE 0 END) AS celCnt -- 시험취소
+		FROM (
+		    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 1) AS year_week_number
+		    UNION ALL
+		    SELECT 2 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 2 WEEK), 1) AS year_week_number
+		    UNION ALL
+		    SELECT 3 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 3 WEEK), 1) AS year_week_number
+		    UNION ALL
+		    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 1) AS year_week_number
+		) AS week_numbers
+		LEFT JOIN TEST_STATE_TB
+		    ON YEARWEEK(TEST_STATE_TB.INS_DT, 1) = week_numbers.year_week_number
+		INNER JOIN TEST_TB
+		    ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
+		INNER JOIN TEST_ITEM_TB
+		    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		    AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL
+		WHERE 1=1
+		    AND TEST_ITEM_TB.TEST_TYPE_CODE = #{testTypeCode}
+		GROUP BY 
+		    week_numbers.week, 
+		    TEST_ITEM_TB.TEST_TYPE_CODE
+		ORDER BY 
+		    week_numbers.week ASC;
+		]]>  
+	</select>
+	
+	<select id="checkReport" parameterType="int" resultType="weekRepReq">
+		SELECT 
+		 	IF(WR_CNT IS NOT NULL AND WR_CNT != 0, true, false) fixYn, #최종보고된 보고서임
+		 	MEMO,
+		 	TEST_TYPE_CODE
+		FROM WEEKREP_TB
+		WHERE WR_SEQ = #{wrSeq};
+	</select>
+
+	<select id="getFixDetail" resultType="WeekResult">
+		SELECT
+			TEST_TYPE_CODE,
+			FN_CODE_NAME(TEST_TYPE_CODE, 'TT') TEST_TYPE,
+		    TWT AS twt, #-
+		    TIN AS tin, #접수
+		    ING AS ing, #시험중
+		    DEB AS deb, #디버깅
+		    HOL AS hol, #홀딩
+		    RDD AS rdd, #RD지연
+		    RDC AS rdc #RD검토99%
+		FROM
+		    WEEKREP_RST_TB
+		WHERE WR_SEQ = #{wrSeq}
+		AND TEST_TYPE_CODE = #{testTypeCode};
+	</select>
+	
+	<select id="getFixWeekList" resultType="weekRepSub">
+		SELECT 
+		    WEEKREP_TB.TEST_TYPE_CODE,
+		    FN_CODE_NAME(WEEKREP_TB.TEST_TYPE_CODE, 'TT') TEST_TYPE,
+		    WEEK AS week,
+		    IN_CNT AS inCnt, -- 시험접수
+		    IN_AMT AS inAmt,
+		    RD_CNT AS rdCnt, -- RD작성완료
+		    RDC_CNT AS rdcCnt, -- RD검토완료
+		    END_CNT AS endCnt, -- 프로젝트완료
+		    END_AMT AS endAmt,
+		    CEL_CNT AS celCnt -- 시험취소
+		FROM 
+		    WEEKREP_SUB_TB
+            
+            INNER JOIN WEEKREP_TB
+            ON WEEKREP_SUB_TB.WR_SEQ = WEEKREP_TB.WR_SEQ
+            
+		WHERE WEEKREP_TB.WR_SEQ = #{wrSeq}
+		AND WEEKREP_TB.TEST_TYPE_CODE = #{testTypeCode};
+	</select>
+	
+	<select id="getFeedback" parameterType="String" resultType="String" >
+		SELECT
+			MEMO
+		FROM WEEKREP_TB
+		WHERE TEST_TYPE_CODE = #{testTypeCode}
+		AND IFNULL(WR_CNT, 0) != 0
+		ORDER BY WR_CNT DESC
+		LIMIT 1
+	</select>
+	
+	<insert id="insert" parameterType="weekRep" useGeneratedKeys="true" keyProperty="wrSeq">
+	    INSERT INTO WEEKREP_TB (
+	        TEST_TYPE_CODE,
+	        NTT_SJ,
+	        NTT_CN,
+	        ATCH_FILE_ID,
+	        INS_MEM_ID,
+	        INS_DT,
+	        UDT_MEM_ID,
+	        UDT_DT,
+	        STATE
+	    ) VALUES (
+	        #{testTypeCode},
+	        #{nttSj},
+	        #{nttCn},
+	        #{atchFileId},
+	        #{insMemId},
+	        NOW(),             
+	        #{udtMemId},
+	        NOW(),             
+	        'I'
+	    )
+	</insert>
+
+	<update id="update" parameterType="weekRep">
+	    UPDATE WEEKREP_TB
+	    SET 
+	        NTT_SJ = #{nttSj},
+	        NTT_CN = #{nttCn},
+	        ATCH_FILE_ID = #{atchFileId},
+	        UDT_MEM_ID = #{udtMemId},
+	        UDT_DT = NOW(),           
+	        STATE = 'U'
+	    WHERE 
+	        WR_SEQ = #{wrSeq}         
+	</update>
+
+	<select id="getReport" resultType="weekRep" parameterType="int">
+	    SELECT 
+	        WR_SEQ,
+	        TEST_TYPE_CODE,
+	        FN_CODE_NAME(TEST_TYPE_CODE, 'WT') TEST_TYPE,
+	        NTT_SJ,
+	        NTT_CN,
+	        ATCH_FILE_ID,
+	        WR_CNT,
+	        MEMO,
+	        IFNULL (FN_MEM_NAME (INS_MEM_ID), '') insName,
+	        DATE_FORMAT(INS_DT, '%Y-%m-%d') insDtStr,
+	        FN_POS_NAME(INS_MEM_ID) insPos,
+	        DATE_FORMAT(UDT_DT, '%Y-%m-%d') udtDtStr,
+	        STATE
+	    FROM 
+	        WEEKREP_TB
+	    WHERE 
+	        WR_SEQ = #{wrSeq}
+	</select>
+
+	<update id="updateFix" parameterType="weekRepReq">
+		UPDATE WEEKREP_TB
+		SET 
+		    MEMO = #{memo},
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT = NOW(),
+		    STATE = 'C',
+		    WR_CNT = (
+		        SELECT MAX_WR_CNT
+		        FROM (
+		            SELECT IFNULL(MAX(WR_CNT), 0)+1 AS MAX_WR_CNT
+		            FROM WEEKREP_TB
+		            WHERE TEST_TYPE_CODE = (
+		                SELECT TEST_TYPE_CODE
+		                FROM WEEKREP_TB
+		                WHERE WR_SEQ = #{wrSeq}
+		            )
+		        ) AS TEMP_TABLE
+		    )
+		WHERE 
+		    WR_SEQ = #{wrSeq};       
+	</update>
+	
+	<insert id="insertFixResult" parameterType="weekRepReq">
+		INSERT INTO WEEKREP_RST_TB
+		(WR_SEQ, TEST_TYPE_CODE,
+		TWT, TIN, ING, DEB, HOL, RDD, RDC)
+		SELECT
+			#{wrSeq}, TEST_TYPE_CODE,
+			SUM(CASE WHEN test_state_code = 0 THEN 1 ELSE 0 END) AS twt, #-
+			SUM(CASE WHEN test_state_code = 1 THEN 1 ELSE 0 END) AS tin, #접수
+			SUM(CASE WHEN test_state_code = 2 THEN 1 ELSE 0 END) AS ing, #시험중
+			SUM(CASE WHEN test_state_code = 3 THEN 1 ELSE 0 END) AS deb, #디버깅
+			SUM(CASE WHEN test_state_code = 4 THEN 1 ELSE 0 END) AS hol, #홀딩
+			SUM(CASE WHEN test_state_code = 5 THEN 1 ELSE 0 END) AS rdd, #RD지연
+			SUM(CASE WHEN test_state_code = 21 THEN 1 ELSE 0 END) AS rdc #RD검토99%
+		FROM
+			TEST_TB
+		WHERE
+			ins_dt BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND NOW()
+		AND TEST_TYPE_CODE = #{testTypeCode}
+		GROUP BY
+			TEST_TYPE_CODE
+	</insert>
+	
+	<insert id="insertFixSub"  parameterType="weekRepReq">
+		INSERT INTO WEEKREP_SUB_TB
+		(WR_SEQ, TEST_TYPE_CODE, WEEK, 
+		IN_CNT, IN_AMT, RD_CNT, RDC_CNT, END_CNT, END_AMT, CEL_CNT)
+		<![CDATA[		
+		SELECT 
+			#{wrSeq},
+			TEST_ITEM_TB.TEST_TYPE_CODE,
+			week_numbers.week AS week, -- 최근 4주 (1, 2, 3, 4)
+		    SUM(CASE WHEN STATE_CODE = 1 THEN 1 ELSE 0 END) AS inCnt, -- 시험접수
+		    TRUNCATE(SUM(IF (STATE_CODE = 1, NET_SALES, 0)) / 10000, 0) inAmt,
+		    SUM(CASE WHEN STATE_CODE = 6 THEN 1 ELSE 0 END) AS rdCnt, -- RD작성완료
+		    SUM(CASE WHEN STATE_CODE = 7 THEN 1 ELSE 0 END) AS rdcCnt, -- RD검토완료
+		    SUM(CASE WHEN STATE_CODE = 18 THEN 1 ELSE 0 END) AS endCnt, -- 프로젝트완료
+		    TRUNCATE(SUM(IF (STATE_CODE = 18, NET_SALES, 0)) / 10000, 0) endAmt,
+		    SUM(CASE WHEN STATE_CODE = 19 THEN 1 ELSE 0 END) AS celCnt -- 시험취소
+		FROM (
+			    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 1) AS year_week_number
+			    UNION ALL
+			    SELECT 2 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 2 WEEK), 1) AS year_week_number
+			    UNION ALL
+			    SELECT 3 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 3 WEEK), 1) AS year_week_number
+			    UNION ALL
+			    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 1) AS year_week_number
+			) AS week_numbers
+			LEFT JOIN TEST_STATE_TB
+			    ON YEARWEEK(TEST_STATE_TB.INS_DT, 1) = week_numbers.year_week_number
+			INNER JOIN TEST_TB
+			    ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
+			INNER JOIN TEST_ITEM_TB
+			    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			    AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL
+			WHERE 1=1
+			    AND TEST_ITEM_TB.TEST_TYPE_CODE = #{testTypeCode}
+			GROUP BY 
+			    week_numbers.week, 
+			    TEST_ITEM_TB.TEST_TYPE_CODE
+		]]>
+	</insert>
+	
+	<select id="selectListCnt" resultType="int" parameterType="comParam">
+		SELECT COUNT(1)
+	    FROM 
+	        WEEKREP_TB
+	    WHERE STATE != 'D'
+    	
+<if test="searchVO != null">
+      <foreach collection="searchVO" item="item" separator="">
+     
+      	<choose>
+      	<!-- 2	보고자 -->
+		<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+      	<!-- 23	시험부 -->
+  		<when test="item.searchCode == 23 and item.searchWords != null">AND TEST_TYPE_CODE IN
+  			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+  		</when>
+		<!-- 20	최종보고일 -->
+       	<when test="item.searchCode == 20">AND DATE_FORMAT(UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+		</choose>
+		
+	</foreach>
+</if>
+	</select>
+	
+	<select id="selectList" resultType="weekRep" parameterType="comParam">
+		SELECT 
+			@rownum:=@rownum+1 as no,
+			lst.*
+		FROM (
+		    SELECT 
+		        WR_SEQ,
+		        TEST_TYPE_CODE,
+		        FN_CODE_NAME(TEST_TYPE_CODE, 'WT') TEST_TYPE,
+		        NTT_SJ,
+			    (CASE 
+			        WHEN ATCH_FILE_ID IS NULL THEN 0 
+			        ELSE (SELECT IF(COUNT(1) > 0, 1, 0) 
+			              FROM FILE_DETAIL_TB sub 
+			              WHERE sub.ATCH_FILE_ID = WEEKREP_TB.ATCH_FILE_ID 
+			              AND sub.STATE != 'D') 
+			     END) AS attchYn,
+		        WR_CNT,
+		        IFNULL (FN_MEM_NAME (INS_MEM_ID), '') insName,
+		        DATE_FORMAT(INS_DT, '%Y-%m-%d') insDtStr,
+		        FN_POS_NAME(INS_MEM_ID) insPos,
+		        IF (WR_CNT IS NULL, '-', DATE_FORMAT(UDT_DT, '%Y-%m-%d')) udtDtStr,
+		        STATE
+		    FROM 
+		        WEEKREP_TB
+		        
+		        INNER JOIN (SELECT @rownum:=0) r
+		    WHERE STATE != 'D'
+	    	
+	<if test="searchVO != null">
+	      <foreach collection="searchVO" item="item" separator="">
+	     
+	      	<choose>
+	      	<!-- 2	보고자 -->
+			<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+	      	<!-- 23	시험부 -->
+	  		<when test="item.searchCode == 23 and item.searchWords != null">AND TEST_TYPE_CODE IN
+	  			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+	  		</when>
+			<!-- 20	최종보고일 -->
+	       	<when test="item.searchCode == 20">AND DATE_FORMAT(UDT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			</choose>
+			
+		</foreach>
+	</if>
+			ORDER BY WR_SEQ
+		) lst
+	    ORDER BY NO DESC
+		LIMIT #{pageUnit} OFFSET #{firstIndex};
+	</select>
+	
+	<update id="delete" parameterType="weekRepReq">
+		UPDATE WEEKREP_TB
+		SET 
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT = NOW(),
+		    STATE = 'D'
+		WHERE 
+		    WR_SEQ = #{wrSeq};       
+	</update>
+</mapper>
