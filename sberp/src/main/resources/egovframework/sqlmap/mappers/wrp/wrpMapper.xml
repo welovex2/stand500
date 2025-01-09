@@ -37,16 +37,16 @@
 		    TRUNCATE(SUM(IF (STATE_CODE = 18, NET_SALES, 0)) / 10000, 0) endAmt,
 		    SUM(CASE WHEN STATE_CODE = 19 THEN 1 ELSE 0 END) AS celCnt -- 시험취소
 		FROM (
-		    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 1) AS year_week_number
+		    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 0) AS year_week_number
 		    UNION ALL
-		    SELECT 2 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 2 WEEK), 1) AS year_week_number
+		    SELECT 2 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 2 WEEK), 0) AS year_week_number
 		    UNION ALL
-		    SELECT 3 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 3 WEEK), 1) AS year_week_number
+		    SELECT 3 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 3 WEEK), 0) AS year_week_number
 		    UNION ALL
-		    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 1) AS year_week_number
+		    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 0) AS year_week_number
 		) AS week_numbers
 		LEFT JOIN TEST_STATE_TB
-		    ON YEARWEEK(TEST_STATE_TB.INS_DT, 1) = week_numbers.year_week_number
+		    ON YEARWEEK(TEST_STATE_TB.INS_DT, 0) = week_numbers.year_week_number
 		INNER JOIN TEST_TB
 		    ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
 		INNER JOIN TEST_ITEM_TB
@@ -107,7 +107,7 @@
             ON WEEKREP_SUB_TB.WR_SEQ = WEEKREP_TB.WR_SEQ
             
 		WHERE WEEKREP_TB.WR_SEQ = #{wrSeq}
-		AND WEEKREP_TB.TEST_TYPE_CODE = #{testTypeCode};
+		AND WEEKREP_SUB_TB.TEST_TYPE_CODE = #{testTypeCode};
 	</select>
 	
 	<select id="getFeedback" parameterType="String" resultType="String" >
@@ -240,16 +240,16 @@
 		    TRUNCATE(SUM(IF (STATE_CODE = 18, NET_SALES, 0)) / 10000, 0) endAmt,
 		    SUM(CASE WHEN STATE_CODE = 19 THEN 1 ELSE 0 END) AS celCnt -- 시험취소
 		FROM (
-			    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 1) AS year_week_number
+			    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 0) AS year_week_number
 			    UNION ALL
-			    SELECT 2 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 2 WEEK), 1) AS year_week_number
+			    SELECT 2 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 2 WEEK), 0) AS year_week_number
 			    UNION ALL
-			    SELECT 3 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 3 WEEK), 1) AS year_week_number
+			    SELECT 3 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 3 WEEK), 0) AS year_week_number
 			    UNION ALL
-			    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 1) AS year_week_number
+			    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 0) AS year_week_number
 			) AS week_numbers
 			LEFT JOIN TEST_STATE_TB
-			    ON YEARWEEK(TEST_STATE_TB.INS_DT, 1) = week_numbers.year_week_number
+			    ON YEARWEEK(TEST_STATE_TB.INS_DT, 0) = week_numbers.year_week_number
 			INNER JOIN TEST_TB
 			    ON TEST_TB.TEST_SEQ = TEST_STATE_TB.TEST_SEQ
 			INNER JOIN TEST_ITEM_TB
