@@ -88,6 +88,7 @@ public class SbkServiceImpl implements SbkService {
 	public List<Res> selectList(ComParam param) throws Exception {
 		List<SbkDTO.Res> list = sbkMapper.selectList(param);
 		
+		// 세부 아이템 정렬
 	    for (Res item : list) {
 	      
 	      if (item.getTestItemCnt() > 1) {
@@ -99,6 +100,11 @@ public class SbkServiceImpl implements SbkService {
 	          item.setItems(subList);
 	        }
 	      }
+	    }
+	    
+	    // 번호 매기기
+	    for (int i=0; i<list.size(); i++) {
+	      list.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
 	    }
 	    
 		return list;

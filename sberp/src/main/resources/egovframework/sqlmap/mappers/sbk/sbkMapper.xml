@@ -950,7 +950,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 	
 		<include refid="whereList"/>
         
-        GROUP BY SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ, SBK_TB.REVISION
+        GROUP BY SBK_TB.INS_DT, SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.TYPE, SBK_TB.REVISION
         
         ) cnt
 	</select>
@@ -1005,11 +1005,11 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
         </collection>
 	</resultMap>
 	<select id="selectList" parameterType="comParam" resultMap="sbkMap">
-	set @ROWNUM:=0;
-	SELECT 
-		@ROWNUM:=@ROWNUM+1 AS NO,
-		lst.*
-	FROM (
+<!-- 	set @ROWNUM:=0; -->
+<!-- 	SELECT  -->
+<!-- 		@ROWNUM:=@ROWNUM+1 AS NO, -->
+<!-- 		lst.* -->
+<!-- 	FROM ( -->
 		
 		SELECT 
 		
@@ -1088,11 +1088,11 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 	
 		<include refid="whereList"/>
 		
-		GROUP BY SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ, SBK_TB.REVISION
-      	ORDER BY SBK_TB.INS_DT, SBK_TB.REVISION
+		GROUP BY SBK_TB.INS_DT, SBK_TB.SBK_YM, SBK_TB.SBK_SEQ, SBK_TB.TYPE, SBK_TB.REVISION
+		ORDER BY SBK_TB.INS_DT DESC, SBK_TB.SBK_YM DESC, SBK_TB.SBK_SEQ DESC, SBK_TB.TYPE DESC, SBK_TB.REVISION DESC
         
-        ) lst
-	    ORDER BY NO DESC
+<!--         ) lst -->
+<!-- 	    ORDER BY NO DESC -->
 	    
         LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
