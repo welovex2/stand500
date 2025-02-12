@@ -95,7 +95,6 @@
 		<foreach collection="macList" item="item" separator=";">
 		INSERT INTO RAW_MAC_TB
 		(
-			RAW_MAC_SEQ,
 			MACHINE_TYPE,
 			RAW_SEQ,
 			MACHINE_SEQ,
@@ -104,7 +103,6 @@
 		)
 		VALUES
 		(
-			(SELECT IFNULL(MAX(RAW_MAC_SEQ) + 1, 1) FROM RAW_MAC_TB sub),
 			#{machineType},
 			#{rawSeq},
 			#{item.machineSeq},
