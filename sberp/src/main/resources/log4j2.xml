@@ -7,14 +7,14 @@
         </Console>
         
         <!-- 쿼리로그 -->
-        <RollingFile name="FILE_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/dailyLog.log"
-        						 filePattern="logs/${date:yyyy}/${date:MM}/dailyLog_%d{yyyyMMdd}-%i.log">
-	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-			<Policies>
-				<SizeBasedTriggeringPolicy size="30MB" /> <!-- 30MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
-				<TimeBasedTriggeringPolicy interval="1" /><!-- 일별 로그 파일 생성-->
-			</Policies>
-   		</RollingFile>
+<!--         <RollingFile name="FILE_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/dailyLog.log" -->
+<!--         						 filePattern="logs/${date:yyyy}/${date:MM}/dailyLog_%d{yyyyMMdd}-%i.log"> -->
+<!-- 	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/> -->
+<!-- 			<Policies> -->
+<!-- 				<SizeBasedTriggeringPolicy size="30MB" /> 30MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
+<!-- 				<TimeBasedTriggeringPolicy interval="1" />일별 로그 파일 생성 -->
+<!-- 			</Policies> -->
+<!--    		</RollingFile> -->
    		
    		<!-- 에러로그 -->
         <RollingFile name="ERROR_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/errorLog.log"
@@ -27,14 +27,14 @@
    		</RollingFile>
    		
    		<!-- 로데이터 로그 -->
-   		<RollingFile name="RD_MARKER_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/rdLog.log"
-        						 filePattern="logs/${date:yyyy}/${date:MM}/rdLog_%d{yyyyMMdd}-%i.log">
-	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-			<Policies>
-				<SizeBasedTriggeringPolicy size="30MB" /> <!-- 30MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
-				<TimeBasedTriggeringPolicy interval="1" /><!-- 일별 로그 파일 생성-->
-			</Policies>
-   		</RollingFile>
+<!--    		<RollingFile name="RD_MARKER_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/rdLog.log" -->
+<!--         						 filePattern="logs/${date:yyyy}/${date:MM}/rdLog_%d{yyyyMMdd}-%i.log"> -->
+<!-- 	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/> -->
+<!-- 			<Policies> -->
+<!-- 				<SizeBasedTriggeringPolicy size="30MB" /> 30MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링 -->
+<!-- 				<TimeBasedTriggeringPolicy interval="1" />일별 로그 파일 생성 -->
+<!-- 			</Policies> -->
+<!--    		</RollingFile> -->
    		
     </Appenders>
     
