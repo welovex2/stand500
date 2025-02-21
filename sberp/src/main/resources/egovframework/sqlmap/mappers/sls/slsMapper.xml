@@ -93,6 +93,7 @@
 			    
 			    INNER JOIN MEMBER_TB ON SLS_TB.CNFRM_ID = MEMBER_TB.ID
 			    LEFT JOIN CMPY_TB prtn ON JOB_TB.PRTN_SEQ = prtn.CMPY_SEQ
+			    LEFT JOIN CMPY_TB dirt ON JOB_TB.DIRT_SEQ = dirt.CMPY_SEQ
 			    
 			WHERE
 			    1 = 1
@@ -370,7 +371,7 @@
 					<!-- 6	제품명 -->
 					<when test="item.searchCode == 6">AND IFNULL(JOB_TB.PRDCT_NAME, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 12	회사명 -->
-					<when test="item.searchCode == 12">AND CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END LIKE CONCAT('%',#{item.searchWord},'%')</when>
+					<when test="item.searchCode == 12">AND IFNULL (CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END, '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 16	매출확정일 -->
 					<when test="item.searchCode == 16">AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 19	매출확정자 -->
@@ -434,7 +435,7 @@
 					<!-- 6	제품명 -->
 					<when test="item.searchCode == 6">AND 1 != 1</when>
 					<!-- 12	회사명 -->
-					<when test="item.searchCode == 12">AND 1 != 1</when>
+					<when test="item.searchCode == 12">AND CASE IFNULL(JOB_TB.DIRT_SEQ, 0) WHEN 0 THEN JOB_TB.CMPY_NAME ELSE dirt.CMPY_NAME END LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 16	매출확정일 -->
 					<when test="item.searchCode == 16">AND DATE_FORMAT(SLS_TB.CNFRM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 19	매출확정자 -->
