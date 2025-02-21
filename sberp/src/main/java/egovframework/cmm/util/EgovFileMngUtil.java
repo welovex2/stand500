@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
@@ -60,6 +61,12 @@ public class EgovFileMngUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EgovFileMngUtil.class);
 
+    // 차단할 확장자 리스트
+    private static final List<String> BLOCKED_EXTENSIONS = Arrays.asList(
+        "exe", "dll", "js", "php", "jsp", "vbs", "bat", "sh", "jar",
+        "com", "cmd", "sys", "scr", "msi", "iso", "img", "vhd", "dmg"
+    );
+    
     /**
      * 첨부파일에 대한 목록 정보를 취득한다.
      *
@@ -181,7 +188,6 @@ public class EgovFileMngUtil {
     	                
     	                _size = thumbnailFile.length();
     	                
-    					System.out.println("리사이즈완료");
 	                }
 			    }
 		    }
@@ -341,6 +347,11 @@ public class EgovFileMngUtil {
 	    String newName = EgovStringUtil.getTimeStamp() + fileKey;
 	    long _size = file.getSize();
 
+        // 차단된 확장자 체크
+        if (BLOCKED_EXTENSIONS.contains(fileExt)) {
+            throw new Exception("🚨 차단된 확장자입니다: " + fileExt);
+        }
+        
 	    if (!"".equals(orginFileName)) {
 			filePath = storePathString + File.separator + newName;
 			file.transferTo(new File(filePath));

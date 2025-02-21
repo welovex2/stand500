@@ -114,6 +114,39 @@
 		</foreach>
 	</insert>
 	
+	<insert id="insertTwoMac">
+		<foreach collection="macList" item="item" separator=";">
+		INSERT INTO RAW_MAC_TB
+		(
+			MACHINE_TYPE,
+			RAW_SEQ,
+			MACHINE_SEQ,
+			REFORM_DT,
+			USE_YN
+		)
+		VALUES
+		(
+			#{item.machineType},
+			#{rawSeq},
+			#{item.machineSeq},
+			(SELECT REFORM_DT FROM MACHINE_TB WHERE MACHINE_SEQ = #{item.machineSeq} LIMIT 1),
+			#{item.useYn}
+		)
+		ON DUPLICATE KEY UPDATE
+			USE_YN = #{item.useYn}
+		</foreach>
+	</insert>
+	
+	<update id="updateTwoMac">
+		<foreach collection="macList" item="item" separator=";">
+		UPDATE RAW_MAC_TB
+		SET
+			USE_YN = #{item.useYn}
+		WHERE RAW_MAC_SEQ = #{item.rawMacSeq}
+		AND RAW_SEQ = #{rawSeq}
+		</foreach>
+	</update>
+	
 	<select id="macList" resultType="egovMap">
 		SELECT
 		    RAW_MAC_SEQ,
@@ -125,7 +158,7 @@
 		    MNFCT_CMPNY,
 		    MNFCT_SERIAL,
 		    IFNULL (DATE_FORMAT(RAW_MAC_TB.REFORM_DT, '%Y-%m-%d'), '-') reformDtStr,
-		    IF (REFORM_PERIOD = 0, '-', CONCAT (REFORM_PERIOD, '년')) REFORM_PERIOD,
+		    IFNULL (FN_CODE_NAME(REFORM_PERIOD, 'MY'), '-') REFORM_PERIOD,
 		    USE_YN
 		FROM
 		    RAW_MAC_TB
@@ -140,7 +173,7 @@
 			<if test="machineType == 'CB'">and CEB_YN = 1</if>
 		</if>
 		<if test="machineType == 'RA' or machineType == 'RB'">
-			AND MACHINE_TYPE = 'RE'
+			AND (MACHINE_TYPE = 'RE' OR MACHINE_TYPE = #{machineType})
 			<if test="machineType == 'RA'">and REA_YN = 1</if>
 			<if test="machineType == 'RB'">and REB_YN = 1</if>
 		</if>
@@ -175,26 +208,26 @@
 		    MNFCT_CMPNY,
 		    MNFCT_SERIAL,
 		    IFNULL (DATE_FORMAT(REFORM_DT, '%Y-%m-%d'), '-') reformDtStr,
-		    CONCAT (REFORM_PERIOD, '년') REFORM_PERIOD,
+		    IFNULL (FN_CODE_NAME(REFORM_PERIOD, 'MY'), '0년') REFORM_PERIOD,
 		    false USE_YN
 		FROM
 		    MACHINE_TB
 		WHERE
 		    1 = 1
 		<choose>
-			<when test="machineType == 'ED'">AND ESD_YN = 1 AND ESD_USE_YN = 1</when>
-			<when test="machineType == 'RS'">AND RS_YN = 1 AND RS_USE_YN = 1</when>
-			<when test="machineType == 'ET'">AND EFT_YN = 1 AND EFT_USE_YN = 1</when>
-			<when test="machineType == 'SG'">AND SURGE_YN = 1 AND SURGE_USE_YN = 1</when>
-			<when test="machineType == 'CS'">AND CS_YN = 1 AND CS_USE_YN = 1</when>
-			<when test="machineType == 'MF'">AND MFLD_YN = 1 AND MFLD_USE_YN = 1</when>
-			<when test="machineType == 'VD'">AND VDIP_YN = 1 AND VDIP_USE_YN = 1</when>
-			<when test="machineType == 'CA'">AND CEA_YN = 1 AND CEA_USE_YN = 1</when>
-			<when test="machineType == 'CB'">AND CEB_YN = 1 AND CEB_USE_YN = 1</when>
-			<when test="machineType == 'RA'">AND REA_YN = 1 AND REA_USE_YN = 1</when>
-			<when test="machineType == 'RB'">AND REB_YN = 1 AND REB_USE_YN = 1</when>
-			<when test="machineType == 'DP'">AND DP_YN = 1 AND DP_USE_YN = 1</when>
-			<when test="machineType == 'CK'">AND CLK_YN = 1 AND CLK_USE_YN = 1</when>
+			<when test="machineType == 'ED'">AND ESD_YN = 1</when>
+			<when test="machineType == 'RS'">AND RS_YN = 1</when>
+			<when test="machineType == 'ET'">AND EFT_YN = 1</when>
+			<when test="machineType == 'SG'">AND SURGE_YN = 1</when>
+			<when test="machineType == 'CS'">AND CS_YN = 1</when>
+			<when test="machineType == 'MF'">AND MFLD_YN = 1</when>
+			<when test="machineType == 'VD'">AND VDIP_YN = 1</when>
+			<when test="machineType == 'CA'">AND CEA_YN = 1</when>
+			<when test="machineType == 'CB'">AND CEB_YN = 1</when>
+			<when test="machineType == 'RA'">AND REA_YN = 1</when>
+			<when test="machineType == 'RB'">AND REB_YN = 1</when>
+			<when test="machineType == 'DP'">AND DP_YN = 1</when>
+			<when test="machineType == 'CK'">AND CLK_YN = 1</when>
 		</choose>
 		ORDER BY 
 		<choose>
