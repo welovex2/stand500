@@ -624,7 +624,9 @@ public class RawController {
     // 규격 3235은 제외
     if (!StringUtils.isEmpty(req.getHz1ResultCode()) && !StringUtils.isEmpty(req.getHz2ResultCode())) {
       
-      req.setMacType("RE");
+      // #50 REA, REB가 한페이지에 있으므로, Front에서 MacType 받아오기
+      //req.setMacType("RE");
+      
     } else {
       if (!StringUtils.isEmpty(req.getHz1ResultCode())) req.setMacType("RE1");
       if (!StringUtils.isEmpty(req.getHz2ResultCode())) req.setMacType("RE2");

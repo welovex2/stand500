@@ -23,12 +23,7 @@
 			SBK_NO,
 			SBK_ID,
 			TEST_SEQ,
-			APLCN,
-			EQPMN,
-			MODEL,
 			MNFCT_SERIAL,
-			MNFCT_CMPNY,
-			MNFCT_CNTRY,
 			<if test="rcptDt != null and rcptDt != ''">RCPT_DT,</if>
 			<if test="testSDt != null and testSDt != ''">TEST_S_DT,</if>
 			<if test="testEDt != null and testEDt != ''">TEST_E_DT,</if>
@@ -100,12 +95,7 @@
 			(SELECT IFNULL (MAX(SBK_NO)+1,1) FROM RAW_TB sub WHERE sub.SBK_ID = #{sbkId}),
 			#{sbkId},
 			#{testSeq},
-			#{aplcn},
-			#{eqpmn},
-			#{model},
 			#{mnfctSerial},
-			#{mnfctCmpny},
-			#{mnfctCntry},
 			<if test="rcptDt != null and rcptDt != ''">#{rcptDt},</if>
 			<if test="testSDt != null and testSDt != ''">#{testSDt},</if>
 			<if test="testEDt != null and testEDt != ''">#{testEDt},</if>
@@ -409,12 +399,7 @@
 	<update id="update" parameterType="rawData">
 		UPDATE RAW_TB
 		SET 
-			APLCN = #{aplcn},
-			EQPMN = #{eqpmn},
-			MODEL = #{model},
 			MNFCT_SERIAL = #{mnfctSerial},
-			MNFCT_CMPNY = #{mnfctCmpny},
-			MNFCT_CNTRY = #{mnfctCntry},
 			<if test="rcptDt != null and rcptDt != ''">RCPT_DT = #{rcptDt},</if>
 			<if test="testSDt != null and testSDt != ''">TEST_S_DT = #{testSDt},</if>
 			<if test="testEDt != null and testEDt != ''">TEST_E_DT = #{testEDt},</if>

@@ -149,4 +149,8 @@ public interface MethodMapper {
   public List<ImgDTO> imgList(int rawSeq);
 
   public boolean insertImg(ImgDTO req);
+
+  public void insertTwoMac(@Param("rawSeq") int rawSeq, @Param("macList") List<RawMac> macList);
+
+  public void updateTwoMac(@Param("rawSeq") int rawSeq, @Param("macList") List<RawMac> macList);
 }

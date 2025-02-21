@@ -263,7 +263,7 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertRe(ReDTO req) {
     boolean result = true;
-
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -271,8 +271,15 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertRe(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      
+      // 신규
+      if (req.getMacList().stream().anyMatch(mac -> mac.getRawMacSeq() == 0))
+        methodMapper.insertTwoMac(req.getRawSeq(), req.getMacList());
+      // 수정
+      else
+        methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
+    }
 
     return result;
   }
