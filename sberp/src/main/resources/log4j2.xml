@@ -35,7 +35,18 @@
 <!-- 				<TimeBasedTriggeringPolicy interval="1" />일별 로그 파일 생성 -->
 <!-- 			</Policies> -->
 <!--    		</RollingFile> -->
-   		
+
+
+   		<!-- 접근기록 로그 -->
+   		<RollingFile name="ACC_MARKER_APPENDER" fileName="logs/${date:yyyy}/${date:MM}/accLog.log"
+        						 filePattern="logs/${date:yyyy}/${date:MM}/rdLog_%d{yyyyMMdd}-%i.log">
+	       	<PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="30MB" /> 30MB 용량이 초과시 DefaultRolloverStrategy 정책만큼 넘버링
+				<TimeBasedTriggeringPolicy interval="1" />일별 로그 파일 생성
+			</Policies>
+   		</RollingFile>
+  		
     </Appenders>
     
     <Loggers>
@@ -88,6 +99,17 @@
 					<MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
 				</Filters>
 			</appender-ref>
+			<appender-ref ref="ACC_MARKER_APPENDER">
+				<Filters>
+					<MarkerFilter marker="ACC_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+				</Filters>
+			</appender-ref>
+			<!-- 콘솔에도 동일한 RD_MARKER 로그 출력 -->
+            <appender-ref ref="Console">
+                <Filters>
+                    <MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+                </Filters>
+            </appender-ref>
 		</logger>
 				
     </Loggers>
