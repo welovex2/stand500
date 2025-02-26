@@ -228,6 +228,8 @@ public class MacController {
 
     detail = macService.selectDetail(machineSeq);
 
+    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/{machineSeq}/detail.do", machineSeq);
+    
     if (detail == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;

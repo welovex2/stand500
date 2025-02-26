@@ -3,7 +3,7 @@
 <mapper namespace="egovframework.sys.service.MacMapper">
 
 	<select id="selectDetail" parameterType="int" resultType="machineDTO">
-	    SELECT MACHINE_SEQ, CONCAT('SB-', LPAD(MACHINE_SEQ, 3, '0')) AS MACHINE_CODE, FN_CODE_NAME(MGMT_DEPT, 'MD') MGMT_DEPT, 
+	    SELECT MACHINE_SEQ, CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, FN_CODE_NAME(MGMT_DEPT, 'MD') MGMT_DEPT, 
 	    	   MGMT_NO, CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) MGNT_CODE, NAME, TAG_NAME_KOR, MODEL,
 	           MNFCT_CMPNY, MNFCT_SERIAL, STNDR, RCV_DT, USE_DT, CLSF_DOM_YN, CLSF_IMP_YN, CLSF_NEW_YN, CLSF_USD_YN,
 	           PRICE, LOC, FN_GET_IMAGE(PHOTO,0) PHOTO, PHOTO ATCH_FILE_ID, SPEC, MEAS_RANGE, MEMO, CEA_YN, CEB_YN,
@@ -55,7 +55,7 @@
 		SELECT 
 			MACHINE_SEQ,
 		    (@rownum := @rownum + 1) AS NO,  -- 1부터 순차 번호 부여
-		    CONCAT('SB-', LPAD(MACHINE_SEQ, 3, '0')) AS MACHINE_CODE, 
+		    CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, 
 		    CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) AS MGNT_CODE, 
 		    NAME, 
 		    TAG_NAME_KOR, 
@@ -118,7 +118,7 @@
 			select
 				@rownum:=@rownum+1 as NO, 
 				MACHINE_SEQ,
-			    CONCAT('SB-', LPAD(MACHINE_SEQ, 3, '0')) AS MACHINE_CODE, 
+			    CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, 
 			    CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) AS MGMT_CODE, 
 			    CEA_YN,
                 CEB_YN,

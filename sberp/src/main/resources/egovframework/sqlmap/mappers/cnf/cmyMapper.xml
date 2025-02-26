@@ -46,7 +46,7 @@
 					CMPY_TB.CMPY_NAME,
 					ifnull (FN_CODE_NAME (type_code, 'PK'), '') partnerType,
 					ifnull (FN_CODE_NAME (type_code, 'ST'), '') directType,
-					ifnull (FN_CODE_NAME (cntry_code, 'SN'), '') cntry,
+					ifnull (FN_CODE_NAME (cntry_code, 'PC'), '') cntry,
 					FN_GET_PHONE_FORMAT (cmpy_phone) cmpy_phone,
 					ifnull (memo, '-') memo,
 					ifnull (FN_MEM_NAME (CMPY_TB.UDT_MEM_ID), '') ins_name
