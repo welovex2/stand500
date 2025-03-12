@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
@@ -273,12 +274,22 @@ public class RawServiceImpl implements RawService {
     // 측정설비
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       
-      // 신규
-      if (req.getMacList().stream().anyMatch(mac -> mac.getRawMacSeq() == 0))
-        methodMapper.insertTwoMac(req.getRawSeq(), req.getMacList());
-      // 수정
-      else
-        methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
+      // 규격 3235은 예외처리
+      if (!StringUtils.isEmpty(req.getHz1ResultCode()) && !StringUtils.isEmpty(req.getHz2ResultCode())) {
+        
+        // 신규
+        if (req.getMacList().stream().anyMatch(mac -> mac.getRawMacSeq() == 0))
+          methodMapper.insertTwoMac(req.getRawSeq(), req.getMacList());
+        // 수정
+        else
+          methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
+        
+      } else {
+        
+        methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+        
+      }
+      
     }
 
     return result;
