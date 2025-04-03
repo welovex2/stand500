@@ -78,4 +78,10 @@ public interface LoginMapper {
    * @return
    */
   public List<PowerDTO> getAuthList(@Param("authCode") String authCode);
+
+  /**
+   * 로그인 기록 남기기
+   * @param vo
+   */
+  public void insertLoginHistory(LoginVO vo);
 }

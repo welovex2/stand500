@@ -64,13 +64,13 @@ public class LoginController {
       mem.put("jykim", "1055");
       mem.put("allo", "1382");
       
-      String enpassword = EgovFileScrty.encryptPassword("aa", "a");
-      System.out.println("a>> " + enpassword);
+      String enpassword = EgovFileScrty.encryptPassword("zz", "z");
+      System.out.println("z>> " + enpassword);
       
-      for ( String key : mem.keySet() ) {
-        enpassword = EgovFileScrty.encryptPassword(mem.get(key), key);
-        System.out.println(key+">> " + enpassword);
-      }
+//      for ( String key : mem.keySet() ) {
+//        enpassword = EgovFileScrty.encryptPassword(mem.get(key), key);
+//        System.out.println(key+">> " + enpassword);
+//      }
 
 
     } catch (Exception e) {
@@ -124,6 +124,12 @@ public class LoginController {
 
     boolean loginPolicyYn = true;
 
+//    if (!"welovex2".equals(loginVO.getId())) {
+//      result = false;
+//      BasicResponse res = BasicResponse.builder().result(result).message("BACK-작업중").build();
+//
+//      return res;
+//    }
     
     if (resultVO != null && resultVO.getId() != null && !resultVO.getId().equals("")
         && resultVO.getLockYn() == 0) {
@@ -148,6 +154,7 @@ public class LoginController {
         resultVO.setPower(resultAuth);
       }
       
+      resultVO.setPassword("");
       request.getSession().setAttribute("LoginVO", resultVO);
       msg = ResponseMessage.LOGIN_SUCCESS;
       result = true;

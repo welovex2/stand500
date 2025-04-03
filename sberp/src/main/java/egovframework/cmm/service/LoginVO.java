@@ -145,4 +145,8 @@ public class LoginVO {
   @ApiModelProperty(value = "권한", example = "1", hidden = true)
   @Column
   private List<PowerDTO> power;
+  
+  @ApiModelProperty(value = "로그인 성공여부", example = "1", hidden = true)
+  @Column
+  private String successYn;
 }

@@ -12,6 +12,7 @@ import egovframework.cmm.util.EgovStringUtil;
 import egovframework.cnf.service.Member;
 import egovframework.rte.fdl.cmmn.EgovAbstractServiceImpl;
 import egovframework.sys.dto.PowerDTO;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 일반 로그인을 처리하는 비즈니스 구현 클래스
@@ -32,6 +33,7 @@ import egovframework.sys.dto.PowerDTO;
  *      </pre>
  */
 @Service("loginService")
+@Slf4j
 public class EgovLoginServiceImpl extends EgovAbstractServiceImpl implements EgovLoginService {
 
   @Autowired
@@ -47,6 +49,8 @@ public class EgovLoginServiceImpl extends EgovAbstractServiceImpl implements Ego
   @Override
   public LoginVO actionLogin(LoginVO vo) throws Exception {
 
+    boolean isSuccess = true;
+    
     // 1. 입력한 비밀번호를 암호화한다.
     String enpassword = EgovFileScrty.encryptPassword(vo.getPassword(), vo.getId());
     vo.setPassword(enpassword);
@@ -58,13 +62,23 @@ public class EgovLoginServiceImpl extends EgovAbstractServiceImpl implements Ego
     if (loginVO != null && !loginVO.getId().equals("")) {
       // 4. 마지막 로그인 정보를 기록한다.
       loginMapper.updateLogin(vo);
-      return loginVO;
     } else {
       // 5. 로그인 실패시 실패횟수 기록한다.
       loginMapper.updateLoginFailCnt(vo);
       loginVO = null;
+      isSuccess = false;
     }
 
+    
+    // 4-1. 로그인 히스토리를 기록한다
+    try {
+      vo.setSuccessYn(isSuccess ? "Y" : "N");
+      loginMapper.insertLoginHistory(vo);
+    } catch (Exception e) {
+      // 예외 발생해도 로그인 자체에 영향 안 주도록 로그만 출력
+      log.error("로그인 기록 저장 실패", e);
+    }
+    
     return loginVO;
   }
 

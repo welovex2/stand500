@@ -92,6 +92,14 @@
 		AND ID = #{id}
 	</update>
 	
+	<insert id="insertLoginHistory">
+	  INSERT INTO LOGIN_HISTORY (
+	    ID, LOGIN_IP, LOGIN_DT, SUCCESS_YN
+	  ) VALUES (
+	    #{id}, #{lastIp}, NOW(), #{successYn}
+	  )
+	</insert>
+
 	<!-- 메뉴별 권한 얻기 -->
 	<select id="getAuthList" parameterType="String" resultType="powerDTO">
 		SELECT
