@@ -207,7 +207,7 @@ public class RepController {
                     else 
                       re.setMacList(rawService.macList("RE2", rawSeq));
                     
-                    if ("0".equals(re.getHz1ResultCode())) totalResult = false;
+                    if ("0".equals(re.getHz2ResultCode())) totalResult = false;
                   }
                   detail.setRe1(re);
                   break;
@@ -222,7 +222,7 @@ public class RepController {
                     else 
                       re.setMacList(rawService.macList("RE3", rawSeq));
                     
-                    if ("0".equals(re.getHz2ResultCode())) totalResult = false;
+                    if ("0".equals(re.getHz3ResultCode())) totalResult = false;
                   }
                   detail.setRe2(re);
                   break;
@@ -292,7 +292,7 @@ public class RepController {
                   if (re != null) {
                     re.setMacList(rawService.macList("RE1", rawSeq));
                     
-                    if ("0".equals(re.getHz3ResultCode())) totalResult = false;
+                    if ("0".equals(re.getHz1ResultCode())) totalResult = false;
                   }
                   detail.setRe0(re);
                   break;

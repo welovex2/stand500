@@ -9,6 +9,8 @@ import lombok.ToString;
 @ToString
 public class RegStateDTO {
 
+  private String rawId;
+  
   private int rawSeq;
   private int rawYn;
   private int ceYn;

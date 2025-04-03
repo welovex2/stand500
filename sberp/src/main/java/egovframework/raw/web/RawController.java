@@ -108,7 +108,7 @@ public class RawController {
     if (!ObjectUtils.isEmpty(rawData)) {
       detail.setRawSeq(rawData.getRawSeq());
       detail.setRawYn(1);
-      
+      detail.setRawId(rawData.getRawId());
 
       /**
        * 9814
