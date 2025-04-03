@@ -5,25 +5,39 @@
 	<select id="getDetail" parameterType="String" resultType="WeekResult">
 		SELECT
 		    TEST_TYPE_CODE,
-		    FN_CODE_NAME(TEST_TYPE_CODE, 'TT') TEST_TYPE,
+		    
+		<choose>
+			<when test="testTypeCode == 'EMC' or testTypeCode == 'MDC'">'출장' TEST_TYPE,</when>
+			<otherwise>FN_CODE_NAME(TEST_TYPE_CODE, 'TT') TEST_TYPE,</otherwise>
+		</choose>
+		    
 		    SUM(CASE WHEN test_state_code = 0 THEN 1 ELSE 0 END) AS twt, #-
 		    SUM(CASE WHEN test_state_code = 1 THEN 1 ELSE 0 END) AS tin, #접수
 		    SUM(CASE WHEN test_state_code = 2 THEN 1 ELSE 0 END) AS ing, #시험중
 		    SUM(CASE WHEN test_state_code = 3 THEN 1 ELSE 0 END) AS deb, #디버깅
 		    SUM(CASE WHEN test_state_code = 4 THEN 1 ELSE 0 END) AS hol, #홀딩
 		    SUM(CASE WHEN test_state_code = 5 THEN 1 ELSE 0 END) AS rdd, #RD지연
-		    SUM(CASE WHEN test_state_code = 21 THEN 1 ELSE 0 END) AS rdc #RD검토99%
+		    SUM(CASE WHEN test_state_code = 11 THEN 1 ELSE 0 END) AS rdc #RD검토99% - 성적서 DR
 		FROM
 		    TEST_TB
+		    
+		LEFT JOIN TEST_MNGR_TB mngr1
+            ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+            
 		WHERE
-		    ins_dt BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND NOW()
-		AND TEST_TYPE_CODE = #{testTypeCode}
+		    TEST_TB.ins_dt BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND NOW()
+		    
+		<choose>
+			<when test="testTypeCode == 'EMC'">AND TEST_TYPE_CODE = 'EM' AND mngr1.TEST_MNG_ID = 'fa815'</when>
+			<when test="testTypeCode == 'MDC'">AND TEST_TYPE_CODE = 'MD' AND mngr1.TEST_MNG_ID = 'leeyp'</when>
+			<otherwise>AND TEST_TYPE_CODE = #{testTypeCode}</otherwise>
+		</choose>
+		
 		GROUP BY
 		    TEST_TYPE_CODE
 	</select>
 	
 	<select id="getWeekList" parameterType="String" resultType="weekRepSub">
-		<![CDATA[
 		SELECT 
 		    TEST_ITEM_TB.TEST_TYPE_CODE,
 		    FN_CODE_NAME(TEST_ITEM_TB.TEST_TYPE_CODE, 'TT') TEST_TYPE,
@@ -31,11 +45,12 @@
 		    WEEK(TEST_STATE_TB.INS_DT, 1) AS week_number, -- 주차 (ISO 주차 기준)
 		    SUM(CASE WHEN STATE_CODE = 1 THEN 1 ELSE 0 END) AS inCnt, -- 시험접수
 		    TRUNCATE(SUM(IF (STATE_CODE = 1, NET_SALES, 0)) / 10000, 0) inAmt,
-		    SUM(CASE WHEN STATE_CODE = 6 THEN 1 ELSE 0 END) AS rdCnt, -- RD작성완료
-		    SUM(CASE WHEN STATE_CODE = 7 THEN 1 ELSE 0 END) AS rdcCnt, -- RD검토완료
+		    SUM(CASE WHEN STATE_CODE = 5 THEN 1 ELSE 0 END) AS rdCnt, -- RD작성완료 - RD지연
+		    SUM(CASE WHEN STATE_CODE = 8 THEN 1 ELSE 0 END) AS rdcCnt, -- RD검토완료 - 성적서 작성중
 		    SUM(CASE WHEN STATE_CODE = 18 THEN 1 ELSE 0 END) AS endCnt, -- 프로젝트완료
 		    TRUNCATE(SUM(IF (STATE_CODE = 18, NET_SALES, 0)) / 10000, 0) endAmt,
-		    SUM(CASE WHEN STATE_CODE = 19 THEN 1 ELSE 0 END) AS celCnt -- 시험취소
+		    SUM(CASE WHEN STATE_CODE = 14 THEN 1 ELSE 0 END) AS celCnt -- 시험취소 - 성적서발급완료
+		
 		FROM (
 		    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 0) AS year_week_number
 		    UNION ALL
@@ -45,6 +60,7 @@
 		    UNION ALL
 		    SELECT 4 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 4 WEEK), 0) AS year_week_number
 		) AS week_numbers
+		
 		LEFT JOIN TEST_STATE_TB
 		    ON YEARWEEK(TEST_STATE_TB.INS_DT, 0) = week_numbers.year_week_number
 		INNER JOIN TEST_TB
@@ -52,14 +68,23 @@
 		INNER JOIN TEST_ITEM_TB
 		    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
 		    AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL
+		    
+		LEFT JOIN TEST_MNGR_TB mngr1
+            ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+            
 		WHERE 1=1
-		    AND TEST_ITEM_TB.TEST_TYPE_CODE = #{testTypeCode}
+		
+		<choose>
+			<when test="testTypeCode == 'EMC'">AND TEST_ITEM_TB.TEST_TYPE_CODE = 'EM' AND mngr1.TEST_MNG_ID = 'fa815'</when>
+			<when test="testTypeCode == 'MDC'">AND TEST_ITEM_TB.TEST_TYPE_CODE = 'MD' AND mngr1.TEST_MNG_ID = 'leeyp'</when>
+			<otherwise>AND TEST_ITEM_TB.TEST_TYPE_CODE = #{testTypeCode}</otherwise>
+		</choose>
+		    
 		GROUP BY 
 		    week_numbers.week, 
 		    TEST_ITEM_TB.TEST_TYPE_CODE
 		ORDER BY 
-		    week_numbers.week ASC;
-		]]>  
+		    week_numbers.week DESC;
 	</select>
 	
 	<select id="checkReport" parameterType="int" resultType="weekRepReq">
@@ -74,7 +99,10 @@
 	<select id="getFixDetail" resultType="WeekResult">
 		SELECT
 			TEST_TYPE_CODE,
-			FN_CODE_NAME(TEST_TYPE_CODE, 'TT') TEST_TYPE,
+			CASE 
+		        WHEN TEST_TYPE_CODE IN ('EMC', 'MDC') THEN '출장'
+		        ELSE FN_CODE_NAME(TEST_TYPE_CODE, 'TT')
+		    END AS TEST_TYPE,
 		    TWT AS twt, #-
 		    TIN AS tin, #접수
 		    ING AS ing, #시험중
@@ -91,7 +119,10 @@
 	<select id="getFixWeekList" resultType="weekRepSub">
 		SELECT 
 		    WEEKREP_TB.TEST_TYPE_CODE,
-		    FN_CODE_NAME(WEEKREP_TB.TEST_TYPE_CODE, 'TT') TEST_TYPE,
+		    CASE 
+		        WHEN WEEKREP_SUB_TB.TEST_TYPE_CODE IN ('EMC', 'MDC') THEN '출장'
+		        ELSE FN_CODE_NAME(WEEKREP_SUB_TB.TEST_TYPE_CODE, 'TT')
+		    END AS TEST_TYPE,
 		    WEEK AS week,
 		    IN_CNT AS inCnt, -- 시험접수
 		    IN_AMT AS inAmt,
@@ -206,7 +237,8 @@
 		(WR_SEQ, TEST_TYPE_CODE,
 		TWT, TIN, ING, DEB, HOL, RDD, RDC)
 		SELECT
-			#{wrSeq}, TEST_TYPE_CODE,
+			#{wrSeq}, 
+			#{testTypeCode},
 			SUM(CASE WHEN test_state_code = 0 THEN 1 ELSE 0 END) AS twt, #-
 			SUM(CASE WHEN test_state_code = 1 THEN 1 ELSE 0 END) AS tin, #접수
 			SUM(CASE WHEN test_state_code = 2 THEN 1 ELSE 0 END) AS ing, #시험중
@@ -216,9 +248,18 @@
 			SUM(CASE WHEN test_state_code = 21 THEN 1 ELSE 0 END) AS rdc #RD검토99%
 		FROM
 			TEST_TB
+			
+		LEFT JOIN TEST_MNGR_TB mngr1
+            ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+            
 		WHERE
-			ins_dt BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND NOW()
-		AND TEST_TYPE_CODE = #{testTypeCode}
+			TEST_TB.ins_dt BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND NOW()
+		<choose>
+			<when test="testTypeCode == 'EMC'">AND TEST_TYPE_CODE = 'EM' AND mngr1.TEST_MNG_ID = 'fa815'</when>
+			<when test="testTypeCode == 'MDC'">AND TEST_TYPE_CODE = 'MD' AND mngr1.TEST_MNG_ID = 'leeyp'</when>
+			<otherwise>AND TEST_TYPE_CODE = #{testTypeCode}</otherwise>
+		</choose>
+		
 		GROUP BY
 			TEST_TYPE_CODE
 	</insert>
@@ -227,18 +268,17 @@
 		INSERT INTO WEEKREP_SUB_TB
 		(WR_SEQ, TEST_TYPE_CODE, WEEK, 
 		IN_CNT, IN_AMT, RD_CNT, RDC_CNT, END_CNT, END_AMT, CEL_CNT)
-		<![CDATA[		
 		SELECT 
 			#{wrSeq},
-			TEST_ITEM_TB.TEST_TYPE_CODE,
+			#{testTypeCode},
 			week_numbers.week AS week, -- 최근 4주 (1, 2, 3, 4)
 		    SUM(CASE WHEN STATE_CODE = 1 THEN 1 ELSE 0 END) AS inCnt, -- 시험접수
 		    TRUNCATE(SUM(IF (STATE_CODE = 1, NET_SALES, 0)) / 10000, 0) inAmt,
-		    SUM(CASE WHEN STATE_CODE = 6 THEN 1 ELSE 0 END) AS rdCnt, -- RD작성완료
-		    SUM(CASE WHEN STATE_CODE = 7 THEN 1 ELSE 0 END) AS rdcCnt, -- RD검토완료
+		    SUM(CASE WHEN STATE_CODE = 5 THEN 1 ELSE 0 END) AS rdCnt, -- RD작성완료 - RD지연
+		    SUM(CASE WHEN STATE_CODE = 8 THEN 1 ELSE 0 END) AS rdcCnt, -- RD검토완료 - 성적서 작성중
 		    SUM(CASE WHEN STATE_CODE = 18 THEN 1 ELSE 0 END) AS endCnt, -- 프로젝트완료
 		    TRUNCATE(SUM(IF (STATE_CODE = 18, NET_SALES, 0)) / 10000, 0) endAmt,
-		    SUM(CASE WHEN STATE_CODE = 19 THEN 1 ELSE 0 END) AS celCnt -- 시험취소
+		    SUM(CASE WHEN STATE_CODE = 14 THEN 1 ELSE 0 END) AS celCnt -- 시험취소 - 성적서발급완료
 		FROM (
 			    SELECT 1 AS week, YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 0) AS year_week_number
 			    UNION ALL
@@ -255,12 +295,19 @@
 			INNER JOIN TEST_ITEM_TB
 			    ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
 			    AND TEST_ITEM_TB.TEST_TYPE_CODE IS NOT NULL
+			    
+			LEFT JOIN TEST_MNGR_TB mngr1
+            	ON mngr1.TEST_SEQ = TEST_TB.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+            
 			WHERE 1=1
-			    AND TEST_ITEM_TB.TEST_TYPE_CODE = #{testTypeCode}
+		<choose>
+			<when test="testTypeCode == 'EMC'">AND TEST_ITEM_TB.TEST_TYPE_CODE = 'EM' AND mngr1.TEST_MNG_ID = 'fa815'</when>
+			<when test="testTypeCode == 'MDC'">AND TEST_ITEM_TB.TEST_TYPE_CODE = 'MD' AND mngr1.TEST_MNG_ID = 'leeyp'</when>
+			<otherwise>AND TEST_ITEM_TB.TEST_TYPE_CODE = #{testTypeCode}</otherwise>
+		</choose>
 			GROUP BY 
 			    week_numbers.week, 
 			    TEST_ITEM_TB.TEST_TYPE_CODE
-		]]>
 	</insert>
 	
 	<select id="selectListCnt" resultType="int" parameterType="comParam">

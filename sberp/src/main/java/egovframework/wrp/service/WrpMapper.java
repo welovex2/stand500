@@ -10,8 +10,8 @@ import egovframework.wrp.dto.WeekResultDTO.Req;
 @Mapper("WrpMapper")
 public interface WrpMapper {
 
-  WeekResult getDetail(String testTypeCode);
-  List<WeekRepSub> getWeekList(String testTypeCode);
+  WeekResult getDetail(@Param("testTypeCode") String testTypeCode);
+  List<WeekRepSub> getWeekList(@Param("testTypeCode") String testTypeCode);
   WeekResultDTO.Req checkReport(int wrSeq);
   WeekResult getFixDetail(@Param("wrSeq") int wrSeq, @Param("testTypeCode") String testTypeCode);
   List<WeekRepSub> getFixWeekList(@Param("wrSeq") int wrSeq, @Param("testTypeCode") String testTypeCode);

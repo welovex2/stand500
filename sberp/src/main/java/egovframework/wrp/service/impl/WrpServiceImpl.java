@@ -1,6 +1,7 @@
 package egovframework.wrp.service.impl;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.wrp.dto.WeekResultDTO;
 import egovframework.wrp.dto.WeekResultDTO.Req;
@@ -34,11 +36,23 @@ public class WrpServiceImpl implements WrpService {
     List<WeekResultDTO> result = new ArrayList<WeekResultDTO>();  // 화면별 데이터
     WeekResultDTO item = new WeekResultDTO(); // 부서별 데이터
     WeekResult detail = new WeekResult(); // 최근 1년 데이터
+    List<WeekRepSub> allData = new ArrayList<>(); // 합산할 데이터
+    WeekRepSub total = new WeekRepSub();    // 합산 데이터
     
     switch (testTypeCode) {
       
       case "EM" :
-      case "MD" :
+        
+        // 부서 전체인원
+        detail = wrpMapper.getDetail(testTypeCode);
+        item.setTestType(detail.getTestType());
+        item.setWeekResult(detail);
+        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        result.add(item);
+        
+        // 출장인원 별도체크
+        testTypeCode = "EMC";
+        item = new WeekResultDTO();
         detail = wrpMapper.getDetail(testTypeCode);
         item.setTestType(detail.getTestType());
         item.setWeekResult(detail);
@@ -46,12 +60,34 @@ public class WrpServiceImpl implements WrpService {
         result.add(item);
         
         break;
+        
+      case "MD" :
+        
+        // 부서 전체인원
+        detail = wrpMapper.getDetail(testTypeCode);
+        item.setTestType(detail.getTestType());
+        item.setWeekResult(detail);
+        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        result.add(item);
+        
+        // 출장인원 별도체크
+        testTypeCode = "MDC";
+        item = new WeekResultDTO();
+        detail = wrpMapper.getDetail(testTypeCode);
+        item.setTestType(detail.getTestType());
+        item.setWeekResult(detail);
+        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        result.add(item);
+        
+        break;
+        
       case "RS" :
         testTypeCode = "RF";
         detail = wrpMapper.getDetail(testTypeCode);
         item.setTestType(detail.getTestType());
         item.setWeekResult(detail);
-        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        List<WeekRepSub> rsList = makeFourWeek(wrpMapper.getWeekList(testTypeCode));
+        item.setWeekRepSubList(rsList);
         result.add(item);
         
         testTypeCode = "SR";
@@ -59,7 +95,31 @@ public class WrpServiceImpl implements WrpService {
         detail = wrpMapper.getDetail(testTypeCode);
         item.setTestType(detail.getTestType());
         item.setWeekResult(detail);
-        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        List<WeekRepSub> srList = makeFourWeek(wrpMapper.getWeekList(testTypeCode));
+        item.setWeekRepSubList(srList);
+        result.add(item);
+        
+        // 합계용: testTypeCode = "TT"
+        item = new WeekResultDTO();
+        item.setTestType("TT");
+        
+        allData = new ArrayList<>();
+        allData.addAll(rsList);
+        allData.addAll(srList);
+        
+        // 스트림으로 누적합
+        total = new WeekRepSub();
+        for (WeekRepSub w : allData) {
+          total.setInCnt(total.getInCnt() + w.getInCnt());
+          total.setInAmt(total.getInAmt() + w.getInAmt());
+          total.setRdCnt(total.getRdCnt() + w.getRdCnt());
+          total.setRdcCnt(total.getRdcCnt() + w.getRdcCnt());
+          total.setEndCnt(total.getEndCnt() + w.getEndCnt());
+          total.setEndAmt(total.getEndAmt() + w.getEndAmt());
+          total.setCelCnt(total.getCelCnt() + w.getCelCnt());
+        }
+        
+        item.setWeekRepSubList(Collections.singletonList(total));
         result.add(item);
         
         break;
@@ -69,7 +129,8 @@ public class WrpServiceImpl implements WrpService {
         detail = wrpMapper.getDetail(testTypeCode);
         item.setTestType(detail.getTestType());
         item.setWeekResult(detail);
-        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        List<WeekRepSub> sfList = makeFourWeek(wrpMapper.getWeekList(testTypeCode));
+        item.setWeekRepSubList(sfList);
         result.add(item);
         
         testTypeCode = "NS";
@@ -77,7 +138,31 @@ public class WrpServiceImpl implements WrpService {
         detail = wrpMapper.getDetail(testTypeCode);
         item.setTestType(detail.getTestType());
         item.setWeekResult(detail);
-        item.setWeekRepSubList(makeFourWeek(wrpMapper.getWeekList(testTypeCode)));
+        List<WeekRepSub> nsList = makeFourWeek(wrpMapper.getWeekList(testTypeCode));
+        item.setWeekRepSubList(nsList);
+        result.add(item);
+        
+        // 합계용: testTypeCode = "TT"
+        item = new WeekResultDTO();
+        item.setTestType("TT");
+        
+        allData = new ArrayList<>();
+        allData.addAll(sfList);
+        allData.addAll(nsList);
+        
+        // 스트림으로 누적합
+        total = new WeekRepSub();
+        for (WeekRepSub w : allData) {
+          total.setInCnt(total.getInCnt() + w.getInCnt());
+          total.setInAmt(total.getInAmt() + w.getInAmt());
+          total.setRdCnt(total.getRdCnt() + w.getRdCnt());
+          total.setRdcCnt(total.getRdcCnt() + w.getRdcCnt());
+          total.setEndCnt(total.getEndCnt() + w.getEndCnt());
+          total.setEndAmt(total.getEndAmt() + w.getEndAmt());
+          total.setCelCnt(total.getCelCnt() + w.getCelCnt());
+        }
+        
+        item.setWeekRepSubList(Collections.singletonList(total));
         result.add(item);
         
         break;
@@ -112,8 +197,25 @@ public class WrpServiceImpl implements WrpService {
     }
     
     // week 기준으로 정렬
-    list.sort(Comparator.comparingInt(WeekRepSub::getWeek).reversed()); // 내림차순 정렬
+    list.sort(Comparator.comparingInt(WeekRepSub::getWeek)); // 오름차순 정렬
 
+    // 합계 계산 (stream + reducing)
+    WeekRepSub sumItem = list.stream().reduce(new WeekRepSub(), (acc, cur) -> {
+        acc.setInCnt(acc.getInCnt() + cur.getInCnt());
+        acc.setInAmt(acc.getInAmt() + cur.getInAmt());
+        acc.setRdCnt(acc.getRdCnt() + cur.getRdCnt());
+        acc.setRdcCnt(acc.getRdcCnt() + cur.getRdcCnt());
+        acc.setEndCnt(acc.getEndCnt() + cur.getEndCnt());
+        acc.setEndAmt(acc.getEndAmt() + cur.getEndAmt());
+        acc.setCelCnt(acc.getCelCnt() + cur.getCelCnt());
+        return acc;
+    });
+
+    sumItem.setTestType(testType);
+    sumItem.setWeek(99); // 합계 표시용
+
+    list.add(sumItem); // 마지막에 추가
+    
     return list;
     
   }
@@ -128,6 +230,9 @@ public class WrpServiceImpl implements WrpService {
     List<WeekResultDTO> result = new ArrayList<WeekResultDTO>();  // 화면별 데이터
     WeekResultDTO detail = new WeekResultDTO();
     WeekResult weekResult = new WeekResult();
+    List<WeekRepSub> allData = new ArrayList<>();
+    WeekRepSub total = new WeekRepSub();
+    WeekResultDTO sumItem = new WeekResultDTO();
     
     switch (testTypeCode) {
       
@@ -141,14 +246,31 @@ public class WrpServiceImpl implements WrpService {
         
         result.add(detail);
         
+        // 출장인원
+        WeekResultDTO tripItem = new WeekResultDTO();
+        String tripCode = testTypeCode.equals("EM") ? "EMC" : "MDC";
+        WeekResult tripDetail = wrpMapper.getFixDetail(wrSeq, tripCode);
+        
+        if (!ObjectUtils.isEmpty(tripDetail)) {
+          tripItem.setTestType(tripDetail.getTestType());
+          tripItem.setWeekResult(tripDetail);
+        } else {
+          tripItem.setTestType("출장");
+          tripItem.setWeekResult(new WeekResult());
+        }
+        tripItem.setWeekRepSubList(makeFourWeek(wrpMapper.getFixWeekList(wrSeq, tripCode)));
+        result.add(tripItem);
+        
         break;
+        
       case "RS" :
         testTypeCode = "RF";
         weekResult = wrpMapper.getFixDetail(wrSeq, testTypeCode);
         
         detail.setTestType(weekResult.getTestType());
         detail.setWeekResult(weekResult);
-        detail.setWeekRepSubList(makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode)));
+        List<WeekRepSub> rfList = makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode));
+        detail.setWeekRepSubList(rfList);
         
         result.add(detail);
         
@@ -159,9 +281,29 @@ public class WrpServiceImpl implements WrpService {
         
         detail.setTestType(weekResult.getTestType());
         detail.setWeekResult(weekResult);
-        detail.setWeekRepSubList(makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode)));
+        List<WeekRepSub> srList = makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode));
+        detail.setWeekRepSubList(srList);
         
         result.add(detail);
+        
+        // 합계
+        allData.addAll(rfList);
+        allData.addAll(srList);
+        total = new WeekRepSub();
+        for (WeekRepSub w : allData) {
+            total.setInCnt(total.getInCnt() + w.getInCnt());
+            total.setInAmt(total.getInAmt() + w.getInAmt());
+            total.setRdCnt(total.getRdCnt() + w.getRdCnt());
+            total.setRdcCnt(total.getRdcCnt() + w.getRdcCnt());
+            total.setEndCnt(total.getEndCnt() + w.getEndCnt());
+            total.setEndAmt(total.getEndAmt() + w.getEndAmt());
+            total.setCelCnt(total.getCelCnt() + w.getCelCnt());
+        }
+
+        sumItem = new WeekResultDTO();
+        sumItem.setTestType("TT");
+        sumItem.setWeekRepSubList(Collections.singletonList(total));
+        result.add(sumItem);
         
         break;
       case "SF" :
@@ -171,7 +313,8 @@ public class WrpServiceImpl implements WrpService {
         
         detail.setTestType(weekResult.getTestType());
         detail.setWeekResult(weekResult);
-        detail.setWeekRepSubList(makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode)));
+        List<WeekRepSub> sfList = makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode));
+        detail.setWeekRepSubList(sfList);
         
         result.add(detail);
         
@@ -182,9 +325,29 @@ public class WrpServiceImpl implements WrpService {
         
         detail.setTestType(weekResult.getTestType());
         detail.setWeekResult(weekResult);
-        detail.setWeekRepSubList(makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode)));
+        List<WeekRepSub> nsList = makeFourWeek(wrpMapper.getFixWeekList(wrSeq, testTypeCode));
+        detail.setWeekRepSubList(nsList);
         
         result.add(detail);
+
+        // 합계
+        allData.addAll(sfList);
+        allData.addAll(nsList);
+        total = new WeekRepSub();
+        for (WeekRepSub w : allData) {
+            total.setInCnt(total.getInCnt() + w.getInCnt());
+            total.setInAmt(total.getInAmt() + w.getInAmt());
+            total.setRdCnt(total.getRdCnt() + w.getRdCnt());
+            total.setRdcCnt(total.getRdcCnt() + w.getRdcCnt());
+            total.setEndCnt(total.getEndCnt() + w.getEndCnt());
+            total.setEndAmt(total.getEndAmt() + w.getEndAmt());
+            total.setCelCnt(total.getCelCnt() + w.getCelCnt());
+        }
+
+        sumItem = new WeekResultDTO();
+        sumItem.setTestType("TT");
+        sumItem.setWeekRepSubList(Collections.singletonList(total));
+        result.add(sumItem);
         
         break;
     }
@@ -229,6 +392,12 @@ public class WrpServiceImpl implements WrpService {
         req.setTestTypeCode(data.getTestTypeCode());
         
         // 데이터확정
+        wrpMapper.insertFixResult(req);
+        wrpMapper.insertFixSub(req);
+        
+        // 출장 데이터 확정
+        String tripCode = data.getTestTypeCode().equals("EM") ? "EMC" : "MDC";
+        req.setTestTypeCode(tripCode);
         wrpMapper.insertFixResult(req);
         wrpMapper.insertFixSub(req);
         
