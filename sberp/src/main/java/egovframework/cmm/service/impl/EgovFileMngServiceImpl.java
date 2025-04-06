@@ -106,6 +106,17 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
 	public List<FileVO> selectFileInfs(FileVO fvo) throws Exception {
     	return fileMapper.selectFileList(fvo);
     }
+    
+    /**
+     * 파일에 대한 목록을 조회한다.
+     *
+     * @see egovframework.com.cmm.service.EgovFileMngService#selectFileInfs(egovframework.com.cmm.service.FileVO)
+     */
+    @Override
+    public List<FileVO> selectFileOrdrInfs(FileVO fvo) throws Exception {
+        return fileMapper.selectFileOrdrList(fvo);
+    }
+    
 
     /**
      * 여러 개의 파일에 대한 정보(속성 및 상세)를 수정한다.

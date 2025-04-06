@@ -41,7 +41,7 @@ public class FileVO implements Serializable {
     /**
      * 파일내용
      */
-    public String fileCn = "";
+    public String fileCn;
     /**
      * 파일구분
      */
@@ -71,8 +71,8 @@ public class FileVO implements Serializable {
      */
     public String streFileNm = "";
     /**
-     * 파일서버위치
+     * 파일순서
      */
-    public String fileLoc = "";
+    public int fileOrdr = 0;
 
 }

@@ -20,6 +20,8 @@ public class PicDTO {
 	private String imageUrl;
 	private String picId;
 	private String fileSn;
+	private int fileOrdr;
+	private String state;
 	// 성적서에만 사용
 	private int picYn;
 }

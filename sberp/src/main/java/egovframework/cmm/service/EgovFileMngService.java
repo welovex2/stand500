@@ -30,6 +30,15 @@ public interface EgovFileMngService {
     public List<FileVO> selectFileInfs(FileVO fvo) throws Exception;
 
     /**
+     * 파일에 대한 목록을 조회한다.
+     *
+     * @param fvo
+     * @return
+     * @throws Exception
+     */
+    public List<FileVO> selectFileOrdrInfs(FileVO fvo) throws Exception;
+    
+    /**
      * 하나의 파일에 대한 정보(속성 및 상세)를 등록한다.
      *
      * @param fvo
@@ -119,5 +128,5 @@ public interface EgovFileMngService {
 	 *
 	 * @see egovframework.com.cmm.service.EgovFileMngService#deleteFileInf(egovframework.com.cmm.service.FileVO)
 	 */
-	void updateFileDetail(FileVO fvo) throws Exception;
+    public void updateFileDetail(FileVO fvo) throws Exception;
 }

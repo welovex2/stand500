@@ -166,7 +166,7 @@ public class CdnFileMngUtil {
           fvo.setFileSn(String.valueOf(fileKey));
           fvo.setFileCn(files.get(i).getTitle());
           fvo.setFileMemo(files.get(i).getMode());
-          fvo.setFileLoc("CDN");
+//          fvo.setFileLoc("CDN");
           result.add(fvo);
 
           fileKey++;
@@ -369,7 +369,7 @@ public class CdnFileMngUtil {
           fvo.setStreFileNm(newName);
           fvo.setAtchFileId(atchFileIdString);
           fvo.setFileSn(String.valueOf(fileKey));
-          fvo.setFileLoc("CDN");
+//          fvo.setFileLoc("CDN");
         }
 
       } catch (Exception e) {

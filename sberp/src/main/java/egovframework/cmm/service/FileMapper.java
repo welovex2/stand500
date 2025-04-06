@@ -31,4 +31,6 @@ public interface FileMapper {
 
 	List<FileVO> selectImageFileList(FileVO vo);
 
+  List<FileVO> selectFileOrdrList(FileVO fvo);
+
 }

@@ -3,6 +3,7 @@ package egovframework.raw.web;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Resource;
@@ -1814,18 +1815,18 @@ public class RawController {
         FileVO fileVO = new FileVO();
         fileVO.setAtchFileId(img.getAtchFileId());
         // 해당없음이 있기 때문에 fileInf로 확인
-        List<FileVO> fileReulst = fileMngService.selectFileInfs(fileVO);
+        List<FileVO> fileReulst = fileMngService.selectFileOrdrInfs(fileVO);
         List<PicDTO> resultList = new ArrayList<PicDTO>();
         if (fileReulst != null) {
           for (FileVO item : fileReulst) {
             PicDTO pic = new PicDTO();
-            if ("CDN".contentEquals(item.getFileLoc())) {
-              pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-            } else {
+//            if ("CDN".contentEquals(item.getFileLoc())) {
+//              pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//            } else {
               pic.setImageUrl(propertyService.getString("img.url").concat(img.getAtchFileId())
                   .concat("&fileSn=").concat(item.getFileSn()));
-            }
+//            }
             pic.setTitle(item.getFileCn());
             pic.setMode(item.getFileMemo());
             pic.setFileSn(item.getFileSn());
@@ -1848,9 +1849,12 @@ public class RawController {
 
 
   @ApiOperation(value = "시험장면사진 등록",
-      notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" + "1. 수정시 rawSeq, picId 필수\n "
-          + "2. delFileList : fileCn(파일순번)\n" + "3. 시험장면사진 순번 : 공통코드 RP\n"
-          + "4. picList[0].mode=모드, picList[0].title=구분(공통코드 RG)\n" + "5. picYn : 해당됨1, 해당없음0")
+      notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" 
+          + "1. 수정시 rawSeq, picId 필수\n "
+          + "2. delFileList : fileCn(파일순번)\n" 
+          + "3. 시험장면사진 순번 : 공통코드 RP\n"
+          + "4. picList[0].mode=모드, picList[0].title=구분(공통코드 RG)\n" 
+          + "5. picYn : 해당됨1, 해당없음0")
   @PostMapping(value = "/pic/insert.do")
   public BasicResponse insertPic(@RequestPart(value = "imgDTO") ImgDTO req,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
@@ -1926,24 +1930,60 @@ public class RawController {
             fvo.setAtchFileId(atchFileId);
             int cnt = fileMngService.getMaxFileSN(fvo);
 
+            /*
             // 추가 파일 등록
             List<FileVO> _result =
                 fileUtil.parsePicFile(pic.getPicList(), "RAW", cnt, atchFileId, "");
             fileMngService.updateFileInfs(_result);
+            */
+            
+            // 최종 결과 파일 리스트
+            List<FileVO> resultList = new ArrayList<>();
+
+            for (PicDTO picDto : pic.getPicList()) {
+                MultipartFile image = picDto.getImage();
+
+                // case 1. 이미지가 존재 → 신규 파일 처리
+                if (image != null && !image.isEmpty()) {
+                    List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW", cnt++, atchFileId, "");
+                    resultList.addAll(files);
+                }
+                // case 2. 이미지 없고 mode = U → fileOrdr만 수정
+                else if (image == null && "U".equalsIgnoreCase(picDto.getState())) {
+                    FileVO updateFvo = new FileVO();
+                    updateFvo.setAtchFileId(atchFileId);
+                    updateFvo.setFileSn(picDto.getFileSn());
+                    updateFvo.setFileOrdr(picDto.getFileOrdr());
+                    fileMngService.updateFileDetail(updateFvo);
+                }
+                // case 3. 이미지 없고 mode = D → 파일 삭제
+                else if (image == null && "D".equalsIgnoreCase(picDto.getState())) {
+                    FileVO delFvo = new FileVO();
+                    delFvo.setAtchFileId(atchFileId);
+                    delFvo.setFileSn(picDto.getFileSn());
+                    fileMngService.deleteFileInf(delFvo);
+                }
+            }
+
+            // 신규 파일이 존재할 경우 한 번에 업데이트
+            if (!resultList.isEmpty()) {
+                fileMngService.updateFileInfs(resultList);
+            }
+            
           }
           rawService.insertImg(req);
         }
 
-        // 파일삭제
-        FileVO delFile = null;
-        if (!ObjectUtils.isEmpty(delFileList)) {
-          for (FileVO del : delFileList) {
-            delFile = new FileVO();
-            delFile.setAtchFileId(atchFileId);
-            delFile.setFileSn(del.getFileSn());
-            fileMngService.deleteFileInf(delFile);
-          }
-        }
+//        // 파일삭제
+//        FileVO delFile = null;
+//        if (!ObjectUtils.isEmpty(delFileList)) {
+//          for (FileVO del : delFileList) {
+//            delFile = new FileVO();
+//            delFile.setAtchFileId(atchFileId);
+//            delFile.setFileSn(del.getFileSn());
+//            fileMngService.deleteFileInf(delFile);
+//          }
+//        }
 
       } else {
         result = false;

@@ -103,13 +103,13 @@ public class RepController {
               PicDTO map = new PicDTO();
               map.setTitle(item.getFileCn());
               
-              if ("CDN".contentEquals(item.getFileLoc())) {
-                map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                    .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-              } else {
+//              if ("CDN".contentEquals(item.getFileLoc())) {
+//                map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                    .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//              } else {
                 map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
                     .concat("&fileSn=").concat(item.getFileSn()));
-              }
+//              }
               
               setupList.add(map);
     
@@ -125,13 +125,13 @@ public class RepController {
         List<String> modList = new ArrayList<String>();
         if (modResult != null) {
           for (FileVO item : modResult) {
-            if ("CDN".contentEquals(item.getFileLoc())) {
-              modList.add(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-            } else {
+//            if ("CDN".contentEquals(item.getFileLoc())) {
+//              modList.add(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//            } else {
               modList.add(propertyService.getString("img.url").concat(detail.getModUrl()).concat("&fileSn=")
                   .concat(item.getFileSn()));
-            }
+//            }
           }
         }
         detail.setModFileList(modList);
@@ -495,13 +495,13 @@ public class RepController {
                 PicDTO pic = new PicDTO();
                 pic.setPicId(Integer.toString(i));
                 
-                if ("CDN".contentEquals(item.getFileLoc())) {
-                  pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                      .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-                } else {
+//                if ("CDN".contentEquals(item.getFileLoc())) {
+//                  pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                      .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//                } else {
                   pic.setImageUrl(propertyService.getString("img.url").concat(img.getAtchFileId())
                       .concat("&fileSn=").concat(item.getFileSn()));
-                }
+//                }
                 pic.setTitle(item.getFileCn());
                 pic.setMode(item.getFileMemo());
                 // 성적서에서만 사용

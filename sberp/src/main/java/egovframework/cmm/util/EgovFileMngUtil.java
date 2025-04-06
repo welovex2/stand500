@@ -69,6 +69,7 @@ public class EgovFileMngUtil {
     
     /**
      * 첨부파일에 대한 목록 정보를 취득한다.
+     * 신규 리스트 등록
      *
      * @param list
      * @return
@@ -200,6 +201,7 @@ public class EgovFileMngUtil {
 		    fvo.setStreFileNm(newName);
 		    fvo.setAtchFileId(atchFileIdString);
 		    fvo.setFileSn(String.valueOf(fileKey));
+		    fvo.setFileOrdr(files.get(i).getFileOrdr() == 0 ? fileKey : files.get(i).getFileOrdr());
 		    fvo.setFileCn(files.get(i).getTitle());
 		    fvo.setFileMemo(files.get(i).getMode());
 		    result.add(fvo);

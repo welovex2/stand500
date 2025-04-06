@@ -352,13 +352,13 @@ public class RawServiceImpl implements RawService {
           map.setTitle(item.getFileCn());
           map.setFileSn(item.getFileSn());
           
-          if ("CDN".contentEquals(item.getFileLoc())) {
-            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          } else {
+//          if ("CDN".contentEquals(item.getFileLoc())) {
+//            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//          } else {
             map.setImageUrl(propertyService.getString("img.url").concat(detail.getImgUrl())
                 .concat("&fileSn=").concat(item.getFileSn()));
-          }
+//          }
           
           setupList.add(map);
 
@@ -418,13 +418,13 @@ public class RawServiceImpl implements RawService {
         for (FileVO item : modResult) {
           PicDTO map = new PicDTO();
           
-          if ("CDN".contentEquals(item.getFileLoc())) {
-            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          } else {
+//          if ("CDN".contentEquals(item.getFileLoc())) {
+//            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//          } else {
             map.setImageUrl(propertyService.getString("img.url").concat(detail.getModUrl()).concat("&fileSn=")
                 .concat(item.getFileSn()));
-          }
+//          }
           map.setFileSn(item.getFileSn());
           
           modList.add(map);
@@ -447,13 +447,13 @@ public class RawServiceImpl implements RawService {
           PicDTO map = new PicDTO();
           map.setTitle(item.getFileCn());
           
-          if ("CDN".contentEquals(item.getFileLoc())) {
-            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          } else {
+//          if ("CDN".contentEquals(item.getFileLoc())) {
+//            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+//                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+//          } else {
             map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
                 .concat("&fileSn=").concat(item.getFileSn()));
-          }
+//          }
           map.setFileSn(item.getFileSn());
           
           setupList.add(map);
