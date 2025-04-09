@@ -110,6 +110,9 @@ public class WrpServiceImpl implements WrpService {
         // 스트림으로 누적합
         total = new WeekRepSub();
         for (WeekRepSub w : allData) {
+          
+          if (w.getWeek() == 99) continue; // 🔥 제외 조건 추가
+          
           total.setInCnt(total.getInCnt() + w.getInCnt());
           total.setInAmt(total.getInAmt() + w.getInAmt());
           total.setRdCnt(total.getRdCnt() + w.getRdCnt());
@@ -153,6 +156,9 @@ public class WrpServiceImpl implements WrpService {
         // 스트림으로 누적합
         total = new WeekRepSub();
         for (WeekRepSub w : allData) {
+          
+          if (w.getWeek() == 99) continue; // 🔥 제외 조건 추가
+          
           total.setInCnt(total.getInCnt() + w.getInCnt());
           total.setInAmt(total.getInAmt() + w.getInAmt());
           total.setRdCnt(total.getRdCnt() + w.getRdCnt());
@@ -291,6 +297,9 @@ public class WrpServiceImpl implements WrpService {
         allData.addAll(srList);
         total = new WeekRepSub();
         for (WeekRepSub w : allData) {
+          
+            if (w.getWeek() == 99) continue; // 🔥 제외 조건 추가
+          
             total.setInCnt(total.getInCnt() + w.getInCnt());
             total.setInAmt(total.getInAmt() + w.getInAmt());
             total.setRdCnt(total.getRdCnt() + w.getRdCnt());
@@ -335,6 +344,9 @@ public class WrpServiceImpl implements WrpService {
         allData.addAll(nsList);
         total = new WeekRepSub();
         for (WeekRepSub w : allData) {
+          
+            if (w.getWeek() == 99) continue; // 🔥 제외 조건 추가
+          
             total.setInCnt(total.getInCnt() + w.getInCnt());
             total.setInAmt(total.getInAmt() + w.getInAmt());
             total.setRdCnt(total.getRdCnt() + w.getRdCnt());
