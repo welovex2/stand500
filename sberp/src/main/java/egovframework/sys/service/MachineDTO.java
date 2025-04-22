@@ -32,6 +32,9 @@ public class MachineDTO extends Machine {
   @ApiModelProperty(value = "사진파일아이디 ", example = "", hidden = true)
   private String atchFileId;
   
+  @ApiModelProperty(value = "사진파일삭제여부 ", example = "", hidden = true)
+  private String atchFileDelYn;
+  
   @ApiModelProperty(value = "교정파일 링크 ", example = "", hidden = true)
   private String calFileLink;
   
@@ -42,6 +45,8 @@ public class MachineDTO extends Machine {
   private List<String> delFileList;
   
   @ApiModelProperty(value = "교정정보 리스트 ", example = "", hidden = true)
-  private 
-  List<MacCal> macCalList;
+  private List<MacCal> macCalList;
+  
+  @ApiModelProperty(value = "수리내역 리스트 ", example = "", hidden = true)
+  private List<RprHist> rprHistList;
 }

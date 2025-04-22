@@ -37,6 +37,7 @@ import egovframework.sys.service.MacCal;
 import egovframework.sys.service.MacCalDTO;
 import egovframework.sys.service.MacService;
 import egovframework.sys.service.MachineDTO;
+import egovframework.sys.service.RprHist;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -332,11 +333,11 @@ public class MacController {
       @RequestPart(value = "mac") MachineDTO req,
       @RequestPart(value = "macPic", required = false) MultipartFile macPic,
       @ModelAttribute MacCalDTO macCal) // 교정성적서 추가
+      
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
-
 
     // 로그인정보
     req.setInsMemId(user.getId());
@@ -406,7 +407,14 @@ public class MacController {
         FileResult = fileUtil.parseFile(macPic, "MAC/PIC", 0, "", "");
         atchFileId = fileMngService.insertFileInf(FileResult);
         req.setPhoto(atchFileId);
+      } else {
+        
+        // 시험장비 사진 삭제
+        if ("Y".equals(req.getAtchFileDelYn())) {
+          req.setPhoto("");
+        }
       }
+
       
       // 장비추가
       result = macService.insert(req, macCal);

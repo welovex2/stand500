@@ -91,9 +91,13 @@ public class Machine {
   private String spec; // 사양
 
   @ApiModelProperty(value = "측정 범위", example = "0-100mm")
-  @Column(name = "MEAS_RANGE", length = 100)
+  @Column(name = "CAL_RANGE", length = 100)
   private String measRange; // 측정범위 (신규)
 
+  @ApiModelProperty(value = "실제 교정 범위", example = "0-100mm")
+  @Column(name = "MEAS_RANGE", length = 100)
+  private String calRange;
+  
   @ApiModelProperty(value = "교정 대상", example = "Y")
   @Column(name = "CAL_TARGET", length = 1)
   private String calTgt; // 교정정보(대상) (신규)

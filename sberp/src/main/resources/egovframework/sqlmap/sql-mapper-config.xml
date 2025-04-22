@@ -99,6 +99,7 @@
     	<typeAlias alias="machineDTO"	type="egovframework.sys.service.MachineDTO"/>
     	<typeAlias alias="power"		type="egovframework.sys.service.Power"/>
     	<typeAlias alias="macCal"		type="egovframework.sys.service.MacCal"/>
+    	<typeAlias alias="rprHist"		type="egovframework.sys.service.RprHist"/>
     	
     	<!-- 사진통관 -->
     	<typeAlias alias="ppDTO"		type="egovframework.ppc.dto.PpDTO"/>

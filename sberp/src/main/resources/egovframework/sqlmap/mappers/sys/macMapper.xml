@@ -6,9 +6,12 @@
 	    SELECT MACHINE_SEQ, CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, FN_CODE_NAME(MGMT_DEPT, 'MD') MGMT_DEPT, 
 	    	   MGMT_NO, CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) MGNT_CODE, NAME, TAG_NAME_KOR, MODEL,
 	           MNFCT_CMPNY, MNFCT_SERIAL, STNDR, RCV_DT, USE_DT, CLSF_DOM_YN, CLSF_IMP_YN, CLSF_NEW_YN, CLSF_USD_YN,
-	           PRICE, LOC, FN_GET_IMAGE(PHOTO,0) PHOTO, PHOTO ATCH_FILE_ID, SPEC, MEAS_RANGE, MEMO, CEA_YN, CEB_YN,
+	           PRICE, LOC, FN_GET_IMAGE(PHOTO,0) PHOTO, PHOTO ATCH_FILE_ID, SPEC, MEAS_RANGE, CAL_RANGE, MEMO, CEA_YN, CEB_YN,
 	           REA_YN, REB_YN, ESD_YN, RS_YN, EFT_YN, SURGE_YN, CS_YN, MFLD_YN, VDIP_YN, CLK_YN, DP_YN,
-	           FN_MEM_NAME(INS_MEM_ID) MEM_NAME
+	           FN_MEM_NAME(INS_MEM_ID) MEM_NAME,
+	           -- 이력카드용
+	           IFNULL (DATE_FORMAT(REFORM_DT, '%Y-%m-%d'), '-') REFORM_DT,
+	           FN_CODE_NAME(REFORM_PERIOD, 'MY') REFORM_PERIOD_NAME
 	    FROM MACHINE_TB
 	    WHERE MACHINE_SEQ = #{machineSeq}
 	</select>
@@ -38,11 +41,11 @@
 					<!-- 27 모델명 -->
    					<when test="item.searchCode == 27">AND MODEL LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 83 장비번호 -->
-   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_SEQ, 3, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 84 관리번호 -->
    					<when test="item.searchCode == 84">AND CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-   					<!-- 85 HCT 번호 -->
-   					<when test="item.searchCode == 85">AND CAL_NO LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<!-- 85 S/N 번호 -->
+   					<when test="item.searchCode == 85">AND MNFCT_SERIAL LIKE CONCAT('%',#{item.searchWord},'%')</when>
 				</choose>
 			</foreach>
 		</if>
@@ -50,11 +53,8 @@
 	
 	
 	<select id="selectTotalList" parameterType="comParam" resultType="machineDTO">
-		SET @rownum := 0;  -- 순차 번호 초기화
-		
 		SELECT 
 			MACHINE_SEQ,
-		    (@rownum := @rownum + 1) AS NO,  -- 1부터 순차 번호 부여
 		    CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, 
 		    CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) AS MGNT_CODE, 
 		    NAME, 
@@ -75,7 +75,7 @@
 		        ELSE '-'
 		    END AS CAL_FILE_LINK
 		]]>
-		FROM MACHINE_TB, (SELECT @rownum := 0) AS r
+		FROM MACHINE_TB
 		
 		WHERE 1=1
 		<if test="searchVO != null">
@@ -96,11 +96,11 @@
 					<!-- 27 모델명 -->
    					<when test="item.searchCode == 27">AND MODEL LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 83 장비번호 -->
-   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_SEQ, 3, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 84 관리번호 -->
    					<when test="item.searchCode == 84">AND CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
-   					<!-- 85 HCT 번호 -->
-   					<when test="item.searchCode == 85">AND CAL_NO LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<!-- 85 S/N 번호 -->
+   					<when test="item.searchCode == 85">AND MNFCT_SERIAL LIKE CONCAT('%',#{item.searchWord},'%')</when>
 				</choose>
 			</foreach>
 		</if>
@@ -232,14 +232,14 @@
 	    INSERT INTO MACHINE_TB (
 		    MACHINE_SEQ, MGMT_DEPT, MGMT_NO, NAME, TAG_NAME_KOR, MODEL,
 		    MNFCT_CMPNY, MNFCT_SERIAL, STNDR, RCV_DT, USE_DT, CLSF_DOM_YN, CLSF_IMP_YN, CLSF_NEW_YN, CLSF_USD_YN,
-		    PRICE, LOC, PHOTO, SPEC, MEAS_RANGE, 
+		    PRICE, LOC, PHOTO, SPEC, MEAS_RANGE, CAL_RANGE,
 		    MEMO, CEA_YN, CEB_YN,
 		    REA_YN, REB_YN, ESD_YN, RS_YN, EFT_YN, SURGE_YN, CS_YN, MFLD_YN, VDIP_YN, CLK_YN, DP_YN,
 		    INS_MEM_ID, INS_DT, UDT_MEM_ID, UDT_DT, STATE
 		) VALUES (
 		    #{machineSeq}, #{mgmtDept}, #{mgmtNo}, #{name}, #{tagNameKor}, #{model},
 		    #{mnfctCmpny}, #{mnfctSerial}, #{stndr}, NULLIF(#{rcvDt}, ''), NULLIF(#{useDt}, ''), #{clsfDomYn}, #{clsfImpYn}, #{clsfNewYn}, #{clsfUsdYn},
-		    #{price}, #{loc}, #{photo}, #{spec}, #{measRange}, 
+		    #{price}, #{loc}, #{photo}, #{spec}, #{measRange}, #{calRange},
 		    #{memo}, #{ceaYn}, #{cebYn},
 		    #{reaYn}, #{rebYn}, #{esdYn}, #{rsYn}, #{eftYn}, #{surgeYn}, #{csYn}, #{mfldYn}, #{vdipYn}, #{clkYn}, #{dpYn},
 		    #{insMemId}, NOW(), #{udtMemId}, NOW(), 'I'
@@ -259,9 +259,10 @@
 		    CLSF_USD_YN = VALUES(CLSF_USD_YN),
 		    PRICE = VALUES(PRICE),
 		    LOC = VALUES(LOC),
-		    <if test="photo != null and photo != ''">PHOTO = VALUES(PHOTO),</if>
+		    <if test="photo != null">PHOTO = VALUES(PHOTO),</if>
 		    SPEC = VALUES(SPEC),
 		    MEAS_RANGE = VALUES(MEAS_RANGE),
+		    CAL_RANGE = VALUES(CAL_RANGE),
 		    MEMO = VALUES(MEMO),
 		    CEA_YN = VALUES(CEA_YN),
 		    CEB_YN = VALUES(CEB_YN),
@@ -303,13 +304,16 @@
 	<select id="selectMacCal" parameterType="int" resultType="macCal">
 		<![CDATA[
 	    SELECT 
-	    	MACHINE_CAL_SEQ, MACHINE_SEQ, FN_CODE_NAME(CAL_TGT, 'MT') CAL_TGT, CAL_DT, CAL_ORG, CAL_NO, CAL_FILE,
+	    	MACHINE_CAL_SEQ, MACHINE_SEQ, 
+	    	IFNULL (FN_CODE_NAME(CAL_TGT, 'MT'), '-') CAL_TGT, 
+	    	IFNULL (CAL_DT, '-') CAL_DT, CAL_ORG, CAL_NO, CAL_FILE,
 	        CASE 
 		        WHEN CAL_FILE IS NOT NULL THEN CONCAT('/file/fileDown.do?atchFileId=', CAL_FILE, '&fileSn=0')
 		        ELSE '-'
 		    END AS CAL_FILE_LINK,
 		    COALESCE(fd.ORIGNL_FILE_NM, '-') AS CAL_FILE_NM,
-	        REFORM_DT, FN_CODE_NAME(REFORM_PERIOD, 'MY') REFORM_PERIOD_NAME
+	        IFNULL (REFORM_DT, '-') REFORM_DT, 
+	        IFNULL (FN_CODE_NAME(REFORM_PERIOD, 'MY'), '-') REFORM_PERIOD_NAME
 	    FROM MACHINE_CAL_INFO
 	    
 		    LEFT JOIN FILE_TB ft ON CAL_FILE = ft.ATCH_FILE_ID AND ft.USE_AT = 'Y'
@@ -371,5 +375,74 @@
 		
 		WHERE MACHINE_SEQ = #{machineSeq}
 	</insert>
+	
+	<insert id="rprInsert" parameterType="java.util.List">
+	    <foreach collection="list" item="item" separator=";">
+	        INSERT INTO MACHINE_RPR_HIST (
+	            RPR_SEQ, MACHINE_SEQ, RPR_DT, CONTENT, CAL_DT, RESULT, USE_DT,
+	            RCVR_SIGN, CNFM_SIGN, INS_MEM_ID, INS_DT, UDT_MEM_ID, UDT_DT, STATE
+	        ) VALUES (
+	            #{item.rprSeq}, #{machineSeq}, #{item.rprDt}, #{item.content},
+	            NULLIF(#{item.calDt}, ''), #{item.result}, NULLIF(#{item.useDt}, ''),
+	            #{item.rcvrSign}, #{item.cnfmSign},
+	            #{item.insMemId}, NOW(), #{item.udtMemId}, NOW(), 'I'
+	        )
+	    </foreach>
+	</insert>
+
+	
+	<update id="rprUpdate" parameterType="java.util.List">
+	    <foreach collection="list" item="item" separator=";">
+	        UPDATE MACHINE_RPR_HIST
+	        SET
+	            RPR_DT = #{item.rprDt},
+	            CONTENT = #{item.content},
+	            CAL_DT = NULLIF(#{item.calDt}, ''),
+	            RESULT = #{item.result},
+	            USE_DT = NULLIF(#{item.useDt}, ''),
+	            <if test="item.rcvrSign != null">RCVR_SIGN = #{item.rcvrSign},</if>
+	            <if test="item.cnfmSign != null">CNFM_SIGN = #{item.cnfmSign},</if>
+	            UDT_MEM_ID = #{item.udtMemId},
+	            UDT_DT = NOW(),
+	            STATE = 'U'
+	        WHERE RPR_SEQ = #{item.rprSeq}
+	        AND MACHINE_SEQ = #{machineSeq}
+	    </foreach>
+	</update>
+	
+	<update id="rprDelete" parameterType="java.util.List">
+	    <foreach collection="list" item="item" separator=";">
+	        UPDATE MACHINE_RPR_HIST
+	        SET STATE = 'D',
+	            UDT_MEM_ID = #{item.udtMemId},
+	            UDT_DT = NOW()
+	        WHERE RPR_SEQ = #{item.rprSeq}
+	        AND MACHINE_SEQ = #{machineSeq}
+	    </foreach>
+	</update>
+
+	<select id="selectRprHist" parameterType="int" resultType="rprHist">
+	    SELECT
+	        RPR_SEQ,
+	        MACHINE_SEQ,
+	        IFNULL (DATE_FORMAT(RPR_DT, '%Y-%m-%d'), '-') RPR_DT,
+	        CONTENT,
+	        IFNULL (DATE_FORMAT(CAL_DT, '%Y-%m-%d'), '-') CAL_DT,
+	        RESULT,
+	        IFNULL (DATE_FORMAT(USE_DT, '%Y-%m-%d'), '-') USE_DT, 
+	        RCVR_SIGN,
+	        FN_GET_IMAGE(RCVR_SIGN,0) RCVR_SIGN_URL,
+	        CNFM_SIGN,
+	        FN_GET_IMAGE(CNFM_SIGN,0) CNFM_SIGN_URL,
+	        INS_MEM_ID,
+	        INS_DT,
+	        UDT_MEM_ID,
+	        UDT_DT,
+	        STATE
+	    FROM MACHINE_RPR_HIST
+	    WHERE MACHINE_SEQ = #{machineSeq}
+	      AND STATE != 'D'
+	    ORDER BY RPR_SEQ DESC;
+	</select>
 	
 </mapper>

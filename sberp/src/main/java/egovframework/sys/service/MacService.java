@@ -1,7 +1,6 @@
 package egovframework.sys.service;
 
 import java.util.List;
-
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.FileVO;
 
@@ -24,5 +23,7 @@ public interface MacService {
   List<MachineDTO> selecTotaltList(ComParam param);
 
   List<MacCal> selectMacCal(int machineSeq);
+  
+  List<RprHist> selectRprHist(int machineSeq);
 
 }

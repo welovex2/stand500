@@ -1,5 +1,6 @@
 package egovframework.sys.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import egovframework.sys.service.MacCalDTO;
 import egovframework.sys.service.MacMapper;
 import egovframework.sys.service.MacService;
 import egovframework.sys.service.MachineDTO;
+import egovframework.sys.service.RprHist;
 
 @Service("MacService")
 public class MacServiceImpl implements MacService {
@@ -30,6 +32,11 @@ public class MacServiceImpl implements MacService {
     // 교정정보 추가하기
     if (!ObjectUtils.isEmpty(detail)) {
       detail.setMacCalList(macMapper.selectMacCal(machineSeq));
+    }
+    
+    // 수리내역 추가하기
+    if (!ObjectUtils.isEmpty(detail)) {
+      detail.setRprHistList(macMapper.selectRprHist(machineSeq));
     }
     
     return detail;
@@ -61,10 +68,36 @@ public class MacServiceImpl implements MacService {
     // 교정정보 파일정보 수정
     if (!ObjectUtils.isEmpty(macCal.getUptFileList())) {
       int cnt = macMapper.calUpdate(macCal.getUptFileList());
-      
-      System.out.println(cnt);
     }
     
+    // 수리내역
+    List<RprHist> insertList = new ArrayList<>();
+    List<RprHist> updateList = new ArrayList<>();
+    List<RprHist> deleteList = new ArrayList<>();
+
+    if (!ObjectUtils.isEmpty(req.getRprHistList())) {
+      for (RprHist dto : req.getRprHistList()) {
+          if (dto.getRprSeq() == null || dto.getRprSeq() == 0) {
+            insertList.add(dto); // 등록
+          } else if ("D".equals(dto.getState())){
+            deleteList.add(dto); // 삭제
+          } else {
+            updateList.add(dto); // 수정
+          }
+      }
+    }
+    
+    if (!insertList.isEmpty()) {
+      macMapper.rprInsert(req.getMachineSeq(), insertList);
+    }
+    if (!deleteList.isEmpty()) {
+      macMapper.rprDelete(req.getMachineSeq(), deleteList);
+    }
+    if (!updateList.isEmpty()) {
+      macMapper.rprUpdate(req.getMachineSeq(), updateList);
+    }
+    
+    //
     return true;
   }
 
@@ -114,12 +147,22 @@ public class MacServiceImpl implements MacService {
         return mac;
     }).collect(Collectors.toList());
     
+    // 번호 매기기
+    for (int i=0; i<list.size(); i++) {
+      list.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    
     return list;
   }
 
   @Override
   public List<MacCal> selectMacCal(int machineSeq) {
     return macMapper.selectMacCal(machineSeq);
+  }
+
+  @Override
+  public List<RprHist> selectRprHist(int machineSeq) {
+    return macMapper.selectRprHist(machineSeq);
   }
 
 }

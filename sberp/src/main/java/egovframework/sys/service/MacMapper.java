@@ -33,4 +33,10 @@ public interface MacMapper {
   void macCalListDelete(@Param("machineSeq") int machineSeq, @Param("delFile") FileVO delFile);
 
   int selectNextMgmtNo(MachineDTO req);
+  
+  void rprInsert(@Param("machineSeq") int machineSeq, @Param("list") List<RprHist> insertList);
+  void rprUpdate(@Param("machineSeq") int machineSeq, @Param("list") List<RprHist> updateList);
+  void rprDelete(@Param("machineSeq") int machineSeq, @Param("list") List<RprHist> deleteList);
+  List<RprHist> selectRprHist(int machineSeq);
+
 }
