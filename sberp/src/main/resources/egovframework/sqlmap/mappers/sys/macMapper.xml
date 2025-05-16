@@ -21,6 +21,25 @@
 			COUNT(1)
 		FROM MACHINE_TB
 		
+			LEFT JOIN (
+			    SELECT 
+			        c.*
+			    FROM 
+			        MACHINE_CAL_INFO c
+			    INNER JOIN (
+			        SELECT 
+			            MACHINE_SEQ, 
+			            MAX(MACHINE_CAL_SEQ) AS MAX_SEQ
+			        FROM 
+			            MACHINE_CAL_INFO
+			        GROUP BY 
+			            MACHINE_SEQ
+			    ) latest 
+			        ON c.MACHINE_SEQ = latest.MACHINE_SEQ 
+			       AND c.MACHINE_CAL_SEQ = latest.MAX_SEQ
+			) cal 
+			    ON MACHINE_TB.MACHINE_SEQ = cal.MACHINE_SEQ
+		
 		WHERE 1=1
 		
 		<if test="searchVO != null">
@@ -31,9 +50,9 @@
 						<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
 					 </when>
 					<!-- 47	차기교정일 -->
-        			<when test="item.searchCode == 47">AND DATE_FORMAT(REFORM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+        			<when test="item.searchCode == 47">AND DATE_FORMAT(cal.REFORM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
         			<!-- 81	대상분류 -->
-        			<when test="item.searchCode == 81">AND CAL_TGT = #{item.searchWord}</when>
+        			<when test="item.searchCode == 81">AND cal.CAL_TGT = #{item.searchWord}</when>
         			<!-- 48	사용장비명 -->
 					<when test="item.searchCode == 48">AND NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 82	한글태그명 -->
@@ -41,11 +60,13 @@
 					<!-- 27 모델명 -->
    					<when test="item.searchCode == 27">AND MODEL LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 83 장비번호 -->
-   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_TB.MACHINE_SEQ, 4, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 84 관리번호 -->
    					<when test="item.searchCode == 84">AND CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 85 S/N 번호 -->
    					<when test="item.searchCode == 85">AND MNFCT_SERIAL LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<!-- 10 시험장비 -->
+   					<when test="item.searchCode == 10">AND LOC LIKE CONCAT('%',#{item.searchWord},'%')</when>
 				</choose>
 			</foreach>
 		</if>
@@ -54,28 +75,47 @@
 	
 	<select id="selectTotalList" parameterType="comParam" resultType="machineDTO">
 		SELECT 
-			MACHINE_SEQ,
-		    CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, 
+			MACHINE_TB.MACHINE_SEQ,
+		    CONCAT('SB-', LPAD(MACHINE_TB.MACHINE_SEQ, 4, '0')) AS MACHINE_CODE, 
 		    CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) AS MGNT_CODE, 
 		    NAME, 
 		    TAG_NAME_KOR, 
 		    MODEL, 
 		    MNFCT_CMPNY, 
 		    MNFCT_SERIAL, 
-		    CAL_NO, 
+		    cal.CAL_NO, 
 			IFNULL (PHOTO, '-') PHOTO, 
 		    LOC, 
-		    FN_CODE_NAME(CAL_TGT, 'MT') CAL_TGT,
-			FN_CODE_NAME(REFORM_PERIOD, 'MY') REFORM_PERIOD_NAME,
-		    IFNULL (DATE_FORMAT(CAL_DT, '%Y-%m-%d'), '-') CAL_DT, 
-		    IFNULL (DATE_FORMAT(REFORM_DT, '%Y-%m-%d'), '-') REFORM_DT, 
+		    FN_CODE_NAME(cal.CAL_TGT, 'MT') CAL_TGT,
+			FN_CODE_NAME(cal.REFORM_PERIOD, 'MY') REFORM_PERIOD_NAME,
+		    IFNULL (DATE_FORMAT(cal.CAL_DT, '%Y-%m-%d'), '-') CAL_DT, 
+		    IFNULL (DATE_FORMAT(cal.REFORM_DT, '%Y-%m-%d'), '-') REFORM_DT, 
 		<![CDATA[		    
 		    CASE 
-		        WHEN CAL_FILE IS NOT NULL THEN CONCAT('/file/fileDown.do?atchFileId=', CAL_FILE, '&fileSn=0')
+		        WHEN cal.CAL_FILE IS NOT NULL THEN CONCAT('/file/fileDown.do?atchFileId=', cal.CAL_FILE, '&fileSn=0')
 		        ELSE '-'
 		    END AS CAL_FILE_LINK
 		]]>
 		FROM MACHINE_TB
+		
+			LEFT JOIN (
+			    SELECT 
+			        c.*
+			    FROM 
+			        MACHINE_CAL_INFO c
+			    INNER JOIN (
+			        SELECT 
+			            MACHINE_SEQ, 
+			            MAX(MACHINE_CAL_SEQ) AS MAX_SEQ
+			        FROM 
+			            MACHINE_CAL_INFO
+			        GROUP BY 
+			            MACHINE_SEQ
+			    ) latest 
+			        ON c.MACHINE_SEQ = latest.MACHINE_SEQ 
+			       AND c.MACHINE_CAL_SEQ = latest.MAX_SEQ
+			) cal 
+			    ON MACHINE_TB.MACHINE_SEQ = cal.MACHINE_SEQ
 		
 		WHERE 1=1
 		<if test="searchVO != null">
@@ -86,9 +126,9 @@
 						<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
 					 </when>
 					<!-- 47	차기교정일 -->
-        			<when test="item.searchCode == 47">AND DATE_FORMAT(REFORM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+        			<when test="item.searchCode == 47">AND DATE_FORMAT(cal.REFORM_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') and DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
         			<!-- 81	대상분류 -->
-        			<when test="item.searchCode == 81">AND CAL_TGT = #{item.searchWord}</when>
+        			<when test="item.searchCode == 81">AND cal.CAL_TGT = #{item.searchWord}</when>
         			<!-- 48	사용장비명 -->
 					<when test="item.searchCode == 48">AND NAME LIKE CONCAT('%',#{item.searchWord},'%')</when>
 					<!-- 82	한글태그명 -->
@@ -96,11 +136,13 @@
 					<!-- 27 모델명 -->
    					<when test="item.searchCode == 27">AND MODEL LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 83 장비번호 -->
-   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_SEQ, 4, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<when test="item.searchCode == 83">AND CONCAT('SB-', LPAD(MACHINE_TB.MACHINE_SEQ, 4, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 84 관리번호 -->
    					<when test="item.searchCode == 84">AND CONCAT(MGMT_DEPT, '-', LPAD(MGMT_NO, 3, '0')) LIKE CONCAT('%',#{item.searchWord},'%')</when>
    					<!-- 85 S/N 번호 -->
    					<when test="item.searchCode == 85">AND MNFCT_SERIAL LIKE CONCAT('%',#{item.searchWord},'%')</when>
+   					<!-- 10 시험장비 -->
+   					<when test="item.searchCode == 10">AND LOC LIKE CONCAT('%',#{item.searchWord},'%')</when>
 				</choose>
 			</foreach>
 		</if>
