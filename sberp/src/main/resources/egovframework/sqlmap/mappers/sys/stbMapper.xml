@@ -7,7 +7,13 @@
 			count(1)
 		FROM
 			TEST_STNDR_TB
-		WHERE TEST_STNDR_TB.STATE != 'D'
+			
+			LEFT JOIN TEST_ITEM_TB ON TEST_STNDR_TB.TEST_STNDR_SEQ = TEST_ITEM_TB.TEST_STNDR_SEQ AND TEST_ITEM_TB.STATE != 'D'
+			LEFT JOIN TEST_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		
+		WHERE
+		    TEST_STNDR_TB.STATE != 'D'
+				    
 		<if test="searchVO != null">
 	        <foreach collection="searchVO" item="item" separator="">
 	       
@@ -22,6 +28,8 @@
 				</choose>
 			</foreach>
 		</if>
+		
+		GROUP BY TEST_STNDR_TB.TEST_STNDR_SEQ
 	</select>
 
 	<select id="selectList" parameterType="comParam" resultType="egovMap">
@@ -33,30 +41,38 @@
 		FROM
 			(
 				SELECT
-					TEST_STNDR_SEQ,
+					TEST_STNDR_TB.TEST_STNDR_SEQ,
 					TEST_STNDR_TB.TEST_STNDR,
+					COUNT(DISTINCT TEST_TB.TEST_SEQ) AS useCnt,
 					IFNULL(TEST_STNDR_TB.MEMO, '') MEMO,
 					DATE_FORMAT(TEST_STNDR_TB.ins_dt, '%Y-%m-%d') insDtStr,
 					IFNULL(FN_MEM_NAME (TEST_STNDR_TB.ins_mem_id), '') memName
 				FROM
-					TEST_STNDR_TB
-				WHERE TEST_STNDR_TB.STATE != 'D'
+				    TEST_STNDR_TB
+				
+				LEFT JOIN TEST_ITEM_TB ON TEST_STNDR_TB.TEST_STNDR_SEQ = TEST_ITEM_TB.TEST_STNDR_SEQ AND TEST_ITEM_TB.STATE != 'D'
+				LEFT JOIN TEST_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+				
+				WHERE
+				    TEST_STNDR_TB.STATE != 'D'
+    
 				<if test="searchVO != null">
 			        <foreach collection="searchVO" item="item" separator="">
 			       
 			        	<choose>
 			        		<!-- 2-작성자 -->
-	        				<when test="item.searchCode == 2">AND ifnull(FN_MEM_NAME(TEST_STNDR_TB.INS_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+	        				<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(TEST_STNDR_TB.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 15-작성일 -->
-			        		<when test="item.searchCode == 15">AND date_format(TEST_STNDR_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        		<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_STNDR_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 							<!-- 40	시험규격 -->
-							<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							
 						</choose>
 					</foreach>
 				</if>
-				order by
-					TEST_STNDR_TB.TEST_STNDR_SEQ ASC
+				
+				GROUP BY TEST_STNDR_TB.TEST_STNDR_SEQ
+				ORDER BY TEST_STNDR_TB.TEST_STNDR_SEQ ASC
 			) lst
 		ORDER BY
 			no desc
