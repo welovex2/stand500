@@ -174,8 +174,6 @@
 		</if>
 		<if test="machineType == 'RA' or machineType == 'RB'">
 			AND (MACHINE_TYPE = 'RE' OR MACHINE_TYPE = #{machineType})
-			<if test="machineType == 'RA'">and REA_YN = 1</if>
-			<if test="machineType == 'RB'">and REB_YN = 1</if>
 		</if>
 		<if test="machineType != 'CA' and machineType != 'CB' and machineType != 'RA' and machineType != 'RB'">
 			AND MACHINE_TYPE = #{machineType}
