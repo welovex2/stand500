@@ -1851,7 +1851,7 @@ public class RawController {
   @ApiOperation(value = "시험장면사진 등록",
       notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" 
           + "1. 수정시 rawSeq, picId 필수\n "
-          + "2. delFileList : fileCn(파일순번)\n" 
+          + "2. delFileList : fileCn(파일순번)-해당없음 리스트에서 사용\n" 
           + "3. 시험장면사진 순번 : 공통코드 RP\n"
           + "4. picList[0].mode=모드, picList[0].title=구분(공통코드 RG)\n" 
           + "5. picYn : 해당됨1, 해당없음0")
@@ -1942,7 +1942,8 @@ public class RawController {
 
             for (PicDTO picDto : pic.getPicList()) {
                 MultipartFile image = picDto.getImage();
-
+                
+                System.out.println(picDto.toString());
                 // case 1. 이미지가 존재 → 신규 파일 처리
                 if (image != null && !image.isEmpty()) {
                     List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW", cnt++, atchFileId, "");
@@ -1963,6 +1964,11 @@ public class RawController {
                     delFvo.setFileSn(picDto.getFileSn());
                     fileMngService.deleteFileInf(delFvo);
                 }
+                // case 4. 이미지 없고, pic_yn = 0 → 해당없음 추가, 수정이나 삭제는 영향 받지 않아야 함
+                else if (image == null && req.getPicYn() == 0) {
+                  List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW", cnt++, atchFileId, "");
+                  resultList.addAll(files);
+              }
             }
 
             // 신규 파일이 존재할 경우 한 번에 업데이트
@@ -1971,19 +1977,20 @@ public class RawController {
             }
             
           }
-          rawService.insertImg(req);
         }
+        
+        rawService.insertImg(req);
 
-//        // 파일삭제
-//        FileVO delFile = null;
-//        if (!ObjectUtils.isEmpty(delFileList)) {
-//          for (FileVO del : delFileList) {
-//            delFile = new FileVO();
-//            delFile.setAtchFileId(atchFileId);
-//            delFile.setFileSn(del.getFileSn());
-//            fileMngService.deleteFileInf(delFile);
-//          }
-//        }
+        // 파일삭제 - 해당없음 리스트용도
+        FileVO delFile = null;
+        if (req.getPicYn() == 0 && !ObjectUtils.isEmpty(delFileList)) {
+          for (FileVO del : delFileList) {
+            delFile = new FileVO();
+            delFile.setAtchFileId(atchFileId);
+            delFile.setFileSn(del.getFileSn());
+            fileMngService.deleteFileInf(delFile);
+          }
+        }
 
       } else {
         result = false;
@@ -2095,7 +2102,7 @@ public class RawController {
 
   @ApiOperation(value = "파일로데이터 상세보기",
       notes = "0. 파일다운링크 : /file/fileDown.do?atchFileId=FILE_FILE_000000000001782&fileSn=1\n"
-          + "1. 2	작성자\n15 작성일\n32 첨부파일용도\n33 제목\n34 파일명")
+          + "1. 2   작성자\n15 작성일\n32 첨부파일용도\n33 제목\n34 파일명")
   @GetMapping(value = "/file/{testSeq}/detail.do")
   public BasicResponse fileDetail(
       @ApiParam(value = "시험 고유번호", required = true,
