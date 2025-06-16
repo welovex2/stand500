@@ -22,6 +22,9 @@ public class DpDTO extends MethodDp {
   @Column
   String macType;
 
+  @ApiModelProperty(value = "장비초기화 여부", example = "1")
+  int macResetYn;
+  
   @ApiModelProperty(value = "측정설비 리스트", example = "")
   @Column
   List<RawMac> macList;

@@ -1,9 +1,7 @@
 package egovframework.raw.dto;
 
-import java.util.List;
 import javax.persistence.Column;
 import egovframework.raw.service.MethodTel;
-import egovframework.raw.service.RawMac;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;

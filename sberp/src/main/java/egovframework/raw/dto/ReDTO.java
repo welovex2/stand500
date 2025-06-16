@@ -27,6 +27,9 @@ public class ReDTO extends MethodRe {
   @ApiModelProperty(value = "측정설비 종류(공통코드 : TM)", example = "CE")
   @Column
   String macType;
+  
+  @ApiModelProperty(value = "장비초기화 여부", example = "1")
+  int macResetYn;
 
   @ApiModelProperty(value = "측정설비 리스트", example = "")
   @Column
