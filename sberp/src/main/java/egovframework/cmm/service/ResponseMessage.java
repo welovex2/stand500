@@ -49,6 +49,6 @@ public class ResponseMessage {
     public static final String CHECK_TEST_STATE = "시험취소가 확정되어 상태변경이 불가합니다.";
     public static final String CHECK_TEST_STATE_END = "프로젝트가 완료되어 상태변경이 불가합니다.";
     public static final String CHECK_MAC = "장비데이터가 없습니다. 1초 뒤 다시 시도하세요.";
-    
+    public static final String CHECK_MAC_DATE = "시험 장비의 차기 교정일을 확인해 주세요.";
     
 }

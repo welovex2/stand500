@@ -1,5 +1,6 @@
 package egovframework.raw.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.raw.dto.CeDTO;
@@ -123,9 +124,9 @@ public interface MethodMapper {
 
   public boolean insertVdip(VdipDTO req);
 
-  public CtiDTO ctiDetail(int rawSeq);
-
-  public boolean insertCti(CtiDTO req);
+//  public CtiDTO ctiDetail(int rawSeq);
+//
+//  public boolean insertCti(CtiDTO req);
 
   public ClkDTO clkDetail(int rawSeq);
 
@@ -139,10 +140,10 @@ public interface MethodMapper {
 
   public boolean insertTel(TelDTO req);
   
-  public void insertCtiSub(@Param("ctiSeq") int ctiSeq,
-      @Param("ctiSubList") List<MethodCtiSub> sIItems);
-
-  public List<MethodCtiSub> ctiSubList(int ctiSeq);
+//  public void insertCtiSub(@Param("ctiSeq") int ctiSeq,
+//      @Param("ctiSubList") List<MethodCtiSub> sIItems);
+//
+//  public List<MethodCtiSub> ctiSubList(int ctiSeq);
 
   public ImgDTO imgDetail(ImgDTO req);
   
@@ -153,4 +154,11 @@ public interface MethodMapper {
   public void insertTwoMac(@Param("rawSeq") int rawSeq, @Param("macList") List<RawMac> macList);
 
   public void updateTwoMac(@Param("rawSeq") int rawSeq, @Param("macList") List<RawMac> macList);
+
+  public void deleteMac(@Param("rawSeq") int rawSeq, @Param("machineType") String macType);
+
+  public List<RawMac> selectReformDate(@Param("rawSeq") int rawSeq, @Param("machineType") String macType);
+  
+  boolean existsByRawSeq(@Param("tableName") String tableName, @Param("rawSeq") int rawSeq);
+
 }

@@ -91,7 +91,7 @@ public class FileMngController {
 		
 		//File file = addImageWatermark(new File(fvo.getFileStreCours(), fvo.getStreFileNm()),new File(fvo.getFileStreCours(), fvo.getStreFileNm()), new File(fvo.getFileStreCours(), fvo.getStreFileNm()));
 		File file = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
-		FileInputStream fis = null; new FileInputStream(file);
+		FileInputStream fis = null;
 
 		BufferedInputStream in = null;
 		ByteArrayOutputStream bStream = null;

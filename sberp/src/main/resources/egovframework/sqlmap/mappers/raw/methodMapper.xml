@@ -147,6 +147,12 @@
 		</foreach>
 	</update>
 	
+	<delete id="deleteMac">
+		DELETE FROM RAW_MAC_TB
+		WHERE MACHINE_TYPE = #{machineType}
+		AND RAW_SEQ = #{rawSeq}
+	</delete>
+
 	<select id="macList" resultType="egovMap">
 		SELECT
 		    RAW_MAC_SEQ,
@@ -2103,112 +2109,112 @@
 			UDT_MEM_ID = #{udtMemId}
 	</insert>
 
-	<select id="ctiDetail" parameterType="int" resultType="ctiDTO">
-		SELECT 
-			CTI_SEQ, RAW_SEQ,
-		    VLT_DC12_YN, VLT_DC24_YN,
-		    VAR_N_YN, VAR_Y_YN,
-		    ROOM1_YN, ROOM2_YN, ROOM_ETC, ROOM_ETC_YN,
-		    TEMP, TEMP_PLUS,
-		    HMDT, HMDT_PLUS,
-		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID,
-		    RESULT_CODE
-		FROM METHOD_CTI_TB
-		WHERE 1=1
-		AND RAW_SEQ = #{rawSeq}
-	</select>
-	<insert id="insertCti" parameterType="ctiDTO">
-		<selectKey resultType="int" keyProperty="ctiSeq" order="AFTER">
-	        SELECT CTI_SEQ FROM METHOD_CTI_TB WHERE RAW_SEQ = #{rawSeq}
-	    </selectKey>
-	    INSERT INTO METHOD_CTI_TB (
-	        CTI_SEQ, RAW_SEQ,
-	        VLT_DC12_YN, VLT_DC24_YN,
-	        VAR_N_YN, VAR_Y_YN,
-	        ROOM1_YN, ROOM2_YN, ROOM_ETC, ROOM_ETC_YN,
-	        TEMP, TEMP_PLUS, HMDT, HMDT_PLUS,
-	        MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
-	        SIGN, SIGN_URL,
-	        RESULT_CODE
-	    ) 
-	    VALUES (
-	       (SELECT ifnull(MAX(seq.CTI_SEQ)+1,1) ctiSeq FROM METHOD_CTI_TB seq), #{rawSeq},
-	        #{vltDc12Yn}, #{vltDc24Yn},
-	        #{varNYn}, #{varYYn},
-	        #{room1Yn}, #{room2Yn}, #{roomEtc}, #{roomEtcYn},
-	        #{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus},
-	        #{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
-	        #{sign}, #{signUrl},
-	        #{resultCode}
-	    )
-	    ON DUPLICATE KEY UPDATE
-	        VLT_DC12_YN = #{vltDc12Yn},
-	        VLT_DC24_YN = #{vltDc24Yn},
-	        VAR_N_YN = #{varNYn},
-	        VAR_Y_YN = #{varYYn},
-	        ROOM1_YN = #{room1Yn},
-	        ROOM2_YN = #{room2Yn},
-	        ROOM_ETC = #{roomEtc},
-	        ROOM_ETC_YN = #{roomEtcYn},
-	        TEMP = #{temp},
-	        TEMP_PLUS = #{tempPlus},
-	        HMDT = #{hmdt},
-	        HMDT_PLUS = #{hmdtPlus},
-	        MSRMN_YEAR = #{msrmnYear},
-	        MSRMN_MON = #{msrmnMon},
-	        MSRMN_DAY = #{msrmnDay},
-	        MSRMN_HOUR = #{msrmnHour},
-	        MSRMN_MIN = #{msrmnMin},
-	        SIGN = #{sign},
-	        <if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if>
-	        RESULT_CODE = #{resultCode}
-	</insert>
+<!-- 	<select id="ctiDetail" parameterType="int" resultType="ctiDTO"> -->
+<!-- 		SELECT  -->
+<!-- 			CTI_SEQ, RAW_SEQ, -->
+<!-- 		    VLT_DC12_YN, VLT_DC24_YN, -->
+<!-- 		    VAR_N_YN, VAR_Y_YN, -->
+<!-- 		    ROOM1_YN, ROOM2_YN, ROOM_ETC, ROOM_ETC_YN, -->
+<!-- 		    TEMP, TEMP_PLUS, -->
+<!-- 		    HMDT, HMDT_PLUS, -->
+<!-- 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN, -->
+<!-- 		    SIGN, FN_GET_IMAGE(SIGN_URL,0) SIGN_URL, SIGN_URL ATCH_FILE_ID, -->
+<!-- 		    RESULT_CODE -->
+<!-- 		FROM METHOD_CTI_TB -->
+<!-- 		WHERE 1=1 -->
+<!-- 		AND RAW_SEQ = #{rawSeq} -->
+<!-- 	</select> -->
+<!-- 	<insert id="insertCti" parameterType="ctiDTO"> -->
+<!-- 		<selectKey resultType="int" keyProperty="ctiSeq" order="AFTER"> -->
+<!-- 	        SELECT CTI_SEQ FROM METHOD_CTI_TB WHERE RAW_SEQ = #{rawSeq} -->
+<!-- 	    </selectKey> -->
+<!-- 	    INSERT INTO METHOD_CTI_TB ( -->
+<!-- 	        CTI_SEQ, RAW_SEQ, -->
+<!-- 	        VLT_DC12_YN, VLT_DC24_YN, -->
+<!-- 	        VAR_N_YN, VAR_Y_YN, -->
+<!-- 	        ROOM1_YN, ROOM2_YN, ROOM_ETC, ROOM_ETC_YN, -->
+<!-- 	        TEMP, TEMP_PLUS, HMDT, HMDT_PLUS, -->
+<!-- 	        MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN, -->
+<!-- 	        SIGN, SIGN_URL, -->
+<!-- 	        RESULT_CODE -->
+<!-- 	    )  -->
+<!-- 	    VALUES ( -->
+<!-- 	       (SELECT ifnull(MAX(seq.CTI_SEQ)+1,1) ctiSeq FROM METHOD_CTI_TB seq), #{rawSeq}, -->
+<!-- 	        #{vltDc12Yn}, #{vltDc24Yn}, -->
+<!-- 	        #{varNYn}, #{varYYn}, -->
+<!-- 	        #{room1Yn}, #{room2Yn}, #{roomEtc}, #{roomEtcYn}, -->
+<!-- 	        #{temp}, #{tempPlus}, #{hmdt}, #{hmdtPlus}, -->
+<!-- 	        #{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin}, -->
+<!-- 	        #{sign}, #{signUrl}, -->
+<!-- 	        #{resultCode} -->
+<!-- 	    ) -->
+<!-- 	    ON DUPLICATE KEY UPDATE -->
+<!-- 	        VLT_DC12_YN = #{vltDc12Yn}, -->
+<!-- 	        VLT_DC24_YN = #{vltDc24Yn}, -->
+<!-- 	        VAR_N_YN = #{varNYn}, -->
+<!-- 	        VAR_Y_YN = #{varYYn}, -->
+<!-- 	        ROOM1_YN = #{room1Yn}, -->
+<!-- 	        ROOM2_YN = #{room2Yn}, -->
+<!-- 	        ROOM_ETC = #{roomEtc}, -->
+<!-- 	        ROOM_ETC_YN = #{roomEtcYn}, -->
+<!-- 	        TEMP = #{temp}, -->
+<!-- 	        TEMP_PLUS = #{tempPlus}, -->
+<!-- 	        HMDT = #{hmdt}, -->
+<!-- 	        HMDT_PLUS = #{hmdtPlus}, -->
+<!-- 	        MSRMN_YEAR = #{msrmnYear}, -->
+<!-- 	        MSRMN_MON = #{msrmnMon}, -->
+<!-- 	        MSRMN_DAY = #{msrmnDay}, -->
+<!-- 	        MSRMN_HOUR = #{msrmnHour}, -->
+<!-- 	        MSRMN_MIN = #{msrmnMin}, -->
+<!-- 	        SIGN = #{sign}, -->
+<!-- 	        <if test="signUrl != null and signUrl != ''">SIGN_URL = #{signUrl},</if> -->
+<!-- 	        RESULT_CODE = #{resultCode} -->
+<!-- 	</insert> -->
 
-	<insert id="insertCtiSub">
-		<foreach collection="ctiSubList" item="item" separator=";">
-		INSERT INTO METHOD_CTI_SUB_TB
-		(
-			CTI_SUB_SEQ,
-			CTI_SEQ,
-			DC_TYPE,
-			PULSE,
-			STANDARD,
-			RESULT_CODE,
-			TEST_MEMO
-		)
-		VALUES
-		(
-			#{item.ctiSubSeq},
-			#{ctiSeq},
-			#{item.dcType},
-			#{item.pulse},
-			#{item.standard},
-			#{item.resultCode},
-			#{item.testMemo}
-		)
-		ON DUPLICATE KEY UPDATE
-			DC_TYPE = #{item.dcType},
-			PULSE = #{item.pulse},
-			STANDARD = #{item.standard},
-			RESULT_CODE = #{item.resultCode},
-			TEST_MEMO = #{item.testMemo}
-		</foreach>
-	</insert>
+<!-- 	<insert id="insertCtiSub"> -->
+<!-- 		<foreach collection="ctiSubList" item="item" separator=";"> -->
+<!-- 		INSERT INTO METHOD_CTI_SUB_TB -->
+<!-- 		( -->
+<!-- 			CTI_SUB_SEQ, -->
+<!-- 			CTI_SEQ, -->
+<!-- 			DC_TYPE, -->
+<!-- 			PULSE, -->
+<!-- 			STANDARD, -->
+<!-- 			RESULT_CODE, -->
+<!-- 			TEST_MEMO -->
+<!-- 		) -->
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{item.ctiSubSeq}, -->
+<!-- 			#{ctiSeq}, -->
+<!-- 			#{item.dcType}, -->
+<!-- 			#{item.pulse}, -->
+<!-- 			#{item.standard}, -->
+<!-- 			#{item.resultCode}, -->
+<!-- 			#{item.testMemo} -->
+<!-- 		) -->
+<!-- 		ON DUPLICATE KEY UPDATE -->
+<!-- 			DC_TYPE = #{item.dcType}, -->
+<!-- 			PULSE = #{item.pulse}, -->
+<!-- 			STANDARD = #{item.standard}, -->
+<!-- 			RESULT_CODE = #{item.resultCode}, -->
+<!-- 			TEST_MEMO = #{item.testMemo} -->
+<!-- 		</foreach> -->
+<!-- 	</insert> -->
 	
-	<select id="ctiSubList" parameterType="int" resultType="egovMap">
-		SELECT 
-			CTI_SUB_SEQ,
-		    CTI_SEQ,
-		    DC_TYPE,
-		    PULSE,
-		    STANDARD,
-		    RESULT_CODE,
-		    TEST_MEMO
-		FROM METHOD_CTI_SUB_TB
-		WHERE 1=1
-		AND CTI_SEQ = #{ctiSeq}
-	</select>
+<!-- 	<select id="ctiSubList" parameterType="int" resultType="egovMap"> -->
+<!-- 		SELECT  -->
+<!-- 			CTI_SUB_SEQ, -->
+<!-- 		    CTI_SEQ, -->
+<!-- 		    DC_TYPE, -->
+<!-- 		    PULSE, -->
+<!-- 		    STANDARD, -->
+<!-- 		    RESULT_CODE, -->
+<!-- 		    TEST_MEMO -->
+<!-- 		FROM METHOD_CTI_SUB_TB -->
+<!-- 		WHERE 1=1 -->
+<!-- 		AND CTI_SEQ = #{ctiSeq} -->
+<!-- 	</select> -->
 	
 	<insert id="insertClk" parameterType="clkDTO">
 		<selectKey resultType="int" keyProperty="ckSeq" order="BEFORE">
@@ -2408,6 +2414,7 @@
 	    )
 	    ON DUPLICATE KEY UPDATE
 	    	PIC_YN = #{picYn},
+	    	ATCH_FILE_ID = IF(ATCH_FILE_ID IS NULL, #{atchFileId}, ATCH_FILE_ID),
 	    	UDT_MEM_ID = #{udtMemId},
 	    	UDT_DT = NOW()
 	</insert>
@@ -2443,5 +2450,19 @@
             AND RAW_MET_TB.RAW_SEQ =#{rawSeq}
             ;
 	</select>
+	
+	<select id="selectReformDate" resultType="rawMac">
+	    SELECT MACHINE_SEQ, REFORM_DT
+	    FROM RAW_MAC_TB
+	    WHERE RAW_SEQ = #{rawSeq}
+      	AND MACHINE_TYPE = #{machineType}
+	</select>
 		
+	<select id="existsByRawSeq" resultType="boolean">
+	    SELECT EXISTS (
+	        SELECT 1 FROM ${tableName}
+	        WHERE RAW_SEQ = #{rawSeq}
+	    )
+	</select>
+
 </mapper>

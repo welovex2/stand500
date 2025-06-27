@@ -1,5 +1,7 @@
 package egovframework.raw.service.impl;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
+import egovframework.raw.dto.TableType;
 import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.FileRaw;
@@ -51,8 +54,10 @@ import egovframework.raw.service.RawSys;
 import egovframework.raw.service.RawTchn;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.tst.service.Test;
+import lombok.extern.slf4j.Slf4j;
 
 @Service("RawService")
+@Slf4j
 public class RawServiceImpl implements RawService {
 
   @Autowired
@@ -211,6 +216,7 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertCe(CeDTO req) {
     boolean result = true;
+    boolean isNew = isNew(TableType.CE, req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
@@ -219,9 +225,14 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertCe(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+    
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
+    
     return result;
   }
 
@@ -236,6 +247,62 @@ public class RawServiceImpl implements RawService {
     }
 
     return detail;
+  }
+  
+  @Override
+  @Transactional
+  public boolean insertRe(ReDTO req) {
+    boolean result = true;
+    boolean isNew = isNew(TableType.RE, req.getRawSeq());
+    
+    // 기본로데이터가 없을때 로데이터 먼저 등록
+    if (req.getRawSeq() == 0)
+      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
+    
+    methodMapper.insertRe(req);
+    
+    // 측정설비
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      
+      // 규격 3235은 예외처리
+      // 규격 3235는 REA, REB가 한페이지에 있어 머신타입이 MacList안에 있음
+      if (!StringUtils.isEmpty(req.getHz1ResultCode()) && !StringUtils.isEmpty(req.getHz2ResultCode())) {
+        
+        if (req.getMacResetYn() == 1) {
+          methodMapper.deleteMac(req.getRawSeq(), "RA");
+          methodMapper.deleteMac(req.getRawSeq(), "RB");
+        }
+        
+        // 신규
+        if (req.getMacList().stream().anyMatch(mac -> mac.getRawMacSeq() == 0))
+          methodMapper.insertTwoMac(req.getRawSeq(), req.getMacList());
+        // 수정
+        else
+          methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
+        
+        // 교정일 체크 (신규저장시에만 체크)
+        if (isNew) {
+          valMacReformDate(req.getHz1MsrmnYear(), req.getHz1MsrmnMon(), req.getHz1MsrmnDay(), req.getMacList(), req.getRawSeq(), "RA");
+          valMacReformDate(req.getHz2MsrmnYear(), req.getHz2MsrmnMon(), req.getHz2MsrmnDay(), req.getMacList(), req.getRawSeq(), "RB");
+        }
+        
+      } else {
+        
+        insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+        
+        // 교정일 체크 (신규저장시에만 체크)
+        if (isNew) {
+          
+          int[] date = extractMeasurementDate(req);
+          int year = date[0], mon = date[1], day = date[2];
+          
+          valMacReformDate(year, mon, day, req.getMacList(), req.getRawSeq(), req.getMacType());
+        }
+      }
+      
+    }
+    
+    return result;
   }
 
   @Override
@@ -262,44 +329,10 @@ public class RawServiceImpl implements RawService {
 
   @Override
   @Transactional
-  public boolean insertRe(ReDTO req) {
-    boolean result = true;
-    
-    // 기본로데이터가 없을때 로데이터 먼저 등록
-    if (req.getRawSeq() == 0)
-      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
-
-    methodMapper.insertRe(req);
-
-    // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList())) {
-      
-      // 규격 3235은 예외처리
-      if (!StringUtils.isEmpty(req.getHz1ResultCode()) && !StringUtils.isEmpty(req.getHz2ResultCode())) {
-        
-        // 신규
-        if (req.getMacList().stream().anyMatch(mac -> mac.getRawMacSeq() == 0))
-          methodMapper.insertTwoMac(req.getRawSeq(), req.getMacList());
-        // 수정
-        else
-          methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
-        
-      } else {
-        
-        methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-        
-      }
-      
-    }
-
-    return result;
-  }
-
-  @Override
-  @Transactional
   public boolean insertEsd(EsdDTO req) {
     boolean result = true;
-
+    boolean isNew = isNew(TableType.ESD, req.getRawSeq());
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -307,9 +340,13 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertEsd(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+    
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
     // 시험결과 > 직접인가
     if (req.getSubList() != null) {
       List<MethodEsdSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
@@ -468,24 +505,11 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
-  public RsDTO rsDetail(int rawSeq) {
-    RsDTO detail = methodMapper.rsDetail(rawSeq);
-
-    if (detail != null) {
-      // 측정설비
-      detail.setMacList(macList("RS", rawSeq));
-      // 시험결과 > 인가부위
-      detail.setSubList(methodMapper.rsSubList(detail.getRsSeq()));
-    }
-
-    return detail;
-  }
-
-  @Override
   @Transactional
   public boolean insertRs(RsDTO req) {
     boolean result = true;
-
+    boolean isNew = isNew(TableType.RS, req.getRawSeq());
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -493,8 +517,13 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertRs(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
 
     // 시험결과 > 인가부위
     if (!ObjectUtils.isEmpty(req.getSubList())) {
@@ -527,17 +556,18 @@ public class RawServiceImpl implements RawService {
     
     return result;
   }
-
+  
   @Override
-  public EftDTO eftDetail(int rawSeq) {
-    EftDTO detail = methodMapper.eftDetail(rawSeq);
-
+  public RsDTO rsDetail(int rawSeq) {
+    RsDTO detail = methodMapper.rsDetail(rawSeq);
+    
     if (detail != null) {
       // 측정설비
-      detail.setMacList(macList("ET", rawSeq));
-      // 시험결과 > 포트
-      detail.setSubList(methodMapper.eftSubList(detail.getEftSeq()));
+      detail.setMacList(macList("RS", rawSeq));
+      // 시험결과 > 인가부위
+      detail.setSubList(methodMapper.rsSubList(detail.getRsSeq()));
     }
+    
     return detail;
   }
 
@@ -545,7 +575,8 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertEft(EftDTO req) {
     boolean result = true;
-
+    boolean isNew = isNew(TableType.EFT, req.getRawSeq());
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -553,8 +584,13 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertEft(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
 
     // 시험결과 > 포트
     List<MethodEftSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
@@ -583,6 +619,19 @@ public class RawServiceImpl implements RawService {
     }
     return result;
   }
+  
+  @Override
+  public EftDTO eftDetail(int rawSeq) {
+    EftDTO detail = methodMapper.eftDetail(rawSeq);
+    
+    if (detail != null) {
+      // 측정설비
+      detail.setMacList(macList("ET", rawSeq));
+      // 시험결과 > 포트
+      detail.setSubList(methodMapper.eftSubList(detail.getEftSeq()));
+    }
+    return detail;
+  }
 
   public int beforeRawInsert(int testSeq, String insMemId) {
 
@@ -597,24 +646,12 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
-  public SurgeDTO surgeDetail(int rawSeq) {
-    SurgeDTO detail = methodMapper.surgeDetail(rawSeq);
-
-    if (detail != null) {
-      // 측정설비
-      detail.setMacList(macList("SG", rawSeq));
-      // 시험결과 > 포트
-      detail.setSubList(methodMapper.surgeSubList(detail.getSurgeSeq()));
-    }
-    return detail;
-  }
-
-  @Override
   @Transactional
   public boolean insertSurge(SurgeDTO req) {
 
     boolean result = true;
-
+    boolean isNew = isNew(TableType.SURGE, req.getRawSeq());
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -622,8 +659,13 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertSurge(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
 
     // 시험결과 > 포트
     List<MethodSurgeSub> cIItems = req.getSubList().stream().filter(t -> "I".equals(t.getState()))
@@ -654,16 +696,16 @@ public class RawServiceImpl implements RawService {
     return result;
 
   }
-
+  
   @Override
-  public CsDTO csDetail(int rawSeq) {
-    CsDTO detail = methodMapper.csDetail(rawSeq);
-
+  public SurgeDTO surgeDetail(int rawSeq) {
+    SurgeDTO detail = methodMapper.surgeDetail(rawSeq);
+    
     if (detail != null) {
       // 측정설비
-      detail.setMacList(macList("CS", rawSeq));
-      // 시험결과 > 인가부위
-      detail.setSubList(methodMapper.csSubList(detail.getCsSeq()));
+      detail.setMacList(macList("SG", rawSeq));
+      // 시험결과 > 포트
+      detail.setSubList(methodMapper.surgeSubList(detail.getSurgeSeq()));
     }
     return detail;
   }
@@ -673,7 +715,8 @@ public class RawServiceImpl implements RawService {
   public boolean insertCs(CsDTO req) {
 
     boolean result = true;
-
+    boolean isNew = isNew(TableType.CS, req.getRawSeq());
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -681,8 +724,13 @@ public class RawServiceImpl implements RawService {
     methodMapper.insertCs(req);
 
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
 
     // 시험결과 > 인가부위
     if (!ObjectUtils.isEmpty(req.getSubList())) {
@@ -716,6 +764,45 @@ public class RawServiceImpl implements RawService {
     return result;
 
   }
+  
+  @Override
+  public CsDTO csDetail(int rawSeq) {
+    CsDTO detail = methodMapper.csDetail(rawSeq);
+    
+    if (detail != null) {
+      // 측정설비
+      detail.setMacList(macList("CS", rawSeq));
+      // 시험결과 > 인가부위
+      detail.setSubList(methodMapper.csSubList(detail.getCsSeq()));
+    }
+    return detail;
+  }
+  
+  @Override
+  @Transactional
+  public boolean insertMf(MfDTO req) {
+    
+    boolean result = true;
+    boolean isNew = isNew(TableType.MF, req.getRawSeq());
+    
+    // 기본로데이터가 없을때 로데이터 먼저 등록
+    if (req.getRawSeq() == 0)
+      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
+    
+    methodMapper.insertMf(req);
+    
+    // 측정설비
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
+    
+    return result;
+    
+  }
 
   @Override
   public MfDTO mfDetail(int rawSeq) {
@@ -730,28 +817,34 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  public InfoDTO info(int rawSeq) {
+    return rawMapper.info(rawSeq);
+  }
+  
+  @Override
   @Transactional
-  public boolean insertMf(MfDTO req) {
-
+  public boolean insertVdip(VdipDTO req) {
+    
     boolean result = true;
-
+    boolean isNew = isNew(TableType.VDIP, req.getRawSeq());
+    
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
-
-    methodMapper.insertMf(req);
-
+    
+    methodMapper.insertVdip(req);
+    
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
+    
     return result;
-
-  }
-
-  @Override
-  public InfoDTO info(int rawSeq) {
-    return rawMapper.info(rawSeq);
+    
   }
 
   @Override
@@ -764,63 +857,66 @@ public class RawServiceImpl implements RawService {
     }
     return detail;
   }
-
+//  
+//  @Override
+//  @Transactional
+//  public boolean insertCti(CtiDTO req) {
+//    
+//    boolean result = true;
+//    boolean isNew = isNew(TableType.c, req.getRawSeq());
+//    
+//    // 기본로데이터가 없을때 로데이터 먼저 등록
+//    if (req.getRawSeq() == 0)
+//      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
+//    
+//    methodMapper.insertCti(req);
+//    
+//    // 측정설비
+//    if (!ObjectUtils.isEmpty(req.getMacList()))
+////      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+//      
+//      // 전원 System: DC XX V System
+//      if (!ObjectUtils.isEmpty(req.getSubList()))
+//        methodMapper.insertCtiSub(req.getCtiSeq(), req.getSubList());
+//    
+//    return result;
+//    
+//  }
+//
+//  @Override
+//  public CtiDTO ctiDetail(int rawSeq) {
+//    CtiDTO detail = methodMapper.ctiDetail(rawSeq);
+//
+//    if (detail != null) {
+//      // 측정설비
+//      detail.setMacList(macList("CT", rawSeq));
+//
+//      // 시험결과
+//      detail.setSubList(ctiSubList(detail.getCtiSeq()));
+//    }
+//    return detail;
+//  }
+  
   @Override
   @Transactional
-  public boolean insertVdip(VdipDTO req) {
-
+  public boolean insertClk(ClkDTO req) {
+    
     boolean result = true;
-
-    // 기본로데이터가 없을때 로데이터 먼저 등록
-    if (req.getRawSeq() == 0)
-      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
-
-    methodMapper.insertVdip(req);
-
+    boolean isNew = isNew(TableType.CK, req.getRawSeq());
+    
+    methodMapper.insertClk(req);
+    
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
-    return result;
-
-  }
-
-  @Override
-  public CtiDTO ctiDetail(int rawSeq) {
-    CtiDTO detail = methodMapper.ctiDetail(rawSeq);
-
-    if (detail != null) {
-      // 측정설비
-      detail.setMacList(macList("CT", rawSeq));
-
-      // 시험결과
-      detail.setSubList(ctiSubList(detail.getCtiSeq()));
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
     }
-    return detail;
-  }
-
-  @Override
-  @Transactional
-  public boolean insertCti(CtiDTO req) {
-
-    boolean result = true;
-
-    // 기본로데이터가 없을때 로데이터 먼저 등록
-    if (req.getRawSeq() == 0)
-      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
-
-    methodMapper.insertCti(req);
-
-    // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
-    // 전원 System: DC XX V System
-    if (!ObjectUtils.isEmpty(req.getSubList()))
-      methodMapper.insertCtiSub(req.getCtiSeq(), req.getSubList());
-
+    
     return result;
-
+    
   }
 
   @Override
@@ -833,21 +929,27 @@ public class RawServiceImpl implements RawService {
     }
     return detail;
   }
-
+  
   @Override
   @Transactional
-  public boolean insertClk(ClkDTO req) {
-
+  public boolean insertDp(DpDTO req) {
+    
     boolean result = true;
-
-    methodMapper.insertClk(req);
-
+    boolean isNew = isNew(TableType.DP, req.getRawSeq());
+    
+    methodMapper.insertDp(req);
+    
     // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
+    if (!ObjectUtils.isEmpty(req.getMacList())) {
+      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+      
+      // 교정일 체크 (신규저장시에만 체크)
+      if (isNew)
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(), req.getRawSeq(), req.getMacType());
+    }
+    
     return result;
-
+    
   }
   
   @Override
@@ -859,22 +961,6 @@ public class RawServiceImpl implements RawService {
       detail.setMacList(macList("DP", rawSeq));
     }
     return detail;
-  }
-
-  @Override
-  @Transactional
-  public boolean insertDp(DpDTO req) {
-
-    boolean result = true;
-
-    methodMapper.insertDp(req);
-
-    // 측정설비
-    if (!ObjectUtils.isEmpty(req.getMacList()))
-      methodMapper.insertMac(req.getRawSeq(), req.getMacType(), req.getMacList());
-
-    return result;
-
   }
  
   @Override
@@ -977,7 +1063,7 @@ public class RawServiceImpl implements RawService {
 
   @Override
   public List<RawMac> emptyMacList(String machineType, int rawSeq) {
-    return methodMapper.emptyMacList(machineType, rawSeq);
+    return methodMapper.emptyMacList(machineType, rawSeq); 
   }
 
   @Override
@@ -985,15 +1071,75 @@ public class RawServiceImpl implements RawService {
     return methodMapper.esdSubList(esdSeq);
   }
 
-  @Override
-  public List<MethodCtiSub> ctiSubList(int ctiSeq) {
-    return methodMapper.ctiSubList(ctiSeq);
-  }
+//  @Override
+//  public List<MethodCtiSub> ctiSubList(int ctiSeq) {
+//    return methodMapper.ctiSubList(ctiSeq);
+//  }
 
   @Override
   public List<Test> reportDetail(int testSeq) {
     return rawMapper.reportDetail(testSeq);
   }
 
+  private void insertMac(List<RawMac> macList, int rawSeq, String macType, int resetYn) {
+    
+    // 장비 초기화
+    if (resetYn == 1) {
+      methodMapper.deleteMac(rawSeq, macType);
+    }
+    // 측정설비
+    if (!ObjectUtils.isEmpty(macList))
+      methodMapper.insertMac(rawSeq, macType, macList);
 
+  }
+  
+  private boolean isNew(TableType type, int rawSeq) {
+      return !methodMapper.existsByRawSeq(type.getTableName(), rawSeq);
+  }
+  
+  private void valMacReformDate(int year, int mon, int day, List<RawMac> macList, int rawSeq, String macType) {
+    if (ObjectUtils.isEmpty(macList)) return;
+
+    try {
+      
+      // 측정일 조합
+      LocalDate measurementDate = LocalDate.of(year, mon, day);
+  
+      List<RawMac> insertedMacList = methodMapper.selectReformDate(rawSeq, macType);
+  
+      for (RawMac mac : insertedMacList) {
+          
+        if (mac.getReformDt() != null) {
+          LocalDate reformDate = LocalDate.parse(mac.getReformDt());
+            if (reformDate.isBefore(measurementDate)) {
+              String msg = String.format(
+                  "장비 %d는 개조일(%s)이 측정일(%s)보다 빠릅니다. 저장 중단.",
+                  mac.getMachineSeq(), reformDate, measurementDate
+                  );
+              System.out.println(msg);
+              throw new IllegalArgumentException("시험 장비의 차기 교정일을 확인해 주세요.");
+            }
+        }
+        
+      }
+      
+    } catch (DateTimeException e) {
+      log.warn("장비 측정일 조합 중 날짜 오류 발생 - year={}, month={}, day={}", year, mon, day);
+      
+    }
+    
+  }
+  
+  private int[] extractMeasurementDate(ReDTO req) {
+    switch (req.getMacType()) {
+        case "RE1":
+            return new int[]{ req.getHz1MsrmnYear(), req.getHz1MsrmnMon(), req.getHz1MsrmnDay() };
+        case "RE2":
+            return new int[]{ req.getHz2MsrmnYear(), req.getHz2MsrmnMon(), req.getHz2MsrmnDay() };
+        case "RE3":
+            return new int[]{ req.getHz3MsrmnYear(), req.getHz3MsrmnMon(), req.getHz3MsrmnDay() };
+        default:
+            return new int[]{ 0, 0, 0 };
+    }
+}
 }

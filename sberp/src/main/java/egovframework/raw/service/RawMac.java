@@ -1,8 +1,8 @@
 package egovframework.raw.service;
 
+import java.time.LocalDate;
 import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
-
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
@@ -41,5 +41,8 @@ public class RawMac {
 	@Column
 	private int useYn;
 
+	
+	@ApiModelProperty(value="reformDt  ", example = "")
+	private String reformDt ; 
 
 }

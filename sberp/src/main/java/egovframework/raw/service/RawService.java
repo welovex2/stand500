@@ -6,7 +6,6 @@ import egovframework.cmm.service.HisDTO;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
-import egovframework.raw.dto.CtiDTO;
 import egovframework.raw.dto.DpDTO;
 import egovframework.raw.dto.EftDTO;
 import egovframework.raw.dto.EsdDTO;
@@ -73,7 +72,7 @@ public interface RawService {
 
   List<MethodEsdSub> esdSubList(int esdSeq);
 
-  List<MethodCtiSub> ctiSubList(int ctiSeq);
+//  List<MethodCtiSub> ctiSubList(int ctiSeq);
 
   SurgeDTO surgeDetail(int rawSeq);
 
@@ -93,9 +92,9 @@ public interface RawService {
 
   boolean insertVdip(VdipDTO req);
 
-  CtiDTO ctiDetail(int rawSeq);
-
-  boolean insertCti(CtiDTO req);
+//  CtiDTO ctiDetail(int rawSeq);
+//
+//  boolean insertCti(CtiDTO req);
   
   ClkDTO clkDetail(int rawSeq);
 

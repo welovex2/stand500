@@ -564,6 +564,8 @@ public class RawController {
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
           log.error(msg);
         }
         
@@ -695,6 +697,8 @@ public class RawController {
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
           log.error(msg);
         }
         
@@ -848,12 +852,11 @@ public class RawController {
           result = rawService.insertEsd(req);
           
         } catch (Exception e) {
-          
-          msg = ResponseMessage.RETRY;
-          log.warn(user.getId() + " :: " + e.toString());
-          log.warn(req.toString());
-          log.warn("");
-          
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
         }
 
       } else {
@@ -951,7 +954,9 @@ public class RawController {
           result = rawService.insertRs(req);
         } catch (Exception e) {
           result = false;
-          msg = e.getMessage();
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
           log.error(msg);
         }
       } else {
@@ -1051,12 +1056,11 @@ public class RawController {
           result = rawService.insertEft(req);
           
         } catch (Exception e) {
-          
-          msg = ResponseMessage.RETRY;
-          log.warn(user.getId() + " :: " + e.toString());
-          log.warn(req.toString());
-          log.warn("");
-          
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
         }
         
 
@@ -1158,12 +1162,11 @@ public class RawController {
           result = rawService.insertSurge(req);
           
         } catch (Exception e) {
-          
-          msg = ResponseMessage.RETRY;
-          log.warn(user.getId() + " :: " + e.toString());
-          log.warn(req.toString());
-          log.warn("");
-          
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
         }
 
       } else {
@@ -1262,14 +1265,12 @@ public class RawController {
           result = rawService.insertCs(req);
           
         } catch (Exception e) {
-          
-          msg = ResponseMessage.RETRY;
-          log.warn(user.getId() + " :: " + e.toString());
-          log.warn(req.toString());
-          log.warn("");
-          
-        }
-        
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
+        }        
         
 
       } else {
@@ -1362,8 +1363,19 @@ public class RawController {
 //          atchFileId = fileMngService.insertFileInf(oneFile);
 //          req.setSignUrl(atchFileId);
 //        }
+        
+        try {
 
-        result = rawService.insertMf(req);
+           result = rawService.insertMf(req);
+        
+        } catch (Exception e) {
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
+        }
+      
 
       } else {
         result = false;
@@ -1456,8 +1468,15 @@ public class RawController {
 //          atchFileId = fileMngService.insertFileInf(oneFile);
 //          req.setSignUrl(atchFileId);
 //        }
-
-        result = rawService.insertVdip(req);
+        try {
+          result = rawService.insertVdip(req);
+        } catch (Exception e) {
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
+        }
 
       } else {
         result = false;
@@ -1530,8 +1549,15 @@ public class RawController {
 //          atchFileId = fileMngService.insertFileInf(oneFile);
 //          req.setSignUrl(atchFileId);
 //        }
-
-        result = rawService.insertClk(req);
+        try {
+          result = rawService.insertClk(req);
+        } catch (Exception e) {
+          result = false;
+          msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
+          log.error(msg);
+        }
 
       } else {
         result = false;
@@ -1630,6 +1656,8 @@ public class RawController {
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
           log.error(msg);
         }
 
@@ -1724,6 +1752,8 @@ public class RawController {
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
+          log.error(user.getId() + " :: " + e.toString());
+          log.error(req.toString());
           log.error(msg);
         }
 
@@ -1915,13 +1945,16 @@ public class RawController {
         fileMngService.deletePicAll(upt);
 
         // 시험장면사진
+        System.out.println("pic.getPicList() --> "+pic.getPicList());
         if (!ObjectUtils.isEmpty(pic.getPicList())) {
-
+          System.out.println("널이아님-->"+atchFileId);
           // 신규등록
           if (StringUtils.isEmpty(atchFileId)) {
+            
             FileResult = fileUtil.parsePicFile(pic.getPicList(), "RAW", 0, "", "");
             atchFileId = fileMngService.insertFileInfs(FileResult);
             req.setAtchFileId(atchFileId);
+            
           }
           // 수정
           else {
@@ -1978,6 +2011,7 @@ public class RawController {
             
           }
         }
+        System.out.println("다 끝남");
         
         rawService.insertImg(req);
 
