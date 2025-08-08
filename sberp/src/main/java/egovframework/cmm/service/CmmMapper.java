@@ -1,6 +1,7 @@
 package egovframework.cmm.service;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import egovframework.cnf.service.Cmpy;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.Member;
@@ -14,7 +15,7 @@ public interface CmmMapper {
 
   public Cmpy cmpyDetail(int cmpySeq);
 
-  public List<CmpyMng> cmpyMngList(int cmpySeq) throws Exception;
+  public List<CmpyMng> cmpyMngList(@Param("cmpySeq") int cmpySeq, @Param("prtnYn") int prtnYn, @Param("prtnSeq") int prtnSeq) throws Exception;
 
   public List<Comcode> comcodeList(String code);
 
@@ -37,4 +38,6 @@ public interface CmmMapper {
   public List<Member> memList();
 
   public List<Member> mngList();
+
+  public List<Cmpy> drctList(int cmpySeq);
 }

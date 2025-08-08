@@ -1,7 +1,10 @@
 package egovframework.cnf;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
@@ -9,14 +12,13 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import org.apache.poi.util.StringUtil;
+import org.springframework.http.MediaType;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -33,6 +35,7 @@ import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cnf.service.CmpyDTO;
+import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.CmyService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sts.dto.CmdDTO;
@@ -110,6 +113,7 @@ public class CmyController {
     param.setFirstIndex(pagingVO.getFirstRecordIndex());
     int cnt = cmyService.selectListCnt(param);
 
+    param.setTotalCount(cnt);
     pagingVO.setTotalCount(cnt);
     pagingVO.setTotalPage(
         (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
@@ -126,12 +130,13 @@ public class CmyController {
   }
 
   @ApiOperation(value = "협력사/직접고객 등록")
-  @PostMapping(value = "/{type}/insert.do")
+  @PostMapping(value = "/{type}/insert.do", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public BasicResponse insert(
       @ApiParam(value = "partner(협력사)/direct(직접고객)", required = true, example = "partner") @PathVariable(name = "type") String type,
       @ApiParam(value = "typeCode=협력사 공통코드(PK), 직고객 공통코드(ST)", required = true, example = "") @RequestPart CmpyDTO req,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
-      @RequestPart(value = "files", required = false) final List<MultipartFile> files)
+      @RequestPart(value = "files", required = false) final List<MultipartFile> files,
+      @RequestPart(value = "signs", required = false) final List<MultipartFile> signs)
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -140,6 +145,13 @@ public class CmyController {
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
+    Optional.ofNullable(req.getMngList()).ifPresent(list ->
+        list.forEach(m -> {
+            m.setInsMemId(user.getId());
+            m.setUdtMemId(user.getId());
+        })
+    );
+    
     // 협력사
     if ("partner".equals(type))
       req.setCmpyCode("0000");
@@ -189,6 +201,29 @@ public class CmyController {
         fileMngService.updateFileInfs(_result);
       }
       
+    }
+    // 서명파일
+    Map<String, MultipartFile> fileMap = new HashMap<>();
+    for (MultipartFile file : signs) {
+        fileMap.put(file.getOriginalFilename(), file);
+    }
+    for (CmpyMng mng : req.getMngList()) {
+      
+      FileVO signResult = null;
+      MultipartFile file = fileMap.get(mng.getFileKey());
+      
+      if (!ObjectUtils.isEmpty(file)) {
+        
+        signResult = fileUtil.parseFile(file, "CMY", 0, "", "");
+        
+        int index = mng.getOrignlFileNm().lastIndexOf(".");
+        String fileExt = mng.getOrignlFileNm().substring(index + 1);
+        
+        signResult.setFileExtsn(fileExt);
+        signResult.setOrignlFileNm(mng.getOrignlFileNm());
+        atchFileId = fileMngService.insertFileInf(signResult);
+        mng.setSignUrl(atchFileId);
+      }
     }
     
     // 파일삭제

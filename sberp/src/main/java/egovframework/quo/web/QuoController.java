@@ -319,7 +319,17 @@ public class QuoController {
         BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
         return res;
         
-      } 
+      }
+      // 컨설팅유무가 Yes 이면 컨설팅 Seq 필수
+      else if (req.getPrtnYn() == 1 && req.getPrtnSeq() == 0) {
+        
+        result = false;
+        msg = ResponseMessage.ERROR_PRTN;
+        
+        BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
+        return res;
+        
+      }
       
 //      List<FileVO> FileResult = null;
 //

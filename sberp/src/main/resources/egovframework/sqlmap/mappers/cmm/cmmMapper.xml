@@ -5,7 +5,8 @@
 	<select id="cnsltList" resultType="egovMap">
   		select
 			cmpy_seq,
-		    cmpy_name
+		    cmpy_name,
+		    FN_CODE_NAME(TYPE_CODE, 'PK') AS cmpy_type_name
 		from CMPY_TB
 		where CMPY_CODE = '0000'
 		and STATE != 'D'
@@ -20,6 +21,19 @@
 		where CMPY_CODE = '1000'
 		and STATE != 'D'
 		order by cmpy_name asc;
+	</select>
+	
+	<select id="drctList" parameterType="int" resultType="egovMap">
+		SELECT
+		    c.CMPY_SEQ,
+		    c.CMPY_NAME
+		FROM CMPY_RELATION_TB r
+		INNER JOIN CMPY_TB c ON r.CHILD_CMPY_SEQ = c.CMPY_SEQ
+		WHERE r.PARENT_CMPY_SEQ = #{cmpySeq}
+		  AND r.STATE != 'D'
+		  AND c.STATE != 'D'
+		  AND c.CMPY_CODE = '1000'
+		ORDER BY c.CMPY_NAME ASC;
 	</select>
 	
 	<select id="cmpyDetail" parameterType="int" resultType="cmpy">
@@ -39,18 +53,51 @@
 		;
 	</select>
 
-	<select id="cmpyMngList" parameterType="int" resultType="egovMap">
-  		select
-			CMPY_MNG_SEQ,
-		    CMPY_SEQ,
-		    NAME,
-		    FN_GET_PHONE_FORMAT(ifnull(PHONE, '')) PHONE,
-		    FN_GET_PHONE_FORMAT(ifnull(TEL, '')) TEL,
-		    FN_GET_PHONE_FORMAT(ifnull(FAX, '')) FAX,
-		    EMAIL
-		from CMPY_MNG_TB
-		where CMPY_SEQ = #{cmpySeq}
-		and STATE != 'D';
+	<select id="cmpyMngList" resultType="egovMap">
+		-- ▶ 내 회사의 담당자 정보 조회
+		SELECT
+		    <if test="prtnYn == 0">'고객사' AS CMPY_TYPE_NAME,  -- 내 회사 유형</if>
+		    m.CMPY_MNG_SEQ,
+		    m.CMPY_SEQ,
+		    m.NAME,
+		    FN_GET_PHONE_FORMAT(IFNULL(m.PHONE, '')) AS PHONE,
+		    FN_GET_PHONE_FORMAT(IFNULL(m.TEL, ''))   AS TEL,
+		    FN_GET_PHONE_FORMAT(IFNULL(m.FAX, ''))   AS FAX,
+		    m.EMAIL
+		FROM CMPY_TB c
+		
+			INNER JOIN CMPY_MNG_TB m 
+			    ON m.CMPY_SEQ = c.CMPY_SEQ AND m.STATE != 'D'
+			    
+			WHERE c.CMPY_SEQ = #{cmpySeq}
+			  AND c.STATE != 'D'
+		
+		<if test="prtnYn == 0">
+		UNION ALL
+		
+		-- ▶ 상위 회사의 담당자 정보 조회
+		SELECT
+		    FN_CODE_NAME(p.TYPE_CODE, 'PK') AS CMPY_TYPE_NAME,  -- 상위회사 유형
+		    m.CMPY_MNG_SEQ,
+		    m.CMPY_SEQ,
+		    m.NAME,
+		    FN_GET_PHONE_FORMAT(IFNULL(m.PHONE, '')) AS PHONE,
+		    FN_GET_PHONE_FORMAT(IFNULL(m.TEL, ''))   AS TEL,
+		    FN_GET_PHONE_FORMAT(IFNULL(m.FAX, ''))   AS FAX,
+		    m.EMAIL
+		FROM CMPY_RELATION_TB r
+		
+			INNER JOIN CMPY_TB p
+			    ON r.PARENT_CMPY_SEQ = p.CMPY_SEQ
+			    AND p.STATE != 'D'
+			
+			INNER JOIN CMPY_MNG_TB m
+			    ON m.CMPY_SEQ = p.CMPY_SEQ
+			    AND p.STATE != 'D'
+		
+		WHERE r.PARENT_CMPY_SEQ = #{prtnSeq}
+		  AND r.STATE != 'D'
+		</if>
 	</select>
 
 	<select id="comcodeSearchList" parameterType="String" resultType="egovMap">

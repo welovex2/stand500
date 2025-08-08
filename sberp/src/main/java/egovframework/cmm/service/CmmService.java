@@ -13,7 +13,7 @@ public interface CmmService {
 
   public Cmpy cmpyDetail(int cmpySeq) throws Exception;
 
-  public List<CmpyMng> cmpyMngList(int cmpySeq) throws Exception;
+  public List<CmpyMng> cmpyMngList(int cmpySeq, int prtnYn, int prtnSeq) throws Exception;
 
   public List<Comcode> comcodeList(String code) throws Exception;
 
@@ -34,4 +34,6 @@ public interface CmmService {
   public List<Member> memList();
 
   public List<Member> mngList();
+
+  public List<Cmpy> drctList(int cmpySeq);
 }

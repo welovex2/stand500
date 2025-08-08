@@ -31,55 +31,69 @@
 				</if>
 	</select>
 
-	<select id="selectList" parameterType="comParam" resultType="egovMap">
-		set @rownum:=0;
+	<select id="selectList" parameterType="comParam" resultType="cmpyDTO">
+		    SELECT
+		        c.CMPY_SEQ,
+		        DATE_FORMAT(c.INS_DT, '%Y-%m-%d') AS insDtStr,
+		        LPAD(c.CMPY_SEQ, 4, '0') AS cmpySeq, 
+		        c.CMPY_NAME,
+		        
+		        IFNULL(FN_CODE_NAME(c.TYPE_CODE, 'PK'), '') AS partnerType,
+		        IFNULL(FN_CODE_NAME(c.TYPE_CODE, 'ST'), '') AS directType,
+		        IFNULL(FN_CODE_NAME(c.CNTRY_CODE, 'PC'), '') AS cntry,
+		        FN_GET_PHONE_FORMAT(c.CMPY_PHONE) AS cmpy_phone,
+		        IFNULL(c.MEMO, '-') AS memo,
+		        IFNULL(FN_MEM_NAME(c.UDT_MEM_ID), '') AS ins_name,
+		        
+		        -- 상위 회사 정보 추가
+				IFNULL(
+					GROUP_CONCAT(
+						DISTINCT CONCAT('[', IFNULL(m.TYPE_NAME, ''), '] ', p.CMPY_NAME)
+						SEPARATOR ', '
+					),
+					''
+				) AS prntCmpyName
 		
-		SELECT
-			@rownum:=@rownum+1 as no, 
-			lst.*
-		FROM
-			(
-				SELECT
-					CMPY_SEQ,
-					DATE_FORMAT(CMPY_TB.INS_DT, '%Y-%m-%d') insDtStr,
-					lpad (CMPY_TB.cmpy_seq, 4, '0') cmpySeq,
-					CMPY_TB.CMPY_NAME,
-					ifnull (FN_CODE_NAME (type_code, 'PK'), '') partnerType,
-					ifnull (FN_CODE_NAME (type_code, 'ST'), '') directType,
-					ifnull (FN_CODE_NAME (cntry_code, 'PC'), '') cntry,
-					FN_GET_PHONE_FORMAT (cmpy_phone) cmpy_phone,
-					ifnull (memo, '-') memo,
-					ifnull (FN_MEM_NAME (CMPY_TB.UDT_MEM_ID), '') ins_name
-				FROM
-					CMPY_TB
-				WHERE
-					1 = 1
-				AND STATE != 'D'
+		    FROM
+		        CMPY_TB c
+		        
+                LEFT JOIN CMPY_RELATION_TB r 
+					ON c.CMPY_SEQ = r.CHILD_CMPY_SEQ AND r.STATE != 'D'
+        
+		        LEFT JOIN CMPY_TB p 
+		            ON r.PARENT_CMPY_SEQ = p.CMPY_SEQ
+		            
+		        LEFT JOIN COMCODE_TB m
+					ON m.type_cd = p.TYPE_CODE AND m.top_cd = 'PK'
+		
+		    WHERE
+		        c.STATE != 'D'
 				<if test="searchVO != null">
 			        <foreach collection="searchVO" item="item" separator="">
 			       
 			        	<choose>
 			        		<!-- 00	협력사, 직접고객분류(내부처리) -->
-			        		<when test="item.searchCode == 99">AND CMPY_CODE = #{item.searchWord}</when>
+			        		<when test="item.searchCode == 99">AND c.CMPY_CODE = #{item.searchWord}</when>
 			        		<!-- 2	작성자 -->
-							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(CMPY_TB.UDT_MEM_ID), '') like concat('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(c.UDT_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 			        		<!-- 12	회사명 -->
-			        		<when test="item.searchCode == 12">AND LOWER (CMPY_NAME) like concat('%',LOWER (#{item.searchWord}),'%')</when>
+			        		<when test="item.searchCode == 12">AND LOWER(c.CMPY_NAME) LIKE CONCAT('%',LOWER (#{item.searchWord}),'%')</when>
 							<!-- 13	회사연락처 -->
-							<when test="item.searchCode == 13">AND replace(CMPY_PHONE,'-','') like concat('%',replace(#{item.searchWord},'-',''),'%')</when>
+							<when test="item.searchCode == 13">AND REPLACE(c.CMPY_PHONE,'-','') like CONCAT('%',REPLACE(#{item.searchWord},'-',''),'%')</when>
 							<!-- 41	회사종류 -->
-							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
+							<when test="item.searchCode == 41">AND IFNULL(c.TYPE_CODE,'9999') = #{item.searchWord}</when>
 							<!-- 15	작성일 -->
-			        		<when test="item.searchCode == 15">and date_format(CMPY_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        		<when test="item.searchCode == 15">AND DATE_FORMAT(c.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 						</choose>
 					</foreach>
 				</if>
-				order by
-					CMPY_TB.CMPY_SEQ ASC
-			) lst
-		ORDER BY
-			no desc
-		LIMIT #{pageUnit} OFFSET #{firstIndex};
+				
+			GROUP BY c.CMPY_SEQ
+				
+			ORDER BY
+		        c.CMPY_SEQ DESC
+		        
+			LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
 	
 	<insert id="insert" parameterType="cmpyDTO">
@@ -183,7 +197,9 @@
 			EMAIL,
 			DEPT,
 			LEVEL,
-			MEMO
+			MEMO,
+			SIGN_URL,
+			INS_MEM_ID
 		)
 		VALUES
 		<foreach collection="mngList" item="item" separator=",">
@@ -196,7 +212,9 @@
 			#{item.email},
 			#{item.dept},
 			#{item.level},
-			#{item.memo}
+			#{item.memo},
+			#{item.signUrl},
+			#{item.insMemId}
 		)
 		</foreach>
 	</insert>
@@ -213,7 +231,9 @@
 			DEPT = #{item.dept},
 			LEVEL = #{item.level},
 			MEMO = #{item.memo},
-			STATE = #{item.state}
+			STATE = #{item.state},
+			SIGN_URL = IF(#{item.orignlFileNm} = '', '', IF(#{item.signUrl} IS NULL, SIGN_URL, #{item.signUrl})),
+			UDT_MEM_ID = #{item.udtMemId}
 		WHERE CMPY_MNG_SEQ = #{item.cmpyMngSeq}
 		</foreach>
 	</update>
@@ -229,50 +249,131 @@
 	
 	<select id="selectMngList" parameterType="int" resultType="cmpyMng">
 		SELECT 
-			CMPY_MNG_SEQ,
-			NAME,
-			PHONE,
-			FAX,
-			TEL,
-			EMAIL,
-			DEPT,
-			LEVEL,
-			MEMO
+			CMPY_MNG_TB.CMPY_MNG_SEQ,
+			CMPY_MNG_TB.NAME,
+			CMPY_MNG_TB.PHONE,
+			CMPY_MNG_TB.FAX,
+			CMPY_MNG_TB.TEL,
+			CMPY_MNG_TB.EMAIL,
+			CMPY_MNG_TB.DEPT,
+			CMPY_MNG_TB.LEVEL,
+			CMPY_MNG_TB.MEMO,
+            
+            FILE_DETAIL_TB.ORIGNL_FILE_NM,
+            IFNULL(FN_GET_IMAGE (CMPY_MNG_TB.SIGN_URL, 0), '')SIGN_URL,
+            DATE_FORMAT(CMPY_MNG_TB.INS_DT, '%y-%m-%d') instDtStr,
+            IFNULL(MEMBER_TB.MEM_NAME, '') memName
+            
 		FROM CMPY_MNG_TB
+			
+            LEFT JOIN MEMBER_TB
+			ON CMPY_MNG_TB.INS_MEM_ID = MEMBER_TB.ID
+            
+            LEFT JOIN FILE_DETAIL_TB 
+            ON CMPY_MNG_TB.SIGN_URL = FILE_DETAIL_TB.ATCH_FILE_ID AND FILE_DETAIL_TB.STATE != 'D'
+            
 		WHERE 1=1
-		AND STATE != 'D'
-		AND CMPY_SEQ = #{cmpySeq}
+		AND CMPY_MNG_TB.STATE != 'D'
+		AND CMPY_MNG_TB.CMPY_SEQ = #{cmpySeq}
 	</select>
 	
-	<select id="detail" parameterType="int" resultType="cmpyDTO">
+	
+	<resultMap id="cmpyDetailResultMap" type="cmpyDTO">
+	    <id     property="cmpySeq"     column="CMPY_SEQ" />
+	    <result property="cmpyCode"    column="CMPY_CODE" />
+	    <result property="cmpyName"    column="CMPY_NAME" />
+	    <result property="engName"     column="ENG_NAME" />
+	    <result property="typeCode"    column="TYPE_CODE" />
+	    <result property="applType"    column="APPL_TYPE" />
+	    <result property="cmpyPhone"   column="CMPY_PHONE" />
+	    <result property="cmpyFax"     column="CMPY_FAX" />
+	    <result property="cmpnyIdntf"  column="CMPNY_IDNTF" />
+	    <result property="etcId"       column="ETC_ID" />
+	    <result property="bsnsRgnmb"   column="BSNS_RGNMB" />
+	    <result property="crprtRgnmb"  column="CRPRT_RGNMB" />
+	    <result property="cntryCode"   column="CNTRY_CODE" />
+	    <result property="homepage"    column="HOMEPAGE" />
+	    <result property="rprsn"       column="RPRSN" />
+	    <result property="engRprsn"    column="ENG_RPRSN" />
+	    <result property="rsdntRgnmb"  column="RSDNT_RGNMB" />
+	    <result property="addr"        column="ADDR" />
+	    <result property="engAddr"     column="ENG_ADDR" />
+	    <result property="memo"        column="MEMO" />
+	    <result property="atchFileId"  column="ATCH_FILE_ID" />
+	    <result property="insMemId"    column="INS_MEM_ID" />
+	    <result property="udtMemId"    column="UDT_MEM_ID" />
+	    <result property="insName"     column="INS_NAME" />
+	
+	    <!-- 상위회사 정보 다건 조회 -->
+	    <collection property="prntCmpyList" ofType="cmpyRelationDTO"
+	                select="selectPrntCmpyList" column="CMPY_SEQ" />
+	                
+	    <!-- 하위회사 -->
+	    <collection property="childCmpyList" ofType="cmpyRelationDTO"
+            		select="selectChildCmpyList" column="CMPY_SEQ" />
+	</resultMap>
+	<select id="detail" parameterType="int" resultMap="cmpyDetailResultMap">
 		SELECT
-			CMPY_SEQ,
-			CMPY_CODE,
-			CMPY_NAME,
-			ENG_NAME,
-			TYPE_CODE,
-			APPL_TYPE,
-			FN_GET_PHONE_FORMAT (CMPY_PHONE) CMPY_PHONE,
-			FN_GET_PHONE_FORMAT (CMPY_FAX) CMPY_FAX,
-			CMPNY_IDNTF,
-			ETC_ID,
-			BSNS_RGNMB,
-			CRPRT_RGNMB,
-			CNTRY_CODE,
-			HOMEPAGE,
-			RPRSN,
-			ENG_RPRSN,
-			RSDNT_RGNMB,
-			ADDR,
-			ENG_ADDR,
-			MEMO,
-			ATCH_FILE_ID,
-			INS_MEM_ID,
-			UDT_MEM_ID
+			c.CMPY_SEQ,
+			c.CMPY_CODE,
+			c.CMPY_NAME,
+			c.ENG_NAME,
+			c.TYPE_CODE,
+			c.APPL_TYPE,
+			FN_GET_PHONE_FORMAT (c.CMPY_PHONE) CMPY_PHONE,
+			FN_GET_PHONE_FORMAT (c.CMPY_FAX) CMPY_FAX,
+			c.CMPNY_IDNTF,
+			c.ETC_ID,
+			c.BSNS_RGNMB,
+			c.CRPRT_RGNMB,
+			c.CNTRY_CODE,
+			c.HOMEPAGE,
+			c.RPRSN,
+			c.ENG_RPRSN,
+			c.RSDNT_RGNMB,
+			c.ADDR,
+			c.ENG_ADDR,
+			c.MEMO,
+			c.ATCH_FILE_ID,
+			c.INS_MEM_ID,
+			c.UDT_MEM_ID,
+			IFNULL(FN_MEM_NAME(c.INS_MEM_ID), '') AS ins_name
+			
 		FROM
-			CMPY_TB
-		WHERE CMPY_SEQ = #{cmpySeq}
+			CMPY_TB c
+			
+		WHERE c.CMPY_SEQ = #{cmpySeq}
 	</select>
+	<select id="selectPrntCmpyList" resultType="cmpyRelationDTO">
+	    SELECT
+	        p.CMPY_SEQ parentCmpySeq,
+	        CONCAT('[', IFNULL(FN_CODE_NAME(p.TYPE_CODE, 'PK'),''), '] ', p.CMPY_NAME) prntCmpyName
+	        
+	    FROM CMPY_RELATION_TB r
+	   		
+	   		INNER JOIN CMPY_TB p ON r.PARENT_CMPY_SEQ = p.CMPY_SEQ AND p.STATE != 'D'
+	   		
+	    WHERE r.CHILD_CMPY_SEQ = #{cmpySeq}
+	    AND r.STATE != 'D'
+	</select>
+	<select id="selectChildCmpyList" resultType="cmpyRelationDTO">
+		SELECT
+		    @rownum := @rownum + 1 AS no,
+		    child.*
+		FROM (
+		    SELECT
+		        c.CMPY_SEQ AS childCmpySeq,
+		        c.CMPY_NAME AS childCmpyName
+		    FROM CMPY_RELATION_TB r
+		    INNER JOIN CMPY_TB c 
+		        ON r.CHILD_CMPY_SEQ = c.CMPY_SEQ AND c.STATE != 'D'
+		    WHERE r.PARENT_CMPY_SEQ = #{cmpySeq}
+		      AND r.STATE != 'D'
+		    ORDER BY c.CMPY_SEQ ASC
+		) child,
+		(SELECT @rownum := 0) r
+	</select>
+	
 	
 	<select id="selectSameName" resultType="egovMap">
 		set @rownum:=0;
@@ -526,5 +627,42 @@
 		 
 		    WHERE CMPY_TB.CMPY_SEQ = @scseq
 	</select>
+	
+	<select id="selectParentListByChild" resultType="int">
+	  SELECT PARENT_CMPY_SEQ
+	  FROM CMPY_RELATION_TB
+	  WHERE CHILD_CMPY_SEQ = #{childCmpySeq}
+	  AND STATE != 'D'
+	</select>
+	
+	<insert id="insertRelation">
+	  INSERT INTO CMPY_RELATION_TB (
+	    CHILD_CMPY_SEQ,
+	    PARENT_CMPY_SEQ,
+	    INS_MEM_ID,
+	    INS_DT,
+	    UDT_MEM_ID,
+	    UDT_DT,
+	    STATE
+	  ) VALUES (
+	    #{childCmpySeq},
+	    #{parentCmpySeq},
+	    #{insMemId},
+	    NOW(),
+	    #{udtMemId},
+	    NOW(),
+	    'I'
+	  )
+	</insert>
+	
+	<delete id="deleteByChildAndParentList">
+	  DELETE FROM CMPY_RELATION_TB
+	  WHERE CHILD_CMPY_SEQ = #{childCmpySeq}
+	    AND PARENT_CMPY_SEQ IN
+	    <foreach collection="list" item="parentSeq" open="(" separator="," close=")">
+	      #{parentSeq}
+	    </foreach>
+	</delete>
+	
 	
 </mapper>

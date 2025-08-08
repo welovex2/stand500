@@ -92,6 +92,7 @@
     	<!-- 환경설정 -->
     	<typeAlias alias="cmpyDTO"		type="egovframework.cnf.service.CmpyDTO"/>
     	<typeAlias alias="cmpyMng"		type="egovframework.cnf.service.CmpyMng"/>
+    	<typeAlias alias="cmpyRelationDTO"		type="egovframework.cnf.service.CmpyRelationDTO"/>
     	<typeAlias alias="member"		type="egovframework.cnf.service.Member"/>
     	<typeAlias alias="testStndrDTO"	type="egovframework.sys.service.TestStndrDTO"/>
     	<typeAlias alias="testCateDTO"	type="egovframework.tst.dto.TestCateDTO"/>

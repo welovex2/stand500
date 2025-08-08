@@ -57,17 +57,26 @@ public class CmmController {
     	    @ApiResponse(code = 200, message = "조회성공", response = Map.class, responseContainer = "Map"),
     	    })
     @GetMapping(value="/cmpy/detail.do")
-    public Map<String, Object> cmpyDetail(@ApiParam(value = "회사 고유값", required = true, example = "1") @RequestParam(value="cmpySeq") int cmpySeq) throws Exception{
+    public Map<String, Object> cmpyDetail(
+          @ApiParam(value = "컨설팅 여부") @RequestParam(required = false, defaultValue = "-1", value="prtnYn") int prtnYn,
+          @ApiParam(value = "컨설팅 회사 SEQ") @RequestParam(required = false, defaultValue = "0", value="prtnSeq") int prtnSeq,
+          @ApiParam(value = "회사 고유값", required = true, example = "1") @RequestParam(value="cmpySeq") int cmpySeq
+    ) throws Exception{
+      
     	Cmpy cmpy = new Cmpy();
     	List<CmpyMng> cmpyMng = new ArrayList<CmpyMng>();
+    	List<Cmpy> drctList = new ArrayList<Cmpy>();
     	
     	Map<String, Object> map = new HashMap<>();
     	
     	cmpy = cmmService.cmpyDetail(cmpySeq);
-    	cmpyMng = cmmService.cmpyMngList(cmpySeq);
+    	cmpyMng = cmmService.cmpyMngList(cmpySeq, prtnYn, prtnSeq);
+    	if (prtnYn == 1)
+    	  drctList = cmmService.drctList(cmpySeq);
     	
     	map.put("cmpy", cmpy);
     	map.put("cmpyMng", cmpyMng);
+    	map.put("drctList", drctList);
  
         return map;
     }

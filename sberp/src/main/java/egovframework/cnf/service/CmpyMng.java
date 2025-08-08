@@ -1,19 +1,19 @@
 package egovframework.cnf.service;
 
 import java.time.LocalDateTime;
-
 import javax.persistence.Column;
-
+import org.springframework.web.multipart.MultipartFile;
 import org.springmodules.validation.bean.conf.loader.annotation.handler.NotNull;
-
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @ApiModel(description = "회사담당자")
 @Getter
 @Setter
+@ToString(callSuper = true)
 public class CmpyMng {
   @ApiModelProperty(value = "CMPY_MNG_SEQ ", example = "")
   @Column
@@ -66,7 +66,20 @@ public class CmpyMng {
   @Column
   private String memo;
 
+  
+  @ApiModelProperty(value = "서명파일 ", example = "")
+  private String signUrl;
+  private String fileKey;
+  private String orignlFileNm = "";
+  
+  @ApiModelProperty(value = "등록일 ", example = "")
+  private String instDtStr;
 
+  
+  @ApiModelProperty(value = "등록자 ", example = "")
+  private String memName;
+  
+  
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;

@@ -116,6 +116,13 @@
 			/* ver2 */
 			SBK_TB.VERSION sbkVersion, EXTEND_MODEL_MEMO, CF_CB_YN, TEST_BS_YN, TEST_BJ_YN, TEST_DH_YN, TEST_HJ_YN, CNFRM1_YN, CNFRM2_YN, MOD_CHECK_YN, IM_CHECK_YN,
 			DOC_AN_YN, DOC_TP_YN, DOC_LD_YN, DOC_ET_YN, DOC_ET,
+			
+			/* 추가 신청인 */
+			APPL_ADD_YN,
+			APPL_ADD_CMPY_NAME, APPL_ADD_BSNS_RGNMB, APPL_ADD_RPRSN, 
+			APPL_ADD_CRPRT_RGNMB, APPL_ADD_ADDRESS,
+			APPL_ADD_MNG_NAME, APPL_ADD_MNG_PHONE, APPL_ADD_MNG_FAX, 
+			APPL_ADD_MNG_EMAIL, APPL_ADD_MNG_TEL,
     
 			im.inCnt, im.outCnt
 				
@@ -535,7 +542,19 @@
     		DOC_TP_YN = #{docTpYn},
     		DOC_LD_YN = #{docLdYn},
     		DOC_ET_YN = #{docEtYn},
-    		DOC_ET = #{docEt}
+    		DOC_ET = #{docEt},
+    		
+	    	APPL_ADD_YN = #{applAddYn},
+	        APPL_ADD_CMPY_NAME = #{applAddCmpyName},
+	        APPL_ADD_BSNS_RGNMB = #{applAddBsnsRgnmb},
+	        APPL_ADD_RPRSN = #{applAddRprsn},
+	        APPL_ADD_CRPRT_RGNMB = #{applAddCrprtRgnmb},
+	        APPL_ADD_ADDRESS = #{applAddAddress},
+	        APPL_ADD_MNG_NAME = #{applAddMngName},
+	        APPL_ADD_MNG_PHONE = #{applAddMngPhone},
+	        APPL_ADD_MNG_FAX = #{applAddMngFax},
+	        APPL_ADD_MNG_EMAIL = #{applAddMngEmail},
+	        APPL_ADD_MNG_TEL = #{applAddMngTel}
     
 			
 		WHERE SBK_YM = SUBSTRING(#{sbkId},3,2)
@@ -688,7 +707,14 @@
 			    DOC_TP_YN, 
 			    DOC_LD_YN, 
 			    DOC_ET_YN, 
-			    DOC_ET
+			    DOC_ET,
+			    
+			    /* 추가신청인 */
+				APPL_ADD_YN,
+				APPL_ADD_CMPY_NAME, APPL_ADD_BSNS_RGNMB, APPL_ADD_RPRSN, 
+				APPL_ADD_CRPRT_RGNMB, APPL_ADD_ADDRESS,
+				APPL_ADD_MNG_NAME, APPL_ADD_MNG_PHONE, APPL_ADD_MNG_FAX, 
+				APPL_ADD_MNG_EMAIL, APPL_ADD_MNG_TEL
 			)
 			VALUES
 			(
@@ -830,7 +856,14 @@
 			    #{docTpYn}, 
 			    #{docLdYn}, 
 			    #{docEtYn}, 
-			    #{docEt}
+			    #{docEt},
+			    
+			    /* 추가신청인 */
+		        #{applAddYn},
+		        #{applAddCmpyName}, #{applAddBsnsRgnmb}, #{applAddRprsn}, 
+		        #{applAddCrprtRgnmb}, #{applAddAddress},
+		        #{applAddMngName}, #{applAddMngPhone}, #{applAddMngFax}, 
+		        #{applAddMngEmail}, #{applAddMngTel}
 			    
 			);
 

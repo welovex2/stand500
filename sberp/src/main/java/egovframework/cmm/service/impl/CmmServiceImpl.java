@@ -53,9 +53,9 @@ public class CmmServiceImpl extends EgovAbstractServiceImpl implements CmmServic
   }
 
   @Override
-  public List<CmpyMng> cmpyMngList(int cmpySeq) throws Exception {
+  public List<CmpyMng> cmpyMngList(int cmpySeq, int prtnYn, int prtnSeq) throws Exception {
 
-    List<CmpyMng> list = cmmMapper.cmpyMngList(cmpySeq);
+    List<CmpyMng> list = cmmMapper.cmpyMngList(cmpySeq, prtnYn, prtnSeq);
 
     return list;
   }
@@ -120,6 +120,11 @@ public class CmmServiceImpl extends EgovAbstractServiceImpl implements CmmServic
   @Override
   public List<Member> mngList() {
     return cmmMapper.mngList();
+  }
+
+  @Override
+  public List<Cmpy> drctList(int cmpySeq) {
+    return cmmMapper.drctList(cmpySeq);
   }
 
 }

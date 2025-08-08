@@ -684,4 +684,18 @@ public class Sbk {
   @ApiModelProperty(value = "VERSION ", example = "1")
   @Column
   private String sbkVersion;
+  
+  private String applAddYn; // 신청인 추가 여부
+
+  // 추가 신청인 정보
+  private String applAddCmpyName;
+  private String applAddBsnsRgnmb;
+  private String applAddRprsn;
+  private String applAddCrprtRgnmb;
+  private String applAddAddress;
+  private String applAddMngName;
+  private String applAddMngPhone;
+  private String applAddMngFax;
+  private String applAddMngEmail;
+  private String applAddMngTel;
 }

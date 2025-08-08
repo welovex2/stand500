@@ -1,5 +1,6 @@
 package egovframework.cnf.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -11,11 +12,10 @@ import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmpyMng;
+import egovframework.cnf.service.CmpyRelationDTO;
 import egovframework.cnf.service.CmyMapper;
 import egovframework.cnf.service.CmyService;
 import egovframework.sts.dto.CmdDTO;
-import egovframework.sts.dto.StsDTO;
-import egovframework.sts.dto.CmdDTO.Sub;
 
 @Service("CmyService")
 public class CmyServiceImpl implements CmyService {
@@ -27,7 +27,16 @@ public class CmyServiceImpl implements CmyService {
   
   @Override
   public List<CmpyDTO> selectList(ComParam param) {
-    return cmyMapper.selectList(param);
+    
+    List<CmpyDTO> result = cmyMapper.selectList(param);
+    
+    // 번호 매기기
+    for (int i=0; i<result.size(); i++) {
+      result.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    }
+    
+    
+    return result;
   }
 
   @Override
@@ -45,6 +54,10 @@ public class CmyServiceImpl implements CmyService {
     
     cmyMapper.insert(req);
     
+    // 연결된 협력사
+    syncCmpyRelations(req.getCmpySeq(), req.getPrntCmpySeqList(), req.getInsMemId());
+    
+    // 담당자 처리
     if (req.getMngList() != null) {
       List<CmpyMng> cIItems = req.getMngList().stream().filter(t -> "I".equals(t.getState()))
           .collect(Collectors.toList());
@@ -113,5 +126,44 @@ public class CmyServiceImpl implements CmyService {
     
     return result;
   }
+  
+  
+  private void syncCmpyRelations(int childCmpySeq, List<Integer> prntCmpySeqList, String userId) {
+    
+      // 1. 기존 상위회사 목록 조회
+      List<Integer> existingList = cmyMapper.selectParentListByChild(childCmpySeq);
+
+      // 2. 새로 들어온 리스트가 null이면 빈 리스트로 처리
+      if (prntCmpySeqList == null) prntCmpySeqList = new ArrayList<>();
+
+      // 3. INSERT 대상: 새로 들어온 값 중 DB에 없는 것
+      List<Integer> insertList = prntCmpySeqList.stream()
+          .filter(p -> !existingList.contains(p))
+          .collect(Collectors.toList());
+
+      // 4. DELETE 대상: 기존 값 중 들어온 리스트에 없는 것
+      List<Integer> deleteList = new ArrayList<>();
+      for (Integer exist : existingList) {
+          if (!prntCmpySeqList.contains(exist)) {
+              deleteList.add(exist);
+          }
+      }
+
+      // 5. INSERT 처리
+      for (Integer parentSeq : insertList) {
+        CmpyRelationDTO dto = new CmpyRelationDTO();
+        dto.setChildCmpySeq(childCmpySeq);
+        dto.setParentCmpySeq(parentSeq);
+        dto.setInsMemId(userId);
+        dto.setUdtMemId(userId);
+        cmyMapper.insertRelation(dto);
+    }
+
+      // 6. DELETE 처리
+      if (!deleteList.isEmpty()) {
+        cmyMapper.deleteByChildAndParentList(childCmpySeq, deleteList);
+      }
+  }
+
 
 }

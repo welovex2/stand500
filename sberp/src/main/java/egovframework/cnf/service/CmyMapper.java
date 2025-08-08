@@ -16,6 +16,10 @@ public interface CmyMapper {
   boolean insert(CmpyDTO req);
   
   boolean delete(CmpyDTO req);
+  
+  List<CmpyRelationDTO> selectPrntCmpyList(@Param("cmpySeq") int cmpySeq);
+  
+  List<CmpyRelationDTO> selectChildCmpyList(@Param("cmpySeq") int cmpySeq);
 
   boolean insertMng(@Param("cmpySeq") int cmpySeq, @Param("mngList") List<CmpyMng> sUItems);
 
@@ -34,5 +38,12 @@ public interface CmyMapper {
   List<CmdDTO.Sub> selectCmdList(ComParam param);
   
   CmdDTO.Sub selectCmdTotal(ComParam param);
+
+  List<Integer> selectParentListByChild(int childCmpySeq);
+  
+  int insertRelation(CmpyRelationDTO dto);
+
+  int deleteByChildAndParentList(@Param("childCmpySeq") int childCmpySeq,
+                                 @Param("list") List<Integer> parentSeqList);
   
 }
