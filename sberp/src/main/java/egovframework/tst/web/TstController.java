@@ -2,6 +2,7 @@ package egovframework.tst.web;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,6 +22,9 @@ import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.raw.dto.RawSearchDTO;
+import egovframework.raw.service.RawData;
+import egovframework.raw.service.RawService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sls.service.SlsSummary;
@@ -47,6 +51,9 @@ public class TstController {
 
   @Resource(name = "TstService")
   private TstService tstService;
+  
+  @Resource(name = "RawService")
+  private RawService rawService;
 
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
@@ -541,7 +548,10 @@ public class TstController {
     boolean result = true;
     String msg = "";
     List<TestDTO.Res> list = new ArrayList<TestDTO.Res>();
+    HashMap<String, String> map = new HashMap<>();
 
+
+    
     list = tstService.testBoardList(testSeq);
     
     if (list == null) {
@@ -549,10 +559,19 @@ public class TstController {
       msg = ResponseMessage.NO_DATA;
     }
     
+    // 시험규격별 제품/모델명
+    RawSearchDTO req = new RawSearchDTO();
+    req.setTestSeq(Integer.valueOf(testSeq));
+    RawData detail = rawService.detail(req);
+    if (detail != null) {
+      map.put("prdctName", detail.getEqpmn());
+      map.put("modelName", detail.getModel());  
+    }
+    
     // 확인요망여부
     int checkYn = tstService.selectCheckInfo(testSeq);
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).summary(checkYn).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(String.valueOf(checkYn)).data(list).summary(map).build();
 
     return res;
   }
