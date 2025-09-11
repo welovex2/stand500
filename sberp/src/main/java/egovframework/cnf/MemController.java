@@ -61,7 +61,7 @@ public class MemController {
   protected EgovPropertyService propertyService;
 
   @ApiOperation(value = "사용자 리스트", notes = "검색코드\n15    입사일 \n51    부서명 \n52    재직상태 \n45   권한 \n8  기술책임자 \n53  아이디 \n42    이름 \n44 연락처")
-  @GetMapping(value = "/list.do")
+  @GetMapping(value = "/user/list.do")
   public BasicResponse list(@ModelAttribute ComParam param) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -110,7 +110,7 @@ public class MemController {
   }
 
   @ApiOperation(value = "사용자 등록", notes = "수정시, memberSeq 필수")
-  @PostMapping(value = "/insert.do")
+  @PostMapping(value = "/user/insert.do")
   public BasicResponse insert(
       @RequestPart(value = "file", required = false) final MultipartFile multiRequest,
       @RequestPart(value = "req") Member req) throws Exception {
@@ -179,7 +179,7 @@ public class MemController {
   }
 
   @ApiOperation(value = "사용자 상세보기")
-  @GetMapping(value = "/{memSeq}/detail.do")
+  @GetMapping(value = "/user/{memSeq}/detail.do")
   public BasicResponse detail(@ApiParam(value = "사용자 고유번호", required = true,
       example = "0004") @PathVariable(name = "memSeq") int memSeq) throws Exception {
     boolean result = true;

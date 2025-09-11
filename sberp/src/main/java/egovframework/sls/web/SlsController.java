@@ -36,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Api(tags = {"매출"})
 @RestController
-@RequestMapping("/sls")
 public class SlsController {
 
   @Resource(name = "propertiesService")
@@ -48,7 +47,7 @@ public class SlsController {
   @ApiOperation(value = "매출리스트",
       notes = "1. 결과값은 SlsDTO.Res 참고\n" + "2.검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n" + " 고객유형(PT)\n"
           + " 납부상태:미납-0, 납부-1" + " 계산서발행여부:미발행-0, 발행-1" + " 수정요청(MM)")
-  @GetMapping(value = "/list.do")
+  @GetMapping(value = "/sls/list.do")
   public BasicResponse slsList(@ModelAttribute ComParam param) {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -120,7 +119,7 @@ public class SlsController {
   }
 
   @ApiOperation(value = "취합견적 매출확정 등록")
-  @PostMapping(value = "/chq/insert.do")
+  @PostMapping(value = "/sls/chq/insert.do")
   public BasicResponse slsInserts(@ApiParam(value = "chqId 값만 전송") @RequestBody SlsDTO.Req req)
       throws Exception {
 
@@ -171,7 +170,7 @@ public class SlsController {
   }
   
   @ApiOperation(value = "매출확정 등록 (구버전)")
-  @PostMapping(value = "/insert.do")
+  @PostMapping(value = "/sls/insert.do")
   public BasicResponse slsInsert(@ApiParam(value = "quoId 값, 신청금액 전송") @RequestBody SlsDTO.Req req)
       throws Exception {
 
@@ -238,7 +237,7 @@ public class SlsController {
   }
 
   @ApiOperation(value = "신청금액 등록")
-  @PostMapping(value = "/bill/insert.do")
+  @PostMapping(value = "/sls/bill/insert.do")
   public BasicResponse slsInsert(@ApiParam(value = "quoId 값, BILL_SEQ, 신청금액, 요청상태, 사유") @RequestBody List<SlsDTO.Req> list)
       throws Exception {
 
@@ -322,7 +321,7 @@ public class SlsController {
 
   @ApiOperation(value = "매출리스트(시험부별)", notes = "1. 결과값은 SlsDTO.Res 참고\n"
       + "2.검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n" + " 고객유형(PT)\n" + " 납부상태:미납-0, 납부-1" + " 시험부(TT)")
-  @GetMapping(value = "/byTestlist.do")
+  @GetMapping(value = "/test/bySlsList.do")
   public BasicResponse slsByTestList(@ModelAttribute ComParam param) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -408,7 +407,7 @@ public class SlsController {
 
 
   @ApiOperation(value = "계산서 상태 리스트", notes = "결과값은 BillDTO.Res 참고")
-  @GetMapping(value = "/billList.do")
+  @GetMapping(value = "/sls/billList.do")
   public BasicResponse billList(@ApiParam(value = "매출 고유번호", required = true,
       example = "M2303-0002") @RequestParam(value = "slsSeq") String slsSeq) throws Exception {
 
@@ -437,7 +436,7 @@ public class SlsController {
           + "계산서 발행 작성일 : slsId, billSeq, otherBillDt\n"
           + "납부상태 변경 : slsId, billSeq, payCode(MP), payDt\n"
           + "요청승인 : slsId, billSeq, state ")
-  @PostMapping(value = "/billInsert.do")
+  @PostMapping(value = "/sls/billInsert.do")
   public BasicResponse billInsert(@RequestBody SlsDTO.Req req) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -475,7 +474,7 @@ public class SlsController {
   }
 
   @ApiOperation(value = "매출삭제", notes = "")
-  @PostMapping(value = "/delete.do")
+  @PostMapping(value = "/sls/delete.do")
   public BasicResponse delete(@ApiParam(value = "매출 고유번호", required = true,
       example = "M2303-0002") @RequestBody List<String> slsIds) throws Exception {
 
@@ -492,7 +491,7 @@ public class SlsController {
   
   
   @ApiOperation(value = "매출 메모 추가")
-  @PostMapping(value = "/memo/insert.do")
+  @PostMapping(value = "/sls/memo/insert.do")
   public BasicResponse insertMemo(
       @ApiParam(value = "slsId : 매출 아이디, memo : 매출 메모") @RequestBody SlsDTO.Req req)
       throws Exception {
