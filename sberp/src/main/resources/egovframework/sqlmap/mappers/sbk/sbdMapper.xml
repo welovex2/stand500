@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sbk.service.SbdMapper">
+
+	<select id="selectDriDetail" resultType="sbd">
+		SELECT
+		    CONCAT('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0),
+		           IF(REVISION > 0, CONCAT('-', REVISION), '')) AS sbkId,
+		    JOB_TB.CMPY_NAME, SBK_TB.RPRSN, FN_GET_IMAGE(RPRSN_SIGN,0) AS RPRSN_SIGN, ADDRESS,
+		    FN_GET_PHONE_FORMAT(IFNULL(JOB_TB.MNG_FAX, '')) AS MNG_FAX,
+		    FN_GET_PHONE_FORMAT(IFNULL(JOB_TB.MNG_PHONE, '')) AS MNG_PHONE,
+		    JOB_TB.MNG_EMAIL,
+		    IF(IFNULL(DIRT_MNG_SEQ, 0) = 0, MNG_NAME, IFNULL(DIRT_MNG.NAME, '')) AS MNG_NAME,
+		    JOB_TB.PRDCT_NAME, JOB_TB.MODEL_NAME,
+		    MNFCT_CMPNY, IFNULL(FN_CODE_NAME(MNFCT_CNTRY_CODE, 'SN'), '') AS MNFCT_CNTRY,
+		    IFNULL(MAX(TEST_TB.REPORT_DT), DATE_FORMAT(CURDATE(), '%Y-%m-%d')) REPORT_DT
+		
+		
+		FROM SBK_TB
+		INNER JOIN JOB_TB
+		    ON SBK_TB.SBK_YM   = JOB_TB.SBK_YM
+		   AND SBK_TB.TYPE     = JOB_TB.SBK_TYPE
+		   AND SBK_TB.SBK_SEQ  = JOB_TB.SBK_SEQ
+		   AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+		
+		LEFT JOIN CMPY_TB 
+			ON JOB_TB.DIRT_SEQ = CMPY_TB.CMPY_SEQ
+			
+		LEFT JOIN CMPY_MNG_TB DIRT_MNG
+		    ON JOB_TB.DIRT_MNG_SEQ = DIRT_MNG.CMPY_MNG_SEQ
+		
+		LEFT JOIN TEST_ITEM_TB
+			ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+	
+		LEFT JOIN TEST_TB
+			ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		
+		
+		WHERE 1=1
+	    AND SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+	    AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1)
+		AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND SBK_TB.REVISION = SUBSTRING(#{sbkId},12,1)
+	</select>
+	
+	<select id="selectBhDetail" resultType="sbd">
+<![CDATA[	
+		SELECT
+		    CONCAT('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0),
+		           IF(REVISION > 0, CONCAT('-', REVISION), '')) AS sbkId,
+			MAX(CASE WHEN FDT.FILE_CN = '제품 전면' THEN CONCAT('/api/file/getImage.do?atchFileId=',MIT.ATCH_FILE_ID,'&fileSn=',FDT.FILE_SN) END) AS picFront,
+    		MAX(CASE WHEN FDT.FILE_CN = '제품 후면' THEN CONCAT('/api/file/getImage.do?atchFileId=',MIT.ATCH_FILE_ID,'&fileSn=',FDT.FILE_SN) END) AS picBack,
+		    TEST_TB.REPORT_NO,
+		    RAW_TB.REV_BY,
+		    FN_GET_IMAGE(RPRSN_SIGN,0) AS RPRSN_SIGN,
+		    TEST_ITEM_TB.TEST_STNDR_SEQ,
+		    
+		    PRD_IDNTF,
+	    	DEV_CODE,
+	    	SBK_EXCEL_TB.TYPE_CODE,
+	    	SCRT_YN,
+	    
+		    /* 신청서 연동 */   
+		    JOB_TB.CMPY_NAME,
+			SBK_TB.RPRSN,
+			FN_GET_IMAGE(RPRSN_SIGN,0) AS RPRSN_SIGN,
+			IF(IFNULL(DIRT_MNG_SEQ, 0) = 0, MNG_NAME, IFNULL(DIRT_MNG.NAME, '')) AS MNG_NAME,
+			FN_GET_PHONE_FORMAT(IFNULL(SBK_TB.MNG_TEL, '')) AS MNG_TEL,
+			JOB_TB.PRDCT_NAME,
+			SBK_TB.ATHNT_NMBR,
+			SBK_TB.ADD_DEV,
+			JOB_TB.MODEL_NAME,
+			SBK_TB.EXTEND_MODEL,
+			SBK_TB.MNFCT_CMPNY,
+			IFNULL(FN_CODE_NAME(MNFCT_CNTRY_CODE, 'SN'), '') AS MNFCT_CNTRY
+			
+			
+		FROM SBK_TB
+			INNER JOIN JOB_TB
+			    ON SBK_TB.SBK_YM   = JOB_TB.SBK_YM
+			   AND SBK_TB.TYPE     = JOB_TB.SBK_TYPE
+			   AND SBK_TB.SBK_SEQ  = JOB_TB.SBK_SEQ
+			   AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+			
+			LEFT JOIN SBK_EXCEL_TB
+			    ON SBK_TB.SBK_YM   = SBK_EXCEL_TB.SBK_YM
+			   AND SBK_TB.TYPE     = SBK_EXCEL_TB.SBK_TYPE
+			   AND SBK_TB.SBK_SEQ  = SBK_EXCEL_TB.SBK_SEQ
+			   AND SBK_TB.REVISION = SBK_EXCEL_TB.SBK_REVISION			
+			
+			LEFT JOIN CMPY_MNG_TB DIRT_MNG
+		    	ON JOB_TB.DIRT_MNG_SEQ = DIRT_MNG.CMPY_MNG_SEQ
+			
+			LEFT JOIN TEST_ITEM_TB
+				ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+				AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+				
+			LEFT JOIN TEST_TB
+				ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+			    
+			LEFT JOIN CMPY_TB 
+				ON JOB_TB.DIRT_SEQ = CMPY_TB.CMPY_SEQ
+			            
+			LEFT JOIN RAW_TB
+				ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
+					
+			LEFT JOIN METHOD_IMG_TB MIT
+			    ON RAW_TB.RAW_SEQ = MIT.RAW_SEQ
+			    AND MIT.PIC_ID = 14
+			
+			LEFT JOIN FILE_DETAIL_TB FDT
+       			ON MIT.ATCH_FILE_ID = FDT.ATCH_FILE_ID
+		       
+		WHERE 1=1
+	    AND SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+	    AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1)
+		AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND SBK_TB.REVISION = SUBSTRING(#{sbkId},12,1)
+		
+		GROUP BY
+		    SBK_TB.SBK_YM, SBK_TB.TYPE, SBK_TB.SBK_SEQ, SBK_TB.REVISION
+]]>
+	</select>
+	
+	<select id="selectJhDetail" resultType="sbd">
+			SELECT
+		    CONCAT('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0),
+		           IF(REVISION > 0, CONCAT('-', REVISION), '')) AS sbkId,
+			
+            ADDRESS,
+            SBK_TB.BSNS_RGNMB,
+		    IF(IFNULL(DIRT_MNG_SEQ, 0) = 0, MNG_NAME, IFNULL(DIRT_MNG.NAME, '')) AS MNG_NAME,
+            FN_GET_PHONE_FORMAT(IFNULL(SBK_TB.MNG_TEL, '')) AS MNG_TEL,
+            JOB_TB.MNG_EMAIL,
+            FN_GET_PHONE_FORMAT(IFNULL(JOB_TB.MNG_FAX, '')) AS MNG_FAX,
+            CF_TYPE,
+            ATHNT_NMBR,
+            JOB_TB.PRDCT_NAME,
+            JOB_TB.MODEL_NAME,
+            JOB_TB.CMPY_NAME, 
+            CF_DATE,
+            MNFCT_CMPNY, 
+            IFNULL(FN_CODE_NAME(MNFCT_CNTRY_CODE, 'SN'), '') AS MNFCT_CNTRY,
+            EXTEND_MODEL,
+            EXTEND_MODEL_MEMO,
+            IFNULL (FN_CODE_NAME (MNFCT_CNTRY_CODE, 'SN'), '') MNFCT_CNTRY,
+            ADD_MNFCT_CNTRY,
+            
+            SBK_TB.RPRSN, 
+            FN_GET_IMAGE(RPRSN_SIGN,0) AS RPRSN_SIGN		
+		
+		FROM SBK_TB
+		INNER JOIN JOB_TB
+		    ON SBK_TB.SBK_YM   = JOB_TB.SBK_YM
+		   AND SBK_TB.TYPE     = JOB_TB.SBK_TYPE
+		   AND SBK_TB.SBK_SEQ  = JOB_TB.SBK_SEQ
+		   AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+		
+		LEFT JOIN CMPY_TB 
+			ON JOB_TB.DIRT_SEQ = CMPY_TB.CMPY_SEQ
+			
+		LEFT JOIN CMPY_MNG_TB DIRT_MNG
+		    ON JOB_TB.DIRT_MNG_SEQ = DIRT_MNG.CMPY_MNG_SEQ
+		
+        LEFT JOIN SBK_EXCEL_TB
+		    ON SBK_EXCEL_TB.SBK_YM   	 = JOB_TB.SBK_YM
+		   AND SBK_EXCEL_TB.SBK_TYPE 	 = JOB_TB.SBK_TYPE
+		   AND SBK_EXCEL_TB.SBK_SEQ  	 = JOB_TB.SBK_SEQ
+		   AND SBK_EXCEL_TB.SBK_REVISION = JOB_TB.SBK_REVISION
+            
+		LEFT JOIN TEST_ITEM_TB
+			ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+	
+		LEFT JOIN TEST_TB
+			ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
+		
+		
+		WHERE 1=1
+		
+		AND SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+	    AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1)
+		AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND SBK_TB.REVISION = SUBSTRING(#{sbkId},12,1)
+	</select>
+	
+	<insert id="insertBh" parameterType="sbd">
+	  INSERT INTO SBK_EXCEL_TB (
+	    SBK_YM,
+	    SBK_TYPE,
+	    SBK_SEQ,
+	    SBK_REVISION,
+	    PRD_IDNTF,
+	    DEV_CODE,
+	    TYPE_CODE,
+	    SCRT_YN,
+	    INS_MEM_ID,
+	    INS_DT
+	  ) VALUES (
+	    SUBSTRING(#{sbkId},3,2),
+	    SUBSTRING(#{sbkId},6,1),
+	    SUBSTRING(#{sbkId},7,4),
+	    IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1)),
+	    #{prdIdntf},
+	    #{devCode},
+	    #{typeCode},
+	    #{scrtYn},
+	    #{insMemId},
+	    NOW()
+	  )
+	  ON DUPLICATE KEY UPDATE
+	    PRD_IDNTF = VALUES(PRD_IDNTF),
+	    DEV_CODE = VALUES(DEV_CODE),
+	    TYPE_CODE = VALUES(TYPE_CODE),
+	    SCRT_YN = VALUES(SCRT_YN),
+	    UDT_MEM_ID = #{udtMemId},
+	    UDT_DT = NOW()
+	</insert>
+	
+	<insert id="insertJh" parameterType="sbd">
+	  INSERT INTO SBK_EXCEL_TB (
+	    SBK_YM,
+	    SBK_TYPE,
+	    SBK_SEQ,
+	    SBK_REVISION,
+	    CF_TYPE,
+	    <if test="cfDate != null and cfDate != ''">CF_DATE,</if>
+	    INS_MEM_ID,
+	    INS_DT
+	  ) VALUES (
+	    SUBSTRING(#{sbkId},3,2),
+	    SUBSTRING(#{sbkId},6,1),
+	    SUBSTRING(#{sbkId},7,4),
+	    IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1)),
+	    #{cfType},
+	    <if test="cfDate != null and cfDate != ''">#{cfDate},</if>
+	    #{insMemId},
+	    NOW()
+	  )
+	  ON DUPLICATE KEY UPDATE
+	    CF_TYPE    = VALUES(CF_TYPE),
+	    <if test="cfDate != null and cfDate != ''">CF_DATE    = VALUES(CF_DATE),</if>
+	    UDT_MEM_ID = #{udtMemId},
+	    UDT_DT     = NOW()
+</insert>
+</mapper>

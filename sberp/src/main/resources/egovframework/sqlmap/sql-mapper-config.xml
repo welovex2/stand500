@@ -49,6 +49,7 @@
     	<typeAlias alias="sbkReq"		type="egovframework.sbk.service.SbkDTO$Req"/>
     	<typeAlias alias="sbkRes"		type="egovframework.sbk.service.SbkDTO$Res"/>
     	<typeAlias alias="testItemRejDTO"	type="egovframework.tst.dto.TestItemRejDTO"/>
+    	<typeAlias alias="sbd"			type="egovframework.sbk.service.Sbd"/>
     	
     	<!-- 시료 -->
     	<typeAlias alias="imDTO"		type="egovframework.sam.dto.ImDTO"/>

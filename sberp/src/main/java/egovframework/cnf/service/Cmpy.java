@@ -92,7 +92,10 @@ public class Cmpy {
   @Column
   private String rprsn;
 
-
+  @ApiModelProperty(value = "대표이사싸인 ", example = "")
+  @Column
+  private String rprsnSign;
+  
   @ApiModelProperty(value = "영문대표이사명 ", example = "")
   @Column
   private String engRprsn;

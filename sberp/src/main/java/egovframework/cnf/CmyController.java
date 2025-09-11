@@ -136,7 +136,8 @@ public class CmyController {
       @ApiParam(value = "typeCode=협력사 공통코드(PK), 직고객 공통코드(ST)", required = true, example = "") @RequestPart CmpyDTO req,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
       @RequestPart(value = "files", required = false) final List<MultipartFile> files,
-      @RequestPart(value = "signs", required = false) final List<MultipartFile> signs)
+      @RequestPart(value = "signs", required = false) final List<MultipartFile> signs,
+      @RequestPart(value = "rprsnSign", required = false) final MultipartFile rprsnSign)
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -224,6 +225,13 @@ public class CmyController {
         atchFileId = fileMngService.insertFileInf(signResult);
         mng.setSignUrl(atchFileId);
       }
+    }
+    // 대표자서명
+    FileVO FileRes = null;
+    if (!ObjectUtils.isEmpty(rprsnSign)) {
+      FileRes = fileUtil.parseFile(rprsnSign, "CMY", 0, "", "");
+      atchFileId = fileMngService.insertFileInf(FileRes);
+      req.setRprsnSign(atchFileId);
     }
     
     // 파일삭제

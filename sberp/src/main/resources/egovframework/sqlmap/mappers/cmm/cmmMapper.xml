@@ -89,6 +89,7 @@
 		
 			INNER JOIN CMPY_TB p
 			    ON r.PARENT_CMPY_SEQ = p.CMPY_SEQ
+			    AND r.CHILD_CMPY_SEQ = #{cmpySeq}
 			    AND p.STATE != 'D'
 			
 			INNER JOIN CMPY_MNG_TB m

@@ -120,7 +120,7 @@ public class Sbk {
   private String newCmpnyIdntf3;
 
 
-  @ApiModelProperty(value = "전기정격W ", example = "전기정격W")
+  @ApiModelProperty(value = "전기정격W, 전원사양 ", example = "전기정격W")
   @Column
   private String elctrRtngW;
 
