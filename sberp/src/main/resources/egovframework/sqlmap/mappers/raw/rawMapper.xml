@@ -918,6 +918,7 @@
 		    /* 6	고정 > 제조자 / 제조국가 */
 		    SBK_TB.MNFCT_CMPNY MNFCT_CMPNY,
 		    fn_code_name (SBK_TB.MNFCT_CNTRY_CODE, 'SN') MNFCT_CNTRY,
+		    SBK_TB.ADD_MNFCT_CNTRY,
 		    /* 제품라벨 */
             ATHNT_NMBR,
 			MDL_IDNTF,
