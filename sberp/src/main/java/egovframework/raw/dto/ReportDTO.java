@@ -107,6 +107,10 @@ public class ReportDTO {
   @ApiModelProperty(value = "6	제조자 / 제조국가  ", example = "")
   @Column
   private String mnfctCntry;
+  
+  @ApiModelProperty(value = "신청서_제조국 (#63)  ", example = "")
+  @Column
+  private String addMnfctCntry;  
 
 
   @ApiModelProperty(value = "신청기기 인증번호 ", example = "")
