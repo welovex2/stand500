@@ -103,7 +103,21 @@
 				ON JOB_TB.DIRT_SEQ = CMPY_TB.CMPY_SEQ
 			            
 			LEFT JOIN RAW_TB
-				ON TEST_TB.TEST_SEQ = RAW_TB.TEST_SEQ
+			    ON RAW_TB.RAW_SEQ = (
+			        IF(JOB_TB.SBK_REVISION = 0,
+			            /* 원본: 자기 RAW */
+			            (SELECT r.RAW_SEQ
+			             FROM RAW_TB r
+			             WHERE r.TEST_SEQ = TEST_TB.TEST_SEQ
+			             LIMIT 1),
+			            /* 재발행: 원본신청서 RAW */
+			            (SELECT subRaw.RAW_SEQ
+			             FROM TEST_TB subTest
+			             INNER JOIN RAW_TB subRaw ON subTest.TEST_SEQ = subRaw.TEST_SEQ
+			             WHERE subTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+			             LIMIT 1)
+			        )
+			    )
 					
 			LEFT JOIN METHOD_IMG_TB MIT
 			    ON RAW_TB.RAW_SEQ = MIT.RAW_SEQ

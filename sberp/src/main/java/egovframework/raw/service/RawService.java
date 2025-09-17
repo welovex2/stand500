@@ -125,4 +125,6 @@ public interface RawService {
   List<FileRawDTO> fileRawList(int testSeq, ComParam param);
 
   List<Test> reportDetail(int testSeq);
+  
+  RawData labelDetail(RawSearchDTO req);
 }

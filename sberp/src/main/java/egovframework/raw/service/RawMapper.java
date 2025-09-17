@@ -96,4 +96,6 @@ public interface RawMapper {
   public void updateReport(RawData req);
 
   public List<Test> reportDetail(int rawSeq);
+
+  public RawData labelDetail(RawSearchDTO req);
 }

@@ -492,6 +492,37 @@
 			  ) = #{testId}
 		    
 	</select>
+	
+	<select id="labelDetail" parameterType="rawSearchDTO" resultType="rawData">
+		SELECT
+			/* 고정 > 기자재명칭 */
+			    if (
+			        TEST_ITEM_TB.PRODUCT = '',
+			        JOB_TB.PRDCT_NAME,
+			        TEST_ITEM_TB.PRODUCT
+			    ) EQPMN,
+			    /* 고정 > 모델 */
+			    if (
+			        TEST_ITEM_TB.MODEL = '',
+			        JOB_TB.MODEL_NAME,
+			        TEST_ITEM_TB.MODEL
+			    ) MODEL
+		FROM
+		    TEST_TB
+			
+			INNER JOIN TEST_ITEM_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+		    LEFT JOIN TEST_TB orgTest ON orgTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+		    
+		    INNER JOIN JOB_TB ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM 
+			AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM 
+			AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+		    
+		    LEFT JOIN RAW_TB ON RAW_TB.TEST_SEQ = IF(SBK_TB.REVISION=0,TEST_TB.TEST_SEQ,orgTest.TEST_SEQ)
+		WHERE
+		    1 = 1
+		AND TEST_TB.TEST_SEQ = #{testSeq}    
+	</select>
 		
 	<select id="detail" parameterType="rawSearchDTO" resultType="rawData">
 		SELECT

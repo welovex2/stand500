@@ -562,7 +562,7 @@ public class TstController {
     // 시험규격별 제품/모델명
     RawSearchDTO req = new RawSearchDTO();
     req.setTestSeq(Integer.valueOf(testSeq));
-    RawData detail = rawService.detail(req);
+    RawData detail = rawService.labelDetail(req);
     if (detail != null) {
       map.put("prdctName", detail.getEqpmn());
       map.put("modelName", detail.getModel());  

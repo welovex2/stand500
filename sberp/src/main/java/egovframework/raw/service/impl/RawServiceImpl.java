@@ -428,6 +428,13 @@ public class RawServiceImpl implements RawService {
   }
   
   @Override
+  public RawData labelDetail(RawSearchDTO req) {
+    RawData detail = new RawData();
+    detail = rawMapper.labelDetail(req);
+    return detail;
+  }
+  
+  @Override
   public RawData detail(RawSearchDTO req) throws Exception {
     
     RawData detail = new RawData();
