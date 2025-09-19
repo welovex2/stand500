@@ -164,6 +164,9 @@ public class Sbk {
   @Column
   private String addMnfctCntry;
 
+  @ApiModelProperty(value = "추가제조국 노출여부 ", example = "0")
+  @Column
+  private int addMnfctCntryYn;
 
   @ApiModelProperty(value = "시험장소:시험기관내 ", example = "1")
   @Column

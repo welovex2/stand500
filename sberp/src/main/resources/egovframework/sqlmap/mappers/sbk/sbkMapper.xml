@@ -68,6 +68,7 @@
 			MNFCT_ADRES,
 			ADD_MNFCT_CMPNY,
 			ADD_MNFCT_CNTRY,
+			ADD_MNFCT_CNTRY_YN,
 			
 			JOB_TB.MEMO saleMemo,
 			
@@ -434,6 +435,7 @@
 			MNFCT_ADRES = #{mnfctAdres},
 			ADD_MNFCT_CMPNY = #{addMnfctCmpny},
 			ADD_MNFCT_CNTRY = #{addMnfctCntry},
+			ADD_MNFCT_CNTRY_YN = #{addMnfctCntryYn},
 			TEST_PLACE_IN_YN = #{testPlaceInYn},
 			TEST_PLACE_OUT_YN = #{testPlaceOutYn},
 			TEST_ADRES = #{testAdres},
@@ -599,6 +601,7 @@
 				MNFCT_ADRES,
 				ADD_MNFCT_CMPNY,
 				ADD_MNFCT_CNTRY,
+				ADD_MNFCT_CNTRY_YN,
 				TEST_PLACE_IN_YN,
 				TEST_PLACE_OUT_YN,
 				TEST_ADRES,
@@ -748,6 +751,7 @@
 				#{mnfctAdres},
 				#{addMnfctCmpny},
 				#{addMnfctCntry},
+				#{addMnfctCntryYn},
 				#{testPlaceInYn},
 				#{testPlaceOutYn},
 				#{testAdres},

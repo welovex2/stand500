@@ -112,7 +112,12 @@ public class ReportDTO {
   @Column
   private String addMnfctCntry;  
 
+  
+  @ApiModelProperty(value = "신청서_제조국 (#63+)  ", example = "")
+  @Column
+  private int addMnfctCntryYn;  
 
+  
   @ApiModelProperty(value = "신청기기 인증번호 ", example = "")
   @Column
   private String athntNmbr;
