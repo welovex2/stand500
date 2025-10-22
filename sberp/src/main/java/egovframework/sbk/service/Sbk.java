@@ -551,7 +551,11 @@ public class Sbk {
   @ApiModelProperty(value = "신청인 서명 ", example = "")
   @Column
   private String appSignUrl;
-
+  
+  @ApiModelProperty(value = "회사연동 신청인 서명 ", example = "")
+  @Column
+  private String rprsnSignUrl;
+   
   @ApiModelProperty(value = "동의 신청인 ", example = "동의 신청인")
   @Column
   private String appAgreeName;

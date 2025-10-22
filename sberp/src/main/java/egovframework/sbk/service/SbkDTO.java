@@ -107,6 +107,10 @@ public class SbkDTO {
     @Column
     private String saleMemo;
     
+    @ApiModelProperty(value = "신청인 서명파일 아이디", example = "")
+    @Column
+    private String appSign;
+    
   }
 
   @Getter
@@ -282,6 +286,10 @@ public class SbkDTO {
     @ApiModelProperty(value = "고지부메모 ", example = "고지부메모")
     @Column
     private String saleMemo;
+    
+    @ApiModelProperty(value = "신청인 서명파일 아이디", example = "")
+    @Column
+    private String appSign;
   }
 
 }

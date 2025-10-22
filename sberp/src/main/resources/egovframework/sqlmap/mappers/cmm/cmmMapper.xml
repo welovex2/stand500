@@ -44,6 +44,8 @@
 		    BSNS_RGNMB,
 		    CRPRT_RGNMB,
 		    RPRSN,
+		    FN_GET_IMAGE(RPRSN_SIGN,0) RPRSN_SIGN_URL,
+		    RPRSN_SIGN,
 		    RSDNT_RGNMB,
 		    CMPY_PHONE,
 		    ADDR,
