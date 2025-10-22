@@ -34,6 +34,7 @@ public class Sbd {
   private String mngFax;
   private String cfType;
   private String athntNmbr;
+  private String mdlIdntf;
   private String prdctName;
   private String modelName;
   private String cmpyName;
