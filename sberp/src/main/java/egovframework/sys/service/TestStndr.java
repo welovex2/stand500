@@ -21,7 +21,10 @@ public class TestStndr {
   @ApiModelProperty(value = "시험규격 ", example = "")
   @Column
   private String testStndr;
-
+  
+  @ApiModelProperty(value = "시험부서 ", example = "")
+  @Column
+  private String testTypeCode;
 
   @ApiModelProperty(value = "MEMO ", example = "")
   @Column

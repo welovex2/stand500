@@ -24,7 +24,10 @@
 	        		<when test="item.searchCode == 15">AND date_format(TEST_STNDR_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
 					<!-- 40	시험규격 -->
 					<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR like concat('%',#{item.searchWord},'%')</when>
-					
+					<!-- 23	시험부 -->
+	        		<when test="item.searchCode == 23 and item.searchWords != null">AND TEST_STNDR_TB.TEST_TYPE_CODE IN
+	        			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+	        		</when>
 				</choose>
 			</foreach>
 		</if>
@@ -43,6 +46,8 @@
 				SELECT
 					TEST_STNDR_TB.TEST_STNDR_SEQ,
 					TEST_STNDR_TB.TEST_STNDR,
+					IFNULL(TEST_STNDR_TB.TEST_TYPE_CODE, '') TEST_TYPE_CODE,
+					IFNULL(IF (TEST_STNDR_TB.TEST_TYPE_CODE = 'AA', '공통', FN_CODE_NAME (TEST_STNDR_TB.TEST_TYPE_CODE,'TT')), '') TEST_TYPE,
 					COUNT(DISTINCT TEST_TB.TEST_SEQ) AS useCnt,
 					IFNULL(TEST_STNDR_TB.MEMO, '') MEMO,
 					DATE_FORMAT(TEST_STNDR_TB.ins_dt, '%Y-%m-%d') insDtStr,
@@ -66,7 +71,10 @@
 			        		<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_STNDR_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 							<!-- 40	시험규격 -->
 							<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR LIKE CONCAT('%',#{item.searchWord},'%')</when>
-							
+							<!-- 23	시험부 -->
+			        		<when test="item.searchCode == 23 and item.searchWords != null">AND TEST_STNDR_TB.TEST_TYPE_CODE IN
+			        			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
+			        		</when>
 						</choose>
 					</foreach>
 				</if>
@@ -86,6 +94,7 @@
 		    TEST_STNDR_TB (
 		        TEST_STNDR_SEQ,
 		        TEST_STNDR,
+		        TEST_TYPE_CODE,
 		        MEMO,
 		        INS_MEM_ID,
 		        UDT_MEM_ID
@@ -94,6 +103,7 @@
 		(
 	        IF(#{testStndrSeq}=0,(SELECT IFNULL(MAX(seq.TEST_STNDR_SEQ)+1,1) testStndrSeq FROM TEST_STNDR_TB seq), #{testStndrSeq}),
 			#{testStndr},
+			#{testTypeCode},
 			#{memo},
 			#{insMemId},
 			#{udtMemId}
@@ -102,6 +112,7 @@
 		
 			<if test='"U".equals(state)'>
 		    TEST_STNDR = #{testStndr},
+		    TEST_TYPE_CODE = #{testTypeCode},
 		    MEMO = #{memo},
 		    </if>
 		    UDT_MEM_ID = #{udtMemId},

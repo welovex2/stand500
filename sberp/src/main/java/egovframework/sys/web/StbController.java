@@ -2,12 +2,15 @@ package egovframework.sys.web;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +22,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sys.service.StbService;
@@ -64,6 +68,30 @@ public class StbController {
 //    pagingVO.setTotalCount(cnt);
 //    pagingVO.setTotalPage(
 //        (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
+    
+    /**
+     * OR 조건 검색 처리
+     */
+    // 같은 CODE로 그룹핑
+    if (!ObjectUtils.isEmpty(param) && !ObjectUtils.isEmpty(param.getSearchVO())) {
+      Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
+      
+      // 받은 searchCode 삭제 후 다시 생성
+  //    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+  
+      SearchVO newSearch = new SearchVO();
+      // 시험부
+      if (reSearch.get("23") != null) {
+        newSearch = new SearchVO();
+        newSearch.setSearchCode("23");
+        newSearch.setSearchWords(reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+        param.getSearchVO().add(newSearch);
+      }
+    }
+    /**
+     * -- END OR 조건 검색 처리
+     */
+    
     list = stbService.selectList(param);
 
     if (list == null) {

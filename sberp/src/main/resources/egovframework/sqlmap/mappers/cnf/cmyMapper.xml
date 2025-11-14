@@ -26,6 +26,8 @@
 							<when test="item.searchCode == 41">AND IFNULL(type_code,'9999') = #{item.searchWord}</when>
 							<!-- 15	작성일 -->
 			        		<when test="item.searchCode == 15">and date_format(CMPY_TB.ins_dt, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') and date_format(#{item.endDate}, '%Y%m%d')</when>
+			        		<!-- 86	사업자번호 -->
+							<when test="item.searchCode == 86">AND REPLACE(IFNULL(CMPY_TB.BSNS_RGNMB, ''), '-', '') LIKE CONCAT('%', REPLACE(#{item.searchWord}, '-', ''), '%')</when>
 						</choose>
 					</foreach>
 				</if>
@@ -44,6 +46,7 @@
 		        FN_GET_PHONE_FORMAT(c.CMPY_PHONE) AS cmpy_phone,
 		        IFNULL(c.MEMO, '-') AS memo,
 		        IFNULL(FN_MEM_NAME(c.UDT_MEM_ID), '') AS ins_name,
+		        IFNULL(c.BSNS_RGNMB, '') AS BSNS_RGNMB,
 		        
 		        -- 상위 회사 정보 추가
 				IFNULL(
@@ -84,6 +87,8 @@
 							<when test="item.searchCode == 41">AND IFNULL(c.TYPE_CODE,'9999') = #{item.searchWord}</when>
 							<!-- 15	작성일 -->
 			        		<when test="item.searchCode == 15">AND DATE_FORMAT(c.ins_dt, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			        		<!-- 86	사업자번호 -->
+							<when test="item.searchCode == 86">AND REPLACE(IFNULL(c.BSNS_RGNMB, ''), '-', '') LIKE CONCAT('%', REPLACE(#{item.searchWord}, '-', ''), '%')</when>
 						</choose>
 					</foreach>
 				</if>

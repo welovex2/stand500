@@ -251,7 +251,7 @@
 	
 	<sql id="whereTstList">
 		/* 보안견적서 */
-    	<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID, mngr1.TEST_MNG_ID, mngr3.TEST_MNG_ID, mngr3.TEST_MNG_ID), 1)</if>
+    	<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID, mngr1.TEST_MNG_ID, mngr2.TEST_MNG_ID, mngr3.TEST_MNG_ID), 1)</if>
     	
 		<if test="searchVO != null">
 	        <foreach collection="searchVO" item="item" separator="">
