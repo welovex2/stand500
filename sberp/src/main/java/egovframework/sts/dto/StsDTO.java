@@ -14,7 +14,7 @@ public class StsDTO {
   private String stsDt;
   
   @ApiModelProperty(value="계산서발행 금액 ", example = "")
-  private int billAmt;
+  private long billAmt;
   @ApiModelProperty(value="납부완료 금액 ", example = "")
   private long payAmt;
   
