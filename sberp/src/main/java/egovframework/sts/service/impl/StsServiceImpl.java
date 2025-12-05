@@ -153,7 +153,7 @@ public class StsServiceImpl implements StsService {
        */
       StsDTO total = new StsDTO();
       total.setStsDt("Total");
-      total.setBillAmt((int) billList.stream().mapToInt(bill -> bill.getBillAmt()).summaryStatistics().getSum());
+      total.setBillAmt((long) billList.stream().mapToLong(bill -> bill.getBillAmt()).summaryStatistics().getSum());
       total.setPayAmt((long) payList.stream().mapToLong(pay -> pay.getPayAmt()).summaryStatistics().getSum());
       // 부서별 토탈
       List<StsDTO.TestTypeList> typeTotal = stsMapper.selectTotalStateList(param);
