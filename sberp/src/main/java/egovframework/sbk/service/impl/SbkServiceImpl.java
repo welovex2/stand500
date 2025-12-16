@@ -1,5 +1,8 @@
 package egovframework.sbk.service.impl;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,6 +13,7 @@ import egovframework.cmm.service.CmmMapper;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.JobMngr;
+import egovframework.cmm.service.NextcloudFolderService;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sbk.service.SbkDTO.Req;
 import egovframework.sbk.service.SbkDTO.Res;
@@ -17,8 +21,10 @@ import egovframework.sbk.service.SbkMapper;
 import egovframework.sbk.service.SbkService;
 import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItemRej;
+import lombok.extern.slf4j.Slf4j;
 
 @Service("SbkService")
+@Slf4j
 public class SbkServiceImpl implements SbkService {
 
 	@Autowired
@@ -27,6 +33,9 @@ public class SbkServiceImpl implements SbkService {
 	@Autowired
 	CmmMapper cmmMapper;
 	   
+	@Autowired
+	NextcloudFolderService nextcloudFolderService;
+	  
 	@Override
 	public SbkDTO.Res selectDetail(Req req) {
 		SbkDTO.Res detail;
@@ -62,6 +71,23 @@ public class SbkServiceImpl implements SbkService {
 			sbkMapper.updateJobSbk(req);
 		
 		
+	    try {
+	      
+	      String yearMonth = LocalDate.now(ZoneId.of("Asia/Seoul"))
+	          .format(DateTimeFormatter.ofPattern("yyyy/MM"));
+	      
+	        String davPath = createNcFolderAndGrant(yearMonth, req.getSbkId(), req.getMngId());
+	        
+	        req.setNcFolderPath(davPath);
+	        sbkMapper.updateNcFolderPath(req);
+	        
+	        
+	    } catch (Exception e) {
+	        // 트랜잭션은 유지하되, 폴더 생성 실패로 신청서까지 롤백시키지 않음
+	        log.error("Nextcloud folder create fail applyNo={}", req.getSbkId(), e);
+	        // TODO: 재시도 테이블/큐에 저장
+	    }
+	    
 		return result; 
 	}
 
@@ -130,9 +156,18 @@ public class SbkServiceImpl implements SbkService {
 		return sbkMapper.hisList(sbkId);
 	}
 
-  @Override
-  public Res selectDirtInfo(Req req) {
-    return sbkMapper.selectDirtInfo(req);
+    @Override
+    public Res selectDirtInfo(Req req) {
+      return sbkMapper.selectDirtInfo(req);
+    }
+    
+    private String createNcFolderAndGrant(String yearMonth, String applyNo, String targetUserId) throws Exception {
+      return nextcloudFolderService.createApplyFolderAndGrant(
+              yearMonth,
+              applyNo,
+              targetUserId,
+              false
+      );
   }
 
 }

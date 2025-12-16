@@ -216,6 +216,12 @@
 			<artifactId>hibernate-validator</artifactId>
 			<version>5.2.4.Final</version>
 		</dependency>
+		
+		<dependency>
+		  <groupId>org.apache.httpcomponents</groupId>
+		  <artifactId>httpclient</artifactId>
+		  <version>4.5.13</version>
+		</dependency>
 
 <!-- 이미지변환 라이브러리 // 용량이 200메가정도 차지해서 속도 문제 아니면 보류 -->
 <!-- <dependency> -->
@@ -315,6 +321,14 @@
 			<artifactId>ojdbc</artifactId> <version>14</version> <scope>system</scope> 
 			<systemPath>${basedir}/src/main/webapp/WEB-INF/lib/ojdbc-14.jar</systemPath> 
 			</dependency> -->
+		
+		<!-- 파일서버 -->	
+		<dependency>
+		  <groupId>com.amazonaws</groupId>
+		  <artifactId>aws-java-sdk-s3</artifactId>
+		  <version>1.12.770</version>
+		</dependency>
+			
 	</dependencies>
 
 	<build>

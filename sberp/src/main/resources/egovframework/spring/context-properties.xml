@@ -8,9 +8,22 @@
 	        	<entry key="pageUnit" value="15"/>
 	        	<entry key="pageSize" value="10"/>
 	        	<entry key="posblAtchFileSize" value="5242880"/>
+	        	
 	        	<entry key="Globals.fileStorePath" value="webapps/sbfile/"/>
 	        	<entry key="Globals.addedOptions" value="false"/>
 	        	
+	        	<entry key="Globals.minio.endpoint" value="http://221.110.54.98:9000" />
+	        	<entry key="Globals.minio.accessKey" value="nextcloud" />
+	        	<entry key="Globals.minio.secretKey" value="next123!" />
+	        	<entry key="Globals.minio.bucket" value="nextcloud" />
+
+	        	<entry key="Globals.nc.webdav.base" value="http://221.110.54.98:8090/remote.php/dav/files" />
+	        	<entry key="Globals.nc.user" value="stderp" />
+	        	<entry key="Globals.nc.appPassword" value="WmwHN-XiqtG-5WWk6-J6HAJ-Awji8" />
+	        	<entry key="Globals.nc.rootFolder" value="ERP" />
+	        	<entry key="Globals.nc.base" value="http://221.110.54.98:8090" />
+	        	<entry key="Globals.nc.shareToken" value="NswxytiKTwd3x9b" />
+	        		        	
 	        	<entry key="ftp.url" value="iup.cdn1.cafe24.com" />
 	        	<entry key="ftp.port" value="21" />
 	        	<entry key="ftp.id" value="stand500admin" />
@@ -19,6 +32,8 @@
 	        	
 	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
 	        	<entry key="cdn.url" value="http://stand500admin.cdn1.cafe24.com/" />
+	        	
+	        	
 	        	
 	        </map>
 		</property>

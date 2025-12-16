@@ -3,6 +3,7 @@ package egovframework.tst.service;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.NcGrantDTO;
 import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
@@ -73,4 +74,6 @@ public interface TstMapper {
   public int selectCheckInfo(String testSeq);
 
   public boolean saleMemoInsert(Req req);
+
+  public String selectNcGrantByApplyNo(int testSeq);
 }

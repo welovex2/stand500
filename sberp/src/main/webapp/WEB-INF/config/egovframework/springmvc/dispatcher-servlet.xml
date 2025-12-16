@@ -97,6 +97,7 @@
 	        <mvc:exclude-mapping path="/user/login/*.do"/> <!-- 예외 경로 지정 -->
 	        <mvc:exclude-mapping path="/user/login.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
 	        <mvc:exclude-mapping path="/cnf/mem/updatePassword.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
+	        <mvc:exclude-mapping path="/file/getImage.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
 	        <bean class="egovframework.cmm.filter.AuthInterceptor" />
 	    </mvc:interceptor>
 	</mvc:interceptors>

@@ -46,4 +46,6 @@ public interface SbkMapper {
 
   Res selectDirtInfo(Req req);
 
+  void updateNcFolderPath(Req req);
+
 }

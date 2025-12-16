@@ -1285,4 +1285,15 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		AND JOB_TB.QUO_SEQ = SUBSTRING(#{quoId},8,4)	
 	</select>
 	
+	<update id="updateNcFolderPath" parameterType="sbkReq" >
+	
+		UPDATE SBK_TB
+		SET NC_FOLDER_PATH = #{ncFolderPath}
+		WHERE SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND TYPE = SUBSTRING(#{sbkId},6,1)
+		AND SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
+		
+	</update>
+	
 </mapper>

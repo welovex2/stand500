@@ -705,4 +705,9 @@ public class Sbk {
   private String applAddMngFax;
   private String applAddMngEmail;
   private String applAddMngTel;
+  
+  // 파일서버 폴더 정보
+
+  @Column
+  private String ncFolderPath;
 }

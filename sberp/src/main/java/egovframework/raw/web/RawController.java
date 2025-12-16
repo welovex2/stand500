@@ -31,11 +31,13 @@ import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.LoginVO;
+import egovframework.cmm.service.NcFileDTO;
+import egovframework.cmm.service.NextcloudFolderService;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.CdnFileMngUtil;
-import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
@@ -76,8 +78,8 @@ public class RawController {
   @Resource(name = "RawService")
   private RawService rawService;
 
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
 
   @Resource(name = "CdnFileMngUtil")
   private CdnFileMngUtil cdnUtil;
@@ -90,6 +92,9 @@ public class RawController {
 
   @Resource(name = "MacService")
   private MacService macService;
+  
+  @Resource(name = "NextcloudFolderService")
+  private NextcloudFolderService nextcloudFolderService;
 
   private static final Marker RD_MARKER = MarkerFactory.getMarker("RD_MARKER");
   
@@ -729,8 +734,10 @@ public class RawController {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
-
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+    
+    List<NcFileDTO> files = nextcloudFolderService.listErpFolder("2025/12/RAW");
+    
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).summary(files).build();
 
     return res;
   }
@@ -986,8 +993,10 @@ public class RawController {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
+    
+    List<NcFileDTO> files = nextcloudFolderService.listErpFolder("2025/12/RAW");
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).summary(files).build();
 
     return res;
   }

@@ -14,10 +14,11 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.MinioFileService;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
-import egovframework.raw.dto.CtiDTO;
 import egovframework.raw.dto.DpDTO;
 import egovframework.raw.dto.EftDTO;
 import egovframework.raw.dto.EsdDTO;
@@ -36,7 +37,6 @@ import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.FileRaw;
 import egovframework.raw.service.MethodCsSub;
-import egovframework.raw.service.MethodCtiSub;
 import egovframework.raw.service.MethodEftSub;
 import egovframework.raw.service.MethodEsdSub;
 import egovframework.raw.service.MethodMapper;
@@ -72,6 +72,11 @@ public class RawServiceImpl implements RawService {
   @Autowired
   EgovPropertyService propertyService;
 
+  @Autowired
+  private MinioFileService minioFileService;
+  
+  @Autowired
+  private NextcloudDavService nextcloudDavService;
   
   @Override
   @Transactional
@@ -389,14 +394,12 @@ public class RawServiceImpl implements RawService {
           map.setTitle(item.getFileCn());
           map.setFileSn(item.getFileSn());
           
-//          if ("CDN".contentEquals(item.getFileLoc())) {
-//            map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-//                .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-//          } else {
-            map.setImageUrl(propertyService.getString("img.url").concat(detail.getImgUrl())
-                .concat("&fileSn=").concat(item.getFileSn()));
-//          }
-          
+//            map.setImageUrl(propertyService.getString("img.url").concat(detail.getImgUrl())
+//                .concat("&fileSn=").concat(item.getFileSn()));
+           //map.setImageUrl(minioFileService.getPresignedGetUrl(item.getStreFileNm(), 10));
+          map.setImageUrl(
+              nextcloudDavService.buildPublicRawFileUrl(item.getStreFileNm())
+          );
           setupList.add(map);
 
         }
