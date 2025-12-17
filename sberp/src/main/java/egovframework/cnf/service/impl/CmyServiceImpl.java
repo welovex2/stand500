@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.EgovFileMngService;
+import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.CmpyRelationDTO;
@@ -23,6 +26,12 @@ public class CmyServiceImpl implements CmyService {
   @Autowired
   CmyMapper cmyMapper;
 
+  @Autowired
+  EgovFileMngService fileMngService;
+  
+  @Autowired
+  private NextcloudDavService nextcloudDavService;
+  
   private static final Logger LOGGER = LoggerFactory.getLogger(CmyServiceImpl.class);
   
   @Override
@@ -86,10 +95,16 @@ public class CmyServiceImpl implements CmyService {
   }
   
   @Override
-  public CmpyDTO detail(int cmpySeq) {
+  public CmpyDTO detail(int cmpySeq) throws Exception {
     CmpyDTO detail = cmyMapper.detail(cmpySeq);
     
     if (detail != null) {
+      // 서명 이미지
+      FileVO fileVO = new FileVO();
+      fileVO.setAtchFileId(detail.getRprsnSign());
+      FileVO rprsnSignVO = fileMngService.selectFileInf(fileVO);
+      detail.setRprsnSign(nextcloudDavService.resolveFileUrl(rprsnSignVO));
+      
       detail.setMngList(cmyMapper.selectMngList(cmpySeq));
     }
     

@@ -70,13 +70,18 @@ public class SbkServiceImpl implements SbkService {
 		else
 			sbkMapper.updateJobSbk(req);
 		
-		
 	    try {
 	      
 	      String yearMonth = LocalDate.now(ZoneId.of("Asia/Seoul"))
 	          .format(DateTimeFormatter.ofPattern("yyyy/MM"));
 	      
-	        String davPath = createNcFolderAndGrant(yearMonth, req.getSbkId(), req.getMngId());
+	      
+	        String davPath = nextcloudFolderService.createApplyFolderAndGrant(
+                                                              	              yearMonth,
+                                                              	              req.getSbkId(),
+                                                              	              req.getMngId(),
+                                                              	              false
+                                                              	              );
 	        
 	        req.setNcFolderPath(davPath);
 	        sbkMapper.updateNcFolderPath(req);
@@ -161,13 +166,4 @@ public class SbkServiceImpl implements SbkService {
       return sbkMapper.selectDirtInfo(req);
     }
     
-    private String createNcFolderAndGrant(String yearMonth, String applyNo, String targetUserId) throws Exception {
-      return nextcloudFolderService.createApplyFolderAndGrant(
-              yearMonth,
-              applyNo,
-              targetUserId,
-              false
-      );
-  }
-
 }

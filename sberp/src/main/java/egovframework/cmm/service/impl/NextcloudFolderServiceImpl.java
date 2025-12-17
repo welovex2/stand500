@@ -234,6 +234,11 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
         // 2) WebDAV로 폴더 재귀 생성 (없으면 자동 MKCOL)
         nextcloudDavService.ensureFolder(relativePath);
 
+        // 2-1) 하위 공통 폴더 생성: "2025/12/SB25-G1845/00.공통폴더"
+        String commonSubFolderName = "00.공통폴더";
+        String commonRelativePath = relativePath + "/" + commonSubFolderName;
+        nextcloudDavService.ensureFolder(commonRelativePath);
+        
         // 3) Nextcloud 경로(davPath)
         String davPath = ROOT_FOLDER + "/" + relativePath; 
         // => "/ERP/2025/12/SB25-G1845"

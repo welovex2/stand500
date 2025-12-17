@@ -12,6 +12,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -29,11 +30,13 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.CmyService;
@@ -51,8 +54,8 @@ public class CmyController {
   @Resource(name = "CmyService")
   private CmyService cmyService;
 
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
@@ -60,6 +63,9 @@ public class CmyController {
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
+  @Autowired
+  private NextcloudDavService nextcloudDavService;
+  
   @ApiOperation(value = "협력사/직접고객 리스트", notes = "검색코드\n2  작성자\n12   회사명\n13 회사연락처\n41   회사종류\n15   작성일 ")
   @GetMapping(value = "/{type}/list.do")
   public BasicResponse list(
@@ -142,7 +148,7 @@ public class CmyController {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
-
+    
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
@@ -159,10 +165,6 @@ public class CmyController {
     // 직접고객
     else if ("direct".equals(type))
       req.setCmpyCode("1000");
-
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -182,11 +184,16 @@ public class CmyController {
     // 파일처리
     List<FileVO> FileResult = null;
     String atchFileId = "";
+    String folderName = "";
+    
+    if (req.getCmpySeq() == 0) folderName = req.getCmpyName();
+    else folderName = req.getCmpyName();
+    
     if (!ObjectUtils.isEmpty(files)) {
       
       // 신규
       if (StringUtils.isEmpty(req.getAtchFileId())) {
-        FileResult = fileUtil.parseFile(files, "CMY", 0, "", "");
+        FileResult = fileUtil.parseFile(files, "", 0, "", "고객사/".concat(folderName));
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
       }
@@ -198,7 +205,7 @@ public class CmyController {
         int cnt = fileMngService.getMaxFileSN(fvo);
         
         // 추가파일 등록
-        List<FileVO> _result = fileUtil.parseFile(files, "CMY", cnt, req.getAtchFileId(), "");
+        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "고객사/".concat(folderName));
         fileMngService.updateFileInfs(_result);
       }
       
@@ -215,7 +222,7 @@ public class CmyController {
       
       if (!ObjectUtils.isEmpty(file)) {
         
-        signResult = fileUtil.parseFile(file, "CMY", 0, "", "");
+        signResult = fileUtil.parseFile(file, "", 0, "", "고객사/".concat(folderName));
         
         int index = mng.getOrignlFileNm().lastIndexOf(".");
         String fileExt = mng.getOrignlFileNm().substring(index + 1);
@@ -229,7 +236,7 @@ public class CmyController {
     // 대표자서명
     FileVO FileRes = null;
     if (!ObjectUtils.isEmpty(rprsnSign)) {
-      FileRes = fileUtil.parseFile(rprsnSign, "CMY", 0, "", "");
+      FileRes = fileUtil.parseFile(rprsnSign, "", 0, "", "고객사/".concat(folderName));
       atchFileId = fileMngService.insertFileInf(FileRes);
       req.setRprsnSign(atchFileId);
     }
@@ -313,9 +320,13 @@ public class CmyController {
     FileVO fileVO = new FileVO();
     fileVO.setAtchFileId(detail.getAtchFileId());
     List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
+    
     docResult.stream().map(doc -> {
-      doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
-          .concat("&fileSn=").concat(doc.getFileSn()));
+      try {
+        doc.setFileStreCours(nextcloudDavService.resolveFileUrl(doc));
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       return doc;
     }).collect(Collectors.toList());
     detail.setFileList(docResult);

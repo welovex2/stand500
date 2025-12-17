@@ -393,13 +393,8 @@ public class RawServiceImpl implements RawService {
           PicDTO map = new PicDTO();
           map.setTitle(item.getFileCn());
           map.setFileSn(item.getFileSn());
+          map.setImageUrl(nextcloudDavService.resolveFileUrl(item));
           
-//            map.setImageUrl(propertyService.getString("img.url").concat(detail.getImgUrl())
-//                .concat("&fileSn=").concat(item.getFileSn()));
-           //map.setImageUrl(minioFileService.getPresignedGetUrl(item.getStreFileNm(), 10));
-          map.setImageUrl(
-              nextcloudDavService.buildPublicRawFileUrl(item.getStreFileNm())
-          );
           setupList.add(map);
 
         }

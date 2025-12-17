@@ -16,6 +16,7 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.NextcloudDavService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 
@@ -209,6 +210,24 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
                   .replace("+", "%20"));
       }
       return sb.length() == 0 ? "/" : sb.toString();
+  }
+  
+  @Override
+  public String resolveFileUrl(FileVO file) throws Exception {
+      if (file == null) return "";
+
+      String streCours = file.getFileStreCours();
+
+      // Nextcloud
+      if ("NEXTCLOUD_DAV".equals(streCours)) {
+          return buildPublicRawFileUrl(file.getStreFileNm());
+      }
+
+      // Legacy
+      return propertyService.getString("img.url")
+              .concat(file.getAtchFileId())
+              .concat("&fileSn=")
+              .concat(file.getFileSn());
   }
   
 

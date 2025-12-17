@@ -18,5 +18,8 @@ public interface NextcloudDavService {
   
   /** 폴더 1회 공유 토큰 기반 “원본 파일” direct URL */
   String buildPublicRawFileUrl(String davPath) throws Exception;
+  
+  
+  String resolveFileUrl(FileVO file) throws Exception;
 
 }

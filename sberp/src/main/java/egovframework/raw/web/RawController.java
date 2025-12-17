@@ -81,9 +81,6 @@ public class RawController {
   @Resource(name = "MinIoFileMngUtil")
   private MinIoFileMngUtil fileUtil;
 
-  @Resource(name = "CdnFileMngUtil")
-  private CdnFileMngUtil cdnUtil;
-
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
   

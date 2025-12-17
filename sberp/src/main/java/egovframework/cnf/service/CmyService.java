@@ -14,7 +14,7 @@ public interface CmyService {
   
   boolean delete(CmpyDTO req);
 
-  CmpyDTO detail(int cmpySeq);
+  CmpyDTO detail(int cmpySeq) throws Exception;
 
   List<CmpyDTO> selectSameName(String cmpyCode, String cmpyName);
 

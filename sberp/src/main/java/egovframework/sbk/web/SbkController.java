@@ -258,6 +258,7 @@ public class SbkController {
       @RequestPart(value = "sendFile", required = false) List<MultipartFile> sendFile,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
       @RequestPart(value = "sbk") SbkDTO.Req req) throws Exception {
+    
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
     boolean result = false;

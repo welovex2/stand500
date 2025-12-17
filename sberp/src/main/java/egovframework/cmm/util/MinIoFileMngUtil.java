@@ -5,10 +5,12 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 import com.amazonaws.services.s3.AmazonS3;
 import egovframework.cmm.service.FileVO;
@@ -29,7 +31,13 @@ public class MinIoFileMngUtil {
   
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
-
+  
+  // 차단할 확장자 리스트
+  private static final List<String> BLOCKED_EXTENSIONS = Arrays.asList(
+      "exe", "dll", "js", "php", "jsp", "vbs", "bat", "sh", "jar",
+      "com", "cmd", "sys", "scr", "msi", "iso", "img", "vhd", "dmg"
+  );
+  
   public static void main(String[] args) {
     // TODO Auto-generated method stub
 
@@ -297,5 +305,83 @@ public class MinIoFileMngUtil {
 
   return result;
 }
+
+  /**
+   * 첨부파일에 대한 목록 정보를 취득한다. (한건) - MinIO/Nextcloud 방식
+   *
+   * - storePathString: Nextcloud 내부 폴더(prefix) 개념 (예: /COMPANY)
+   * - objectKey: prefix + "/" + 원본파일명_타임스탬프키
+   * - 업로드는 Nextcloud WebDAV로 수행 (Nextcloud가 ObjectStore(MinIO)에 저장)
+   */
+  public FileVO parseFile(
+          MultipartFile file,
+          String KeyStr,
+          int fileKeyParam,
+          String atchFileId,
+          String storePath
+  ) throws Exception {
+
+      int fileKey = fileKeyParam;
+
+      String storePathString = KeyStr;
+      String atchFileIdString = "";
+
+      // === (1) storePathString을 "Nextcloud/MinIO prefix" 용도로 사용 ===
+      // 만약 storePath가 프로퍼티 키(Globals.xxx)라면 아래처럼 바꿔:
+      // storePathString = propertyService.getString(storePath);
+
+      // atchFileId 채번
+      if (atchFileId == null || "".equals(atchFileId)) {
+          atchFileIdString = idgenService.getNextStringId();
+      } else {
+          atchFileIdString = atchFileId;
+      }
+
+      FileVO fvo = new FileVO();
+
+      // 파일이 없으면 빈 VO 반환(기존 동작 유지)
+      if (ObjectUtils.isEmpty(file)) {
+          return fvo;
+      }
+
+      String orginFileName = file.getOriginalFilename();
+      if (orginFileName == null || "".equals(orginFileName)) {
+          return fvo;
+      }
+
+      int index = orginFileName.lastIndexOf(".");
+      String fileExt = (index >= 0) ? orginFileName.substring(index + 1) : "";
+
+      // 차단된 확장자 체크(기존 유지)
+      if (!"".equals(fileExt) && BLOCKED_EXTENSIONS.contains(fileExt.toLowerCase())) {
+          throw new Exception("차단된 확장자입니다: " + fileExt);
+      }
+
+      // newName 생성(기존 유지)
+      String newName = EgovStringUtil.getTimeStamp() + fileKey;
+      long _size = file.getSize();
+
+      // === (2) objectKey 생성 ===
+      // 다건과 동일한 규칙: "prefix/원본파일명_타임스탬프"
+      String safeOriginal = orginFileName.replaceAll("[\\\\/:*?\"<>|]", "_");
+      String objectKey = storePathString + "/" + safeOriginal + "_" + newName;
+
+      // === (3) 폴더 보장 + 업로드(Nextcloud -> MinIO 저장 + 인덱스 등록) ===
+      nextcloudDavService.ensureFolder(storePathString);
+
+      // upload 결과는 davPath로 받는다고 했으니 그대로 사용
+      String davPath = nextcloudDavService.upload(file, objectKey);
+
+      // === (4) FileVO 구성 ===
+      fvo.setFileExtsn(fileExt);
+      fvo.setFileStreCours("NEXTCLOUD_DAV");     // 다건과 통일
+      fvo.setFileMg(Long.toString(_size));
+      fvo.setOrignlFileNm(orginFileName);
+      fvo.setStreFileNm(davPath);               // ★ 로컬 newName 대신 davPath 저장
+      fvo.setAtchFileId(atchFileIdString);
+      fvo.setFileSn(String.valueOf(fileKey));
+
+      return fvo;
+  }
 
 }
