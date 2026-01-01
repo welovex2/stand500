@@ -268,7 +268,7 @@
 			CMPY_MNG_TB.MEMO,
             
             FILE_DETAIL_TB.ORIGNL_FILE_NM,
-            IFNULL(FN_GET_IMAGE (CMPY_MNG_TB.SIGN_URL, 0), '')SIGN_URL,
+            CMPY_MNG_TB.SIGN_URL,
             DATE_FORMAT(CMPY_MNG_TB.INS_DT, '%y-%m-%d') instDtStr,
             IFNULL(MEMBER_TB.MEM_NAME, '') memName
             

@@ -30,14 +30,13 @@ import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
-import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sys.service.MacCal;
 import egovframework.sys.service.MacCalDTO;
 import egovframework.sys.service.MacService;
 import egovframework.sys.service.MachineDTO;
-import egovframework.sys.service.RprHist;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -58,8 +57,8 @@ public class MacController {
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
   
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
   
   private static final Marker ACC_MARKER = MarkerFactory.getMarker("ACC_MARKER");
   
@@ -142,10 +141,6 @@ public class MacController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -361,6 +356,10 @@ public class MacController {
 
     try {
       
+      // 1) 파일 제외한 값으로 먼저 저장 (mgmtNo 확보)
+      MachineDTO saved = macService.insertBase(req);
+      String mgmtCode = String.format("%s-%04d", "SB", saved.getMachineSeq());
+      
       // 파일삭제
       FileVO delFile = null;
       if (!ObjectUtils.isEmpty(req.getDelFileList())) {
@@ -387,7 +386,7 @@ public class MacController {
           
           if (!ObjectUtils.isEmpty(uptMacCal.getFile())) {
       
-            FileResult = fileUtil.parseFile(uptMacCal.getFile(), "MAC", 0, "", "");
+            FileResult = fileUtil.parseFile(uptMacCal.getFile(), "", 0, "", "machine/".concat(mgmtCode));
             atchFileId = fileMngService.insertFileInf(FileResult);
             uptMacCal.setCalFile(atchFileId);
     
@@ -397,14 +396,14 @@ public class MacController {
       
       // 교정장비 신규등록
       if (!ObjectUtils.isEmpty(macCal.getMacCal()) && !ObjectUtils.isEmpty(macCal.getMacCal().getFile())) {
-        FileResult = fileUtil.parseFile(macCal.getMacCal().getFile(), "MAC", 0, "", "");
+        FileResult = fileUtil.parseFile(macCal.getMacCal().getFile(), "", 0, "", "machine/".concat(mgmtCode));
         atchFileId = fileMngService.insertFileInf(FileResult);
         macCal.getMacCal().setCalFile(atchFileId);
       }
       
       // 시험장비 사진
       if (!ObjectUtils.isEmpty(macPic)) {
-        FileResult = fileUtil.parseFile(macPic, "MAC/PIC", 0, "", "");
+        FileResult = fileUtil.parseFile(macPic, "", 0, "", "machine/".concat(mgmtCode).concat("/PIC"));
         atchFileId = fileMngService.insertFileInf(FileResult);
         req.setPhoto(atchFileId);
       } else {

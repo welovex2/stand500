@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.sys.service.MacCal;
 import egovframework.sys.service.MacCalDTO;
 import egovframework.sys.service.MacMapper;
@@ -22,24 +24,43 @@ public class MacServiceImpl implements MacService {
   @Autowired
   MacMapper macMapper;
 
+  @Autowired
+  EgovFileMngService fileMngService;
+  
+  @Autowired
+  private NextcloudDavService nextcloudDavService;
+  
   @Override
   public MachineDTO selectDetail(int machineSeq) {
     
-    MachineDTO detail = new MachineDTO();
+    try {
+      MachineDTO detail = new MachineDTO();
+      
+      detail = macMapper.selectDetail(machineSeq);;
+      // 장비이미지
+      if (!ObjectUtils.isEmpty(detail)) {
+        FileVO fileVO = new FileVO();
+        fileVO.setAtchFileId(detail.getAtchFileId());
+        FileVO photoVO = fileMngService.selectFileInf(fileVO);
+        detail.setPhoto(nextcloudDavService.resolveFileUrl(photoVO));
+      }
+      
+      // 교정정보 추가하기
+      if (!ObjectUtils.isEmpty(detail)) {
+        detail.setMacCalList(macMapper.selectMacCal(machineSeq));
+      }
+      
+      // 수리내역 추가하기
+      if (!ObjectUtils.isEmpty(detail)) {
+        detail.setRprHistList(macMapper.selectRprHist(machineSeq));
+      }
     
-    detail = macMapper.selectDetail(machineSeq);;
-    
-    // 교정정보 추가하기
-    if (!ObjectUtils.isEmpty(detail)) {
-      detail.setMacCalList(macMapper.selectMacCal(machineSeq));
+      return detail;
+      
+    } catch (Exception e) {
+      // log.error("selectDetail error. machineSeq={}", machineSeq, e);
+      throw new RuntimeException("장비 상세 조회 중 오류가 발생했습니다. machineSeq=" + machineSeq, e);
     }
-    
-    // 수리내역 추가하기
-    if (!ObjectUtils.isEmpty(detail)) {
-      detail.setRprHistList(macMapper.selectRprHist(machineSeq));
-    }
-    
-    return detail;
   }
   
   @Override
@@ -49,14 +70,23 @@ public class MacServiceImpl implements MacService {
 
   @Override
   @Transactional
-  public boolean insert(MachineDTO req, MacCalDTO macCal) {
-
-    
+  public MachineDTO insertBase(MachineDTO req) {
     // 관리번호 얻기
     req.setMgmtNo(macMapper.selectNextMgmtNo(req));
+    
     // 장비정보 저장
     macMapper.insert(req);
+    return req;
+  }
+  
+  @Override
+  @Transactional
+  public boolean insert(MachineDTO req, MacCalDTO macCal) {
     
+    // 파일정보 추가
+    if (!ObjectUtils.isEmpty(req.getPhoto())) {
+      macMapper.updateMachineFile(req);
+    }
     
     // 교정정보 라인 추가
     if (!ObjectUtils.isEmpty(macCal.getMacCal())) {

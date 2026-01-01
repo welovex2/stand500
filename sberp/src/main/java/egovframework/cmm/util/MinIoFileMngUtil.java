@@ -64,7 +64,7 @@ public class MinIoFileMngUtil {
   // === (1) storePathString을 "MinIO prefix" 용도로 사용 ===
   // 기존 로컬 경로 대신, MinIO 내부 폴더(프리픽스) 개념으로 바꿈
   if ("".equals(storePath) || storePath == null) {
-      storePathString = formatedNow + "/" + KeyStr;   // 예: 2025/12/RAW
+      storePathString = KeyStr + "/" + formatedNow;   // 예: RAW/2025/12
   } else {
       storePathString = storePath;
   }
@@ -323,15 +323,23 @@ public class MinIoFileMngUtil {
 
       int fileKey = fileKeyParam;
 
-      String storePathString = KeyStr;
+      String storePathString = "";
       String atchFileIdString = "";
 
-      // === (1) storePathString을 "Nextcloud/MinIO prefix" 용도로 사용 ===
-      // 만약 storePath가 프로퍼티 키(Globals.xxx)라면 아래처럼 바꿔:
-      // storePathString = propertyService.getString(storePath);
+      // 현재 날짜 구하기
+      LocalDate now = LocalDate.now();
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM");
+      String formatedNow = now.format(formatter);
 
-      // atchFileId 채번
-      if (atchFileId == null || "".equals(atchFileId)) {
+      // === (1) storePathString을 "MinIO prefix" 용도로 사용 ===
+      // 기존 로컬 경로 대신, MinIO 내부 폴더(프리픽스) 개념으로 바꿈
+      if ("".equals(storePath) || storePath == null) {
+          storePathString = KeyStr + "/" + formatedNow;   // 예: RAW/2025/12
+      } else {
+          storePathString = storePath;
+      }
+
+      if ("".equals(atchFileId) || atchFileId == null) {
           atchFileIdString = idgenService.getNextStringId();
       } else {
           atchFileIdString = atchFileId;
@@ -345,12 +353,14 @@ public class MinIoFileMngUtil {
       }
 
       String orginFileName = file.getOriginalFilename();
-      if (orginFileName == null || "".equals(orginFileName)) {
+
+      // 원 파일명이 없는 경우 skip (단건이므로 빈 VO 반환)
+      if ("".equals(orginFileName)) {
           return fvo;
       }
-
+      
       int index = orginFileName.lastIndexOf(".");
-      String fileExt = (index >= 0) ? orginFileName.substring(index + 1) : "";
+      String fileExt = orginFileName.substring(index + 1);
 
       // 차단된 확장자 체크(기존 유지)
       if (!"".equals(fileExt) && BLOCKED_EXTENSIONS.contains(fileExt.toLowerCase())) {

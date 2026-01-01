@@ -1,14 +1,31 @@
 package egovframework.raw.web;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
@@ -54,21 +71,108 @@ public class RepController {
     boolean result = true;
     String msg = "";
     ReportDTO detail = new ReportDTO();
+    
+    detail = rawService.report(testSeq);
+    if (detail == null) {
+      result = false;
+      msg = ResponseMessage.NO_DATA;
+    }
+    
+    detail = getDetail(detail);
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+
+    return res;
+  }
+  
+  @ApiOperation(value = "성적서 DOCX 다운로드")
+  @GetMapping("/raw/{testSeq}/report/download.do")
+  public void downloadReport(@PathVariable int testSeq, HttpServletResponse response) throws Exception {
+
+      // 0) DTO 준비 (기존 로직 유지)
+      ReportDTO detail = getDetail(rawService.report(testSeq));
+      ObjectMapper mapper = new ObjectMapper();
+
+      // 1) report-service 호출 바디 구성
+      Map<String, Object> body = new HashMap<>();
+      body.put("template_file", "9832_report.docx");
+      Map<String, Object> context = mapper.convertValue(detail, new TypeReference<Map<String, Object>>() {});
+      body.put("context", context);
+
+      // 2) RestTemplate (타임아웃 설정)
+      SimpleClientHttpRequestFactory rf = new SimpleClientHttpRequestFactory();
+      rf.setConnectTimeout(5000);
+      rf.setReadTimeout(120000); // 템플릿 렌더/저장 시간이 길 수 있음
+      RestTemplate restTemplate = new RestTemplate(rf);
+
+      HttpHeaders headers = new HttpHeaders();
+      headers.setContentType(MediaType.APPLICATION_JSON);
+      HttpEntity<Map<String, Object>> req = new HttpEntity<>(body, headers);
+
+      ResponseEntity<Map> renderResponse = restTemplate
+              .postForEntity("http://report-service:8800/render", req, Map.class);
+
+      if (!renderResponse.getStatusCode().is2xxSuccessful() || renderResponse.getBody() == null) {
+          response.sendError(HttpServletResponse.SC_BAD_GATEWAY,
+                  "report-service 실패: HTTP " + renderResponse.getStatusCodeValue());
+          return;
+      }
+
+      Object pathObj = renderResponse.getBody().get("docx");
+      if (!(pathObj instanceof String)) {
+          response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "report-service 응답 형식 오류(docx 없음)");
+          return;
+      }
+      String docxPath = (String) pathObj;
+
+      // 3) 파일 존재/준비 확인 (원자적 저장 대응: 짧은 재시도)
+      File file = new File(docxPath);
+      final int maxWaitMs = 2000; // 최대 2초 정도 대기
+      final int stepMs = 100;
+      int waited = 0;
+      while ((!file.exists() || file.length() == 0) && waited < maxWaitMs) {
+          try { Thread.sleep(stepMs); } catch (InterruptedException ignore) {}
+          waited += stepMs;
+      }
+      if (!file.exists() || !file.isFile() || file.length() == 0) {
+          response.sendError(HttpServletResponse.SC_NOT_FOUND, "성적서 파일 없음/비정상: " + docxPath);
+          return;
+      }
+
+      // 4) 응답 헤더/파일 스트리밍
+      String downloadName = testSeq + "_report.docx";
+      String encoded = URLEncoder.encode(downloadName, StandardCharsets.UTF_8.name()).replace("+", "%20");
+
+      response.reset(); // 혹시 모를 선행 헤더 제거
+      response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      response.setHeader("Content-Disposition",
+              "attachment; filename=\"" + downloadName + "\"; filename*=UTF-8''" + encoded);
+      // response.setHeader("Content-Transfer-Encoding", "binary"); // 없어도 무방
+      response.setContentLengthLong(file.length());
+
+      try (InputStream in = new FileInputStream(file);
+           OutputStream out = response.getOutputStream()) {
+          byte[] buffer = new byte[8192];
+          int bytesRead;
+          while ((bytesRead = in.read(buffer)) != -1) {
+              out.write(buffer, 0, bytesRead);
+          }
+          out.flush();
+      }
+  }
+
+  
+  private ReportDTO getDetail(ReportDTO detail) {
+    
     FileVO fileVO = new FileVO();
     
-    try {
+   try {
       
-      detail = rawService.report(testSeq);
-      
-      if (detail == null) {
-        result = false;
-        msg = ResponseMessage.NO_DATA;
-      } else {
         /* 세부데이터 추가로 가지고 오기 */
         int rawSeq = detail.getRawSeq();
   
         // 성적서 발급내역 리스트 가져오기
-        detail.setReportList(rawService.reportDetail(testSeq));
+        detail.setReportList(rawService.reportDetail(detail.getTestSeq()));
         if (!ObjectUtils.isEmpty(detail.getReportList())) {
           for (int i=0; i < detail.getReportList().size(); i++) {
             // 발급내역 시험번호와 내번호가 동일하면
@@ -576,15 +680,17 @@ public class RepController {
         }
         detail.setImgList(resultList);
   
-      }
     } catch (Exception e) {
-      msg = e.getMessage();
     }
-
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
-
-    return res;
+   
+   return detail;
   }
+
+
+
+
+
+
 
 }
 

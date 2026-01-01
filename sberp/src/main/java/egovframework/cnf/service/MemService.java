@@ -14,7 +14,7 @@ public interface MemService {
 
   boolean insert(Member req);
 
-  Member detail(int cmpySeq);
+  Member detail(int cmpySeq) throws Exception;
 
 
   /**

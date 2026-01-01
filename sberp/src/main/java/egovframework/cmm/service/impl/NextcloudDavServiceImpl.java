@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import javax.annotation.PostConstruct;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
@@ -143,27 +144,21 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       return "/" + rootFolder + "/" + relativePath;
   }
 
-  private String buildFolderUrl(String relativeFolderPath) {
-      // .../dav/files/{user}/{rootFolder}/{relativeFolderPath}
-      String p = relativeFolderPath != null && relativeFolderPath.length() > 0
-              ? "/" + relativeFolderPath
+  private String buildFolderUrl(String relativeFolderPath) throws Exception {
+      String p = (relativeFolderPath != null && relativeFolderPath.length() > 0)
+              ? encodePathSegments("/" + relativeFolderPath)
               : "";
       return baseUrl + "/" + user + "/" + rootFolder + p;
   }
 
-  private String buildFileUrl(String relativePath) {
-      // relativePath 전체를 encode하면 "/"도 깨져서 폴더 경로가 망가짐
-      // 마지막 파일명만 encode
-      int lastSlash = relativePath.lastIndexOf("/");
-      String folder = lastSlash >= 0 ? relativePath.substring(0, lastSlash) : "";
-      String name   = lastSlash >= 0 ? relativePath.substring(lastSlash + 1) : relativePath;
+
+  private String buildFileUrl(String relativePath) throws Exception {
+      // relativePath 예: 2025/12/RAW/고객사/김정미 테스트/a b.jpg
+      String normalized = relativePath == null ? "" : relativePath.trim();
+      if (!normalized.startsWith("/")) normalized = "/" + normalized;
   
-      try {
-          name = java.net.URLEncoder.encode(name, "UTF-8").replaceAll("\\+", "%20");
-      } catch (Exception ignore) {}
-  
-      String p = folder.isEmpty() ? name : folder + "/" + name;
-      return baseUrl + "/" + user + "/" + rootFolder + "/" + p;
+      String encoded = encodePathSegments(normalized); // ✅ 폴더+파일 전체 세그먼트 인코딩 (슬래시 유지)
+      return baseUrl + "/" + user + "/" + rootFolder + encoded;
   }
 
   
@@ -230,6 +225,86 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
               .concat(file.getFileSn());
   }
   
+  @Override
+  public void deleteByDavPath(String davPath) throws Exception {
+      if (davPath == null || davPath.trim().isEmpty()) return;
+
+      // davPath 예: "/ERP/2025/12/RAW/a.jpg"
+      String normalized = davPath.trim();
+      if (!normalized.startsWith("/")) normalized = "/" + normalized;
+
+      // "/ERP" 제거하고 rootFolder 기준 상대경로로 변환
+      String rootPrefix = "/" + rootFolder;
+      String relative = normalized.startsWith(rootPrefix)
+              ? normalized.substring(rootPrefix.length())
+              : normalized; // 혹시 이미 상대경로면 그대로
+
+      if (!relative.startsWith("/")) relative = "/" + relative;
+
+      // ✅ 세그먼트 단위 인코딩(한글/공백 대응) — 너희 파일에 이미 있음 :contentReference[oaicite:3]{index=3}
+      String encoded = encodePathSegments(relative);
+
+      String url = baseUrl + "/" + user + "/" + rootFolder + encoded;
+
+      HttpRequestBase del = new HttpRequestBase() {
+          @Override public String getMethod() { return "DELETE"; }
+      };
+      del.setURI(URI.create(url));
+      del.setHeader("Authorization", authHeader);
+
+      try {
+          HttpResponse res = http.execute(del);
+          int code = res.getStatusLine().getStatusCode();
+
+          // 204 No Content: 삭제됨
+          // 404 Not Found: 이미 없음(삭제된 상태)
+          if (!(code == 204 || code == 404)) {
+              String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity()) : "";
+              throw new RuntimeException("DELETE fail: " + code + " url=" + url + " " + body);
+          }
+      } finally {
+          del.releaseConnection();
+      }
+  }
+
+  @Override
+  public InputStream downloadStreamByDavPath(String davPath) throws Exception {
+      if (davPath == null || davPath.trim().isEmpty()) {
+          throw new IllegalArgumentException("davPath is empty");
+      }
+
+      String normalized = davPath.trim();
+      if (!normalized.startsWith("/")) normalized = "/" + normalized;
+
+      // ✅ (중요) DB streFileNm이 "/ERP/..." 로 오는 경우가 많아서, rootFolder가 ERP면 중복 제거
+      String rootPrefix = "/" + rootFolder;
+      if (normalized.startsWith(rootPrefix + "/")) {
+          normalized = normalized.substring(rootPrefix.length()); // "/board/..."
+      }
+
+      // ✅ 경로 인코딩(한글/공백 포함 대응) - encodePathSegments는 너희 파일에 이미 있음
+      String encoded = encodePathSegments(normalized);
+
+      // 최종 WebDAV URL
+      String url = baseUrl + "/" + user + "/" + rootFolder + encoded;
+
+      HttpGet get = new HttpGet();
+      get.setURI(URI.create(url));
+      get.setHeader("Authorization", authHeader);
+
+      HttpResponse res = http.execute(get);
+      int code = res.getStatusLine().getStatusCode();
+
+      if (code != 200) {
+          String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity(), "UTF-8") : "";
+          get.releaseConnection();
+          throw new RuntimeException("Nextcloud GET failed: " + code + " url=" + url + " body=" + body);
+      }
+
+      // ⚠️ 주의: InputStream을 반환하면, 호출자가 스트림을 닫을 때 연결이 정리됩니다.
+      // (컨트롤러에서 try-with-resources로 닫아야 함)
+      return res.getEntity().getContent();
+  }
 
   
 }

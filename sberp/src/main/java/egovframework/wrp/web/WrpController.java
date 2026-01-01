@@ -1,6 +1,7 @@
 package egovframework.wrp.web;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,9 +28,8 @@ import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
-import egovframework.tst.dto.TestMngrDTO;
-import egovframework.tst.service.TestMngr;
 import egovframework.wrp.dto.WeekRepDTO;
 import egovframework.wrp.dto.WeekResultDTO;
 import egovframework.wrp.service.WeekRep;
@@ -48,8 +48,8 @@ public class WrpController {
   @Resource(name = "WrpService")
   private WrpService wrpService;
   
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
   
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
@@ -188,10 +188,19 @@ public class WrpController {
 
     // 파일이 있을때만 처리
     if (!ObjectUtils.isEmpty(files)) {
+      
+      // 폴더명 얻기
+      String typeName = "";
+//      if (req.getWrSeq() == 0) {
+        typeName = testTypeConvert(req.getTestTypeCode());
+//      } else {
+//        WeekResultDTO.Req check = wrpService.checkReport(req.getWrSeq());
+//        typeName = testTypeConvert(check.getTestTypeCode());
+//      }
 
       // 신규
       if (StringUtils.isEmpty((req.getAtchFileId()))) {
-        FileResult = fileUtil.parseFile(files, "WRP", 0, atchFileId, "");
+        FileResult = fileUtil.parseFile(files, "", 0, atchFileId, "week/".concat(typeName));
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
       } 
@@ -203,7 +212,7 @@ public class WrpController {
         int cnt = fileMngService.getMaxFileSN(fvo);
         
         // 추가파일 등록
-        List<FileVO> _result = fileUtil.parseFile(files, "WRP", cnt, req.getAtchFileId(), "");
+        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "week/".concat(typeName));
         fileMngService.updateFileInfs(_result);
       }
 
@@ -396,6 +405,20 @@ public class WrpController {
     ret = ret.replaceAll("</(F|f)(O|o)(R|r)(M|m)", "&lt;form");
 
     return ret;
+  }
+  
+
+  private static final Map<String, String> TEST_TYPE_MAP = new HashMap<>();
+
+  static {
+      TEST_TYPE_MAP.put("EM", "EMC");
+      TEST_TYPE_MAP.put("RS", "RF&SAR");
+      TEST_TYPE_MAP.put("SF", "SAFETY&효율신뢰");
+      TEST_TYPE_MAP.put("MD", "MEDICAL");
+  }
+
+  public static String testTypeConvert(String testTypeCode) {
+      return TEST_TYPE_MAP.getOrDefault(testTypeCode, "UNKNOWN");
   }
       
 }

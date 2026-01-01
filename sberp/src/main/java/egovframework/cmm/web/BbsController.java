@@ -4,15 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,10 +21,11 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
-import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,8 +41,8 @@ public class BbsController {
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
@@ -51,6 +50,9 @@ public class BbsController {
   @Resource(name = "BbsService")
   private BbsService bbsMngService;
 
+  @Resource(name = "NextcloudDavService")
+  private NextcloudDavService nextcloudDavService;
+  
   /**
    * 게시물을 등록한다.
    *
@@ -96,7 +98,7 @@ public class BbsController {
 
       // 신규
       if ("".equals(req.getAtchFileId())) {
-        FileResult = fileUtil.parseFile(files, "BBS", 0, atchFileId, "");
+        FileResult = fileUtil.parseFile(files, "board", 0, atchFileId, "");
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
       } 
@@ -108,7 +110,7 @@ public class BbsController {
         int cnt = fileMngService.getMaxFileSN(fvo);
         
         // 추가파일 등록
-        List<FileVO> _result = fileUtil.parseFile(files, "BBS", cnt, req.getAtchFileId(), "");
+        List<FileVO> _result = fileUtil.parseFile(files, "board", cnt, req.getAtchFileId(), "");
         fileMngService.updateFileInfs(_result);
       }
 
@@ -224,11 +226,13 @@ public class BbsController {
     FileVO fileVO = new FileVO();
     fileVO.setAtchFileId(detail.getAtchFileId());
     List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
+    
     docResult.stream().map(doc -> {
       doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
           .concat("&fileSn=").concat(doc.getFileSn()));
       return doc;
     }).collect(Collectors.toList());
+    
     detail.setFileList(docResult);
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();

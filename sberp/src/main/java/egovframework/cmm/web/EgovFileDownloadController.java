@@ -5,23 +5,22 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.Map;
-
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 
 /**
@@ -46,7 +45,10 @@ public class EgovFileDownloadController {
 
 	@Resource(name = "EgovFileMngService")
 	private EgovFileMngService fileService;
-
+	
+	@Resource(name = "NextcloudDavService")
+	private NextcloudDavService nextcloudDavService;
+	  
 	private static final Logger LOGGER = LoggerFactory.getLogger(EgovFileDownloadController.class);
 
 	/**
@@ -114,89 +116,103 @@ public class EgovFileDownloadController {
 		}
 	}
 
-	/**
-	 * 첨부파일로 등록된 파일에 대하여 다운로드를 제공한다.
-	 *
-	 * @param commandMap
-	 * @param response
-	 * @throws Exception
-	 */
 	@GetMapping(value="/file/fileDown.do")
-	public void cvplFileDownload(@RequestParam Map<String, Object> commandMap, HttpServletRequest request, HttpServletResponse response) throws Exception {
+	public void cvplFileDownload(@RequestParam Map<String, Object> commandMap,
+	                             HttpServletRequest request,
+	                             HttpServletResponse response) throws Exception {
 
-		String atchFileId = (String) commandMap.get("atchFileId");
-		String fileSn = (String) commandMap.get("fileSn");
+	    String atchFileId = (String) commandMap.get("atchFileId");
+	    String fileSn     = (String) commandMap.get("fileSn");
 
-		Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+	    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+	    if (isAuthenticated == null || !isAuthenticated) {
+	        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+	        return;
+	    }
 
-		isAuthenticated = true;
-		if (isAuthenticated) {
+	    // 1) 파일 정보 조회
+	    FileVO q = new FileVO();
+	    q.setAtchFileId(atchFileId);
+	    q.setFileSn(fileSn);
 
-			FileVO fileVO = new FileVO();
-			fileVO.setAtchFileId(atchFileId);
-			fileVO.setFileSn(fileSn);
-			FileVO fvo = fileService.selectFileInf(fileVO);
+	    FileVO fvo = fileService.selectFileInf(q);
+	    if (fvo == null) {
+	        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+	        return;
+	    }
 
-			File uFile = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
-			long fSize = uFile.length();
+	    LOGGER.info("[DOWN] atchFileId={}, fileSn={}, fileStreCours={}, streFileNm={}, orignl={}",
+	            atchFileId, fileSn, fvo.getFileStreCours(), fvo.getStreFileNm(), fvo.getOrignlFileNm());
 
-			if (fSize > 0) {
-				String mimetype = "application/x-msdownload";
+	    // 2) 다운로드 헤더 (원본 파일명)
+	    response.setContentType("application/octet-stream");
+	    setDisposition(fvo.getOrignlFileNm(), request, response);
 
-				//response.setBufferSize(fSize);	// OutOfMemeory 발생
-				response.setContentType(mimetype);
-				//response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(fvo.getOrignlFileNm(), "utf-8") + "\"");
-				setDisposition(fvo.getOrignlFileNm(), request, response);
-				//response.setContentLength(fSize);
+	    String streCours = fvo.getFileStreCours();
+	    boolean isNextcloudCode = "NEXTCLOUD_DAV".equals(streCours);
+	    boolean isNextcloudUrl  = (streCours != null && (streCours.startsWith("http://") || streCours.startsWith("https://")));
 
-				/*
-				 * FileCopyUtils.copy(in, response.getOutputStream());
-				 * in.close();
-				 * response.getOutputStream().flush();
-				 * response.getOutputStream().close();
-				 */
-				BufferedInputStream in = null;
-				BufferedOutputStream out = null;
+	    try (BufferedOutputStream out = new BufferedOutputStream(response.getOutputStream())) {
 
-				try {
-					in = new BufferedInputStream(new FileInputStream(uFile));
-					out = new BufferedOutputStream(response.getOutputStream());
+	        // ✅ 3) Nextcloud 코드값이면: WebDAV로 받아서 스트리밍
+	        if (isNextcloudCode) {
+	            String davPath = normalizeDavPath(fvo.getStreFileNm(), "ERP"); // rootFolder가 ERP라면
+	            LOGGER.info("[DOWN-NC] davPath(raw)={}, davPath(norm)={}", fvo.getStreFileNm(), davPath);
 
-					FileCopyUtils.copy(in, out);
-					out.flush();
-				} catch (Exception ex) {
-					// 다음 Exception 무시 처리
-					// Connection reset by peer: socket write error
-					LOGGER.debug("IGNORED: {}", ex.getMessage());
-				} finally {
-					if (in != null) {
-						try {
-							in.close();
-						} catch (Exception ignore) {
-							LOGGER.debug("IGNORED: {}", ignore.getMessage());
-						}
-					}
-					if (out != null) {
-						try {
-							out.close();
-						} catch (Exception ignore) {
-							LOGGER.debug("IGNORED: {}", ignore.getMessage());
-						}
-					}
-				}
+	            try (BufferedInputStream in = new BufferedInputStream(nextcloudDavService.downloadStreamByDavPath(davPath))) {
+	                FileCopyUtils.copy(in, out);
+	                out.flush();
+	            }
+	            return;
+	        }
 
-			} else {
-				response.setContentType("application/x-msdownload");
+	        // ✅ 4) Nextcloud public URL이면: URL로 받아서 스트리밍(옵션)
+	        if (isNextcloudUrl) {
+	            java.net.URL url = new java.net.URL(streCours);
+	            LOGGER.info("[DOWN-NC] publicUrl={}", streCours);
 
-				PrintWriter printwriter = response.getWriter();
-				printwriter.println("<html>");
-				printwriter.println("<br><br><br><h2>Could not get file name:<br>" + fvo.getOrignlFileNm() + "</h2>");
-				printwriter.println("<br><br><br><center><h3><a href='javascript: history.go(-1)'>Back</a></h3></center>");
-				printwriter.println("<br><br><br>&copy; webAccess");
-				printwriter.println("</html>");
-				printwriter.flush();
-				printwriter.close();
-			}
-		}
+	            try (BufferedInputStream in = new BufferedInputStream(url.openStream())) {
+	                FileCopyUtils.copy(in, out);
+	                out.flush();
+	            }
+	            return;
+	        }
+
+	        // ✅ 5) 그 외: 로컬 파일
+	        File uFile = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
+	        if (!uFile.exists() || uFile.length() <= 0) {
+	            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+	            return;
+	        }
+
+	        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(uFile))) {
+	            FileCopyUtils.copy(in, out);
+	            out.flush();
+	        }
+
+	    } catch (Exception ex) {
+	        // 무시하지 말고 원인 로그 남겨야 디버깅 됨
+	        LOGGER.error("[DOWN] download failed. atchFileId={}, fileSn={}", atchFileId, fileSn, ex);
+	        // 필요시 에러 응답
+	        // response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+	    }
 	}
+
+	/**
+	 * streFileNm이 "/ERP/..." 형태로 저장된 경우,
+	 * rootFolder가 "ERP"라면 "/ERP"를 제거해 "/board/..."로 만들어서 WebDAV 기본 prefix에 붙이기 위함.
+	 */
+	private String normalizeDavPath(String streFileNm, String rootFolder) {
+	    if (streFileNm == null) return "";
+	    String p = streFileNm.trim();
+	    if (!p.startsWith("/")) p = "/" + p;
+
+	    String rootPrefix = "/" + rootFolder;
+	    if (p.startsWith(rootPrefix + "/")) {
+	        p = p.substring(rootPrefix.length()); // "/board/..."
+	    }
+	    return p; // 항상 "/"로 시작
+	}
+
+
 }

@@ -8,6 +8,8 @@ public interface MacService {
 
   List<MachineDTO> selectList(ComParam param);
 
+  MachineDTO insertBase(MachineDTO req);
+  
   boolean insert(MachineDTO req, MacCalDTO macCal);
 
   boolean update(MachineDTO req);

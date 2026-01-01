@@ -2,6 +2,7 @@ package egovframework.cnf.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +106,35 @@ public class CmyServiceImpl implements CmyService {
       FileVO rprsnSignVO = fileMngService.selectFileInf(fileVO);
       detail.setRprsnSign(nextcloudDavService.resolveFileUrl(rprsnSignVO));
       
-      detail.setMngList(cmyMapper.selectMngList(cmpySeq));
+      // 담당자 서명 이미지
+      List<CmpyMng> mngList = cmyMapper.selectMngList(cmpySeq);
+
+     if (!mngList.isEmpty()) {
+       // 2) fileId들로 FileVO 목록 조회 (너희 파일/DAO 메소드명에 맞춰 구현)
+       // 예: fileMngService.selectFileInfByAtchFileIds(signFileIds)
+     
+       // 3) fileId -> FileVO 맵 만들기
+       FileVO mngFile = new FileVO();
+       FileVO mngSignVO = new FileVO(); 
+       // 4) 각 담당자에 대해 URL 세팅
+       for (CmpyMng mng : mngList) {
+           String atchFileId = mng.getSignUrl();
+           if (atchFileId == null || atchFileId.isEmpty()) continue;
+
+           mngFile.setAtchFileId(atchFileId);
+
+           // 대표자 서명 처리처럼 URL 변환
+           mngSignVO = fileMngService.selectFileInf(mngFile);
+           String url = nextcloudDavService.resolveFileUrl(mngSignVO);
+
+           // ✅ 여기서 "URL"을 담을 필드를 정해야 함
+           // signUrl이 원래 atchFileId 용도라면, signImgUrl 같은 별도 필드 추천
+           mng.setSignUrl(url);
+       }
+     }
+    
+       detail.setMngList(mngList);
+
     }
     
     return detail;

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileMapper;
 import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.NextcloudDavService;
 import egovframework.rte.fdl.cmmn.EgovAbstractServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @Class Name : EgovFileMngServiceImpl.java
@@ -29,10 +31,14 @@ import egovframework.rte.fdl.cmmn.EgovAbstractServiceImpl;
  *
  */
 @Service("EgovFileMngService")
+@Slf4j
 public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements EgovFileMngService {
 
 	@Autowired
 	private FileMapper fileMapper;
+	
+    @Autowired
+    private NextcloudDavService nextcloudDavService;
 
     /**
      * 여러 개의 파일을 삭제한다.
@@ -153,7 +159,25 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
      */
     @Override
 	public void deleteFileInf(FileVO fvo) throws Exception {
-    	fileMapper.deleteFileDetail(fvo);
+        
+      FileVO file = fileMapper.selectFileInf(fvo);
+      if (file == null) return;
+      
+      // 2) 외부 파일 삭제는 실패해도 DB 삭제는 진행
+      try {
+          if ("NEXTCLOUD_DAV".equals(file.getFileStreCours())) {
+              nextcloudDavService.deleteByDavPath(file.getStreFileNm());
+          }
+      } catch (Exception e) {
+          // 실패해도 업무 흐름은 유지
+          log.warn("외부 파일 삭제 실패(무시하고 DB 삭제 진행). atchFileId={}, fileSn={}, path={}",
+                   file.getAtchFileId(), file.getFileSn(), file.getStreFileNm(), e);
+
+          // (선택) 삭제 실패를 DB에 기록하고 싶으면 여기서 업데이트 한 번 더
+          // fileDAO.updateDeleteFailInfo(file.getAtchFileId(), file.getFileSn(), e.getMessage());
+      }
+    
+      fileMapper.deleteFileDetail(fvo);
     }
 
     /**

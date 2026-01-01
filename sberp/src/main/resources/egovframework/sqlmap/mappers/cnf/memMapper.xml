@@ -230,7 +230,7 @@
 		    DATE_FORMAT(LEAVE_S_DT, '%Y-%m-%d') leaveSDt,
 		    DATE_FORMAT(LEAVE_E_DT, '%Y-%m-%d') leaveEDt,
 		    DATE_FORMAT(QUIT_DT, '%Y-%m-%d') quitDt,
-		    FN_GET_IMAGE (MEMBER_SIGN_TB.ATCH_FILE_ID,0) sgnUrl
+		    ATCH_FILE_ID sgnUrl
 		FROM
 			MEMBER_TB
 			

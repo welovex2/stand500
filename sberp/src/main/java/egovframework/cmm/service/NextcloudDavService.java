@@ -1,5 +1,6 @@
 package egovframework.cmm.service;
 
+import java.io.InputStream;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface NextcloudDavService {
@@ -9,6 +10,8 @@ public interface NextcloudDavService {
    * 업로드된 DAV 경로(objectKey 역할)를 반환
    */
   String upload(MultipartFile file, String relativePath) throws Exception;
+
+  void deleteByDavPath(String davPath) throws Exception;
 
   /**
    * 필요하면 폴더를 생성(MKCOL). 없으면 자동 생성.
@@ -21,5 +24,7 @@ public interface NextcloudDavService {
   
   
   String resolveFileUrl(FileVO file) throws Exception;
+
+  InputStream downloadStreamByDavPath(String davPath) throws Exception;
 
 }

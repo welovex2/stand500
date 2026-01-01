@@ -34,6 +34,7 @@ import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovFileScrty;
 import egovframework.cmm.util.EgovStringUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.cnf.service.MemService;
 import egovframework.cnf.service.Member;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -51,8 +52,8 @@ public class MemController {
   @Resource(name = "MemService")
   private MemService memService;
 
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
   
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
@@ -125,10 +126,6 @@ public class MemController {
     // 기본 패스워드 설정
     req.setPassword(EgovFileScrty.encryptPassword(req.getId().concat("300"), req.getId()));
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
-
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
 
@@ -149,7 +146,7 @@ public class MemController {
     final MultipartFile files = multiRequest;
     String atchFileId = "";
     if (!ObjectUtils.isEmpty(files)) {
-      FileResult = fileUtil.parseFile(files, "MEM", 0, "", "");
+      FileResult = fileUtil.parseFile(files, "", 0, "", "member/".concat(req.getId()));
       atchFileId = fileMngService.insertFileInf(FileResult);
       req.setAtchFileId(atchFileId);
     }

@@ -63,7 +63,7 @@ public class CmyController {
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
-  @Autowired
+  @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
   
   @ApiOperation(value = "협력사/직접고객 리스트", notes = "검색코드\n2  작성자\n12   회사명\n13 회사연락처\n41   회사종류\n15   작성일 ")
@@ -193,7 +193,7 @@ public class CmyController {
       
       // 신규
       if (StringUtils.isEmpty(req.getAtchFileId())) {
-        FileResult = fileUtil.parseFile(files, "", 0, "", "고객사/".concat(folderName));
+        FileResult = fileUtil.parseFile(files, "", 0, "", "company/".concat(folderName));
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
       }
@@ -205,7 +205,7 @@ public class CmyController {
         int cnt = fileMngService.getMaxFileSN(fvo);
         
         // 추가파일 등록
-        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "고객사/".concat(folderName));
+        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "company/".concat(folderName));
         fileMngService.updateFileInfs(_result);
       }
       
@@ -222,7 +222,7 @@ public class CmyController {
       
       if (!ObjectUtils.isEmpty(file)) {
         
-        signResult = fileUtil.parseFile(file, "", 0, "", "고객사/".concat(folderName));
+        signResult = fileUtil.parseFile(file, "", 0, "", "company/".concat(folderName));
         
         int index = mng.getOrignlFileNm().lastIndexOf(".");
         String fileExt = mng.getOrignlFileNm().substring(index + 1);
@@ -236,7 +236,7 @@ public class CmyController {
     // 대표자서명
     FileVO FileRes = null;
     if (!ObjectUtils.isEmpty(rprsnSign)) {
-      FileRes = fileUtil.parseFile(rprsnSign, "", 0, "", "고객사/".concat(folderName));
+      FileRes = fileUtil.parseFile(rprsnSign, "", 0, "", "company/".concat(folderName));
       atchFileId = fileMngService.insertFileInf(FileRes);
       req.setRprsnSign(atchFileId);
     }
@@ -322,13 +322,11 @@ public class CmyController {
     List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
     
     docResult.stream().map(doc -> {
-      try {
-        doc.setFileStreCours(nextcloudDavService.resolveFileUrl(doc));
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
+          .concat("&fileSn=").concat(doc.getFileSn()));
       return doc;
     }).collect(Collectors.toList());
+    
     detail.setFileList(docResult);
     
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();

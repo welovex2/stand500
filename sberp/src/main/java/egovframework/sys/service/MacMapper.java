@@ -21,6 +21,8 @@ public interface MacMapper {
 
   void update(MachineDTO req);
 
+  void updateMachineFile(MachineDTO req);
+  
   int calUpdate(List<MacCal> uptFileList);
 
   void calInsert(MacCal req);
