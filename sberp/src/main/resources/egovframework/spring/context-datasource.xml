@@ -12,7 +12,7 @@
 	<bean id="dataSourceSpied" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
 		<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
 		<!-- 운영 -->
-		<property name="url" value="jdbc:mysql://221.110.54.44:3306/erp?allowMultiQueries=true&amp;characterEncoding=utf8" />
+		<property name="url" value="jdbc:mysql://172.22.0.44:3306/erp?allowMultiQueries=true&amp;characterEncoding=utf8" />
 		<!-- 개발(로컬에서 개발접속할때) -->
 <!--         <property name="url" value="jdbc:mysql://stand500admin.cafe24.com:3306/stand500admin?allowMultiQueries=true&amp;characterEncoding=utf8" /> -->
 		<!-- 개발 -->
