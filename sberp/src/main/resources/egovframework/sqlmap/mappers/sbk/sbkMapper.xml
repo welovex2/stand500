@@ -160,7 +160,21 @@
         
 	    WHERE 1=1
 	    /* 보안견적서 */
-	    <if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID), 1)</if>
+	    <if test="secretYn == 0">  
+	    	AND IF(
+		      JOB_TB.SECRET_YN = 1,
+		      (
+		        #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID)
+		        OR EXISTS (
+		          SELECT 1
+		          FROM MEMBER_TB M
+		          WHERE M.ID = #{memId}
+		            AND M.SECRET_YN = 1
+		        )
+		      ),
+		      1
+			)
+		</if>
 	
 	    <if test="quoId != null and quoId != ''">
 	    AND JOB_TB.quo_ym = SUBSTRING(#{quoId},2,4)
@@ -985,8 +999,22 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		WHERE 1=1
 		
 		
-		/* 보안견적서 */
-		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID), 1)</if>
+	    /* 보안견적서 */
+	    <if test="secretYn == 0">  
+	    	AND IF(
+		      JOB_TB.SECRET_YN = 1,
+		      (
+		        #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID)
+		        OR EXISTS (
+		          SELECT 1
+		          FROM MEMBER_TB M
+		          WHERE M.ID = #{memId}
+		            AND M.SECRET_YN = 1
+		        )
+		      ),
+		      1
+			)
+		</if>
 	
 		<include refid="whereList"/>
         
@@ -1124,7 +1152,21 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		
 		
 		/* 보안견적서 */
-		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID), 1)</if>
+	    <if test="secretYn == 0">  
+	    	AND IF(
+		      JOB_TB.SECRET_YN = 1,
+		      (
+		        #{memId} IN (JOB_TB.MNG_ID, TEST_ITEM_TB.REV_ID)
+		        OR EXISTS (
+		          SELECT 1
+		          FROM MEMBER_TB M
+		          WHERE M.ID = #{memId}
+		            AND M.SECRET_YN = 1
+		        )
+		      ),
+		      1
+			)
+		</if>
 	
 		<include refid="whereList"/>
 		

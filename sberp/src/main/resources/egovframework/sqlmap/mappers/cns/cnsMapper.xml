@@ -12,9 +12,23 @@
             AND CMPY_MNG_TB.STATE != 'D'
 		where 1=1
 		
-		/* 보안견적서 */
-	    <if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID), 1)</if>
-	    
+	    /* 보안견적서 */
+	    <if test="secretYn == 0">  
+	    	AND IF(
+		      JOB_TB.SECRET_YN = 1,
+		      (
+		        #{memId} IN (JOB_TB.MNG_ID)
+		        OR EXISTS (
+		          SELECT 1
+		          FROM MEMBER_TB M
+		          WHERE M.ID = #{memId}
+		            AND M.SECRET_YN = 1
+		        )
+		      ),
+		      1
+			)
+		</if>
+		
 		<if test="searchVO != null">
 	        <foreach collection="searchVO" item="item" separator="">
 	       
@@ -78,8 +92,22 @@
 	            INNER JOIN (SELECT @rownum:=0) r
 			WHERE 1=1
 			
-			/* 보안견적서 */
-	    	<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, #{memId} IN (JOB_TB.MNG_ID), 1)</if>
+		    /* 보안견적서 */
+		    <if test="secretYn == 0">  
+		    	AND IF(
+			      JOB_TB.SECRET_YN = 1,
+			      (
+			        #{memId} IN (JOB_TB.MNG_ID)
+			        OR EXISTS (
+			          SELECT 1
+			          FROM MEMBER_TB M
+			          WHERE M.ID = #{memId}
+			            AND M.SECRET_YN = 1
+			        )
+			      ),
+			      1
+				)
+			</if>
 	    	
 	        <if test="searchVO != null">
 		        <foreach collection="searchVO" item="item" separator="">
