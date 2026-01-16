@@ -1,5 +1,6 @@
 package egovframework.raw.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
@@ -98,4 +99,9 @@ public interface RawMapper {
   public List<Test> reportDetail(int rawSeq);
 
   public RawData labelDetail(RawSearchDTO req);
+
+  List<LocalDate> selectAllMsrmnDates(@Param("rawSeq") int rawSeq);
+
+  void updateTestDtRange(@Param("rawSeq") int rawSeq, @Param("startDt") LocalDate startDt,
+      @Param("endDt") LocalDate endDt);
 }

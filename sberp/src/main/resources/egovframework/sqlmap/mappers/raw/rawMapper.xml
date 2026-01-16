@@ -1173,6 +1173,249 @@
         order by no desc
 	</select>
 	
+	<update id="updateTestDtRange">
+	    UPDATE RAW_TB
+	    SET
+	        TEST_S_DT = #{startDt},
+	        TEST_E_DT = #{endDt}
+	    WHERE RAW_SEQ = #{rawSeq}
+	</update>
+	
+	<select id="selectAllMsrmnDates" resultType="java.time.LocalDate">
+	    SELECT MSRMN_DT FROM (
+	
+	        /* CE */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        ) AS MSRMN_DT
+	        FROM METHOD_CE_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ IN (0, 1)
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        /* CK */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_CK_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 13
+	                AND CHECK_YN = 1
+	          )
+          
+	        UNION ALL
+	
+	        /* CS */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_CS_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 10
+	                AND CHECK_YN = 1
+	          )
+	          
+	        UNION ALL
+	
+	        /* DP */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_DP_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 14
+	                AND CHECK_YN = 1
+	          )
+          
+	        UNION ALL
+	
+	        /* EFT */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_EFT_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 8
+	                AND CHECK_YN = 1
+	          )
+          
+	        UNION ALL
+	
+	        /* ESD */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_ESD_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 6
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        /* MF */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_MF_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 11  /* MF의 MET_SEQ — 실제 값으로 수정 필요 */
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        /* RE - HZ1 / HZ2 / HZ3 컬럼 분리 */
+	        SELECT STR_TO_DATE(
+	            CONCAT(HZ1_MSRMN_YEAR, '-', LPAD(HZ1_MSRMN_MON, 2, '0'), '-', LPAD(HZ1_MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_RE_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND HZ1_MSRMN_YEAR > 0 AND HZ1_MSRMN_MON > 0 AND HZ1_MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 15
+	                AND CHECK_YN = 1
+	          )
+          
+	        UNION ALL
+	
+	        SELECT STR_TO_DATE(
+	            CONCAT(HZ2_MSRMN_YEAR, '-', LPAD(HZ2_MSRMN_MON, 2, '0'), '-', LPAD(HZ2_MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_RE_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND HZ2_MSRMN_YEAR > 0 AND HZ2_MSRMN_MON > 0 AND HZ2_MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 4
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        SELECT STR_TO_DATE(
+	            CONCAT(HZ3_MSRMN_YEAR, '-', LPAD(HZ3_MSRMN_MON, 2, '0'), '-', LPAD(HZ3_MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_RE_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND HZ3_MSRMN_YEAR > 0 AND HZ3_MSRMN_MON > 0 AND HZ3_MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 5
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        /* RS */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_RS_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 7
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        /* SURGE */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_SURGE_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 9
+	                AND CHECK_YN = 1
+	          )
+          	
+	        UNION ALL
+	
+	        /* TEL */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_TEL_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	
+	        UNION ALL
+	
+	        /* VDIP */
+	        SELECT STR_TO_DATE(
+	            CONCAT(MSRMN_YEAR, '-', LPAD(MSRMN_MON, 2, '0'), '-', LPAD(MSRMN_DAY, 2, '0')),
+	            '%Y-%m-%d'
+	        )
+	        FROM METHOD_VDIP_TB
+	        WHERE RAW_SEQ = #{rawSeq}
+	          AND MSRMN_YEAR > 0 AND MSRMN_MON > 0 AND MSRMN_DAY > 0
+	          AND EXISTS (
+	              SELECT 1 FROM RAW_MET_TB
+	              WHERE RAW_SEQ = #{rawSeq}
+	                AND MET_SEQ = 12
+	                AND CHECK_YN = 1
+	          )
+          	
+	    ) ALL_DATES
+	    WHERE MSRMN_DT IS NOT NULL
+	</select>
+	
 </mapper>
 
 

@@ -84,7 +84,7 @@ public class RawController {
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
-  
+
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
@@ -92,7 +92,7 @@ public class RawController {
   private MacService macService;
 
   private static final Marker RD_MARKER = MarkerFactory.getMarker("RD_MARKER");
-  
+
   @ApiOperation(value = "로데이터 작성여부 확인")
   @GetMapping(value = "/{rawSeq}/regState.do")
   public BasicResponse regState(@ApiParam(value = "로데이터 고유번호", required = true,
@@ -102,7 +102,7 @@ public class RawController {
     RegStateDTO detail = new RegStateDTO();
     RawData rawData = new RawData();
     RawSearchDTO req = new RawSearchDTO();
-    
+
     // 기본정보
     req.setRawSeq(rawSeq);
     rawData = rawService.basicDetail(req);
@@ -118,37 +118,63 @@ public class RawController {
       if (!ObjectUtils.isEmpty(rawData.getMethodList())) {
         for (RawMet met : rawData.getMethodList()) {
           switch (met.getCheckYn()) {
-            
+
             case 1:
-                
+
               switch (met.getMetSeq()) {
-                
-                case 0: detail.setCeCheckYn(1); break;
-                case 1: detail.setCeCheckYn(1); break;
-                case 13: detail.setCkCheckYn(1); break;
-                case 14: detail.setDpCheckYn(1); break;
-                case 15: detail.setRe1CheckYn(1); break;
-                case 4: detail.setRe2CheckYn(1); break;
-                case 5: detail.setRe3CheckYn(1); break;
-                case 6: detail.setEdCheckYn(1); break;
-                case 7: detail.setRsCheckYn(1); break;
-                case 8: detail.setEtCheckYn(1); break;
-                case 9: detail.setSgCheckYn(1); break;
-                case 10: detail.setCsCheckYn(1); break;
-                case 12: detail.setVdCheckYn(1); break;
+
+                case 0:
+                  detail.setCeCheckYn(1);
+                  break;
+                case 1:
+                  detail.setCeCheckYn(1);
+                  break;
+                case 13:
+                  detail.setCkCheckYn(1);
+                  break;
+                case 14:
+                  detail.setDpCheckYn(1);
+                  break;
+                case 15:
+                  detail.setRe1CheckYn(1);
+                  break;
+                case 4:
+                  detail.setRe2CheckYn(1);
+                  break;
+                case 5:
+                  detail.setRe3CheckYn(1);
+                  break;
+                case 6:
+                  detail.setEdCheckYn(1);
+                  break;
+                case 7:
+                  detail.setRsCheckYn(1);
+                  break;
+                case 8:
+                  detail.setEtCheckYn(1);
+                  break;
+                case 9:
+                  detail.setSgCheckYn(1);
+                  break;
+                case 10:
+                  detail.setCsCheckYn(1);
+                  break;
+                case 12:
+                  detail.setVdCheckYn(1);
+                  break;
 
               }
-                
+
               break;
-              
+
           }
-          
+
         }
       }
       /**
        * --END 9814
        */
-      
+
     }
 
     // CE
@@ -160,10 +186,13 @@ public class RawController {
     if (!ObjectUtils.isEmpty(reDto)) {
       detail.setReYn(1);
       // 9814
-      if (!StringUtils.isEmpty(reDto.getHz1ResultCode())) detail.setRe1Yn(1);
-      if (!StringUtils.isEmpty(reDto.getHz2ResultCode())) detail.setRe2Yn(1);
-      if (!StringUtils.isEmpty(reDto.getHz3ResultCode())) detail.setRe3Yn(1);
-      //-- END 9814
+      if (!StringUtils.isEmpty(reDto.getHz1ResultCode()))
+        detail.setRe1Yn(1);
+      if (!StringUtils.isEmpty(reDto.getHz2ResultCode()))
+        detail.setRe2Yn(1);
+      if (!StringUtils.isEmpty(reDto.getHz3ResultCode()))
+        detail.setRe3Yn(1);
+      // -- END 9814
     }
 
     // ESD
@@ -201,12 +230,12 @@ public class RawController {
     // Dp
     if (!ObjectUtils.isEmpty(rawService.dpDetail(detail.getRawSeq())))
       detail.setDpYn(1);
- 
+
     // Tel
     if (!ObjectUtils.isEmpty(rawService.telDetail(detail.getRawSeq())))
       detail.setTelYn(1);
-    
-    
+
+
     // 시험장면 사진
     ImgDTO pic = new ImgDTO();
     pic.setRawSeq(detail.getRawSeq());
@@ -246,29 +275,32 @@ public class RawController {
 
   @ApiOperation(value = "로데이터 기본정보 불러오기")
   @GetMapping(value = "/{testId}/view.do")
-  public BasicResponse rawLoad(@ApiParam(value = "시험 접수번호", required = true, example = "SB23-G0178-MD0014") @PathVariable(name = "testId") String testId) throws Exception {
+  public BasicResponse rawLoad(
+      @ApiParam(value = "시험 접수번호", required = true,
+          example = "SB23-G0178-MD0014") @PathVariable(name = "testId") String testId)
+      throws Exception {
     boolean result = true;
     String msg = "";
     RawData detail = new RawData();
     RawSearchDTO req = new RawSearchDTO();
-    
+
     int testSeq = rawService.getTestSeq(testId);
-    
+
     if (testSeq == 0) {
-      
+
       result = false;
       msg = ResponseMessage.NO_DATA;
-    
+
     } else {
-    
+
       req.setTestSeq(testSeq);
       detail = rawService.detail(req);
-      
+
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
       } else {
-        
+
         // 사진정보는 불러오지 않음
         detail.setTestSignUrl("");
         detail.setRevSignUrl("");
@@ -276,24 +308,25 @@ public class RawController {
         detail.setSetupUrl("");
         detail.setModFileList(new ArrayList<PicDTO>());
         detail.setSetupList(new ArrayList<PicDTO>());
-        
+
       }
-      
+
     }
-    
+
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
   }
-  
+
   @ApiOperation(value = "로데이터 기본정보 상세보기")
   @GetMapping(value = "/{testSeq}/detail.do")
-  public BasicResponse rawDetail(@ApiParam(value = "시험 고유번호", required = true, example = "9") @PathVariable(name = "testSeq") int testSeq) throws Exception {
+  public BasicResponse rawDetail(@ApiParam(value = "시험 고유번호", required = true,
+      example = "9") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     RawData detail = new RawData();
     RawSearchDTO req = new RawSearchDTO();
-    
+
     req.setTestSeq(testSeq);
     detail = rawService.detail(req);
 
@@ -324,14 +357,14 @@ public class RawController {
     String msg = "";
     boolean result = false;
     RawSearchDTO search = new RawSearchDTO();
-    
+
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -363,18 +396,18 @@ public class RawController {
         String atchFileId = "";
 
         // 시험자 서명
-//        if (!ObjectUtils.isEmpty(raw.getTestSign())) {
-//          oneFile = fileUtil.parseFile(raw.getTestSign(), "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setTestSignUrl(atchFileId);
-//        }
+        // if (!ObjectUtils.isEmpty(raw.getTestSign())) {
+        // oneFile = fileUtil.parseFile(raw.getTestSign(), "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setTestSignUrl(atchFileId);
+        // }
 
         // 기술책임자 서명
-//        if (!ObjectUtils.isEmpty(raw.getRevSign())) {
-//          oneFile = fileUtil.parseFile(raw.getRevSign(), "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setRevSignUrl(atchFileId);
-//        }
+        // if (!ObjectUtils.isEmpty(raw.getRevSign())) {
+        // oneFile = fileUtil.parseFile(raw.getRevSign(), "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setRevSignUrl(atchFileId);
+        // }
 
         // 보완파일
         if (!ObjectUtils.isEmpty(raw.getModFileList())) {
@@ -498,11 +531,10 @@ public class RawController {
           + "3. signFile 시험자 서명, resultFiles 시험결과")
   @PostMapping(value = "/ce/insert.do")
   public BasicResponse insertCe(@RequestPart(value = "ceDTO") CeDTO req
-//      @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
-//      @RequestPart(value = "signFile", required = false) MultipartFile signFile
-//      @RequestPart(value = "resultFiles", required = false) final List<MultipartFile> resultFiles
-      )
-      throws Exception {
+  // @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
+  // @RequestPart(value = "signFile", required = false) MultipartFile signFile
+  // @RequestPart(value = "resultFiles", required = false) final List<MultipartFile> resultFiles
+  ) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -513,9 +545,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("CE");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -537,29 +569,28 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
-        
+
         try {
 
           List<FileVO> FileResult = null;
           FileVO oneFile = null;
           String atchFileId = "";
-  
-//          // 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile)) {
-//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setSignUrl(atchFileId);
-//          }
-  
+
+          // // 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile)) {
+          // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setSignUrl(atchFileId);
+          // }
+
           result = rawService.insertCe(req);
         } catch (Exception e) {
           result = false;
@@ -568,7 +599,7 @@ public class RawController {
           log.error(req.toString());
           log.error(msg);
         }
-        
+
       } else {
         result = false;
         msg = ResponseMessage.UNAUTHORIZED;
@@ -603,18 +634,17 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 > RE 등록",
-      notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n"
-          + "1. 수정시 rawSeq 필수\n "
-          + "2. signFile1 대역1 서명, signFile2 대역2 서명, signFile2 대역3 서명, resultFiles 시험결과\n" + "4. 대역코드(RH)")
+      notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" + "1. 수정시 rawSeq 필수\n "
+          + "2. signFile1 대역1 서명, signFile2 대역2 서명, signFile2 대역3 서명, resultFiles 시험결과\n"
+          + "4. 대역코드(RH)")
   @PostMapping(value = "/re/insert.do")
   public BasicResponse insertRe(@RequestPart(value = "reDTO") ReDTO req
-//      @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
-//      @RequestPart(value = "signFile1", required = false) MultipartFile signFile1,
-//      @RequestPart(value = "signFile2", required = false) MultipartFile signFile2,
-//      @RequestPart(value = "signFile3", required = false) MultipartFile signFile3
-//      @RequestPart(value = "resultFiles", required = false) final List<MultipartFile> resultFiles
-      )
-      throws Exception {
+  // @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
+  // @RequestPart(value = "signFile1", required = false) MultipartFile signFile1,
+  // @RequestPart(value = "signFile2", required = false) MultipartFile signFile2,
+  // @RequestPart(value = "signFile3", required = false) MultipartFile signFile3
+  // @RequestPart(value = "resultFiles", required = false) final List<MultipartFile> resultFiles
+  ) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -623,22 +653,26 @@ public class RawController {
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
-    
+
     // 규격 3235은 제외
-    if (!StringUtils.isEmpty(req.getHz1ResultCode()) && !StringUtils.isEmpty(req.getHz2ResultCode())) {
-      
+    if (!StringUtils.isEmpty(req.getHz1ResultCode())
+        && !StringUtils.isEmpty(req.getHz2ResultCode())) {
+
       // #50 REA, REB가 한페이지에 있으므로, Front에서 MacType 받아오기
-      //req.setMacType("RE");
-      
+      // req.setMacType("RE");
+
     } else {
-      if (!StringUtils.isEmpty(req.getHz1ResultCode())) req.setMacType("RE1");
-      if (!StringUtils.isEmpty(req.getHz2ResultCode())) req.setMacType("RE2");
-      if (!StringUtils.isEmpty(req.getHz3ResultCode())) req.setMacType("RE3");
+      if (!StringUtils.isEmpty(req.getHz1ResultCode()))
+        req.setMacType("RE1");
+      if (!StringUtils.isEmpty(req.getHz2ResultCode()))
+        req.setMacType("RE2");
+      if (!StringUtils.isEmpty(req.getHz3ResultCode()))
+        req.setMacType("RE3");
     }
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -665,34 +699,33 @@ public class RawController {
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
         try {
           FileVO oneFile = null;
           String atchFileId = "";
-  
-//          // 대역1 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile1)) {
-//            oneFile = fileUtil.parseFile(signFile1, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setHz1SignUrl(atchFileId);
-//          }
-//          // 대역2 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile2)) {
-//            oneFile = fileUtil.parseFile(signFile2, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setHz2SignUrl(atchFileId);
-//          }
-//          // 대역3 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile3)) {
-//            oneFile = fileUtil.parseFile(signFile3, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setHz3SignUrl(atchFileId);
-//          }
-  
+
+          // // 대역1 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile1)) {
+          // oneFile = fileUtil.parseFile(signFile1, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setHz1SignUrl(atchFileId);
+          // }
+          // // 대역2 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile2)) {
+          // oneFile = fileUtil.parseFile(signFile2, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setHz2SignUrl(atchFileId);
+          // }
+          // // 대역3 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile3)) {
+          // oneFile = fileUtil.parseFile(signFile3, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setHz3SignUrl(atchFileId);
+          // }
+
           result = rawService.insertRe(req);
         } catch (Exception e) {
           result = false;
@@ -701,7 +734,7 @@ public class RawController {
           log.error(req.toString());
           log.error(msg);
         }
-        
+
       } else {
         result = false;
         msg = ResponseMessage.UNAUTHORIZED;
@@ -755,9 +788,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("ED");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -779,26 +812,25 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
+        // FileVO oneFile = null;
         String atchFileId = "";
         List<FileVO> FileResult = null;
 
-//         시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
+        // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
 
         // 정전기 방전 인가부위
         if (!ObjectUtils.isEmpty(img.getImgList())) {
@@ -848,9 +880,9 @@ public class RawController {
         }
 
         try {
-          
+
           result = rawService.insertEsd(req);
-          
+
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
@@ -906,9 +938,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("RS");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -930,27 +962,26 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
         try {
-//          FileVO oneFile = null;
-//          String atchFileId = "";
-  
-//          // 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile)) {
-//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setSignUrl(atchFileId);
-//          }
-  
+          // FileVO oneFile = null;
+          // String atchFileId = "";
+
+          // // 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile)) {
+          // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setSignUrl(atchFileId);
+          // }
+
           result = rawService.insertRs(req);
         } catch (Exception e) {
           result = false;
@@ -1007,9 +1038,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("ET");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1031,30 +1062,29 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
-//        String atchFileId = "";
-//
-//        // 시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
-        
+        // FileVO oneFile = null;
+        // String atchFileId = "";
+        //
+        // // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
+
         try {
-          
+
           result = rawService.insertEft(req);
-          
+
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
@@ -1062,7 +1092,7 @@ public class RawController {
           log.error(req.toString());
           log.error(msg);
         }
-        
+
 
       } else {
         result = false;
@@ -1112,9 +1142,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("SG");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1136,31 +1166,30 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
-//        String atchFileId = "";
-//
-//        // 시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
+        // FileVO oneFile = null;
+        // String atchFileId = "";
+        //
+        // // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
 
-        
+
         try {
-          
+
           result = rawService.insertSurge(req);
-          
+
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
@@ -1216,9 +1245,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("CS");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1240,38 +1269,37 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
-//        String atchFileId = "";
-//
-//        // 시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
-        
+        // FileVO oneFile = null;
+        // String atchFileId = "";
+        //
+        // // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
+
         try {
-          
+
           result = rawService.insertCs(req);
-          
+
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
           log.error(user.getId() + " :: " + e.toString());
           log.error(req.toString());
           log.error(msg);
-        }        
-        
+        }
+
 
       } else {
         result = false;
@@ -1320,9 +1348,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("MF");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1344,30 +1372,29 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
-//        String atchFileId = "";
-//
-//        // 시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
-        
+        // FileVO oneFile = null;
+        // String atchFileId = "";
+        //
+        // // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
+
         try {
 
-           result = rawService.insertMf(req);
-        
+          result = rawService.insertMf(req);
+
         } catch (Exception e) {
           result = false;
           msg = e.getMessage().toString();
@@ -1375,7 +1402,7 @@ public class RawController {
           log.error(req.toString());
           log.error(msg);
         }
-      
+
 
       } else {
         result = false;
@@ -1425,9 +1452,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("VD");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1449,25 +1476,24 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
-//        String atchFileId = "";
-//
-//        // 시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
+        // FileVO oneFile = null;
+        // String atchFileId = "";
+        //
+        // // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
         try {
           result = rawService.insertVdip(req);
         } catch (Exception e) {
@@ -1491,9 +1517,7 @@ public class RawController {
     return res;
   }
 
-  @ApiOperation(value = "로데이터 > Click 등록",
-      notes = "0. rawSeq 필수\n "
-          + "1. signFile 시험자 서명")
+  @ApiOperation(value = "로데이터 > Click 등록", notes = "0. rawSeq 필수\n " + "1. signFile 시험자 서명")
   @PostMapping(value = "/clk/insert.do")
   public BasicResponse insertClk(@RequestPart(value = "clkDTO") ClkDTO req) throws Exception {
 
@@ -1506,9 +1530,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("CK");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+    System.out.println(req.toString());
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1530,25 +1554,24 @@ public class RawController {
     if (req.getRawSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
-//        FileVO oneFile = null;
-//        String atchFileId = "";
-//
-//        // 시험자 서명
-//        if (!ObjectUtils.isEmpty(signFile)) {
-//          oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//          atchFileId = fileMngService.insertFileInf(oneFile);
-//          req.setSignUrl(atchFileId);
-//        }
+        // FileVO oneFile = null;
+        // String atchFileId = "";
+        //
+        // // 시험자 서명
+        // if (!ObjectUtils.isEmpty(signFile)) {
+        // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(oneFile);
+        // req.setSignUrl(atchFileId);
+        // }
         try {
           result = rawService.insertClk(req);
         } catch (Exception e) {
@@ -1574,9 +1597,9 @@ public class RawController {
 
   @ApiOperation(value = "로데이터 Click 상세보기")
   @GetMapping(value = "/{rawSeq}/clk/detail.do")
-  public BasicResponse clkDetail(@ApiParam(value = "로데이터 고유번호", required = true, example = "132") 
-                                 @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
-    
+  public BasicResponse clkDetail(@ApiParam(value = "로데이터 고유번호", required = true,
+      example = "132") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+
     boolean result = true;
     String msg = "";
     ClkDTO detail = new ClkDTO();
@@ -1592,10 +1615,8 @@ public class RawController {
 
     return res;
   }
-  
-  @ApiOperation(value = "로데이터 > DP 등록",
-      notes = "0. rawSeq값 필수\n"
-          + "1. signFile 시험자 서명")
+
+  @ApiOperation(value = "로데이터 > DP 등록", notes = "0. rawSeq값 필수\n" + "1. signFile 시험자 서명")
   @PostMapping(value = "/dp/insert.do")
   public BasicResponse insertDp(@RequestPart(value = "dpDTO") DpDTO req) throws Exception {
 
@@ -1608,9 +1629,9 @@ public class RawController {
     req.setUdtMemId(user.getId());
     req.setMacType("DP");
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1631,27 +1652,26 @@ public class RawController {
     if (req.getRawSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
+    }
     // 장비 데이터 필수 체크
     else if (req.getMacList().size() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_MAC;
-    }
-    else {
+    } else {
 
       if (isAuthenticated) {
 
         try {
-//          FileVO oneFile = null;
-//          String atchFileId = "";
-//  
-//          // 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile)) {
-//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setSignUrl(atchFileId);
-//          }
-  
+          // FileVO oneFile = null;
+          // String atchFileId = "";
+          //
+          // // 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile)) {
+          // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setSignUrl(atchFileId);
+          // }
+
           result = rawService.insertDp(req);
         } catch (Exception e) {
           result = false;
@@ -1668,17 +1688,18 @@ public class RawController {
 
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
+    BasicResponse res =
+        BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
 
     return res;
   }
-  
+
 
   @ApiOperation(value = "로데이터 DP 상세보기")
   @GetMapping(value = "/{rawSeq}/dp/detail.do")
-  public BasicResponse dpDetail(@ApiParam(value = "로데이터 고유번호", required = true, example = "132") 
-                                 @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
-    
+  public BasicResponse dpDetail(@ApiParam(value = "로데이터 고유번호", required = true,
+      example = "132") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+
     boolean result = true;
     String msg = "";
     DpDTO detail = new DpDTO();
@@ -1694,10 +1715,8 @@ public class RawController {
 
     return res;
   }
-  
-  @ApiOperation(value = "로데이터 > TEL 등록",
-      notes = "0. rawSeq값 필수\n"
-          + "1. signFile 시험자 서명")
+
+  @ApiOperation(value = "로데이터 > TEL 등록", notes = "0. rawSeq값 필수\n" + "1. signFile 시험자 서명")
   @PostMapping(value = "/tel/insert.do")
   public BasicResponse insertTel(@RequestPart(value = "telDTO") TelDTO req) throws Exception {
 
@@ -1709,9 +1728,9 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -1732,22 +1751,21 @@ public class RawController {
     if (req.getRawSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
-    } 
-    else {
+    } else {
 
       if (isAuthenticated) {
 
         try {
-//          FileVO oneFile = null;
-//          String atchFileId = "";
-//  
-//          // 시험자 서명
-//          if (!ObjectUtils.isEmpty(signFile)) {
-//            oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
-//            atchFileId = fileMngService.insertFileInf(oneFile);
-//            req.setSignUrl(atchFileId);
-//          }
-  
+          // FileVO oneFile = null;
+          // String atchFileId = "";
+          //
+          // // 시험자 서명
+          // if (!ObjectUtils.isEmpty(signFile)) {
+          // oneFile = fileUtil.parseFile(signFile, "RAW/SIGN", 0, "", "");
+          // atchFileId = fileMngService.insertFileInf(oneFile);
+          // req.setSignUrl(atchFileId);
+          // }
+
           result = rawService.insertTel(req);
         } catch (Exception e) {
           result = false;
@@ -1764,18 +1782,19 @@ public class RawController {
 
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
+    BasicResponse res =
+        BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
 
     return res;
   }
-  
+
 
 
   @ApiOperation(value = "로데이터 TEL 상세보기")
   @GetMapping(value = "/{rawSeq}/tel/detail.do")
-  public BasicResponse telDetail(@ApiParam(value = "로데이터 고유번호", required = true, example = "132") 
-                                 @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
-    
+  public BasicResponse telDetail(@ApiParam(value = "로데이터 고유번호", required = true,
+      example = "132") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+
     boolean result = true;
     String msg = "";
     TelDTO detail = new TelDTO();
@@ -1791,15 +1810,14 @@ public class RawController {
 
     return res;
   }
- 
-  
-  
+
+
+
   @ApiOperation(value = "로데이터 시험장면사진 등록현황")
   @GetMapping(value = "/{rawSeq}/pic/regState.do")
-  public BasicResponse picRegState(
-      @ApiParam(value = "로데이터 고유번호", required = true, example = "7") @PathVariable(name = "rawSeq") int rawSeq)
-      throws Exception {
-    
+  public BasicResponse picRegState(@ApiParam(value = "로데이터 고유번호", required = true,
+      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+
     boolean result = true;
     String msg = "";
     List<ImgDTO> img = new ArrayList<ImgDTO>();
@@ -1814,11 +1832,11 @@ public class RawController {
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(img).build();
-    
+
     return res;
-    
+
   }
-  
+
   @ApiOperation(value = "로데이터 시험장면사진 상세보기")
   @GetMapping(value = "/{rawSeq}/pic/{picId}/detail.do")
   public BasicResponse picDetail(
@@ -1850,13 +1868,13 @@ public class RawController {
         if (fileReulst != null) {
           for (FileVO item : fileReulst) {
             PicDTO pic = new PicDTO();
-//            if ("CDN".contentEquals(item.getFileLoc())) {
-//              pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-//                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-//            } else {
-              pic.setImageUrl(propertyService.getString("img.url").concat(img.getAtchFileId())
-                  .concat("&fileSn=").concat(item.getFileSn()));
-//            }
+            // if ("CDN".contentEquals(item.getFileLoc())) {
+            // pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
+            // .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
+            // } else {
+            pic.setImageUrl(propertyService.getString("img.url").concat(img.getAtchFileId())
+                .concat("&fileSn=").concat(item.getFileSn()));
+            // }
             pic.setTitle(item.getFileCn());
             pic.setMode(item.getFileMemo());
             pic.setFileSn(item.getFileSn());
@@ -1879,12 +1897,9 @@ public class RawController {
 
 
   @ApiOperation(value = "시험장면사진 등록",
-      notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" 
-          + "1. 수정시 rawSeq, picId 필수\n "
-          + "2. delFileList : fileCn(파일순번)-해당없음 리스트에서 사용\n" 
-          + "3. 시험장면사진 순번 : 공통코드 RP\n"
-          + "4. picList[0].mode=모드, picList[0].title=구분(공통코드 RG)\n" 
-          + "5. picYn : 해당됨1, 해당없음0")
+      notes = "0. 신규등록시 rawSeq 또는 TestSeq(rawSeq없을때만)값 필수\n" + "1. 수정시 rawSeq, picId 필수\n "
+          + "2. delFileList : fileCn(파일순번)-해당없음 리스트에서 사용\n" + "3. 시험장면사진 순번 : 공통코드 RP\n"
+          + "4. picList[0].mode=모드, picList[0].title=구분(공통코드 RG)\n" + "5. picYn : 해당됨1, 해당없음0")
   @PostMapping(value = "/pic/insert.do")
   public BasicResponse insertPic(@RequestPart(value = "imgDTO") ImgDTO req,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
@@ -1897,10 +1912,10 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
-    
+
+
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
 
@@ -1945,16 +1960,16 @@ public class RawController {
         fileMngService.deletePicAll(upt);
 
         // 시험장면사진
-        System.out.println("pic.getPicList() --> "+pic.getPicList());
+        System.out.println("pic.getPicList() --> " + pic.getPicList());
         if (!ObjectUtils.isEmpty(pic.getPicList())) {
-          System.out.println("널이아님-->"+atchFileId);
+          System.out.println("널이아님-->" + atchFileId);
           // 신규등록
           if (StringUtils.isEmpty(atchFileId)) {
-            
+
             FileResult = fileUtil.parsePicFile(pic.getPicList(), "RAW", 0, "", "");
             atchFileId = fileMngService.insertFileInfs(FileResult);
             req.setAtchFileId(atchFileId);
-            
+
           }
           // 수정
           else {
@@ -1969,50 +1984,52 @@ public class RawController {
                 fileUtil.parsePicFile(pic.getPicList(), "RAW", cnt, atchFileId, "");
             fileMngService.updateFileInfs(_result);
             */
-            
+
             // 최종 결과 파일 리스트
             List<FileVO> resultList = new ArrayList<>();
 
             for (PicDTO picDto : pic.getPicList()) {
-                MultipartFile image = picDto.getImage();
-                
-                System.out.println(picDto.toString());
-                // case 1. 이미지가 존재 → 신규 파일 처리
-                if (image != null && !image.isEmpty()) {
-                    List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW", cnt++, atchFileId, "");
-                    resultList.addAll(files);
-                }
-                // case 2. 이미지 없고 mode = U → fileOrdr만 수정
-                else if (image == null && "U".equalsIgnoreCase(picDto.getState())) {
-                    FileVO updateFvo = new FileVO();
-                    updateFvo.setAtchFileId(atchFileId);
-                    updateFvo.setFileSn(picDto.getFileSn());
-                    updateFvo.setFileOrdr(picDto.getFileOrdr());
-                    fileMngService.updateFileDetail(updateFvo);
-                }
-                // case 3. 이미지 없고 mode = D → 파일 삭제
-                else if (image == null && "D".equalsIgnoreCase(picDto.getState())) {
-                    FileVO delFvo = new FileVO();
-                    delFvo.setAtchFileId(atchFileId);
-                    delFvo.setFileSn(picDto.getFileSn());
-                    fileMngService.deleteFileInf(delFvo);
-                }
-                // case 4. 이미지 없고, pic_yn = 0 → 해당없음 추가, 수정이나 삭제는 영향 받지 않아야 함
-                else if (image == null && req.getPicYn() == 0) {
-                  List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW", cnt++, atchFileId, "");
-                  resultList.addAll(files);
+              MultipartFile image = picDto.getImage();
+
+              System.out.println(picDto.toString());
+              // case 1. 이미지가 존재 → 신규 파일 처리
+              if (image != null && !image.isEmpty()) {
+                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW",
+                    cnt++, atchFileId, "");
+                resultList.addAll(files);
+              }
+              // case 2. 이미지 없고 mode = U → fileOrdr만 수정
+              else if (image == null && "U".equalsIgnoreCase(picDto.getState())) {
+                FileVO updateFvo = new FileVO();
+                updateFvo.setAtchFileId(atchFileId);
+                updateFvo.setFileSn(picDto.getFileSn());
+                updateFvo.setFileOrdr(picDto.getFileOrdr());
+                fileMngService.updateFileDetail(updateFvo);
+              }
+              // case 3. 이미지 없고 mode = D → 파일 삭제
+              else if (image == null && "D".equalsIgnoreCase(picDto.getState())) {
+                FileVO delFvo = new FileVO();
+                delFvo.setAtchFileId(atchFileId);
+                delFvo.setFileSn(picDto.getFileSn());
+                fileMngService.deleteFileInf(delFvo);
+              }
+              // case 4. 이미지 없고, pic_yn = 0 → 해당없음 추가, 수정이나 삭제는 영향 받지 않아야 함
+              else if (image == null && req.getPicYn() == 0) {
+                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW",
+                    cnt++, atchFileId, "");
+                resultList.addAll(files);
               }
             }
 
             // 신규 파일이 존재할 경우 한 번에 업데이트
             if (!resultList.isEmpty()) {
-                fileMngService.updateFileInfs(resultList);
+              fileMngService.updateFileInfs(resultList);
             }
-            
+
           }
         }
         System.out.println("다 끝남");
-        
+
         rawService.insertImg(req);
 
         // 파일삭제 - 해당없음 리스트용도
@@ -2075,9 +2092,9 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    
+
     log.info(RD_MARKER, req.toString());
-    
+
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -2114,8 +2131,8 @@ public class RawController {
 
         // 신규등록
         FileResult = fileUtil.parseFile(files, "", 0, "",
-            propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/").concat("FILE").concat("/")
-                .concat(Integer.toString(req.getTestSeq())));
+            propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/")
+                .concat("FILE").concat("/").concat(Integer.toString(req.getTestSeq())));
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
 
