@@ -135,7 +135,7 @@
 		FROM MEMBER_TB
 		
 		    # 목표
-			INNER JOIN TARGET_TB
+			LEFT JOIN TARGET_TB
     		ON MEM_ID = MEMBER_TB.ID
 		    AND YEAR = <if test="searchVO != null">
 					        <foreach collection="searchVO" item="item" separator="">
@@ -1091,22 +1091,27 @@ FROM
 	
 	
 	<insert id="insert" parameterType="List">
-		<foreach collection="req" item="item" separator=";">
-			UPDATE TARGET_TB
-			SET
-			    JAN = #{item.mon1},
-			    FEB = #{item.mon2},
-			    MAR = #{item.mon3},
-			    APR = #{item.mon4},
-			    MAY = #{item.mon5},
-			    JUN = #{item.mon6},
-			    JUL = #{item.mon7},
-			    AUG = #{item.mon8},
-			    SEP = #{item.mon9},
-			    OCT = #{item.mon10},
-			    NOV = #{item.mon11},
-			    `DEC` = #{item.mon12}
-			WHERE MEM_ID = #{item.memId} AND YEAR = #{item.year}
-		</foreach>
+	  <foreach collection="req" item="item" separator=";">
+	    INSERT INTO TARGET_TB
+	      (MEM_ID, YEAR, JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, `DEC`)
+	    VALUES
+	      (#{item.memId}, #{item.year},
+	       #{item.mon1}, #{item.mon2}, #{item.mon3}, #{item.mon4}, #{item.mon5}, #{item.mon6},
+	       #{item.mon7}, #{item.mon8}, #{item.mon9}, #{item.mon10}, #{item.mon11}, #{item.mon12})
+	    ON DUPLICATE KEY UPDATE
+	      JAN = VALUES(JAN),
+	      FEB = VALUES(FEB),
+	      MAR = VALUES(MAR),
+	      APR = VALUES(APR),
+	      MAY = VALUES(MAY),
+	      JUN = VALUES(JUN),
+	      JUL = VALUES(JUL),
+	      AUG = VALUES(AUG),
+	      SEP = VALUES(SEP),
+	      OCT = VALUES(OCT),
+	      NOV = VALUES(NOV),
+	      `DEC` = VALUES(`DEC`)
+	  </foreach>
 	</insert>
+
 </mapper>
