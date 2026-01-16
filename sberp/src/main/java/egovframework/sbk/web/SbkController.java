@@ -47,8 +47,8 @@ import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
-import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.Sbd;
 import egovframework.sbk.service.SbdService;
@@ -73,8 +73,8 @@ public class SbkController {
   @Resource(name = "SbdService")
   private SbdService sbdService;
   
-  @Resource(name = "EgovFileMngUtil")
-  private EgovFileMngUtil fileUtil;
+  @Resource(name = "MinIoFileMngUtil")
+  private MinIoFileMngUtil fileUtil;
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
@@ -290,7 +290,7 @@ public class SbkController {
 
     if (isAuthenticated) {
       
-      // 필수체크
+      // 1) 필수체크
       if (StringUtils.isEmpty(req.getSbkId()) && StringUtils.isEmpty(req.getMngId())) {
         
         result = false;
@@ -302,68 +302,75 @@ public class SbkController {
       } 
       
       
-      FileVO FileResult = null;
-      List<FileVO> FileResults = null;
-      String atchFileId = "";
-      // 신청인 서명
-      if (!ObjectUtils.isEmpty(appFile)) {
-        FileResult = fileUtil.parseFile(appFile, "SBK", 0, "", "");
-        atchFileId = fileMngService.insertFileInf(FileResult);
-        req.setAppSignUrl(atchFileId);
-      }
-
-      // 신청인 동의 서명
-      if (!ObjectUtils.isEmpty(agreeFile)) {
-        FileResult = fileUtil.parseFile(agreeFile, "SBK", 0, "", "");
-        atchFileId = fileMngService.insertFileInf(FileResult);
-        req.setAppAgreeSignUrl(atchFileId);
-      }
-
-      // 업무자 서명
-//      if (!ObjectUtils.isEmpty(workFile)) {
-//        FileResult = fileUtil.parseFile(workFile, "SBK", 0, "", "");
-//        atchFileId = fileMngService.insertFileInf(FileResult);
-//        req.setWorkSignUrl(atchFileId);
-//      }
-
-      // 신청서류
-      if (!ObjectUtils.isEmpty(sendFile)) {
-
-        // 신규등록
-        if (StringUtils.isEmpty(req.getDocUrl())) {
-          FileResults = fileUtil.parseFile(sendFile, "SBK/DOC", 0, "", "");
-          atchFileId = fileMngService.insertFileInfs(FileResults);
-          req.setDocUrl(atchFileId);
-        }
-        // 수정
-        else {
-          // 현재 등록된 파일 수 가져오기
-          FileVO fvo = new FileVO();
-          fvo.setAtchFileId(req.getDocUrl());
-          int cnt = fileMngService.getMaxFileSN(fvo);
-
-          // 추가 파일 등록
-          List<FileVO> _result = fileUtil.parseFile(sendFile, "SBK/DOC", cnt, req.getDocUrl(), "");
-          fileMngService.updateFileInfs(_result);
-        }
-      }
-
-      // 파일삭제
-      FileVO delFile = null;
-      if (!ObjectUtils.isEmpty(delFileList)) {
-        for (FileVO del : delFileList) {
-          delFile = new FileVO();
-          delFile.setAtchFileId(del.getAtchFileId());
-          delFile.setFileSn(del.getFileSn());
-          fileMngService.deleteFileInf(delFile);
-        }
-      }
-
       try {
-        if (StringUtils.isEmpty(req.getSbkId()))
-          result = sbkService.insert(req);
-        else
-          result = sbkService.update(req);
+        
+        String folderName = "";
+        
+        // 2) 신규면 먼저 신청서 insert 해서 sbkId 생성 + 폴더 생성
+        if (StringUtils.isEmpty(req.getSbkId())) {
+            result = sbkService.insert(req);   // 여기서 req.sbkId 채워짐 + 폴더 생성됨
+            folderName = req.getNcFolderPath();
+            if (!result) {
+                return BasicResponse.builder().result(false).message(ResponseMessage.RETRY).build();
+            }
+        } else {
+          folderName = sbkService.ensureSbkFolder(req);
+        }
+        
+        // 3) 이제 req.getSbkId()가 있으니, 이걸 기반으로 fileUtil이 폴더 경로를 만들 수 있게!
+        FileVO FileResult = null;
+        List<FileVO> FileResults = null;
+        String atchFileId = "";
+        
+        // 신청인 서명
+        if (!ObjectUtils.isEmpty(appFile)) {
+          FileResult = fileUtil.parseFile(appFile, "", 0, "", folderName);
+          atchFileId = fileMngService.insertFileInf(FileResult);
+          req.setAppSignUrl(atchFileId);
+        }
+  
+        // 신청인 동의 서명
+        if (!ObjectUtils.isEmpty(agreeFile)) {
+          FileResult = fileUtil.parseFile(agreeFile, "", 0, "", folderName);
+          atchFileId = fileMngService.insertFileInf(FileResult);
+          req.setAppAgreeSignUrl(atchFileId);
+        }
+  
+        // 신청서류
+        if (!ObjectUtils.isEmpty(sendFile)) {
+  
+          // 신규등록
+          if (StringUtils.isEmpty(req.getDocUrl())) {
+            FileResults = fileUtil.parseFile(sendFile, "", 0, "", folderName);
+            atchFileId = fileMngService.insertFileInfs(FileResults);
+            req.setDocUrl(atchFileId);
+          }
+          // 수정
+          else {
+            // 현재 등록된 파일 수 가져오기
+            FileVO fvo = new FileVO();
+            fvo.setAtchFileId(req.getDocUrl());
+            int cnt = fileMngService.getMaxFileSN(fvo);
+  
+            // 추가 파일 등록
+            List<FileVO> _result = fileUtil.parseFile(sendFile, "", cnt, req.getDocUrl(), folderName);
+            fileMngService.updateFileInfs(_result);
+          }
+        }
+  
+        // 파일삭제
+        FileVO delFile = null;
+        if (!ObjectUtils.isEmpty(delFileList)) {
+          for (FileVO del : delFileList) {
+            delFile = new FileVO();
+            delFile.setAtchFileId(del.getAtchFileId());
+            delFile.setFileSn(del.getFileSn());
+            fileMngService.deleteFileInf(delFile);
+          }
+        }
+
+        result = sbkService.update(req);
+        
       } catch (Exception e) {
 
         msg = ResponseMessage.RETRY;

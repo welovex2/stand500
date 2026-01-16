@@ -220,6 +220,24 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
         return decodedHref; // fallback
     }
     
+    /**
+     * 폴더만 생성
+     */
+    @Override
+    public String ensureApplyFolder(String yearMonth, String applyNo) throws Exception {
+      String relativePath = yearMonth + "/" + applyNo;
+
+      nextcloudDavService.ensureFolder(relativePath);
+
+      String commonSubFolderName = "00.공통폴더";
+      nextcloudDavService.ensureFolder(relativePath + "/" + commonSubFolderName);
+
+      return relativePath;
+  }
+
+    /**
+     * 폴더 생성 + 공유
+     */
     @Override
     public String createApplyFolderAndGrant(
             String yearMonth,

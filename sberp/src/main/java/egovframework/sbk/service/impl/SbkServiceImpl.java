@@ -76,12 +76,7 @@ public class SbkServiceImpl implements SbkService {
 	          .format(DateTimeFormatter.ofPattern("yyyy/MM"));
 	      
 	      
-	        String davPath = nextcloudFolderService.createApplyFolderAndGrant(
-                                                              	              yearMonth,
-                                                              	              req.getSbkId(),
-                                                              	              req.getMngId(),
-                                                              	              false
-                                                              	              );
+	        String davPath = nextcloudFolderService.ensureApplyFolder(yearMonth, req.getSbkId());
 	        
 	        req.setNcFolderPath(davPath);
 	        sbkMapper.updateNcFolderPath(req);
@@ -165,5 +160,24 @@ public class SbkServiceImpl implements SbkService {
     public Res selectDirtInfo(Req req) {
       return sbkMapper.selectDirtInfo(req);
     }
+    
+    public String ensureSbkFolder(Req req) {
+      SbkDTO.Res res = sbkMapper.selectById(req.getSbkId());
+      
+      if (!StringUtils.isEmpty(res.getNcFolderPath())) {
+          return res.getNcFolderPath();
+      }
+
+      try {
+          String davPath = nextcloudFolderService.ensureApplyFolder(res.getSbkYm(), req.getSbkId());
+          req.setNcFolderPath(davPath);
+          sbkMapper.updateNcFolderPath(req);
+          return davPath;
+      } catch (Exception e) {
+          log.error("ensureSbkFolder fail sbkId={}", req.getSbkId(), e);
+          return null; // 실패 시 fallback 판단
+      }
+  }
+
     
 }

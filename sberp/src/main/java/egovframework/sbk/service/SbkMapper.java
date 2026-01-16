@@ -48,4 +48,6 @@ public interface SbkMapper {
 
   void updateNcFolderPath(Req req);
 
+  SbkDTO.Res selectById(String sbkId);
+
 }

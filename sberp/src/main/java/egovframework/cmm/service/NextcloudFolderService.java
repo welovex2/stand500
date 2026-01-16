@@ -25,5 +25,10 @@ public interface NextcloudFolderService {
           String targetId,
           boolean isGroup
   ) throws Exception;
+
+  /**
+   * 폴더만 생성
+   */
+  String ensureApplyFolder(String yearMonth, String applyNo) throws Exception;
   
 }

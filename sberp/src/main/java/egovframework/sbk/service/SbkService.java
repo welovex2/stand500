@@ -30,4 +30,6 @@ public interface SbkService {
 
   Res selectDirtInfo(Req req);
 
+  String ensureSbkFolder(Req req);
+
 }

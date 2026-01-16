@@ -1,7 +1,9 @@
 package egovframework.cmm.service;
 
 import java.io.InputStream;
+import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
+import com.amazonaws.services.s3.transfer.model.UploadResult;
 
 public interface NextcloudDavService {
 
@@ -25,6 +27,18 @@ public interface NextcloudDavService {
   
   String resolveFileUrl(FileVO file) throws Exception;
 
+  /** ✅ 폴더/파일 목록 조회 (Depth: 1=현재폴더+자식, 0=자기 자신) */
+  List<WebDavItemDTO> list(String davPath, int depth) throws Exception;
+
+  /** ✅ 단일 리소스 메타 조회 */
+  WebDavItemDTO stat(String davPath) throws Exception;
+
+  /** ✅ Nextcloud WebDAV에서 파일을 GET으로 읽기(다운로드 컨트롤러에서 사용) */
   InputStream downloadStreamByDavPath(String davPath) throws Exception;
+
+  /** ✅ 업로드(화면에서 업로드하는 경우: 대상 폴더 davPath + 파일) */
+  UploadResultDTO uploadToFolder(String folderDavPath, MultipartFile file) throws Exception;
+
+  String createFolder(String parentDavPath, String folderName) throws Exception;
 
 }
