@@ -28,12 +28,12 @@ public class SmdServiceImpl implements SmdService {
     item.setMemState(smdMapper.selectSaleList(param));
     result.add(item);
     
-    // 팀별 데이터
-    param.setSearchCode("tm");
-    item = new SmdDTO();
-    item.setGubun("tm");
-    item.setMemState(smdMapper.selectSaleList(param));
-    result.add(item);
+    // 팀별 데이터 - 2025-01 삭제
+//    param.setSearchCode("tm");
+//    item = new SmdDTO();
+//    item.setGubun("tm");
+//    item.setMemState(smdMapper.selectSaleList(param));
+//    result.add(item);
     
     // 합산
     param.setSearchCode("sm");
