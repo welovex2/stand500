@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.cmm.service.ApiLogMapper">
+	
+	<insert id="insertApiLog" parameterType="egovframework.cmm.service.ApiLogVO">
+	    INSERT INTO TB_API_LOG (USER_ID, REQUEST_URI, METHOD, REMOTE_IP, REQ_DATE)
+	    VALUES (#{userId}, #{requestUri}, #{method}, #{remoteIp}, NOW())
+	</insert>
+	
+</mapper>
