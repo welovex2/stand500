@@ -77,10 +77,12 @@
 		<![CDATA[
 			INSERT INTO FILE_DETAIL_TB
 			( ATCH_FILE_ID, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM, 
-			  ORIGNL_FILE_NM, FILE_EXTSN, FILE_SIZE, FILE_CN, FILE_MEMO, FILE_ORDR )
+			  ORIGNL_FILE_NM, FILE_EXTSN, FILE_SIZE, FILE_CN, FILE_MEMO, FILE_ORDR,
+			  CREAT_ID, CREAT_DT )
 			VALUES
 			( #{atchFileId}, #{fileSn}, #{fileStreCours}, #{streFileNm}, 
-			  #{orignlFileNm}, #{fileExtsn}, #{fileMg}, #{fileCn}, #{fileMemo}, #{fileOrdr} )			
+			  #{orignlFileNm}, #{fileExtsn}, #{fileMg}, #{fileCn}, #{fileMemo}, #{fileOrdr},
+			  #{creatId}, SYSDATE() )			
 		]]>
 	</insert>	
 	
@@ -218,5 +220,26 @@
 			ORDER BY b.FILE_SN	
  		]]>
  	</select>	
+ 	
+ 	<select id="selectUploadSrcByPaths" parameterType="List" resultType="fileVO">
+	  SELECT FILE_STRE_COURS, STRE_FILE_NM, UPLOAD_SRC
+	  FROM FILE_DETAIL_TB
+	  WHERE STRE_FILE_NM IN
+	  <foreach collection="fileNm" item="nm" open="(" separator="," close=")">
+	    #{nm}
+	  </foreach>
+	</select>
+	
+	<insert id="upsertFolderMeta" parameterType="egovframework.cmm.service.FolderMetaVO">
+	  INSERT INTO FOLDER_META_TB
+	    (FOLDER_PATH, PATH_HASH, CREAT_ID, UPLOAD_SRC)
+	  VALUES
+	    (#{folderPath}, #{pathHash}, #{creatId}, #{uploadSrc})
+	  ON DUPLICATE KEY UPDATE
+	    CREAT_ID   = VALUES(CREAT_ID),
+	    UPLOAD_SRC = VALUES(UPLOAD_SRC),
+	    UPDATED_AT = NOW()
+	</insert>
+	
  	
 </mapper>

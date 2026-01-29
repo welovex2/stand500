@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO.Req;
@@ -33,8 +34,9 @@ public interface SbkMapper {
   int selectListCnt(ComParam param);
 
   List<SbkDTO.Res> selectList(ComParam param);
-  
-  public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId, @Param("searchVO") List<SearchVO> param);
+
+  public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId,
+      @Param("searchVO") List<SearchVO> param);
 
   boolean updateTestItemSign(TestItemDTO req);
 
@@ -46,8 +48,10 @@ public interface SbkMapper {
 
   Res selectDirtInfo(Req req);
 
-  void updateNcFolderPath(Req req);
+  void updateNcFolderPath(SbkInfoVO req);
 
-  SbkDTO.Res selectById(String sbkId);
+  SbkInfoVO selectSbkBySbkNo(String sbkId);
+
+  void updateAtchFileIdBySbkNoIfNull(SbkInfoVO sbk);
 
 }

@@ -46,9 +46,11 @@ import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
+import egovframework.rte.fdl.idgnr.EgovIdGnrService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.Sbd;
 import egovframework.sbk.service.SbdService;
@@ -72,7 +74,7 @@ public class SbkController {
 
   @Resource(name = "SbdService")
   private SbdService sbdService;
-  
+
   @Resource(name = "MinIoFileMngUtil")
   private MinIoFileMngUtil fileUtil;
 
@@ -82,9 +84,13 @@ public class SbkController {
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
+  @Resource(name = "egovFileIdGnrService")
+  private EgovIdGnrService idgenService;
+
   @ApiOperation(value = "본건 신청서 작성")
   @PostMapping(value = "/makeSbk.do")
-  public BasicResponse makeSbk(@ApiParam(value = "quoId, type (G:일반, M:의료) 전송") @RequestBody SbkDTO.Req req)
+  public BasicResponse makeSbk(
+      @ApiParam(value = "quoId, type (G:일반, M:의료) 전송") @RequestBody SbkDTO.Req req)
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -97,7 +103,7 @@ public class SbkController {
     req.setUdtMemId(user.getId());
     req.setMemId(user.getId());
     req.setSecretYn(user.getSecretYn());
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
@@ -121,14 +127,14 @@ public class SbkController {
         req.setMngPhone(detail.getMngPhone());
         req.setMngEmail(detail.getMngEmail());
         req.setMngFax(detail.getMngFax());
-        
+
         // 동의사항 기본셋팅
         req.setCusInfoAgreeYn(1);
         req.setCnfrm1Yn(1);
         req.setCnfrm2Yn(0);
         req.setModCheckYn(1);
         req.setImCheckYn(1);
-        
+
         // 신청서 생성
         result = sbkService.insert(req);
 
@@ -172,7 +178,7 @@ public class SbkController {
     }
     param.setMemId(user.getId());
     param.setSecretYn(user.getSecretYn());
-    
+
     /**
      * OR 조건 검색 처리
      */
@@ -188,16 +194,24 @@ public class SbkController {
       // 2. 신청구분(22)
       else if ("22".equals(search.getSearchCode())) {
         new22Yn = true;
-        if ("1".equals(search.getSearchWord())) new22.add("SG_NEW_YN");
-        else if ("2".equals(search.getSearchWord())) new22.add("SG_GB_YN");
-        else if ("3".equals(search.getSearchWord())) new22.add("SG_DG_YN");
-        else if ("4".equals(search.getSearchWord())) new22.add("SG_ETC_YN");
-        
+        if ("1".equals(search.getSearchWord()))
+          new22.add("SG_NEW_YN");
+        else if ("2".equals(search.getSearchWord()))
+          new22.add("SG_GB_YN");
+        else if ("3".equals(search.getSearchWord()))
+          new22.add("SG_DG_YN");
+        else if ("4".equals(search.getSearchWord()))
+          new22.add("SG_ETC_YN");
+
       }
     }
     // 받은 searchCode 삭제 후 다시 생성
-    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
-    
+    param.getSearchVO().stream()
+        .filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode()))
+        .collect(Collectors.toList()).forEach(x -> {
+          param.getSearchVO().remove(x);
+        });
+
     SearchVO newSearch = new SearchVO();
     if (new25Yn) {
       newSearch = new SearchVO();
@@ -205,7 +219,7 @@ public class SbkController {
       newSearch.setSearchWords(new25);
       param.getSearchVO().add(newSearch);
     }
-    
+
     if (new22Yn) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("22");
@@ -215,7 +229,7 @@ public class SbkController {
     /**
      * -- END OR 조건 검색 처리
      */
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -254,11 +268,11 @@ public class SbkController {
   public BasicResponse insert(
       @RequestPart(value = "appFile", required = false) MultipartFile appFile,
       @RequestPart(value = "agreeFile", required = false) MultipartFile agreeFile,
-//      @RequestPart(value = "workFile", required = false) MultipartFile workFile,
+      // @RequestPart(value = "workFile", required = false) MultipartFile workFile,
       @RequestPart(value = "sendFile", required = false) List<MultipartFile> sendFile,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
       @RequestPart(value = "sbk") SbkDTO.Req req) throws Exception {
-    
+
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
     boolean result = false;
@@ -280,7 +294,6 @@ public class SbkController {
     for (ConstraintViolation<SbkDTO.Req> violation : violations) {
       msg = violation.getMessage();
 
-      System.out.println(msg);
       BasicResponse res = BasicResponse.builder().result(false).message(msg).build();
 
       return res;
@@ -289,60 +302,70 @@ public class SbkController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       // 1) 필수체크
       if (StringUtils.isEmpty(req.getSbkId()) && StringUtils.isEmpty(req.getMngId())) {
-        
+
         result = false;
         msg = ResponseMessage.ERROR_MNG;
-        
+
         BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
         return res;
-        
-      } 
-      
-      
+
+      }
+
+
       try {
-        
+
         String folderName = "";
-        
-        // 2) 신규면 먼저 신청서 insert 해서 sbkId 생성 + 폴더 생성
-        if (StringUtils.isEmpty(req.getSbkId())) {
-            result = sbkService.insert(req);   // 여기서 req.sbkId 채워짐 + 폴더 생성됨
-            folderName = req.getNcFolderPath();
-            if (!result) {
-                return BasicResponse.builder().result(false).message(ResponseMessage.RETRY).build();
-            }
-        } else {
-          folderName = sbkService.ensureSbkFolder(req);
-        }
-        
-        // 3) 이제 req.getSbkId()가 있으니, 이걸 기반으로 fileUtil이 폴더 경로를 만들 수 있게!
         FileVO FileResult = null;
         List<FileVO> FileResults = null;
         String atchFileId = "";
-        
+
+        // 2) 신규면 먼저 신청서 insert 해서 sbkId 생성 + 폴더 생성
+        if (StringUtils.isEmpty(req.getSbkId())) {
+          result = sbkService.insert(req); // 여기서 req.sbkId 채워짐 + 폴더 생성됨
+          folderName = req.getNcFolderPath();
+
+          // 파일서버용 fileId생성
+          FileResult = new FileVO();
+          FileResult.setAtchFileId(idgenService.getNextStringId());
+          atchFileId = fileMngService.insertFileMaster(FileResult);
+          req.setAtchFileId(atchFileId);
+
+          if (!result) {
+            return BasicResponse.builder().result(false).message(ResponseMessage.RETRY).build();
+          }
+        } else {
+          SbkInfoVO info = sbkService.findBySbkNoAndProvision(req.getSbkId());
+          folderName = info.getNcFolderPath();
+        }
+
+
+        // 3) 이제 req.getSbkId()가 있으니, 이걸 기반으로 fileUtil이 폴더 경로를 만들 수 있게!
+
         // 신청인 서명
         if (!ObjectUtils.isEmpty(appFile)) {
           FileResult = fileUtil.parseFile(appFile, "", 0, "", folderName);
           atchFileId = fileMngService.insertFileInf(FileResult);
           req.setAppSignUrl(atchFileId);
         }
-  
+
         // 신청인 동의 서명
         if (!ObjectUtils.isEmpty(agreeFile)) {
           FileResult = fileUtil.parseFile(agreeFile, "", 0, "", folderName);
           atchFileId = fileMngService.insertFileInf(FileResult);
           req.setAppAgreeSignUrl(atchFileId);
         }
-  
+
         // 신청서류
         if (!ObjectUtils.isEmpty(sendFile)) {
-  
+
           // 신규등록
           if (StringUtils.isEmpty(req.getDocUrl())) {
-            FileResults = fileUtil.parseFile(sendFile, "", 0, "", folderName);
-            atchFileId = fileMngService.insertFileInfs(FileResults);
+            FileResults =
+                fileUtil.parseFile(sendFile, "", 0, "", folderName + "/00.신청서 및 공통/00.신청관련서류");
+            atchFileId = fileMngService.insertFileInfs(FileResults, req.getInsMemId());
             req.setDocUrl(atchFileId);
           }
           // 수정
@@ -351,13 +374,14 @@ public class SbkController {
             FileVO fvo = new FileVO();
             fvo.setAtchFileId(req.getDocUrl());
             int cnt = fileMngService.getMaxFileSN(fvo);
-  
+
             // 추가 파일 등록
-            List<FileVO> _result = fileUtil.parseFile(sendFile, "", cnt, req.getDocUrl(), folderName);
-            fileMngService.updateFileInfs(_result);
+            List<FileVO> _result = fileUtil.parseFile(sendFile, "", cnt, req.getDocUrl(),
+                folderName + "/00.신청서 및 공통/00.신청관련서류");
+            fileMngService.updateFileInfs(_result, req.getInsMemId());
           }
         }
-  
+
         // 파일삭제
         FileVO delFile = null;
         if (!ObjectUtils.isEmpty(delFileList)) {
@@ -370,7 +394,7 @@ public class SbkController {
         }
 
         result = sbkService.update(req);
-        
+
       } catch (Exception e) {
 
         msg = ResponseMessage.RETRY;
@@ -379,13 +403,14 @@ public class SbkController {
         log.warn("");
 
       }
-      
+
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(req.getSbkId()).build();
+    BasicResponse res =
+        BasicResponse.builder().result(result).message(msg).data(req.getSbkId()).build();
 
     return res;
   }
@@ -457,7 +482,7 @@ public class SbkController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "요청완료일 변경하기", notes = "testItemSeq, estCmpDt")
   @PostMapping(value = "/cmpDt/update.do")
   public BasicResponse estCmpDtUpdate(@RequestBody TestItemDTO req) throws Exception {
@@ -470,7 +495,7 @@ public class SbkController {
     System.out.println("=-===========");
     System.out.println(req.toString());
     System.out.println("=-===========");
-    
+
     if (isAuthenticated) {
       req.setState("DT");
       result = sbkService.updateTestItemSign(req);
@@ -487,8 +512,8 @@ public class SbkController {
   @ApiOperation(value = "기술책임자 서명", notes = "testItemSeq=시험항목번호, state=I:신규, U:수정, D:삭제")
   @PostMapping(value = "/signRev.do",
       consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
-  public BasicResponse updateTestItemSign(
-      @RequestPart(value = "req") TestItemDTO req) throws Exception {
+  public BasicResponse updateTestItemSign(@RequestPart(value = "req") TestItemDTO req)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
@@ -509,14 +534,14 @@ public class SbkController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-//      FileVO FileResult = null;
-//
-//      String atchFileId = "";
-//      if (!ObjectUtils.isEmpty(multiRequest)) {
-//        FileResult = fileUtil.parseFile(multiRequest, "SIGN", 0, "", "");
-//        atchFileId = fileMngService.insertFileInf(FileResult);
-//        req.setRevSignUrl(atchFileId);
-//      }
+      // FileVO FileResult = null;
+      //
+      // String atchFileId = "";
+      // if (!ObjectUtils.isEmpty(multiRequest)) {
+      // FileResult = fileUtil.parseFile(multiRequest, "SIGN", 0, "", "");
+      // atchFileId = fileMngService.insertFileInf(FileResult);
+      // req.setRevSignUrl(atchFileId);
+      // }
 
       result = sbkService.updateTestItemSign(req);
 
@@ -607,110 +632,114 @@ public class SbkController {
 
   @ApiOperation(value = "신청서 엑셀 폼 다운")
   @GetMapping(value = "/{sbkId}/excelDown.do")
-  public void excelDown(@ApiParam(value = "신청서 고유번호", required = true,example = "SB23-G0044") @PathVariable(name = "sbkId") String sbkId
-      , HttpServletResponse response) throws Exception {
+  public void excelDown(
+      @ApiParam(value = "신청서 고유번호", required = true,
+          example = "SB23-G0044") @PathVariable(name = "sbkId") String sbkId,
+      HttpServletResponse response) throws Exception {
 
-//    String filePath = "C:\\Users\\김정미\\Desktop\\STB_FORM.xlsx"; // 불러올 파일
-    String filePath = propertyService.getString("Globals.fileStorePath").concat("STB_FORM.xlsx"); // 불러올 파일
-    
+    // String filePath = "C:\\Users\\김정미\\Desktop\\STB_FORM.xlsx"; // 불러올 파일
+    String filePath = propertyService.getString("Globals.fileStorePath").concat("STB_FORM.xlsx"); // 불러올
+                                                                                                  // 파일
+
     SbkDTO.Req req = new SbkDTO.Req();
     SbkDTO.Res detail = new SbkDTO.Res();
     String fileName = sbkId.concat("_신청서_");
-    
+
     req.setSbkId(sbkId);
     detail = sbkService.selectDetail(req);
-    
+
     // 1. FileInputStream 으로 파일 읽기
     FileInputStream inputStream = new FileInputStream(filePath);
-    
+
     // 2. XSSFWorkbook 객체 생성하기
     XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
-    
+
     // 3. XSSFSheet 객체 생성 - 첫번째 시트를 가져온다
     XSSFSheet sheet = workbook.getSheetAt(0);
 
     if (detail != null) {
-      
-      fileName = URLEncoder.encode(fileName.concat(detail.getCmpyName()).concat("_").concat(detail.getModelName()), "UTF-8");
+
+      fileName = URLEncoder.encode(
+          fileName.concat(detail.getCmpyName()).concat("_").concat(detail.getModelName()), "UTF-8");
       fileName = fileName.replaceAll("\\+", "%20");
-      
+
       // 4. XSSFRow 첫번째 Row 가져와서 수정하기
       // [게시판]신청서_엑셀양식 업데이트건 (#62)
       XSSFRow row = sheet.getRow(4); // 5 행
-      row.getCell(5).setCellValue(detail.getCmpyName().trim());                 // 회사명 (F)
-      row.getCell(19).setCellValue(detail.getBsnsRgnmb().trim());               // 사업자등록번호 (T)
-      
+      row.getCell(5).setCellValue(detail.getCmpyName().trim()); // 회사명 (F)
+      row.getCell(19).setCellValue(detail.getBsnsRgnmb().trim()); // 사업자등록번호 (T)
+
       row = sheet.getRow(5); // 6 행
-      row.getCell(5).setCellValue(detail.getRprsn().trim());                    // 대표자
-      row.getCell(19).setCellValue(detail.getCrprtRgnmb().trim());              //  1) 법인등록번호
-      
+      row.getCell(5).setCellValue(detail.getRprsn().trim()); // 대표자
+      row.getCell(19).setCellValue(detail.getCrprtRgnmb().trim()); // 1) 법인등록번호
+
       row = sheet.getRow(7); // 8 행
-      row.getCell(5).setCellValue(detail.getAddress().trim());                  // 주소
-      
+      row.getCell(5).setCellValue(detail.getAddress().trim()); // 주소
+
       row = sheet.getRow(8); // 9 행
-      row.getCell(8).setCellValue(detail.getMngName().trim());                  // 담당자 이름 (I)
-      row.getCell(19).setCellValue(detail.getMngEmail().trim());                // 담당자 이메일 (T)
-      
+      row.getCell(8).setCellValue(detail.getMngName().trim()); // 담당자 이름 (I)
+      row.getCell(19).setCellValue(detail.getMngEmail().trim()); // 담당자 이메일 (T)
+
       row = sheet.getRow(9); // 10 행
-      row.getCell(8).setCellValue(detail.getMngPhone().trim());                 // 담당자 전화
-      row.getCell(14).setCellValue(detail.getMngTel().trim());                  // 담당자 핸드폰 (O)
-      row.getCell(23).setCellValue(detail.getMngFax().trim());                  // 담당자 팩스 (X)
-      
+      row.getCell(8).setCellValue(detail.getMngPhone().trim()); // 담당자 전화
+      row.getCell(14).setCellValue(detail.getMngTel().trim()); // 담당자 핸드폰 (O)
+      row.getCell(23).setCellValue(detail.getMngFax().trim()); // 담당자 팩스 (X)
+
       row = sheet.getRow(10); // 11 행
-      row.getCell(5).setCellValue(detail.getPrdctName().trim());                // 제품명
-      row.getCell(19).setCellValue(detail.getModelName().trim());               // 모델명
-      
+      row.getCell(5).setCellValue(detail.getPrdctName().trim()); // 제품명
+      row.getCell(19).setCellValue(detail.getModelName().trim()); // 모델명
+
       row = sheet.getRow(14); // 15 행
-      row.getCell(19).setCellValue(detail.getAthntNmbr().trim());               // 인증번호
-      
+      row.getCell(19).setCellValue(detail.getAthntNmbr().trim()); // 인증번호
+
       // 신청서 엑셀 다운로드 기능 (#18) 파생모델란 추가
       row = sheet.getRow(11); // 12 행
-      row.getCell(5).setCellValue(detail.getExtendModel().trim());               // 파생모델
-      
+      row.getCell(5).setCellValue(detail.getExtendModel().trim()); // 파생모델
+
       row = sheet.getRow(12); // 13 행
-      row.getCell(5).setCellValue(detail.getExtendModelMemo().trim());           //  2) 파생모델 차이점
-      
+      row.getCell(5).setCellValue(detail.getExtendModelMemo().trim()); // 2) 파생모델 차이점
+
       row = sheet.getRow(13); // 14 행
-      row.getCell(5).setCellValue(detail.getElctrRtngW().trim());                //  3) 전원 사양
-      row.getCell(19).setCellValue(detail.getClockFrqnc().trim());               //  4) 최고동작주파수
-      
+      row.getCell(5).setCellValue(detail.getElctrRtngW().trim()); // 3) 전원 사양
+      row.getCell(19).setCellValue(detail.getClockFrqnc().trim()); // 4) 최고동작주파수
+
       row = sheet.getRow(14); // 15 행
-      row.getCell(5).setCellValue(detail.getCmpnyIdntf().trim());               //  5) 회사식별부호
-      
+      row.getCell(5).setCellValue(detail.getCmpnyIdntf().trim()); // 5) 회사식별부호
+
       row = sheet.getRow(15); // 16 행
-      row.getCell(5).setCellValue(detail.getMdlIdntf().trim());                 //  6) 무선모듈 인증번호
-      row.getCell(19).setCellValue(detail.getAddDev().trim());                  //  7) 무선모듈 추가 기기부호
-      
+      row.getCell(5).setCellValue(detail.getMdlIdntf().trim()); // 6) 무선모듈 인증번호
+      row.getCell(19).setCellValue(detail.getAddDev().trim()); // 7) 무선모듈 추가 기기부호
+
       row = sheet.getRow(16); // 17 행
-      row.getCell(5).setCellValue(detail.getMnfctCmpny().trim());               // 회사명
-      row.getCell(19).setCellValue(detail.getMnfctCntry().trim());              // 제조국
-      
+      row.getCell(5).setCellValue(detail.getMnfctCmpny().trim()); // 회사명
+      row.getCell(19).setCellValue(detail.getMnfctCntry().trim()); // 제조국
+
       row = sheet.getRow(17); // 18 행
-      row.getCell(5).setCellValue(detail.getMnfctAdres().trim());               //  8) 제조자 주소
-      
+      row.getCell(5).setCellValue(detail.getMnfctAdres().trim()); // 8) 제조자 주소
+
       row = sheet.getRow(18); // 19 행
-      row.getCell(1).setCellValue(detail.getAddMnfctCmpny().trim());            //  9) 추가 제조자
-      row.getCell(19).setCellValue(detail.getAddMnfctCntry().trim());           //  10) 추가 제조국
-      
+      row.getCell(1).setCellValue(detail.getAddMnfctCmpny().trim()); // 9) 추가 제조자
+      row.getCell(19).setCellValue(detail.getAddMnfctCntry().trim()); // 10) 추가 제조국
+
       row = sheet.getRow(22); // 23 행
-      row.getCell(1).setCellValue(detail.getCmpnyMemo().trim());               //  11) 업체요청 메모
-      
+      row.getCell(1).setCellValue(detail.getCmpnyMemo().trim()); // 11) 업체요청 메모
+
       row = sheet.getRow(43); // 44 행
-      row.getCell(16).setCellValue(detail.getAppName().trim());                 //  12) 신청인
-      
+      row.getCell(16).setCellValue(detail.getAppName().trim()); // 12) 신청인
+
       // 신청서 엑셀_민원서류 자동화 (#62)
       XSSFSheet sheet1 = workbook.getSheetAt(2);
       Sbd dri = sbdService.selectDriDetail(sbkId);
-      
-//      System.out.println("시트 개수 = " + workbook.getNumberOfSheets());
-//      System.out.println(sheet1.getSheetName());
-      
+
+      // System.out.println("시트 개수 = " + workbook.getNumberOfSheets());
+      // System.out.println(sheet1.getSheetName());
+
       // 대리인 지정(위임)서
       if (dri != null) {
         // 대표자 서명
         // 사진
         FileVO fileVO = new FileVO();
-        
+
         String url = dri.getRprsnSign();
 
         // 정규식 패턴
@@ -724,96 +753,97 @@ public class SbkController {
 
         // 매치된 경우 값 출력
         if (matcher.find()) {
-            String fileId = matcher.group(1);
-            fileVO.setAtchFileId(fileId);
-            fileVO.setFileSn("0");
+          String fileId = matcher.group(1);
+          fileVO.setAtchFileId(fileId);
+          fileVO.setFileSn("0");
         }
         FileVO fvo = fileMngService.selectFileInf(fileVO);
-        
-        
+
+
         if (fvo != null) {
           File file = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
           InputStream is = new FileInputStream(file);
-  
+
           byte[] bytes = IOUtils.toByteArray(is);
           int picIdx = workbook.addPicture(bytes, XSSFWorkbook.PICTURE_TYPE_PNG);
           is.close();
-  
+
           XSSFCreationHelper helper = workbook.getCreationHelper();
           XSSFDrawing drawing = sheet1.createDrawingPatriarch();
           XSSFClientAnchor anchor = helper.createClientAnchor();
-          
+
           // 이미지 출력할 cell 위치
           anchor.setCol1(7);
           anchor.setRow1(7);
           anchor.setCol2(8);
           anchor.setRow2(8);
-          
+
           // 이미지 그리기
           XSSFPicture pic = drawing.createPicture(anchor, picIdx);
         }
-        
-//        pic.resize();
+
+        // pic.resize();
         // 확인일자
-//        String reportDt = dri.getReportDt();
-//        
-//        if (reportDt != null && !reportDt.isEmpty()) {
-//          String[] parts = reportDt.split("-"); // [ "2025", "09", "04" ]
-//          String year = parts[0];
-//          String month = parts[1];
-//          String day = parts[2];
-//          
-//          String value = String.format(
-//            "확인일자 (Date):    %s 년(Year)  %s 월(Month)  %s 일(Date)",
-//                year, month, day
-//            );
-//        
-//            row = sheet1.getRow(23);
-//            row.getCell(1).setCellValue(value);
-//        }
-        
+        // String reportDt = dri.getReportDt();
+        //
+        // if (reportDt != null && !reportDt.isEmpty()) {
+        // String[] parts = reportDt.split("-"); // [ "2025", "09", "04" ]
+        // String year = parts[0];
+        // String month = parts[1];
+        // String day = parts[2];
+        //
+        // String value = String.format(
+        // "확인일자 (Date): %s 년(Year) %s 월(Month) %s 일(Date)",
+        // year, month, day
+        // );
+        //
+        // row = sheet1.getRow(23);
+        // row.getCell(1).setCellValue(value);
+        // }
+
       }
-  //    int lastColNum = row.getLastCellNum(); // 마지막 칼럼의 index 를 구한다
-  //    row.createCell(lastColNum).setCellValue("메뉴4"); // 칼럼을 생성한다
-  
+      // int lastColNum = row.getLastCellNum(); // 마지막 칼럼의 index 를 구한다
+      // row.createCell(lastColNum).setCellValue("메뉴4"); // 칼럼을 생성한다
+
       // 5. 2번째 Row 부터 데이터 삽입
-  //    for (int i = 0; i < 2; i++) {
-  //      row = sheet.createRow(i + 1); // row 를 새로 생성한다
-  //      row.createCell(3).setCellValue((10 * i) + (i + 4));
-  //    }
-  
-  //    // 6. FileOutputStream 으로 파일 저장하기
-  //    FileOutputStream out = new FileOutputStream(filePath);
-  //    workbook.write(out);
+      // for (int i = 0; i < 2; i++) {
+      // row = sheet.createRow(i + 1); // row 를 새로 생성한다
+      // row.createCell(3).setCellValue((10 * i) + (i + 4));
+      // }
+
+      // // 6. FileOutputStream 으로 파일 저장하기
+      // FileOutputStream out = new FileOutputStream(filePath);
+      // workbook.write(out);
     }
-    
+
     // 6. 파일다운로드로 저장하기
     response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     // 응답이 파일 타입이라는 것을 명시
-    //response.setHeader("Content-Disposition", "attachment;filename=" + sbkId + ".xlsx");
+    // response.setHeader("Content-Disposition", "attachment;filename=" + sbkId + ".xlsx");
     response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
     ServletOutputStream servletOutputStream = response.getOutputStream();
-//    XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
+    // XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
     workbook.setForceFormulaRecalculation(true);
     workbook.write(servletOutputStream);
-    
+
     // 7. 자원 반환
-//    out.close();
+    // out.close();
     servletOutputStream.close();
     workbook.close();
     inputStream.close();
 
-//    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
+    // BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
 
-//    return res;
+    // return res;
   }
 
 
   @ApiOperation(value = "신청서 엑셀 업로드")
   @PostMapping(value = "/excelUpload.do")
-  public void excelUpload(@RequestPart(value = "excelFile", required = true) MultipartFile excelFile,
+  public void excelUpload(
+      @RequestPart(value = "excelFile", required = true) MultipartFile excelFile,
       HttpServletResponse response) throws Exception {
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
@@ -822,27 +852,27 @@ public class SbkController {
       String atchFileId = "";
 
       if (!ObjectUtils.isEmpty(excelFile)) {
-//        FileResult = fileUtil.parseFile(excelFile, "SBK", 0, "", "");
-//        atchFileId = fileMngService.insertFileInf(FileResult);
-        
+        // FileResult = fileUtil.parseFile(excelFile, "SBK", 0, "", "");
+        // atchFileId = fileMngService.insertFileInf(FileResult);
+
         // 1. FileInputStream 으로 파일 읽기
-        
+
         // 2. XSSFWorkbook 객체 생성하기
         XSSFWorkbook workbook = new XSSFWorkbook(excelFile.getInputStream());
-        
+
         // 3. XSSFSheet 객체 생성 - 첫번째 시트를 가져온다
         XSSFSheet sheet = workbook.getSheetAt(0);
-        
+
         // 4. XSSFRow 첫번째 Row 가져와서 수정하기
         XSSFRow row = sheet.getRow(4); // 시트의 첫번째 Row 를 가져온다
         System.out.println(row.getCell(8).getBooleanCellValue());
 
-        
+
         row = sheet.getRow(5); // 시트의 첫번째 Row 를 가져온다
         System.out.println(row.getCell(12).getBooleanCellValue());
-        
+
       }
     }
-    
+
   }
 }

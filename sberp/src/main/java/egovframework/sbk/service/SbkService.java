@@ -3,6 +3,7 @@ package egovframework.sbk.service;
 import java.util.List;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.sbk.service.SbkDTO.Req;
 import egovframework.sbk.service.SbkDTO.Res;
 import egovframework.tst.dto.TestItemDTO;
@@ -30,6 +31,8 @@ public interface SbkService {
 
   Res selectDirtInfo(Req req);
 
-  String ensureSbkFolder(Req req);
+  SbkInfoVO findBySbkNoAndProvision(String sbkId) throws Exception;
+
+  SbkInfoVO findBySbkNoReadonly(String sbkId) throws Exception;
 
 }

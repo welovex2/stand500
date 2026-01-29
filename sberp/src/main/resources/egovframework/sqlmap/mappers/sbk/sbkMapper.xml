@@ -557,7 +557,9 @@
 	        APPL_ADD_MNG_PHONE = #{applAddMngPhone},
 	        APPL_ADD_MNG_FAX = #{applAddMngFax},
 	        APPL_ADD_MNG_EMAIL = #{applAddMngEmail},
-	        APPL_ADD_MNG_TEL = #{applAddMngTel}
+	        APPL_ADD_MNG_TEL = #{applAddMngTel},
+	        
+	        ATCH_FILE_ID = #{atchFileId}
     
 			
 		WHERE SBK_YM = SUBSTRING(#{sbkId},3,2)
@@ -1285,7 +1287,7 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		AND JOB_TB.QUO_SEQ = SUBSTRING(#{quoId},8,4)	
 	</select>
 	
-	<update id="updateNcFolderPath" parameterType="sbkReq" >
+	<update id="updateNcFolderPath" parameterType="egovframework.cmm.service.SbkInfoVO" >
 	
 		UPDATE SBK_TB
 		SET NC_FOLDER_PATH = #{ncFolderPath}
@@ -1296,18 +1298,31 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		
 	</update>
 	
-	<select id="selectById" parameterType="sbkReq" resultType="sbkRes">
+	<select id="selectSbkBySbkNo"
+	        parameterType="string"
+	        resultType="egovframework.cmm.service.SbkInfoVO">
+	<![CDATA[
+	    SELECT
+	        NC_FOLDER_PATH AS ncFolderPath,
+	        ATCH_FILE_ID   AS atchFileId,
+	        INS_DT		   AS insDt
+	    FROM SBK_TB
+	    WHERE SBK_YM = SUBSTRING(#{sbkId},3,2)
+		AND TYPE = SUBSTRING(#{sbkId},6,1)
+		AND SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+		AND REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
+	]]>
+	</select>
 	
-		SELECT 
-			NC_FOLDER_PATH,
-			DATE_FORMAT(INS_DT, '%Y/%m') sbkYm
-		FROM SBK_TB
+	<update id="updateAtchFileIdBySbkNoIfNull" parameterType="egovframework.cmm.service.SbkInfoVO" >
+	
+		UPDATE SBK_TB
+		SET ATCH_FILE_ID = #{atchFileId}
 		WHERE SBK_YM = SUBSTRING(#{sbkId},3,2)
 		AND TYPE = SUBSTRING(#{sbkId},6,1)
 		AND SBK_SEQ = SUBSTRING(#{sbkId},7,4)
 		AND REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
 		
-	</select>
-	
+	</update>
 	
 </mapper>

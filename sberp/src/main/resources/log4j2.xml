@@ -44,7 +44,7 @@
     </Appenders>
 
     <Loggers>
-        <Root level="INFO">
+        <Root level="DEBUG">
             <appender-ref ref="console" />
         </Root>
 
@@ -55,7 +55,7 @@
         <logger name="jdbc.sqltiming" level="INFO" additivity="false">
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <logger name="jdbc.resultsettable" level="INFO" additivity="false">
+        <logger name="jdbc.resultset" level="INFO" additivity="false">
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
         <logger name="egovframework" level="INFO" additivity="false">
@@ -79,6 +79,10 @@
             <appender-ref ref="console" />
             <appender-ref ref="ERROR_APPENDER" />
         </logger>
+        
+        <logger name="org.apache.http" level="WARN"/>
+        <logger name="jdbc.audit" level="WARN" />
+        <logger name="jdbc.resultsettable" level="WARN" />
 
     </Loggers>
 </Configuration>
