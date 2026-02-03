@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,11 +20,11 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
-import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
+import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -52,7 +51,7 @@ public class BbsController {
 
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
-  
+
   /**
    * 게시물을 등록한다.
    *
@@ -63,7 +62,8 @@ public class BbsController {
    * @return
    * @throws Exception
    */
-  @ApiOperation(value = "게시글 저장", notes = "1. 수정시 게시물아이디(nttId), atchFileId(있을시) 필수\n2. delFileList=파일삭제")
+  @ApiOperation(value = "게시글 저장",
+      notes = "1. 수정시 게시물아이디(nttId), atchFileId(있을시) 필수\n2. delFileList=파일삭제")
   @PostMapping("/insert.do")
   public BasicResponse insertBoardArticle(
       @RequestPart(value = "files", required = false) final List<MultipartFile> files,
@@ -101,14 +101,14 @@ public class BbsController {
         FileResult = fileUtil.parseFile(files, "board", 0, atchFileId, "");
         atchFileId = fileMngService.insertFileInfs(FileResult);
         req.setAtchFileId(atchFileId);
-      } 
+      }
       // 수정
       else {
         // 현재 등록된 파일 수 가져오기
         FileVO fvo = new FileVO();
         fvo.setAtchFileId(req.getAtchFileId());
         int cnt = fileMngService.getMaxFileSN(fvo);
-        
+
         // 추가파일 등록
         List<FileVO> _result = fileUtil.parseFile(files, "board", cnt, req.getAtchFileId(), "");
         fileMngService.updateFileInfs(_result);
@@ -127,15 +127,15 @@ public class BbsController {
         fileMngService.deleteFileInf(delFile);
       }
     }
-    
+
     // 게시글 저장 or 업데이트
     try {
-      
+
       if (req.getNttId() == 0)
         result = bbsMngService.insertBoardArticle(req);
       else
         result = bbsMngService.updateBoardArticle(req);
-      
+
     } catch (Exception e) {
 
       msg = ResponseMessage.RETRY;
@@ -153,7 +153,7 @@ public class BbsController {
     return res;
   }
 
-  
+
   @ApiOperation(value = "게시판 목록", notes = "검색코드\n2  작성자, 33 제목, 15  작성일")
   @GetMapping("/list.do")
   public BasicResponse<BoardVO> selectBoardArticles(@ModelAttribute ComParam param)
@@ -180,7 +180,7 @@ public class BbsController {
     // 내부처리 ( 게시판 종류 )
     param.setSearchCode("bbsId");
     param.setSearchCode("BBSMSTR_A");
-    
+
     int cnt = bbsMngService.selectBoardArticleListCnt(param);
     pagingVO.setTotalCount(cnt);
     pagingVO.setTotalPage(
@@ -200,9 +200,11 @@ public class BbsController {
   @ApiOperation(value = "공지사항 상세보기", notes = "bbsId=BBSMSTR_A(고정값)")
   @GetMapping("/{bbsId}/{nttId}/detail.do")
   public BasicResponse selectBoardArticle(
-      @ApiParam(value = "게시판 고유번호", required = true, example = "BBSMSTR_A") @PathVariable(name = "bbsId") String bbsId,
-      @ApiParam(value = "게시글 고유번호", required = true, example = "4") @PathVariable(name = "nttId") int nttId
-      ) throws Exception {
+      @ApiParam(value = "게시판 고유번호", required = true,
+          example = "BBSMSTR_A") @PathVariable(name = "bbsId") String bbsId,
+      @ApiParam(value = "게시글 고유번호", required = true,
+          example = "4") @PathVariable(name = "nttId") int nttId)
+      throws Exception {
 
     boolean result = true;
     String msg = "";
@@ -214,7 +216,7 @@ public class BbsController {
     BoardVO req = new BoardVO();
     req.setBbsId(bbsId);
     req.setNttId(nttId);
-    
+
     BoardVO detail = bbsMngService.selectBoardArticle(req);
 
     if (detail == null) {
@@ -226,13 +228,13 @@ public class BbsController {
     FileVO fileVO = new FileVO();
     fileVO.setAtchFileId(detail.getAtchFileId());
     List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
-    
+
     docResult.stream().map(doc -> {
       doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
           .concat("&fileSn=").concat(doc.getFileSn()));
       return doc;
     }).collect(Collectors.toList());
-    
+
     detail.setFileList(docResult);
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -304,12 +306,14 @@ public class BbsController {
   // return res;
   // }
 
-  @ApiOperation(value = "게시판 삭제" , notes = "1. 게시물아이디(nttId), BBSMSTR_A(bbsId) 필수")
+  @ApiOperation(value = "게시판 삭제", notes = "1. 게시물아이디(nttId), BBSMSTR_A(bbsId) 필수")
   @PostMapping("/{bbsId}/{nttId}/delete.do")
   public BasicResponse deleteBoardArticle(
-      @ApiParam(value = "게시판 고유번호", required = true, example = "BBSMSTR_A") @PathVariable(name = "bbsId") String bbsId,
-      @ApiParam(value = "게시글 고유번호", required = true, example = "4") @PathVariable(name = "nttId") int nttId
-      ) throws Exception {
+      @ApiParam(value = "게시판 고유번호", required = true,
+          example = "BBSMSTR_A") @PathVariable(name = "bbsId") String bbsId,
+      @ApiParam(value = "게시글 고유번호", required = true,
+          example = "4") @PathVariable(name = "nttId") int nttId)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;

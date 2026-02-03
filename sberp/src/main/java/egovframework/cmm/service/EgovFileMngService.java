@@ -2,6 +2,8 @@ package egovframework.cmm.service;
 
 import java.util.List;
 import java.util.Map;
+import egovframework.ncc.dto.FileDetailUpdateVO;
+import egovframework.ncc.dto.FolderMetaVO;
 
 /**
  * @Class Name : EgovFileMngService.java
@@ -158,5 +160,26 @@ public interface EgovFileMngService {
    * @param userId
    * @param userId2
    */
-  public void upsertFolderMeta(FolderMetaVO meta);
+  int insertFolderMeta(FolderMetaVO vo) throws Exception;
+
+  int updateFolderMetaByPathHash(String oldPathHash, FolderMetaVO vo) throws Exception;
+
+  int updateFolderMetaByFolderPath(String oldFolderPath, FolderMetaVO vo) throws Exception;
+
+  /**
+   * 폴더이름으로 erp에서 생성된 폴더와, upload api에서 올린 폴더를 구분한다.
+   * 
+   * @param fileNm
+   * @return
+   */
+  public List<FolderMetaVO> selectFolderUploadSrcByPaths(List<String> folderPaths);
+
+  public int updateFileDetailByStreFileNm(FileDetailUpdateVO vo);
+
+  int markFileDetailDeletedByExactPath(String streFileNm, String updtId) throws Exception;
+
+  int markFileDetailDeletedByPathPrefix(String folderPath, String updtId) throws Exception;
+
+  int deleteFolderMetaByPathPrefix(String folderPath, String updtId) throws Exception;
+
 }

@@ -4,13 +4,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.transaction.Transactional;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileMapper;
 import egovframework.cmm.service.FileVO;
-import egovframework.cmm.service.FolderMetaVO;
-import egovframework.cmm.service.NextcloudDavService;
+import egovframework.ncc.dto.FileDetailUpdateVO;
+import egovframework.ncc.dto.FolderMetaVO;
+import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.cmmn.EgovAbstractServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 
@@ -279,7 +282,90 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
   }
 
   @Override
-  public void upsertFolderMeta(FolderMetaVO meta) {
-    fileMapper.upsertFolderMeta(meta);
+  public int insertFolderMeta(FolderMetaVO vo) throws Exception {
+    if (vo == null) {
+      throw new IllegalArgumentException("FolderMetaVO가 null 입니다.");
+    }
+    return fileMapper.insertFolderMeta(vo);
   }
+
+  @Override
+  @Transactional
+  public int updateFolderMetaByPathHash(String targetDavPath, FolderMetaVO vo) throws Exception {
+    if (isEmpty(targetDavPath)) {
+      throw new IllegalArgumentException("oldPathHash가 비어있습니다.");
+    }
+    if (vo == null) {
+      throw new IllegalArgumentException("FolderMetaVO가 null 입니다.");
+    }
+
+    String oldPathHash = DigestUtils.sha256Hex(targetDavPath);
+    FileDetailUpdateVO fileDetail = new FileDetailUpdateVO();
+    fileDetail.setNewDavPath(vo.getFolderPath());
+    fileDetail.setOldDavPath(targetDavPath);
+
+    int result = 0;
+    result = fileMapper.updateFolderMetaByPathHash(oldPathHash, vo);
+    result += fileMapper.updateDescendantsByPrefix(targetDavPath, vo);
+    result += fileMapper.updateFileDetailByFolderRename(fileDetail);
+
+    return result;
+  }
+
+  @Override
+  public int updateFolderMetaByFolderPath(String oldFolderPath, FolderMetaVO vo) throws Exception {
+    if (isEmpty(oldFolderPath)) {
+      throw new IllegalArgumentException("oldFolderPath가 비어있습니다.");
+    }
+    if (vo == null) {
+      throw new IllegalArgumentException("FolderMetaVO가 null 입니다.");
+    }
+    return fileMapper.updateFolderMetaByFolderPath(oldFolderPath, vo);
+  }
+
+  private boolean isEmpty(String s) {
+    return s == null || s.trim().isEmpty();
+  }
+
+
+  @Override
+  public List<FolderMetaVO> selectFolderUploadSrcByPaths(List<String> folderPaths) {
+    return fileMapper.selectFolderUploadSrcByPaths(folderPaths);
+  }
+
+  @Override
+  public int updateFileDetailByStreFileNm(FileDetailUpdateVO vo) {
+    return fileMapper.updateFileDetailByStreFileNm(vo);
+  }
+
+  @Override
+  public int markFileDetailDeletedByExactPath(String streFileNm, String updtId) throws Exception {
+    if (isEmpty(streFileNm)) {
+      throw new IllegalArgumentException("streFileNm이 비어있습니다.");
+    }
+    if (isEmpty(updtId)) {
+      throw new IllegalArgumentException("updtId가 비어있습니다.");
+    }
+    return fileMapper.markFileDetailDeletedByExactPath(streFileNm, updtId);
+  }
+
+  @Override
+  public int markFileDetailDeletedByPathPrefix(String folderPath, String updtId) throws Exception {
+    if (isEmpty(folderPath)) {
+      throw new IllegalArgumentException("folderPath가 비어있습니다.");
+    }
+    if (isEmpty(updtId)) {
+      throw new IllegalArgumentException("updtId가 비어있습니다.");
+    }
+    return fileMapper.markFileDetailDeletedByPathPrefix(folderPath, updtId);
+  }
+
+  @Override
+  public int deleteFolderMetaByPathPrefix(String folderPath, String updtId) throws Exception {
+    if (isEmpty(folderPath)) {
+      throw new IllegalArgumentException("folderPath가 비어있습니다.");
+    }
+    return fileMapper.deleteFolderMetaByPathPrefix(folderPath, updtId);
+  }
+
 }

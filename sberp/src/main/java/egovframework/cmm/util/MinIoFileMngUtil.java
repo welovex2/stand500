@@ -14,7 +14,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 import com.amazonaws.services.s3.AmazonS3;
 import egovframework.cmm.service.FileVO;
-import egovframework.cmm.service.NextcloudDavService;
+import egovframework.ncc.service.NextcloudDavService;
 import egovframework.raw.dto.PicDTO;
 import egovframework.rte.fdl.idgnr.EgovIdGnrService;
 import egovframework.rte.fdl.property.EgovPropertyService;
