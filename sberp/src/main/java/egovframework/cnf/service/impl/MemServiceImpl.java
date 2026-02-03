@@ -12,12 +12,12 @@ import egovframework.cmm.service.Dept;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
-import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cmm.service.Pos;
 import egovframework.cmm.util.EgovFileScrty;
 import egovframework.cnf.service.MemMapper;
 import egovframework.cnf.service.MemService;
 import egovframework.cnf.service.Member;
+import egovframework.ncc.service.NextcloudDavService;
 
 @Service("MemService")
 public class MemServiceImpl implements MemService {
@@ -27,10 +27,10 @@ public class MemServiceImpl implements MemService {
 
   @Autowired
   EgovFileMngService fileMngService;
-  
+
   @Autowired
   private NextcloudDavService nextcloudDavService;
-  
+
   private static final Logger LOGGER = LoggerFactory.getLogger(MemServiceImpl.class);
 
   @Override
@@ -48,20 +48,20 @@ public class MemServiceImpl implements MemService {
   public boolean insert(Member req) {
 
     memMapper.insert(req);
-    
+
     // 서명파일 저장
-    System.out.println("서명파일 아이디 있냐!!"+req.getAtchFileId());
+    System.out.println("서명파일 아이디 있냐!!" + req.getAtchFileId());
     if (!StringUtils.isEmpty(req.getAtchFileId())) {
       memMapper.insertSign(req);
     }
-    
+
     return true;
   }
 
   @Override
   public Member detail(int cmpySeq) throws Exception {
     Member detail = memMapper.detail(cmpySeq);
-    
+
     if (detail != null) {
       // 서명 이미지
       FileVO fileVO = new FileVO();
@@ -69,7 +69,7 @@ public class MemServiceImpl implements MemService {
       FileVO rprsnSignVO = fileMngService.selectFileInf(fileVO);
       detail.setSgnUrl(nextcloudDavService.resolveFileUrl(rprsnSignVO));
     }
-    
+
     return detail;
   }
 
@@ -85,16 +85,16 @@ public class MemServiceImpl implements MemService {
 
     // 초기비밀번호 확인은 현재비밀번호 확인 안함 (초기비밀번호는 현재비밀번호 입력하지 않음)
     if (!StringUtils.isEmpty(vo.getPassword()) && !StringUtils.isEmpty(vo.getNewPassword())) {
-    
+
       // 현재 비밀번호 확인
       vo.setPassword(EgovFileScrty.encryptPassword(vo.getPassword(), vo.getId()));
       String pass = memMapper.searchPassword(vo);
       if (pass == null || "".equals(pass)) {
         return false;
       }
-    
+
     }
-    
+
 
     // 변경된 비밀번호 저장
     vo.setPassword(EgovFileScrty.encryptPassword(vo.getNewPassword(), vo.getId()));
@@ -113,9 +113,9 @@ public class MemServiceImpl implements MemService {
 
     if (!"D".equals(req.getState()))
       req.setState("U");
-    else 
+    else
       req.setName("");
-    
+
     return memMapper.insertDept(req);
   }
 
@@ -129,9 +129,9 @@ public class MemServiceImpl implements MemService {
 
     if (!"D".equals(req.getState()))
       req.setState("U");
-    else 
+    else
       req.setName("");
-    
+
     return memMapper.insertPos(req);
   }
 

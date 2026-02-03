@@ -12,7 +12,6 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -30,16 +29,15 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
-import egovframework.cmm.service.NextcloudDavService;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
-import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.CmyService;
+import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sts.dto.CmdDTO;
 import io.swagger.annotations.Api;
@@ -59,14 +57,15 @@ public class CmyController {
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
-  
+
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
 
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
-  
-  @ApiOperation(value = "협력사/직접고객 리스트", notes = "검색코드\n2  작성자\n12   회사명\n13 회사연락처\n41   회사종류\n15   작성일 ")
+
+  @ApiOperation(value = "협력사/직접고객 리스트",
+      notes = "검색코드\n2  작성자\n12   회사명\n13 회사연락처\n41   회사종류\n15   작성일 ")
   @GetMapping(value = "/{type}/list.do")
   public BasicResponse list(
       @ApiParam(value = "partner(협력사)/direct(직접고객)", required = true,
@@ -82,13 +81,12 @@ public class CmyController {
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     // 내부검색 데이터
     SearchVO vo = new SearchVO();
     vo.setSearchCode("99");
@@ -130,7 +128,8 @@ public class CmyController {
       msg = ResponseMessage.NO_DATA;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+    BasicResponse res =
+        BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
 
     return res;
   }
@@ -138,8 +137,10 @@ public class CmyController {
   @ApiOperation(value = "협력사/직접고객 등록")
   @PostMapping(value = "/{type}/insert.do", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public BasicResponse insert(
-      @ApiParam(value = "partner(협력사)/direct(직접고객)", required = true, example = "partner") @PathVariable(name = "type") String type,
-      @ApiParam(value = "typeCode=협력사 공통코드(PK), 직고객 공통코드(ST)", required = true, example = "") @RequestPart CmpyDTO req,
+      @ApiParam(value = "partner(협력사)/direct(직접고객)", required = true,
+          example = "partner") @PathVariable(name = "type") String type,
+      @ApiParam(value = "typeCode=협력사 공통코드(PK), 직고객 공통코드(ST)", required = true,
+          example = "") @RequestPart CmpyDTO req,
       @RequestPart(value = "delFileList", required = false) List<FileVO> delFileList,
       @RequestPart(value = "files", required = false) final List<MultipartFile> files,
       @RequestPart(value = "signs", required = false) final List<MultipartFile> signs,
@@ -148,17 +149,15 @@ public class CmyController {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
-    
+
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
-    Optional.ofNullable(req.getMngList()).ifPresent(list ->
-        list.forEach(m -> {
-            m.setInsMemId(user.getId());
-            m.setUdtMemId(user.getId());
-        })
-    );
-    
+    Optional.ofNullable(req.getMngList()).ifPresent(list -> list.forEach(m -> {
+      m.setInsMemId(user.getId());
+      m.setUdtMemId(user.getId());
+    }));
+
     // 협력사
     if ("partner".equals(type))
       req.setCmpyCode("0000");
@@ -185,12 +184,14 @@ public class CmyController {
     List<FileVO> FileResult = null;
     String atchFileId = "";
     String folderName = "";
-    
-    if (req.getCmpySeq() == 0) folderName = req.getCmpyName();
-    else folderName = req.getCmpyName();
-    
+
+    if (req.getCmpySeq() == 0)
+      folderName = req.getCmpyName();
+    else
+      folderName = req.getCmpyName();
+
     if (!ObjectUtils.isEmpty(files)) {
-      
+
       // 신규
       if (StringUtils.isEmpty(req.getAtchFileId())) {
         FileResult = fileUtil.parseFile(files, "", 0, "", "company/".concat(folderName));
@@ -203,30 +204,31 @@ public class CmyController {
         FileVO fvo = new FileVO();
         fvo.setAtchFileId(req.getAtchFileId());
         int cnt = fileMngService.getMaxFileSN(fvo);
-        
+
         // 추가파일 등록
-        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "company/".concat(folderName));
+        List<FileVO> _result =
+            fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "company/".concat(folderName));
         fileMngService.updateFileInfs(_result);
       }
-      
+
     }
     // 서명파일
     Map<String, MultipartFile> fileMap = new HashMap<>();
     for (MultipartFile file : signs) {
-        fileMap.put(file.getOriginalFilename(), file);
+      fileMap.put(file.getOriginalFilename(), file);
     }
     for (CmpyMng mng : req.getMngList()) {
-      
+
       FileVO signResult = null;
       MultipartFile file = fileMap.get(mng.getFileKey());
-      
+
       if (!ObjectUtils.isEmpty(file)) {
-        
+
         signResult = fileUtil.parseFile(file, "", 0, "", "company/".concat(folderName));
-        
+
         int index = mng.getOrignlFileNm().lastIndexOf(".");
         String fileExt = mng.getOrignlFileNm().substring(index + 1);
-        
+
         signResult.setFileExtsn(fileExt);
         signResult.setOrignlFileNm(mng.getOrignlFileNm());
         atchFileId = fileMngService.insertFileInf(signResult);
@@ -240,7 +242,7 @@ public class CmyController {
       atchFileId = fileMngService.insertFileInf(FileRes);
       req.setRprsnSign(atchFileId);
     }
-    
+
     // 파일삭제
     FileVO delFile = null;
     if (!ObjectUtils.isEmpty(delFileList)) {
@@ -251,8 +253,8 @@ public class CmyController {
         fileMngService.deleteFileInf(delFile);
       }
     }
-    //-- END 파일처리
-    
+    // -- END 파일처리
+
     result = cmyService.insert(req);
 
     BasicResponse res = BasicResponse.builder().result(result).build();
@@ -262,8 +264,9 @@ public class CmyController {
 
   @ApiOperation(value = "협력사/직접고객 삭제")
   @PostMapping(value = "/{cmpySeq}/delete.do")
-  public BasicResponse delete(@ApiParam(value = "회사 고유번호", required = true, example = "0004") @PathVariable(name = "cmpySeq") int cmpySeq) throws Exception {
-    
+  public BasicResponse delete(@ApiParam(value = "회사 고유번호", required = true,
+      example = "0004") @PathVariable(name = "cmpySeq") int cmpySeq) throws Exception {
+
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
     String msg = "";
@@ -273,23 +276,22 @@ public class CmyController {
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     // 로그인정보
     req.setUdtMemId(user.getId());
     req.setCmpySeq(cmpySeq);
     result = cmyService.delete(req);
-    
+
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
     return res;
   }
-  
+
   @ApiOperation(value = "협력사/직접고객 상세보기")
   @GetMapping(value = "/{cmpySeq}/detail.do")
   public BasicResponse detail(@ApiParam(value = "회사 고유번호", required = true,
@@ -302,13 +304,12 @@ public class CmyController {
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     detail = cmyService.detail(cmpySeq);
 
     if (detail == null) {
@@ -320,15 +321,15 @@ public class CmyController {
     FileVO fileVO = new FileVO();
     fileVO.setAtchFileId(detail.getAtchFileId());
     List<FileVO> docResult = fileMngService.selectFileInfs(fileVO);
-    
+
     docResult.stream().map(doc -> {
       doc.setFileStreCours("/file/fileDown.do?atchFileId=".concat(doc.getAtchFileId())
           .concat("&fileSn=").concat(doc.getFileSn()));
       return doc;
     }).collect(Collectors.toList());
-    
+
     detail.setFileList(docResult);
-    
+
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
@@ -365,7 +366,7 @@ public class CmyController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "협력사 통계")
   @GetMapping(value = "/cmd/list.do")
   public BasicResponse selectCmdList(@ModelAttribute ComParam param) throws Exception {
@@ -377,13 +378,12 @@ public class CmyController {
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     list = cmyService.selectCmdList(param);
 
     if (list == null) {
@@ -391,7 +391,7 @@ public class CmyController {
       msg = ResponseMessage.NO_DATA;
     }
 
-    
+
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).build();
 
     return res;

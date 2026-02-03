@@ -3,7 +3,6 @@ package egovframework.tst.service;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
-import egovframework.cmm.service.NcGrantDTO;
 import egovframework.cmm.service.SearchVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
@@ -30,13 +29,13 @@ public interface TstMapper {
   public int selectListCnt(ComParam param);
 
   public boolean testInfoUpate(TestMngrDTO req);
-  
+
   public boolean testMemInsert(TestMngr req);
-  
+
   public boolean testMemSatetUpdate(TestMngrDTO req);
 
   public TestMngrDTO testMemInfo(String testSeq);
-  
+
   public List<TestMngr> testMemList(String testSeq);
 
   public boolean testStateInsert(Req req);
@@ -56,21 +55,22 @@ public interface TstMapper {
   public int selectSaleListCnt(ComParam param);
 
   public boolean testStateUpdate(Req req);
-  
-  public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId, @Param("searchVO") List<SearchVO> param);
+
+  public List<TestItemDTO> selectSubList(@Param("sbkId") String sbkId,
+      @Param("searchVO") List<SearchVO> param);
 
   public List<Res> selectRevList(ComParam param);
-  
+
   public CanCelDTO cancelInfo(int testItemSeq);
 
   public boolean cancelInsert(CanCelDTO req);
-  
+
   public boolean cancelQuoUpdate(CanCelDTO req);
 
   public Res checkTestState(int testSeq);
 
   public boolean checkInsert(Req req);
-  
+
   public int selectCheckInfo(String testSeq);
 
   public boolean saleMemoInsert(Req req);

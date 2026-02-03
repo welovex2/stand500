@@ -133,5 +133,9 @@
     	<!-- 권한 -->
     	<typeAlias alias="PowerAuth"	type="egovframework.sys.service.Power$AuthCode"/>
     	
+    	<!-- 파일서버 -->
+    	<typeAlias alias="fileDetailUpdateVO"	type="egovframework.ncc.dto.FileDetailUpdateVO"/>
+    	<typeAlias alias="folderMetaVO"	type="egovframework.ncc.dto.FolderMetaVO"/>
+    	<typeAlias alias="downloadLogVO"	type="egovframework.ncc.dto.DownloadLogVO"/>
     </typeAliases>
 </configuration>

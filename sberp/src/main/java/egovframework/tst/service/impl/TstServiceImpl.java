@@ -7,8 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
-import egovframework.cmm.service.NcGrantDTO;
-import egovframework.cmm.service.NextcloudShareService;
+import egovframework.ncc.service.NextcloudShareService;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.CanCelDTO;
@@ -38,7 +37,7 @@ public class TstServiceImpl implements TstService {
 
   @Autowired
   NextcloudShareService nextcloudShareService;
-  
+
   @Override
   public List<TestCate> selectCrtfList(int topCode) {
     return tstMapper.selectCrtfList(topCode);
@@ -67,52 +66,53 @@ public class TstServiceImpl implements TstService {
   @Override
   public List<Res> selectList(ComParam param) {
     List<Res> result = tstMapper.selectList(param);
-    
+
     // 번호 매기기
-    for (int i=0; i<result.size(); i++) {
-      result.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    for (int i = 0; i < result.size(); i++) {
+      result.get(i)
+          .setNo(param.getTotalCount() - (((param.getPageIndex() - 1) * param.getPageUnit()) + i));
     }
-    
-    return result; 
+
+    return result;
   }
 
   @Override
   @Transactional
   public boolean testMemInsert(TestMngrDTO req) {
-    
+
     boolean result = true;
-    
+
     tstMapper.testInfoUpate(req);
-    
+
     for (TestMngr detail : req.getItems()) {
-      
+
       detail.setTestSeq(req.getTestSeq());
       detail.setInsMemId(req.getInsMemId());
       detail.setUdtMemId(req.getUdtMemId());
-      
+
       tstMapper.testMemInsert(detail);
     }
-    
-    return result; 
+
+    return result;
   }
-  
+
   @Override
   public boolean testMemSatetUpdate(TestMngrDTO req) {
-    
+
     boolean result = true;
-    
+
     tstMapper.testMemSatetUpdate(req);
 
-    return result; 
+    return result;
   }
-  
+
 
   @Override
   public TestMngrDTO testMemList(String testSeq) {
-    
+
     // 시험의 기본 정보
     TestMngrDTO detail = tstMapper.testMemInfo(testSeq);
-    
+
     if (!ObjectUtils.isEmpty(detail)) {
       // 시험의 담당자 정보
       detail.setItems(tstMapper.testMemList(testSeq));
@@ -135,27 +135,27 @@ public class TstServiceImpl implements TstService {
       dto.setInsMemId(req.getInsMemId());
       dbgMapper.insert(dto);
     }
-    
+
     // 시험상태설정>사유기입 (#25)
     if (!StringUtils.isEmpty(req.getMemo())) {
       req.setMemo("[시험상태변경] ".concat(req.getMemo()));
       tstMapper.testBoardInsert(req);
     }
-    
+
     // (#18) 시험상태 변경시, 시험테이블에 최신상태 SEQ 업데이트
     tstMapper.testStateUpdate(req);
-    
+
     // 상태 18이면 Nextcloud 권한 회수
     if ("18".equals(req.getStateCode())) {
-        try {
-            revokeNcFolderGrant(req);   // private 함수
-        } catch (Exception e) {
-            // 권한 회수 실패해도 시험상태 변경 자체는 살려두는 게 운영상 안전
-            log.error("Nextcloud revoke fail testStateSeq={}, sbkId={}",
-                    req.getTestStateSeq(), req.getSbkId(), e);
-        }
+      try {
+        revokeNcFolderGrant(req); // private 함수
+      } catch (Exception e) {
+        // 권한 회수 실패해도 시험상태 변경 자체는 살려두는 게 운영상 안전
+        log.error("Nextcloud revoke fail testStateSeq={}, sbkId={}", req.getTestStateSeq(),
+            req.getSbkId(), e);
+      }
     }
-    
+
     return result;
   }
 
@@ -186,23 +186,23 @@ public class TstServiceImpl implements TstService {
 
   @Override
   public List<Res> selectSaleList(ComParam param) {
-    
-    
+
+
     List<Res> result = tstMapper.selectSaleList(param);
-    
+
     for (Res item : result) {
-    
+
       if (item.getTestCnt() > 1) {
-        
-        
+
+
         List<TestItemDTO> subList = tstMapper.selectSubList(item.getSbkId(), param.getSearchVO());
-        
+
         if (!ObjectUtils.isEmpty(subList)) {
           item.setItems(subList);
         }
       }
     }
-    
+
     return result;
   }
 
@@ -210,20 +210,21 @@ public class TstServiceImpl implements TstService {
   public int selectSaleListCnt(ComParam param) {
     return tstMapper.selectSaleListCnt(param);
   }
-  
+
 
   @Override
   public List<Res> selectRevList(ComParam param) {
     List<Res> result = tstMapper.selectRevList(param);
-    
+
     // 번호 매기기
-    for (int i=0; i<result.size(); i++) {
-      result.get(i).setNo(param.getTotalCount() - ( ((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+    for (int i = 0; i < result.size(); i++) {
+      result.get(i)
+          .setNo(param.getTotalCount() - (((param.getPageIndex() - 1) * param.getPageUnit()) + i));
     }
-    
-    return result; 
+
+    return result;
   }
-  
+
   @Override
   public CanCelDTO cancelInfo(int testItemSeq) {
     return tstMapper.cancelInfo(testItemSeq);
@@ -232,12 +233,12 @@ public class TstServiceImpl implements TstService {
   @Override
   @Transactional
   public boolean cancelInsert(CanCelDTO req) {
-    
+
     boolean result = true;
-    
+
     result = tstMapper.cancelInsert(req);
     result = tstMapper.cancelQuoUpdate(req);
-    
+
     return result;
   }
 
@@ -260,18 +261,19 @@ public class TstServiceImpl implements TstService {
   public boolean saleMemoInsert(Req req) {
     return tstMapper.saleMemoInsert(req);
   }
-  
+
   private void revokeNcFolderGrant(Req req) throws Exception {
-    
-      // sbkId로 ERP DB에서 Nextcloud 경로/대상유저 조회
-      String g = tstMapper.selectNcGrantByApplyNo(req.getTestSeq());
-      if (g == null) return;
-  
-      String davPath = g;    // "/ERP/2025/12/SB25-G1578"
-  
-      nextcloudShareService.revokeUserSharesByPath(davPath);
+
+    // sbkId로 ERP DB에서 Nextcloud 경로/대상유저 조회
+    String g = tstMapper.selectNcGrantByApplyNo(req.getTestSeq());
+    if (g == null)
+      return;
+
+    String davPath = g; // "/ERP/2025/12/SB25-G1578"
+
+    nextcloudShareService.revokeUserSharesByPath(davPath);
   }
-  
-  
+
+
 
 }

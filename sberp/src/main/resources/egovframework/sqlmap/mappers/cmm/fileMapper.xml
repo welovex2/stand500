@@ -78,13 +78,34 @@
 			INSERT INTO FILE_DETAIL_TB
 			( ATCH_FILE_ID, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM, 
 			  ORIGNL_FILE_NM, FILE_EXTSN, FILE_SIZE, FILE_CN, FILE_MEMO, FILE_ORDR,
-			  CREAT_ID, CREAT_DT )
+			  UPLOAD_SRC, CREAT_ID, CREAT_DT )
 			VALUES
 			( #{atchFileId}, #{fileSn}, #{fileStreCours}, #{streFileNm}, 
 			  #{orignlFileNm}, #{fileExtsn}, #{fileMg}, #{fileCn}, #{fileMemo}, #{fileOrdr},
-			  #{creatId}, SYSDATE() )			
+			  #{uploadSrc}, #{creatId}, SYSDATE() )			
 		]]>
 	</insert>	
+	
+	<update id="updateFileDetailByStreFileNm" parameterType="fileDetailUpdateVO">
+	  UPDATE FILE_DETAIL_TB
+	     SET STRE_FILE_NM     = #{newDavPath}
+	       , ORIGNL_FILE_NM   = #{newOriginalFileName}
+	       , FILE_EXTSN       = #{fileExtsn}
+	       , UPLOAD_SRC       = 'A'
+	       , STATE            = 'U'
+	   WHERE STRE_FILE_NM = #{oldDavPath}
+	</update>
+	
+	<update id="updateFileDetailByFolderRename" parameterType="fileDetailUpdateVO">
+	  UPDATE FILE_DETAIL_TB
+	     SET STRE_FILE_NM = CONCAT(
+	           #{newDavPath},
+	           SUBSTRING(STRE_FILE_NM, CHAR_LENGTH(#{oldDavPath}) + 1)
+	         )
+	       , UPLOAD_SRC   = 'A'
+	       , STATE        = 'U'
+	   WHERE STRE_FILE_NM LIKE CONCAT(#{oldDavPath}, '/%')
+	</update>
 	
 	<update id="updateFileDetail" parameterType="fileVO" >
 			UPDATE FILE_DETAIL_TB
@@ -230,16 +251,79 @@
 	  </foreach>
 	</select>
 	
-	<insert id="upsertFolderMeta" parameterType="egovframework.cmm.service.FolderMetaVO">
+	<insert id="insertFolderMeta" parameterType="map">
 	  INSERT INTO FOLDER_META_TB
 	    (FOLDER_PATH, PATH_HASH, CREAT_ID, UPLOAD_SRC)
 	  VALUES
-	    (#{folderPath}, #{pathHash}, #{creatId}, #{uploadSrc})
-	  ON DUPLICATE KEY UPDATE
-	    CREAT_ID   = VALUES(CREAT_ID),
-	    UPLOAD_SRC = VALUES(UPLOAD_SRC),
-	    UPDATED_AT = NOW()
+	    (#{vo.folderPath}, #{vo.pathHash}, #{vo.creatId}, #{vo.uploadSrc})
 	</insert>
 	
+	<update id="updateFolderMetaByPathHash" parameterType="map">
+	  UPDATE FOLDER_META_TB
+	     SET FOLDER_PATH = #{vo.folderPath}
+	       , PATH_HASH   = #{vo.pathHash}
+	       , CREAT_ID    = #{vo.creatId}
+	       , UPLOAD_SRC  = #{vo.uploadSrc}
+	       , UPDATED_AT  = NOW()
+	   WHERE PATH_HASH   = #{oldPathHash}
+	</update>
+	
+	<update id="updateFolderMetaByFolderPath" parameterType="map">
+	  UPDATE FOLDER_META_TB
+	     SET FOLDER_PATH = #{vo.folderPath}
+	       , PATH_HASH   = #{vo.pathHash}
+	       , CREAT_ID    = #{vo.creatId}
+	       , UPLOAD_SRC  = #{vo.uploadSrc}
+	       , UPDATED_AT  = NOW()
+	   WHERE FOLDER_PATH = #{oldFolderPath}
+	</update>
+
+	<update id="updateDescendantsByPrefix" parameterType="map">
+	  UPDATE FOLDER_META_TB
+	     SET FOLDER_PATH = CONCAT(#{vo.folderPath}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1))
+	       , PATH_HASH   = SHA2(CONCAT(#{vo.folderPath}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1)), 256)
+	       , UPDATE_ID   = #{vo.creatId}
+	       , UPDATED_AT   = NOW()
+	   WHERE FOLDER_PATH LIKE CONCAT(#{oldPrefix}, '/%')
+	</update>
+	
+ 	<select id="selectFolderUploadSrcByPaths" parameterType="list"
+	        resultType="folderMetaVO">
+	  SELECT
+	    FOLDER_PATH AS folderPath,
+	    UPLOAD_SRC  AS uploadSrc
+	  FROM FOLDER_META_TB
+	  WHERE FOLDER_PATH IN
+	  <foreach collection="list" item="p" open="(" separator="," close=")">
+	    #{p}
+	  </foreach>
+	</select>
+ 	
+	<update id="markFileDetailDeletedByExactPath" parameterType="map">
+	  UPDATE FILE_DETAIL_TB
+	     SET STATE     = 'D'
+	       , UPDATE_ID = #{updtId}
+	       , UPDATE_DT = NOW()
+	   WHERE STRE_FILE_NM = #{streFileNm}
+	</update>
+	 	
+	<update id="markFileDetailDeletedByPathPrefix" parameterType="map">
+	  UPDATE FILE_DETAIL_TB
+	     SET STATE     = 'D'
+	       , UPDATE_ID = #{updtId}
+	       , UPDATE_DT = NOW()
+	   WHERE STRE_FILE_NM = #{folderPath}
+	      OR STRE_FILE_NM LIKE CONCAT(#{folderPath}, '/%')
+	</update>
+	
+	<update id="deleteFolderMetaByPathPrefix" parameterType="map">
+	  UPDATE FOLDER_META_TB
+	     SET STATE = 'D'
+	       , UPDATE_ID = #{updtId}
+	       , UPDATED_AT = NOW()
+	   WHERE FOLDER_PATH = #{folderPath}
+	      OR FOLDER_PATH LIKE CONCAT(#{folderPath}, '/%')
+	</update>
+
  	
 </mapper>
