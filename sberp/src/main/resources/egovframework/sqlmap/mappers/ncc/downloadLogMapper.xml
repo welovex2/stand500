@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.ncc.service.DownloadLogMapper">
+
+  <insert id="insertDownloadLog" parameterType="downloadLogVO" useGeneratedKeys="true" keyProperty="logId">
+    INSERT INTO DOWNLOAD_LOG_TB
+    (
+      USER_ID,
+      SBK_NO,
+      DAV_PATH,
+      IS_FOLDER,
+      MODE,
+      FILE_NAME,
+      ZIP_NAME,
+      CONTENT_TYPE,
+      CLIENT_IP,
+      USER_AGENT,
+      RESULT_CD,
+      ERR_MSG,
+      BYTES_SENT,
+      CREAT_DT
+    )
+    VALUES
+    (
+      #{userId},
+      #{sbkNo},
+      #{davPath},
+      #{isFolder},
+      #{mode},
+      #{fileName},
+      #{zipName},
+      #{contentType},
+      #{clientIp},
+      #{userAgent},
+      #{resultCd},
+      #{errMsg},
+      #{bytesSent},
+      NOW()
+    )
+  </insert>
+
+  <update id="updateDownloadLogResult" parameterType="downloadLogVO">
+    UPDATE DOWNLOAD_LOG_TB
+       SET RESULT_CD  = #{resultCd},
+           ERR_MSG    = #{errMsg},
+           BYTES_SENT = #{bytesSent},
+           UPDT_DT    = NOW()
+     WHERE LOG_ID = #{logId}
+  </update>
+
+</mapper>
