@@ -2,8 +2,6 @@ package egovframework.sbk.service;
 
 import java.util.List;
 import javax.persistence.Column;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 import egovframework.cmm.service.FileVO;
 import egovframework.tst.dto.TestItemDTO;
 import io.swagger.annotations.ApiModel;
@@ -19,11 +17,11 @@ public class SbkDTO {
   @ToString(callSuper = true)
   @ApiModel(value = "SbkDTO.Req", description = "신청서 작성")
   public static class Req extends Sbk {
-    
+
     @ApiModelProperty(value = "프로젝트번호", example = "12")
     @Column
     private int jobSeq;
-    
+
     @ApiModelProperty(value = "견적서번호", example = " ")
     @Column
     private String quoId;
@@ -36,22 +34,22 @@ public class SbkDTO {
     @Column
     private int cmpySeq;
 
-    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @ApiModelProperty(value = "담당자 고유번호", example = "3")
     @Column
     private int cmpyMngSeq;
-    
+
     @ApiModelProperty(value = "담당자 이름 ", example = "김담당")
     @Column
     private String mngName;
 
     @ApiModelProperty(value = "담당자 전화번호 ", example = "02-354-9855")
     @Column
-//    @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-//    @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
+    // @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
+    // @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
     private String mngPhone;
 
-//    @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
-//    @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
+    // @Pattern(regexp = "^[0-9-]*$", message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
+    // @Size(min = 0, max = 13, message = "연락처는 10 ~ 11 자리의 숫자만 입력 가능합니다.")
     @ApiModelProperty(value = "담당자팩스 ", example = "031-5252-4555")
     @Column
     private String mngFax;
@@ -60,22 +58,22 @@ public class SbkDTO {
     @Column
     private int prtnSeq;
 
-    @ApiModelProperty(value="컨설팅 담당자 고유번호", example = "3")
+    @ApiModelProperty(value = "컨설팅 담당자 고유번호", example = "3")
     @Column
     private int prtnMngSeq;
 
     @ApiModelProperty(value = "컨설팅 회사 여부", example = "1")
     @Column
     private int prtnYn;
-    
+
     @ApiModelProperty(value = "신청사 고유번호", example = "1")
     @Column
     private int dirtSeq;
 
-    @ApiModelProperty(value="신청사 담당자 고유번호", example = "3")
+    @ApiModelProperty(value = "신청사 담당자 고유번호", example = "3")
     @Column
     private int dirtMngSeq;
-    
+
     @ApiModelProperty(value = "업체명 ", example = " ")
     @Column
     private String cmpyName;
@@ -87,7 +85,7 @@ public class SbkDTO {
     @ApiModelProperty(value = "모델명 ", example = "dong-gle")
     @Column
     private String modelName;
-    
+
     @ApiModelProperty(value = "담당자 아이디 ", example = "welovex2")
     @Column
     private String mngId;
@@ -95,22 +93,26 @@ public class SbkDTO {
     @ApiModelProperty(value = "서명파일 아이디", example = "")
     @Column
     private String atchFileId;
-    
+
     @ApiModelProperty(value = "보안견적서 여부", example = "")
     @Column
     private int secretYn;
-    
+
     @ApiModelProperty(value = "로그인사용자", example = "")
     private String memId = "";
-    
+
     @ApiModelProperty(value = "고지부메모 ", example = "고지부메모")
     @Column
     private String saleMemo;
-    
+
     @ApiModelProperty(value = "신청인 서명파일 아이디", example = "")
     @Column
     private String appSign;
-    
+
+    @ApiModelProperty(value = "파일서버용 파일아이디", example = "")
+    @Column
+    private String ncAtchFileId;
+
   }
 
   @Getter
@@ -125,15 +127,15 @@ public class SbkDTO {
     @ApiModelProperty(value = "프로젝트번호", example = "1")
     @Column
     private int jobSeq;
-    
+
     @ApiModelProperty(value = "프로젝트상태코드", example = "공통코드:CP")
     @Column
     private String stateCode;
-    
+
     @ApiModelProperty(value = "프로젝트상태변경일", example = "")
     @Column
     private String stateUdtDt;
-    
+
     @ApiModelProperty(value = "신청서번호", example = "SB23-G0005")
     @Column
     private String sbkId;
@@ -154,10 +156,10 @@ public class SbkDTO {
     @Column
     private int cmpySeq;
 
-    @ApiModelProperty(value="담당자 고유번호", example = "3")
+    @ApiModelProperty(value = "담당자 고유번호", example = "3")
     @Column
     private int cmpyMngSeq;
-    
+
     @ApiModelProperty(value = "담당자 이름 ", example = "김담당")
     @Column
     private String mngName;
@@ -193,7 +195,7 @@ public class SbkDTO {
     @ApiModelProperty(value = "작성자", example = "김가나")
     @Column
     private String insMem;
-    
+
     @ApiModelProperty(value = "고객유형", example = "컨설팅 or 직고객")
     @Column
     private String cmpyType;
@@ -209,11 +211,11 @@ public class SbkDTO {
     @ApiModelProperty(value = "컨설팅 담당자명 ", example = "")
     @Column
     private String cmpyMngName;
-    
+
     @ApiModelProperty(value = "컨설팅 회사 고유번호", example = "1")
     @Column
     private int prtnSeq;
-    @ApiModelProperty(value="컨설팅 담당자 고유번호", example = "3")
+    @ApiModelProperty(value = "컨설팅 담당자 고유번호", example = "3")
     @Column
     private int prtnMngSeq;
     @ApiModelProperty(value = "컨설팅 회사 여부", example = "1")
@@ -222,10 +224,10 @@ public class SbkDTO {
     @ApiModelProperty(value = "신청사 고유번호", example = "1")
     @Column
     private int dirtSeq;
-    @ApiModelProperty(value="신청사 담당자 고유번호", example = "3")
+    @ApiModelProperty(value = "신청사 담당자 고유번호", example = "3")
     @Column
     private int dirtMngSeq;
-    
+
     @ApiModelProperty(value = "작성자", example = "김정미")
     @Column
     private String memName;
@@ -256,37 +258,37 @@ public class SbkDTO {
 
     @ApiModelProperty(value = "시료 반입갯수 ", example = "1")
     private int inCnt;
-    
+
     @ApiModelProperty(value = "시료 반출갯수 ", example = "1")
     private int outCnt;
-    
-    @ApiModelProperty(value="제출서류", example = "")
+
+    @ApiModelProperty(value = "제출서류", example = "")
     @Column
     private List<FileVO> docFileList;
 
     @ApiModelProperty(value = "제조국", example = "루마니아")
     @Column
     private String mnfctCntry;
-   
+
     @ApiModelProperty(value = "서명파일 아이디", example = "")
     @Column
     private String atchFileId;
-    
+
     @ApiModelProperty(value = "시험 갯수", example = "")
     private int testItemCnt;
-    
+
     @ApiModelProperty(value = "보안견적서 여부", example = "")
     @Column
     private int secretYn;
-    
+
     @ApiModelProperty(value = "VERSION ", example = "1")
     @Column
     private String version;
-    
+
     @ApiModelProperty(value = "고지부메모 ", example = "고지부메모")
     @Column
     private String saleMemo;
-    
+
     @ApiModelProperty(value = "신청인 서명파일 아이디", example = "")
     @Column
     private String appSign;

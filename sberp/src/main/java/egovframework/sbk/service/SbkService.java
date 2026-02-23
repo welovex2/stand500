@@ -11,7 +11,7 @@ import egovframework.tst.service.TestItemRej;
 
 public interface SbkService {
 
-  SbkDTO.Res selectDetail(Req req);
+  SbkDTO.Res selectDetail(Req req) throws Exception;
 
   boolean insert(Req req) throws Exception;
 

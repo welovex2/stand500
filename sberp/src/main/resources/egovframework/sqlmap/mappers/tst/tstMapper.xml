@@ -28,8 +28,7 @@
 		where TEST_ITEM_TB.test_item_seq = #{testItemSeq}
 	</select>
 
-	<insert id="insert" parameterType="testReq">
-    <selectKey resultType="int" keyProperty="testNo" order="BEFORE">
+	<select id="selectNextTestNo" parameterType="testReq" resultType="int">
 		# 해당 발급년도에 신청된 시험
 		SELECT 
 			IF ( IFNULL(org.ORG_TEST_ITEM_SEQ,0) = 0,
@@ -65,7 +64,9 @@
 							
 							WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq}
 							LIMIT 1)
-    </selectKey> 
+	</select>
+
+	<insert id="insert" parameterType="testReq" useGeneratedKeys="true" keyProperty="testSeq">
 		INSERT INTO TEST_TB
 		(
 			TEST_NO,
@@ -82,6 +83,7 @@
         	#{insMemId},
 			#{udtMemId}
 		)
+		
 	</insert>
 	
 	<select id="selectListCnt" parameterType="testReq" resultType="int">

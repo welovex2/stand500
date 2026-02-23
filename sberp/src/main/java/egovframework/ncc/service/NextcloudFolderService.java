@@ -1,5 +1,6 @@
 package egovframework.ncc.service;
 
+import java.net.URI;
 import java.util.List;
 import egovframework.ncc.dto.NcFileDTO;
 
@@ -25,8 +26,20 @@ public interface NextcloudFolderService {
       boolean isGroup) throws Exception;
 
   /**
-   * 폴더만 생성
+   * 폴더만 생성 (신청서)
    */
   String ensureApplyFolder(String yearMonth, String applyNo) throws Exception;
+
+
+  /**
+   * 필요하면 폴더를 생성(MKCOL). 없으면 자동 생성.
+   */
+  void ensureFolder(String relativeFolderPath) throws Exception;
+
+  /** rootFolder 자체를 생성 (없으면 MKCOL) */
+  void ensureRootFolder() throws Exception;
+
+  /** MKCOL 공통 실행 */
+  int mkcol(URI uri) throws Exception;
 
 }

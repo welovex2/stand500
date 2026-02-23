@@ -33,6 +33,7 @@ import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.ncc.dto.NcFileDTO;
@@ -362,9 +363,7 @@ public class RawController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-
     log.info(RD_MARKER, req.toString());
-
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -386,11 +385,17 @@ public class RawController {
 
       // 이미 등록된 로데이터가 있는지 확인
       search.setTestSeq(req.getTestSeq());
-      if (req.getRawSeq() == 0 && !ObjectUtils.isEmpty(rawService.detail(search))) {
+      RawData detail = rawService.detail(search);
+
+      if (req.getRawSeq() == 0 && !ObjectUtils.isEmpty(detail)) {
         result = false;
         msg = ResponseMessage.DUPLICATE_RAW;
       } else {
 
+        // TestSeq로 파일서버 루트폴더 찾기
+        SbkInfoVO folderInfo = rawService.findByNcFolderPath(req.getTestSeq());
+        String folderName = folderInfo.getNcFolderPath();
+        String testNo = folderInfo.getTestNo();
         List<FileVO> FileResult = null;
         FileVO oneFile = null;
         String atchFileId = "";
@@ -414,8 +419,9 @@ public class RawController {
 
           // 신규등록
           if (StringUtils.isEmpty(req.getModUrl())) {
-            FileResult = fileUtil.parseFile(raw.getModFileList(), "RAW", 0, "", "");
-            atchFileId = fileMngService.insertFileInfs(FileResult);
+            FileResult = fileUtil.parseFile(raw.getModFileList(), "", 0, "",
+                folderName + "/00.신청서 및 공통/01.제품사진");
+            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
             req.setModUrl(atchFileId);
           }
           // 수정
@@ -426,19 +432,20 @@ public class RawController {
             int cnt = fileMngService.getMaxFileSN(fvo);
 
             // 추가 파일 등록
-            List<FileVO> _result =
-                fileUtil.parseFile(raw.getModFileList(), "RAW", cnt, req.getModUrl(), "");
-            fileMngService.updateFileInfs(_result);
+            List<FileVO> _result = fileUtil.parseFile(raw.getModFileList(), "", cnt,
+                req.getModUrl(), folderName + "/00.신청서 및 공통/01.제품사진");
+            fileMngService.updateFileInfs(_result, req.getInsMemId());
           }
         }
 
-        // 셋업파일
+        // 셋업파일 (배치도)
         if (!ObjectUtils.isEmpty(raw.getSetupList())) {
 
           // 신규등록
           if (StringUtils.isEmpty(req.getSetupUrl())) {
-            FileResult = fileUtil.parsePicFile(raw.getSetupList(), "RAW", 0, "", "");
-            atchFileId = fileMngService.insertFileInfs(FileResult);
+            FileResult = fileUtil.parsePicFile(raw.getSetupList(), "", 0, "",
+                folderName + "/" + testNo + "/04.참고자료");
+            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
             req.setSetupUrl(atchFileId);
           }
           // 수정
@@ -449,9 +456,9 @@ public class RawController {
             int cnt = fileMngService.getMaxFileSN(fvo);
 
             // 추가 파일 등록
-            List<FileVO> _result =
-                fileUtil.parsePicFile(raw.getSetupList(), "RAW", cnt, req.getSetupUrl(), "");
-            fileMngService.updateFileInfs(_result);
+            List<FileVO> _result = fileUtil.parsePicFile(raw.getSetupList(), "", cnt,
+                req.getSetupUrl(), folderName + "/" + testNo + "/04.참고자료");
+            fileMngService.updateFileInfs(_result, req.getInsMemId());
           }
 
         }
@@ -463,6 +470,7 @@ public class RawController {
             delFile = new FileVO();
             delFile.setAtchFileId(del.getAtchFileId());
             delFile.setFileSn(del.getFileSn());
+            delFile.setCreatId(req.getUdtMemId());
             fileMngService.deleteFileInf(delFile);
           }
         }
@@ -763,10 +771,7 @@ public class RawController {
       msg = ResponseMessage.NO_DATA;
     }
 
-    List<NcFileDTO> files = nextcloudFolderService.listErpFolder("2025/12/RAW");
-
-    BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).data(detail).summary(files).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
   }
@@ -824,6 +829,11 @@ public class RawController {
 
       if (isAuthenticated) {
 
+        // TestSeq로 파일서버 루트폴더 찾기
+        SbkInfoVO folderInfo = rawService.findByNcFolderPath(req.getTestSeq());
+        String folderName = folderInfo.getNcFolderPath();
+        String testNo = folderInfo.getTestNo();
+
         // FileVO oneFile = null;
         String atchFileId = "";
         List<FileVO> FileResult = null;
@@ -840,8 +850,9 @@ public class RawController {
 
           // 신규등록
           if (StringUtils.isEmpty(req.getImgUrl())) {
-            FileResult = fileUtil.parsePicFile(img.getImgList(), "RAW", 0, "", "");
-            atchFileId = fileMngService.insertFileInfs(FileResult);
+            FileResult = fileUtil.parsePicFile(img.getImgList(), "", 0, "",
+                folderName + "/" + testNo + "/03.시험사진/정전기포인트");
+            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
             req.setImgUrl(atchFileId);
           }
           // 수정
@@ -852,9 +863,9 @@ public class RawController {
             int cnt = fileMngService.getMaxFileSN(fvo);
 
             // 추가 파일 등록
-            List<FileVO> _result =
-                fileUtil.parsePicFile(img.getImgList(), "RAW", cnt, req.getImgUrl(), "");
-            fileMngService.updateFileInfs(_result);
+            List<FileVO> _result = fileUtil.parsePicFile(img.getImgList(), "RAW", cnt,
+                req.getImgUrl(), folderName + "/" + testNo + "/03.시험사진/정전기포인트");
+            fileMngService.updateFileInfs(_result, req.getInsMemId());
           }
 
         }
@@ -866,6 +877,7 @@ public class RawController {
             delFile = new FileVO();
             delFile.setAtchFileId(del.getAtchFileId());
             delFile.setFileSn(del.getFileSn());
+            delFile.setCreatId(req.getUdtMemId());
             fileMngService.deleteFileInf(delFile);
           }
         }
@@ -1866,37 +1878,14 @@ public class RawController {
     } else {
 
       if (img != null) {
-        FileVO fileVO = new FileVO();
-        fileVO.setAtchFileId(img.getAtchFileId());
-        // 해당없음이 있기 때문에 fileInf로 확인
-        List<FileVO> fileReulst = fileMngService.selectFileOrdrInfs(fileVO);
-        List<PicDTO> resultList = new ArrayList<PicDTO>();
-        if (fileReulst != null) {
-          for (FileVO item : fileReulst) {
-            PicDTO pic = new PicDTO();
-            // if ("CDN".contentEquals(item.getFileLoc())) {
-            // pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-            // .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-            // } else {
-            pic.setImageUrl(propertyService.getString("img.url").concat(img.getAtchFileId())
-                .concat("&fileSn=").concat(item.getFileSn()));
-            // }
-            pic.setTitle(item.getFileCn());
-            pic.setMode(item.getFileMemo());
-            pic.setFileSn(item.getFileSn());
-            resultList.add(pic);
 
-          }
-        }
-        detail.setPicYn(img.getPicYn());
-        detail.setImgList(resultList);
       } else {
         result = false;
         msg = ResponseMessage.NO_DATA;
       }
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(img).build();
 
     return res;
   }
@@ -1920,6 +1909,7 @@ public class RawController {
 
 
     log.info(RD_MARKER, req.toString());
+    log.info(RD_MARKER, pic.toString());
 
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
@@ -1966,14 +1956,20 @@ public class RawController {
         fileMngService.deletePicAll(upt);
 
         // 시험장면사진
-        System.out.println("pic.getPicList() --> " + pic.getPicList());
+        // TestSeq로 파일서버 루트폴더 찾기
+        SbkInfoVO folderInfo = rawService.findByNcFolderPath(req.getTestSeq());
+        String folderName = folderInfo.getNcFolderPath();
+        String testNo = folderInfo.getTestNo();
+        String subFolderName = "03.시험사진";
+
         if (!ObjectUtils.isEmpty(pic.getPicList())) {
-          System.out.println("널이아님-->" + atchFileId);
+
           // 신규등록
           if (StringUtils.isEmpty(atchFileId)) {
 
-            FileResult = fileUtil.parsePicFile(pic.getPicList(), "RAW", 0, "", "");
-            atchFileId = fileMngService.insertFileInfs(FileResult);
+            FileResult = fileUtil.parsePicFile(pic.getPicList(), req.getPicId(), 0, "",
+                folderName + "/" + testNo + "/" + subFolderName);
+            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
             req.setAtchFileId(atchFileId);
 
           }
@@ -1995,11 +1991,11 @@ public class RawController {
             for (PicDTO picDto : pic.getPicList()) {
               MultipartFile image = picDto.getImage();
 
-              System.out.println(picDto.toString());
               // case 1. 이미지가 존재 → 신규 파일 처리
               if (image != null && !image.isEmpty()) {
-                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW",
-                    cnt++, atchFileId, "");
+                List<FileVO> files =
+                    fileUtil.parsePicFile(Collections.singletonList(picDto), req.getPicId(), cnt++,
+                        atchFileId, folderName + "/" + testNo + "/" + subFolderName);
                 resultList.addAll(files);
               }
               // case 2. 이미지 없고 mode = U → fileOrdr만 수정
@@ -2008,6 +2004,7 @@ public class RawController {
                 updateFvo.setAtchFileId(atchFileId);
                 updateFvo.setFileSn(picDto.getFileSn());
                 updateFvo.setFileOrdr(picDto.getFileOrdr());
+                updateFvo.setCreatId(req.getInsMemId());
                 fileMngService.updateFileDetail(updateFvo);
               }
               // case 3. 이미지 없고 mode = D → 파일 삭제
@@ -2015,24 +2012,24 @@ public class RawController {
                 FileVO delFvo = new FileVO();
                 delFvo.setAtchFileId(atchFileId);
                 delFvo.setFileSn(picDto.getFileSn());
+                delFvo.setCreatId(req.getInsMemId());
                 fileMngService.deleteFileInf(delFvo);
               }
               // case 4. 이미지 없고, pic_yn = 0 → 해당없음 추가, 수정이나 삭제는 영향 받지 않아야 함
               else if (image == null && req.getPicYn() == 0) {
-                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "RAW",
-                    cnt++, atchFileId, "");
+                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "",
+                    cnt++, atchFileId, folderName + "/" + testNo + "/" + subFolderName);
                 resultList.addAll(files);
               }
             }
 
             // 신규 파일이 존재할 경우 한 번에 업데이트
             if (!resultList.isEmpty()) {
-              fileMngService.updateFileInfs(resultList);
+              fileMngService.updateFileInfs(resultList, req.getInsMemId());
             }
 
           }
         }
-        System.out.println("다 끝남");
 
         rawService.insertImg(req);
 
@@ -2043,6 +2040,7 @@ public class RawController {
             delFile = new FileVO();
             delFile.setAtchFileId(atchFileId);
             delFile.setFileSn(del.getFileSn());
+            delFile.setCreatId(req.getUdtMemId());
             fileMngService.deleteFileInf(delFile);
           }
         }
@@ -2137,7 +2135,7 @@ public class RawController {
         FileResult = fileUtil.parseFile(files, "", 0, "",
             propertyService.getString("Globals.fileStorePath").concat(formatedNow).concat("/")
                 .concat("FILE").concat("/").concat(Integer.toString(req.getTestSeq())));
-        atchFileId = fileMngService.insertFileInfs(FileResult);
+        atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
         req.setAtchFileId(atchFileId);
 
       }

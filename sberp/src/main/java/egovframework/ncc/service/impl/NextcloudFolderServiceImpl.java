@@ -1,5 +1,6 @@
 package egovframework.ncc.service.impl;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -7,16 +8,21 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import egovframework.cmm.filter.NcBizException;
 import egovframework.cmm.service.HttpPropfind;
 import egovframework.ncc.dto.NcFileDTO;
 import egovframework.ncc.service.NextcloudDavService;
@@ -39,28 +45,30 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
   private NextcloudShareService nextcloudShareService;
 
   private CloseableHttpClient http;
-  private String baseDav; // .../remote.php/dav/files
-  private String erpUser; // stderp
-  private String authHeader; // Basic erpUser:AppPassword
-  private static final String ROOT_FOLDER = "/ERP";
+  private String baseUrl;
+  private String user;
+  private String appPassword;
+  private String rootFolder;
+  private String authHeader;
 
   @PostConstruct
   public void init() {
     http = HttpClients.createDefault();
-    baseDav = propertyService.getString("Globals.nc.webdav.base"); // 예:
-                                                                   // http://host/remote.php/dav/files
-    erpUser = propertyService.getString("Globals.nc.user");
-    String appPassword = propertyService.getString("Globals.nc.appPassword");
+    baseUrl = propertyService.getString("Globals.nc.webdav.base"); // .../dav/files
+    user = propertyService.getString("Globals.nc.user");
+    appPassword = propertyService.getString("Globals.nc.appPassword");
+    rootFolder = propertyService.getString("Globals.nc.rootFolder"); // ERP
 
-    String basic = erpUser + ":" + appPassword;
+    String basic = user + ":" + appPassword;
     authHeader =
         "Basic " + Base64.getEncoder().encodeToString(basic.getBytes(StandardCharsets.UTF_8));
   }
 
+
   @Override
   public List<NcFileDTO> listErpFolder(String erpRelativeFolder) throws Exception {
     String folder = normalizeFolder(erpRelativeFolder);
-    String url = baseDav + "/" + erpUser + "/ERP" + folder;
+    String url = baseUrl + "/" + user + "/ERP" + folder;
 
     String body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         + "<d:propfind xmlns:d=\"DAV:\" xmlns:oc=\"http://owncloud.org/ns\">" + "  <d:prop>"
@@ -236,26 +244,23 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
   public String ensureApplyFolder(String yearMonth, String applyNo) throws Exception {
     String relativePath = yearMonth + "/" + applyNo;
 
-    nextcloudDavService.ensureFolder(relativePath);
+    ensureFolder(relativePath);
 
     String commonSubFolderName1 = "00.신청서 및 공통";
-    nextcloudDavService.ensureFolder(relativePath + "/" + commonSubFolderName1);
+    ensureFolder(relativePath + "/" + commonSubFolderName1);
 
     String commonSubFolderName2 = "00.신청관련서류";
-    nextcloudDavService
-        .ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
+    ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
 
     String commonSubFolderName3 = "시료 반입반출";
-    nextcloudDavService.ensureFolder(relativePath + "/" + commonSubFolderName1 + "/"
-        + commonSubFolderName2 + "/" + commonSubFolderName3);
+    ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2 + "/"
+        + commonSubFolderName3);
 
     commonSubFolderName2 = "01.제품사진";
-    nextcloudDavService
-        .ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
+    ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
 
     commonSubFolderName2 = "02.접수(완료자료)";
-    nextcloudDavService
-        .ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
+    ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
 
     return relativePath;
   }
@@ -271,15 +276,15 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
     String relativePath = yearMonth + "/" + applyNo;
 
     // 2) WebDAV로 폴더 재귀 생성 (없으면 자동 MKCOL)
-    nextcloudDavService.ensureFolder(relativePath);
+    ensureFolder(relativePath);
 
     // 2-1) 하위 공통 폴더 생성: "2025/12/SB25-G1845/00.신청서 및 공통"
     String commonSubFolderName = "00.신청서 및 공통";
     String commonRelativePath = relativePath + "/" + commonSubFolderName;
-    nextcloudDavService.ensureFolder(commonRelativePath);
+    ensureFolder(commonRelativePath);
 
     // 3) Nextcloud 경로(davPath)
-    String davPath = ROOT_FOLDER + "/" + relativePath;
+    String davPath = "/" + rootFolder + "/" + relativePath;
     // => "/ERP/2025/12/SB25-G1845"
 
     // 4) 권한 주기 (기본 15 = read+create+update+delete)
@@ -293,4 +298,204 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
 
     return davPath;
   }
+
+  @Override
+  public void ensureFolder(String relativeFolderPath) throws Exception {
+    // 0) rootFolder(예: ERP) 먼저 보장
+    ensureRootFolder();
+
+    // 1) 비어있으면 rootFolder만 사용
+    if (relativeFolderPath == null || relativeFolderPath.trim().isEmpty()) {
+      log.debug("[MKCOL] ensureFolder: empty -> root only");
+      return;
+    }
+
+    // 2) 정규화: 슬래시 통일 + 앞뒤 슬래시 제거
+    String normalized = relativeFolderPath.trim().replace("\\", "/").replaceAll("/{2,}", "/");
+
+    if (normalized.startsWith("/"))
+      normalized = normalized.substring(1);
+    if (normalized.endsWith("/"))
+      normalized = normalized.substring(0, normalized.length() - 1);
+
+    // 3) traversal 방지
+    if (normalized.indexOf("..") >= 0) {
+      throw new NcBizException("허용되지 않는 경로입니다: " + relativeFolderPath);
+    }
+
+    // 4) 혹시 relativeFolderPath에 rootFolder(ERP)가 포함되어 들어오는 경우 제거
+    // 예: "ERP/2025/12/SB..." 또는 "/ERP/2025/..."
+    String rf = (rootFolder == null) ? "" : rootFolder.trim().replace("\\", "/");
+    if (!rf.isEmpty()) {
+      if (normalized.equals(rf)) {
+        log.debug("[MKCOL] ensureFolder: normalized equals rootFolder -> root only");
+        return;
+      }
+      if (normalized.startsWith(rf + "/")) {
+        normalized = normalized.substring((rf + "/").length());
+      }
+    }
+
+    if (normalized.isEmpty()) {
+      log.debug("[MKCOL] ensureFolder: normalized empty after strip root -> root only");
+      return;
+    }
+
+    // 5) 누적하면서 폴더 생성
+    String[] parts = normalized.split("/");
+    String current = "";
+
+    for (int i = 0; i < parts.length; i++) {
+      String part = parts[i];
+      if (part == null)
+        continue;
+      part = part.trim();
+      if (part.isEmpty())
+        continue;
+
+      current = current.isEmpty() ? part : (current + "/" + part);
+
+      // ✅ buildFileUri는 baseUrl/{user}/{rootFolder}/{current} 로 세그먼트 인코딩까지 처리
+      URI folderUri = buildFileUri(current);
+
+      int code = mkcol(folderUri);
+
+      log.debug("[MKCOL] code={} uri={} (part={})", code, folderUri, part);
+
+
+      if (code == 201) {
+        continue;
+      }
+
+      if (code == 405) {
+        continue;
+      }
+
+      if (code == 207) {
+        continue;
+      }
+
+      throw new RuntimeException("MKCOL fail code=" + code + " uri=" + folderUri);
+
+    }
+
+  }
+
+  /** rootFolder 자체를 생성 (없으면 MKCOL) */
+  public void ensureRootFolder() throws Exception {
+    URI rootUri = buildRootFolderUri();
+    // => .../dav/files/{user}/{rootFolder}
+
+    int code = mkcol(rootUri);
+
+    if (!(code == 201 || code == 405 || code == 207)) {
+      throw new RuntimeException("MKCOL root fail: " + code + " uri=" + rootUri);
+    }
+
+    log.debug("[MKCOL] root code={} uri={}", code, rootUri);
+  }
+
+
+  /** MKCOL 공통 실행 */
+  public int mkcol(URI uri) throws Exception {
+    HttpRequestBase req = new HttpEntityEnclosingRequestBase() {
+      @Override
+      public String getMethod() {
+        return "MKCOL";
+      }
+    };
+    req.setURI(uri);
+    req.setHeader("Authorization", authHeader);
+
+    HttpResponse res = http.execute(req);
+    EntityUtils.consumeQuietly(res.getEntity());
+
+    return res.getStatusLine().getStatusCode();
+  }
+
+  /** rootFolder URL */
+  private URI buildRootFolderUri() {
+    // baseUrl: http://172.22.0.41:8090/remote.php/dav/files (files까지)
+    // 최종: {baseUrl}/{user}/{rootFolder...}
+
+    List<String> segments = new ArrayList<String>();
+
+    String u = (user == null) ? null : user.trim();
+    if (!StringUtils.isEmpty(u))
+      segments.add(u);
+
+    String rf = (rootFolder == null) ? null : rootFolder.trim();
+    if (!StringUtils.isEmpty(rf)) {
+      rf = rf.replace("\\", "/").replaceAll("/{2,}", "/");
+      if (rf.startsWith("/"))
+        rf = rf.substring(1);
+      if (rf.endsWith("/"))
+        rf = rf.substring(0, rf.length() - 1);
+
+      String[] rfParts = rf.split("/");
+      for (int i = 0; i < rfParts.length; i++) {
+        String s = rfParts[i];
+        if (s != null)
+          s = s.trim();
+        if (!StringUtils.isEmpty(s))
+          segments.add(s);
+      }
+    }
+
+    return UriComponentsBuilder.fromHttpUrl(baseUrl).pathSegment(segments.toArray(new String[0]))
+        .build().toUri();
+  }
+
+  private URI buildFileUri(String relativePath) {
+    // relativePath 예: 2025/12/RAW/고객사/김정미 테스트/a b.jpg
+
+    String normalized = (relativePath == null) ? "" : relativePath.trim();
+    normalized = normalized.replace("\\", "/").replaceAll("/{2,}", "/");
+    if (normalized.startsWith("/"))
+      normalized = normalized.substring(1);
+
+    // 최소 방어
+    if (normalized.indexOf("..") >= 0) {
+      throw new NcBizException("허용되지 않는 경로입니다: " + relativePath);
+    }
+
+    List<String> segments = new ArrayList<String>();
+
+    // ⚠️ baseUrl은 files까지 포함된 형태여야 안전합니다.
+    // 예: http://172.22.0.41:8090/remote.php/dav/files
+    // 최종: {baseUrl}/{user}/{rootFolder}/{relativePath...}
+
+    String u = (user == null) ? null : user.trim();
+    if (!StringUtils.isEmpty(u))
+      segments.add(u);
+
+    String rf = (rootFolder == null) ? null : rootFolder.trim();
+    if (!StringUtils.isEmpty(rf)) {
+      rf = rf.replace("\\", "/").replaceAll("/{2,}", "/");
+      String[] rfParts = rf.split("/");
+      for (int i = 0; i < rfParts.length; i++) {
+        String s = rfParts[i];
+        if (s != null)
+          s = s.trim();
+        if (!StringUtils.isEmpty(s))
+          segments.add(s);
+      }
+    }
+
+    if (!StringUtils.isEmpty(normalized)) {
+      String[] parts = normalized.split("/");
+      for (int i = 0; i < parts.length; i++) {
+        String s = parts[i];
+        if (s != null)
+          s = s.trim();
+        if (!StringUtils.isEmpty(s))
+          segments.add(s);
+      }
+    }
+
+    return UriComponentsBuilder.fromHttpUrl(baseUrl).pathSegment(segments.toArray(new String[0]))
+        .build().toUri();
+  }
+
+
 }

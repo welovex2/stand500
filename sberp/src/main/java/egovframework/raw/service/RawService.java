@@ -3,6 +3,7 @@ package egovframework.raw.service;
 import java.util.List;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
@@ -45,7 +46,7 @@ public interface RawService {
   RawData detail(RawSearchDTO req) throws Exception;
 
   RawData basicDetail(RawSearchDTO req) throws Exception;
-  
+
   RsDTO rsDetail(int rawSeq);
 
   boolean insertRs(RsDTO req);
@@ -72,7 +73,7 @@ public interface RawService {
 
   List<MethodEsdSub> esdSubList(int esdSeq);
 
-//  List<MethodCtiSub> ctiSubList(int ctiSeq);
+  // List<MethodCtiSub> ctiSubList(int ctiSeq);
 
   SurgeDTO surgeDetail(int rawSeq);
 
@@ -92,24 +93,24 @@ public interface RawService {
 
   boolean insertVdip(VdipDTO req);
 
-//  CtiDTO ctiDetail(int rawSeq);
-//
-//  boolean insertCti(CtiDTO req);
-  
+  // CtiDTO ctiDetail(int rawSeq);
+  //
+  // boolean insertCti(CtiDTO req);
+
   ClkDTO clkDetail(int rawSeq);
 
   boolean insertClk(ClkDTO req);
-  
+
   DpDTO dpDetail(int rawSeq);
 
   boolean insertDp(DpDTO req);
-  
+
   TelDTO telDetail(int rawSeq);
 
   boolean insertTel(TelDTO req);
-  
-  ImgDTO imgDetail(ImgDTO req);
-  
+
+  ImgDTO imgDetail(ImgDTO req) throws Exception;
+
   List<ImgDTO> imgList(int rawSeq);
 
   boolean insertImg(ImgDTO req);
@@ -125,6 +126,8 @@ public interface RawService {
   List<FileRawDTO> fileRawList(int testSeq, ComParam param);
 
   List<Test> reportDetail(int testSeq);
-  
+
   RawData labelDetail(RawSearchDTO req);
+
+  SbkInfoVO findByNcFolderPath(int testSeq);
 }

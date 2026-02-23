@@ -32,15 +32,36 @@
             </Policies>
         </RollingFile>
 
-        <RollingFile name="MARKER_APPENDER" 
-                     fileName="${LOG_PATH}/markerLog.log"
-                     filePattern="${LOG_PATH}/archive/markerLog_%d{yyyyMMdd}-%i.log">
-            <PatternLayout pattern="${LAYOUT_PATTERN}"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="30MB" />
-                <TimeBasedTriggeringPolicy interval="1" />
-            </Policies>
-        </RollingFile>
+		<RollingFile name="RD_MARKER_APPENDER"
+		             fileName="${LOG_PATH}/rdMarkerLog.log"
+		             filePattern="${LOG_PATH}/archive/rdMarkerLog_%d{yyyyMMdd}-%i.log">
+		    <PatternLayout pattern="${LAYOUT_PATTERN}"/>
+		    <Policies>
+		        <SizeBasedTriggeringPolicy size="30MB" />
+		        <TimeBasedTriggeringPolicy interval="1" />
+		    </Policies>
+		
+		    <Filters>
+		        <!-- RD_MARKER만 파일에 기록 -->
+		        <MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+		    </Filters>
+		</RollingFile>
+		        
+		<RollingFile name="ACC_MARKER_APPENDER"
+		             fileName="${LOG_PATH}/accMarkerLog.log"
+		             filePattern="${LOG_PATH}/archive/accMarkerLog_%d{yyyyMMdd}-%i.log">
+		    <PatternLayout pattern="${LAYOUT_PATTERN}"/>
+		    <Policies>
+		        <SizeBasedTriggeringPolicy size="30MB" />
+		        <TimeBasedTriggeringPolicy interval="1" />
+		    </Policies>
+		
+		    <Filters>
+		        <!-- ACC_MARKER만 파일에 기록 -->
+		        <MarkerFilter marker="ACC_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+		    </Filters>
+		</RollingFile>
+
     </Appenders>
 
     <Loggers>
@@ -52,23 +73,27 @@
             <appender-ref ref="console" />
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <logger name="jdbc.sqltiming" level="INFO" additivity="false">
+        <!-- # SQL 실행시간 로그 끄기 -->
+        <logger name="jdbc.sqltiming" level="WARN" additivity="false">
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <logger name="jdbc.resultset" level="INFO" additivity="false">
+        <!-- # ResultSet 로그 WARN 이상만 -->
+        <logger name="jdbc.resultset" level="WARN" additivity="false">
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <logger name="egovframework" level="INFO" additivity="false">
+        <logger name="jdbc.resultsettable" level="WARN" additivity="false">
+            <appender-ref ref="FILE_APPENDER"/>
+        </logger>
+        
+        <logger name="egovframework" level="DEBUG" additivity="false">
             <appender-ref ref="console" />
             <appender-ref ref="FILE_APPENDER"/>
             <appender-ref ref="ERROR_APPENDER" level="ERROR" />
             
-            <appender-ref ref="MARKER_APPENDER">
-                <Filters>
-                    <MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-                    <MarkerFilter marker="ACC_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
-                </Filters>
-            </appender-ref>
+		    <!-- 마커별 파일 -->
+		    <appender-ref ref="RD_MARKER_APPENDER" />
+		    <appender-ref ref="ACC_MARKER_APPENDER" />
+    
         </logger>
 
         <logger name="org.springframework.transaction" level="WARN" additivity="false">
@@ -82,7 +107,8 @@
         
         <logger name="org.apache.http" level="WARN"/>
         <logger name="jdbc.audit" level="WARN" />
-        <logger name="jdbc.resultsettable" level="WARN" />
+        <logger name="jdbc.connection" level="WARN" />
+        
 
     </Loggers>
 </Configuration>

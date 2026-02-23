@@ -11,7 +11,7 @@ public interface CmyService {
   int selectListCnt(ComParam param);
 
   boolean insert(CmpyDTO req);
-  
+
   boolean delete(CmpyDTO req);
 
   CmpyDTO detail(int cmpySeq) throws Exception;
@@ -19,4 +19,6 @@ public interface CmyService {
   List<CmpyDTO> selectSameName(String cmpyCode, String cmpyName);
 
   List<CmdDTO.Sub> selectCmdList(ComParam param);
+
+  void updateFileRefsAfterUpload(CmpyDTO req);
 }

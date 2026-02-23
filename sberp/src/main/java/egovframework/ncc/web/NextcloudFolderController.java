@@ -31,8 +31,10 @@ import egovframework.cmm.util.CountingOutputStream;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.ErpDavPathUtil;
 import egovframework.ncc.dto.DownloadLogVO;
+import egovframework.ncc.dto.NcCopyRequest;
 import egovframework.ncc.dto.NcCreateFolderRequest;
 import egovframework.ncc.dto.NcDeleteRequest;
+import egovframework.ncc.dto.NcMoveRequest;
 import egovframework.ncc.dto.NcRenameRequest;
 import egovframework.ncc.dto.NcSimpleResult;
 import egovframework.ncc.dto.UploadResultDTO;
@@ -43,6 +45,7 @@ import egovframework.ncc.service.DownloadLogService;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 @Api(tags = {"파일서버"})
 @RestController
@@ -62,6 +65,8 @@ public class NextcloudFolderController {
   private DownloadLogService downloadLogService;
 
   /** 4) 선택 폴더 안의 폴더+파일 목록(Depth=1) */
+  @ApiOperation(value = "폴더 목록 조회",
+      notes = "path 폴더 경로 예시 /ERP/2026/02/SB26-G0000\n" + "path 비우면 루트 기준으로 조회\n")
   @GetMapping("/list")
   public Map<String, Object> list(
       @RequestParam(name = "path", required = false, defaultValue = "") String path)
@@ -115,6 +120,8 @@ public class NextcloudFolderController {
   }
 
   /** 2) 새폴더 만들기 */
+  @ApiOperation(value = "폴더 생성",
+      notes = "davPath 생성할 부모 경로 예시 /ERP/2026/02/SB26-G0000\n" + "folderName 생성할 폴더명 예시 00.공통폴더\n")
   @PostMapping(value = "/folder", consumes = MediaType.APPLICATION_JSON_VALUE)
   public NcSimpleResult createFolder(@RequestBody NcCreateFolderRequest req) throws Exception {
 
@@ -142,9 +149,9 @@ public class NextcloudFolderController {
 
   }
 
-
-
   /** 5) 파일 업로드 (완료 신호는 JSON 응답으로) */
+  @ApiOperation(value = "파일 업로드",
+      notes = "path 업로드할 폴더 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n" + "file 업로드 파일 Multipart\n")
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public UploadResultDTO upload(@RequestParam("path") String folderPath,
       @RequestPart("file") MultipartFile file) throws Exception {
@@ -224,6 +231,8 @@ public class NextcloudFolderController {
     return x;
   }
 
+  @ApiOperation(value = "이름 변경", notes = "targetDavPath 대상 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
+      + "newName 새 이름 예시 00.공통폴더_수정\n" + "overwrite 대상 이름이 이미 존재할 때 덮어쓰기 여부\n")
   @PostMapping(value = "/rename", consumes = MediaType.APPLICATION_JSON_VALUE)
   public NcSimpleResult rename(@RequestBody NcRenameRequest req) throws Exception {
 
@@ -255,6 +264,8 @@ public class NextcloudFolderController {
     return NcSimpleResult.ok(changed);
   }
 
+  @ApiOperation(value = "삭제", notes = "davPath 삭제 대상 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
+      + "recursive 폴더일 때 하위까지 삭제 여부\n")
   @PostMapping(value = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
   public NcSimpleResult delete(@RequestBody NcDeleteRequest req) throws Exception {
 
@@ -415,6 +426,42 @@ public class NextcloudFolderController {
     }
   }
 
+  @ApiOperation(value = "이동 MOVE",
+      notes = "sourceDavPath 원본 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
+          + "destDavPath 목적지 경로 예시 /ERP/2026/02/SB26-G0000/01.신청서\n"
+          + "overwrite 목적지에 동일 이름이 있을 때 덮어쓰기 여부\n")
+  @PostMapping("/move")
+  public NcSimpleResult moveWithSync(@RequestBody NcMoveRequest req) throws Exception {
+
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    String userId = user.getId();
+
+    String src = req == null ? "" : req.getSourceDavPath();
+    String dst = req == null ? "" : req.getDestDavPath();
+    boolean overwrite = req != null && req.isOverwrite();
+
+    String moved = nextcloudDavService.moveWithDbSync(src, dst, overwrite, userId);
+    return NcSimpleResult.ok(moved);
+  }
+
+  @ApiOperation(value = "복사 COPY함",
+      notes = "sourceDavPath 원본 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
+          + "destDavPath 목적지 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더_복사\n"
+          + "overwrite 목적지에 동일 이름이 있을 때 덮어쓰기 여부\n" + "metaMode 메타 반영 방식 TOP_ONLY 또는 FULL(기본)\n")
+  @PostMapping("/copy")
+  public NcSimpleResult copyWithSync(@RequestBody NcCopyRequest req) throws Exception {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    String userId = user.getId();
+
+    String src = req == null ? "" : req.getSourceDavPath();
+    String dst = req == null ? "" : req.getDestDavPath();
+    boolean overwrite = req != null && req.isOverwrite();
+    String metaMode = req == null ? null : req.getMetaMode();
+
+    String copied = nextcloudDavService.copyWithDbSync(src, dst, overwrite, userId, metaMode);
+    return NcSimpleResult.ok(copied);
+  }
+
   private long streamFileToResponse(String davPath, HttpServletResponse response) throws Exception {
     InputStream in = null;
     BufferedInputStream bin = null;
@@ -542,7 +589,6 @@ public class NextcloudFolderController {
   // -----------------------------
   // 기존 helper + 검증 로직
   // -----------------------------
-
   private WebDavNodeDTO buildTree(String base, List<WebDavItemDTO> raw, boolean onlyDir) {
     // base root node
     WebDavNodeDTO root = new WebDavNodeDTO();
@@ -810,39 +856,6 @@ public class NextcloudFolderController {
     } catch (Exception e) {
       return s;
     }
-  }
-
-  private String rfc5987Encode(String s) {
-    // URLEncoder 는 RFC 5987 완전 구현이 아니라서 보정
-    // 공백은 %20로 맞추고, 일부 문자는 그대로 두는 보정이 필요할 수 있음
-    String v = urlEncodeUtf8(s);
-
-    // 추가 보정이 필요하면 여기에서 처리
-    // return v.replace("%7E", "~");
-    return v;
-  }
-
-  private String toAsciiFallbackFileName(String original) {
-    String s = original == null ? "file" : original;
-
-    s = s.replace("\"", "");
-
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-
-      boolean ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
-          || c == '.' || c == '_' || c == '-' || c == ' ';
-
-      sb.append(ok ? c : '_');
-    }
-
-    String out = sb.toString().trim();
-    out = trimTrailingDotOrSpace(out);
-
-    if (out.isEmpty())
-      out = "file";
-    return out;
   }
 
   private String nvl(String s) {

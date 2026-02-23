@@ -1,8 +1,8 @@
 package egovframework.cmm.service;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.ibatis.annotations.Param;
-import egovframework.cmm.service.FileVO;
 import egovframework.ncc.dto.FileDetailUpdateVO;
 import egovframework.ncc.dto.FolderMetaVO;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
@@ -46,7 +46,8 @@ public interface FileMapper {
   int updateFolderMetaByFolderPath(@Param("oldFolderPath") String oldFolderPath,
       @Param("vo") FolderMetaVO vo);
 
-  int updateDescendantsByPrefix(@Param("oldPrefix") String oldPrefix, @Param("vo") FolderMetaVO vo);
+  int updateFolderMetaPathPrefix(@Param("oldPrefix") String oldPrefix,
+      @Param("vo") FolderMetaVO vo);
 
   List<FolderMetaVO> selectFolderUploadSrcByPaths(List<String> folderPaths);
 
@@ -63,5 +64,7 @@ public interface FileMapper {
   int deleteFolderMetaByPathPrefix(@Param("folderPath") String folderPath,
       @Param("updtId") String updtId);
 
+  void copyFolderMetaByPathPrefix(Map<String, Object> param);
 
+  void copyFileDetailByPathPrefix(Map<String, Object> param);
 }

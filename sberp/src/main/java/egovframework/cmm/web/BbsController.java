@@ -99,7 +99,7 @@ public class BbsController {
       // 신규
       if ("".equals(req.getAtchFileId())) {
         FileResult = fileUtil.parseFile(files, "board", 0, atchFileId, "");
-        atchFileId = fileMngService.insertFileInfs(FileResult);
+        atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
         req.setAtchFileId(atchFileId);
       }
       // 수정
@@ -111,7 +111,7 @@ public class BbsController {
 
         // 추가파일 등록
         List<FileVO> _result = fileUtil.parseFile(files, "board", cnt, req.getAtchFileId(), "");
-        fileMngService.updateFileInfs(_result);
+        fileMngService.updateFileInfs(_result, req.getInsMemId());
       }
 
     }
@@ -124,6 +124,7 @@ public class BbsController {
         delFile = new FileVO();
         delFile.setAtchFileId(del.getAtchFileId());
         delFile.setFileSn(del.getFileSn());
+        delFile.setCreatId(req.getUdtMemId());
         fileMngService.deleteFileInf(delFile);
       }
     }

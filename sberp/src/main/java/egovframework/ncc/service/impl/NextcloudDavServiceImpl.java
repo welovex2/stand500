@@ -46,6 +46,7 @@ import egovframework.ncc.dto.UploadResultDTO;
 import egovframework.ncc.dto.WebDavItemDTO;
 import egovframework.ncc.dto.WebDavListResponseDTO;
 import egovframework.ncc.service.NextcloudDavService;
+import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.SbkService;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,9 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
   @Autowired
   private EgovFileMngService fileMngService;
+
+  @Autowired
+  NextcloudFolderService nextcloudFolderService;
 
   @Autowired
   private SbkService sbkService;
@@ -83,91 +87,10 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
         "Basic " + Base64.getEncoder().encodeToString(basic.getBytes(StandardCharsets.UTF_8));
   }
 
-  @Override
-  public void ensureFolder(String relativeFolderPath) throws Exception {
-    // 0) rootFolder(예: ERP) 먼저 보장
-    ensureRootFolder();
-
-    // 1) 비어있으면 rootFolder만 사용
-    if (relativeFolderPath == null || relativeFolderPath.trim().isEmpty()) {
-      log.debug("[MKCOL] ensureFolder: empty -> root only");
-      return;
-    }
-
-    // 2) 정규화: 슬래시 통일 + 앞뒤 슬래시 제거
-    String normalized = relativeFolderPath.trim().replace("\\", "/").replaceAll("/{2,}", "/");
-
-    if (normalized.startsWith("/"))
-      normalized = normalized.substring(1);
-    if (normalized.endsWith("/"))
-      normalized = normalized.substring(0, normalized.length() - 1);
-
-    // 3) traversal 방지
-    if (normalized.indexOf("..") >= 0) {
-      throw new NcBizException("허용되지 않는 경로입니다: " + relativeFolderPath);
-    }
-
-    // 4) 혹시 relativeFolderPath에 rootFolder(ERP)가 포함되어 들어오는 경우 제거
-    // 예: "ERP/2025/12/SB..." 또는 "/ERP/2025/..."
-    String rf = (rootFolder == null) ? "" : rootFolder.trim().replace("\\", "/");
-    if (!rf.isEmpty()) {
-      if (normalized.equals(rf)) {
-        log.debug("[MKCOL] ensureFolder: normalized equals rootFolder -> root only");
-        return;
-      }
-      if (normalized.startsWith(rf + "/")) {
-        normalized = normalized.substring((rf + "/").length());
-      }
-    }
-
-    if (normalized.isEmpty()) {
-      log.debug("[MKCOL] ensureFolder: normalized empty after strip root -> root only");
-      return;
-    }
-
-    // 5) 누적하면서 폴더 생성
-    String[] parts = normalized.split("/");
-    String current = "";
-
-    for (int i = 0; i < parts.length; i++) {
-      String part = parts[i];
-      if (part == null)
-        continue;
-      part = part.trim();
-      if (part.isEmpty())
-        continue;
-
-      current = current.isEmpty() ? part : (current + "/" + part);
-
-      // ✅ buildFileUri는 baseUrl/{user}/{rootFolder}/{current} 로 세그먼트 인코딩까지 처리
-      URI folderUri = buildFileUri(current);
-
-      int code = mkcol(folderUri);
-
-      log.debug("[MKCOL] code={} uri={} (part={})", code, folderUri, part);
-
-
-      if (code == 201) {
-        continue;
-      }
-
-      if (code == 405) {
-        continue;
-      }
-
-      if (code == 207) {
-        continue;
-      }
-
-      throw new RuntimeException("MKCOL fail code=" + code + " uri=" + folderUri);
-
-    }
-
-  }
 
   private void createNewFolderOrThrowDuplicate(String relativeFolderPath) throws Exception {
     // 0) rootFolder(예: ERP) 먼저 보장
-    ensureRootFolder();
+    nextcloudFolderService.ensureRootFolder();
 
     // 1) 비어있으면 rootFolder만 사용
     if (relativeFolderPath == null || relativeFolderPath.trim().isEmpty()) {
@@ -249,7 +172,7 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       // buildFileUri는 baseUrl/{user}/{rootFolder}/{current} 로 세그먼트 인코딩까지 처리
       URI folderUri = buildFileUri(current);
 
-      int code = mkcol(folderUri);
+      int code = nextcloudFolderService.mkcol(folderUri);
 
       log.debug("[MKCOL] code={} uri={} (part={})", code, folderUri, part);
 
@@ -284,83 +207,20 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
   }
 
-  /** rootFolder 자체를 생성 (없으면 MKCOL) */
-  private void ensureRootFolder() throws Exception {
-    URI rootUri = buildRootFolderUri();
-    // => .../dav/files/{user}/{rootFolder}
-
-    int code = mkcol(rootUri);
-
-    if (!(code == 201 || code == 405 || code == 207)) {
-      throw new RuntimeException("MKCOL root fail: " + code + " uri=" + rootUri);
-    }
-
-    log.debug("[MKCOL] root code={} uri={}", code, rootUri);
-  }
-
-  /** MKCOL 공통 실행 */
-  private int mkcol(URI uri) throws Exception {
-    HttpRequestBase req = new HttpEntityEnclosingRequestBase() {
-      @Override
-      public String getMethod() {
-        return "MKCOL";
-      }
-    };
-    req.setURI(uri);
-    req.setHeader("Authorization", authHeader);
-
-    HttpResponse res = http.execute(req);
-    EntityUtils.consumeQuietly(res.getEntity());
-
-    return res.getStatusLine().getStatusCode();
-  }
-
-  /** rootFolder URL */
-  private URI buildRootFolderUri() {
-    // baseUrl: http://172.22.0.41:8090/remote.php/dav/files (files까지)
-    // 최종: {baseUrl}/{user}/{rootFolder...}
-
-    List<String> segments = new ArrayList<String>();
-
-    String u = (user == null) ? null : user.trim();
-    if (!StringUtils.isEmpty(u))
-      segments.add(u);
-
-    String rf = (rootFolder == null) ? null : rootFolder.trim();
-    if (!StringUtils.isEmpty(rf)) {
-      rf = rf.replace("\\", "/").replaceAll("/{2,}", "/");
-      if (rf.startsWith("/"))
-        rf = rf.substring(1);
-      if (rf.endsWith("/"))
-        rf = rf.substring(0, rf.length() - 1);
-
-      String[] rfParts = rf.split("/");
-      for (int i = 0; i < rfParts.length; i++) {
-        String s = rfParts[i];
-        if (s != null)
-          s = s.trim();
-        if (!StringUtils.isEmpty(s))
-          segments.add(s);
-      }
-    }
-
-    return UriComponentsBuilder.fromHttpUrl(baseUrl).pathSegment(segments.toArray(new String[0]))
-        .build().toUri();
-  }
 
 
   /**
    * 동일 경로에 파일이 존재하면(412) 업로드를 실패시키기 위한 예외.
    */
-  private static class DavAlreadyExistsException extends RuntimeException {
+  public static class DavAlreadyExistsException extends RuntimeException {
     private final int statusCode;
 
-    DavAlreadyExistsException(String message, int statusCode) {
+    public DavAlreadyExistsException(String message, int statusCode) {
       super(message);
       this.statusCode = statusCode;
     }
 
-    int getStatusCode() {
+    public int getStatusCode() {
       return statusCode;
     }
   }
@@ -377,7 +237,7 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     put.setHeader("Authorization", authHeader);
     put.setHeader("Content-Type", file.getContentType());
 
-    // ✅ 핵심: 이미 존재하면 실패(412)하도록
+    // 핵심: 이미 존재하면 실패(412)하도록
     put.setHeader("If-None-Match", "*");
 
     try (InputStream is = file.getInputStream()) {
@@ -556,26 +416,40 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
   }
 
   @Override
-  public String resolveFileUrl(FileVO file) throws Exception {
+  public String resolveFileUrl(FileVO file) {
     if (file == null)
       return "";
 
     String streCours = file.getFileStreCours();
 
-    // Nextcloud
-    if ("NEXTCLOUD_DAV".equals(streCours)) {
-      return buildPublicRawFileUrl(file.getStreFileNm());
-    }
+    try {
+      // Nextcloud
+      if ("NEXTCLOUD_DAV".equals(streCours)) {
+        return buildPublicRawFileUrl(file.getStreFileNm());
+      }
 
-    // Legacy
-    return propertyService.getString("img.url").concat(file.getAtchFileId()).concat("&fileSn=")
-        .concat(file.getFileSn());
+      // Legacy
+      return propertyService.getString("img.url").concat(file.getAtchFileId()).concat("&fileSn=")
+          .concat(file.getFileSn());
+    } catch (Exception e) {
+      // 여기서만 로그 남기고 예외는 밖으로 안 던짐
+      log.warn("resolveFileUrl 실패. atchFileId={}, fileSn={}", file.getAtchFileId(),
+          file.getFileSn(), e);
+
+      return null;
+    }
   }
 
+  /**
+   * ERP에서 파일 삭제할때 물리적 삭제. deleteWithDbSync 메소드는 파일서버 모달에서 삭제+DB처리
+   */
   @Override
   public void deleteByDavPath(String davPath) throws Exception {
     if (davPath == null || davPath.trim().isEmpty())
       return;
+
+    // 신청서 폴더 또는 그 하위만 삭제 가능하도록 강제
+    validateDeletablePathOnlyApplicationFolder(davPath);
 
     // davPath 예: "/ERP/2025/12/RAW/a.jpg"
     String normalized = davPath.trim();
@@ -594,6 +468,7 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     String encoded = encodePathSegments(relative);
 
     String url = baseUrl + "/" + user + "/" + rootFolder + encoded;
+
 
     HttpRequestBase del = new HttpRequestBase() {
       @Override
@@ -661,13 +536,13 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       return UploadResultDTO.fail("파일이 없습니다.");
     }
 
-    // ✅ 업로드 전에 폴더 존재 보장: ensureFolder는 "relativeFolderPath" 기준 (rootFolder 하위)
+    // 업로드 전에 폴더 존재 보장: ensureFolder는 "relativeFolderPath" 기준 (rootFolder 하위)
     String relFolder = toRelativePathUnderRoot(folderDavPath); // "/ERP/..." -> "2025/12/..."
-    ensureFolder(relFolder);
+    nextcloudFolderService.ensureFolder(relFolder);
 
     String safeOriginal = file.getOriginalFilename().replaceAll("[\\\\/:*?\"<>|]", "_");
 
-    // ✅ Windows 스타일: 동일 폴더에 동일 파일명이 있으면 " (1)", " (2)" ... 를 붙여서 업로드
+    // Windows 스타일: 동일 폴더에 동일 파일명이 있으면 " (1)", " (2)" ... 를 붙여서 업로드
     String uploadedDavPath = null;
 
     for (int i = 0; i <= 999; i++) {
@@ -1247,8 +1122,6 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     WebDavItemDTO dstItem = stat(dest);
 
     if (dstItem != null && dstItem.isDirectory()) {
-      // 폴더 메타는 폴더 생성 때만 저장했지만, 이름 변경 후에도 기록이 필요하면 신규 upsert
-      // 파일 상세 테이블(FILE_DETAIL_TB) stre_file_nm 갱신은 별도 update 쿼리가 필요함
       FolderMetaVO meta = new FolderMetaVO();
       meta.setFolderPath(dest);
       meta.setPathHash(DigestUtils.sha256Hex(dest));
@@ -1484,21 +1357,6 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     }
   }
 
-  private String parentOfDavPath(String davPath) {
-    if (davPath == null) {
-      return null;
-    }
-    String p = ErpDavPathUtil.normalizePath(davPath);
-    if (p.length() <= 1) {
-      return "/";
-    }
-    int idx = p.lastIndexOf("/");
-    if (idx <= 0) {
-      return "/";
-    }
-    return p.substring(0, idx);
-  }
-
   @Override
   @Transactional
   public void deleteWithDbSync(String davPath, boolean recursive, String userId) throws Exception {
@@ -1507,6 +1365,9 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     if (!path.startsWith("/")) {
       path = "/" + path;
     }
+
+    // 신청서 폴더 또는 그 하위만 삭제 가능하도록 강제
+    validateDeletablePathOnlyApplicationFolder(path);
 
     WebDavItemDTO before = stat(path);
     if (before == null) {
@@ -1573,6 +1434,63 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       del.releaseConnection();
     }
   }
+
+  private void validateDeletablePathOnlyApplicationFolder(String normalizedPath) {
+    if (normalizedPath == null) {
+      throw new IllegalArgumentException("삭제 경로가 비어있습니다.");
+    }
+
+    String p = ErpDavPathUtil.normalizePathOrRoot(normalizedPath);
+    if (!p.startsWith("/")) {
+      p = "/" + p;
+    }
+
+    // /ERP 전체 또는 상위 폴더 삭제 방지
+    if ("/ERP".equals(p) || "/ERP/".equals(p)) {
+      throw new IllegalArgumentException("ERP 루트는 삭제할 수 없습니다.");
+    }
+
+    // 경로 토큰 분해
+    // 기대 형태: /ERP/YYYY/MM/SB26-G0000 또는 /ERP/YYYY/MM/SB26-G0000/하위...
+    String[] parts = p.split("/");
+    // split 결과는 첫 요소가 빈 문자열이 될 수 있음
+    // 예: ["", "ERP", "2026", "02", "SB26-G0000", "00.공통폴더"]
+    if (parts.length < 5) {
+      throw new IllegalArgumentException("삭제는 신청서 폴더에서만 가능합니다.");
+    }
+
+    if (!"ERP".equals(parts[1])) {
+      throw new IllegalArgumentException("삭제는 ERP 경로에서만 가능합니다.");
+    }
+
+    String yyyy = parts.length > 2 ? parts[2] : "";
+    String mm = parts.length > 3 ? parts[3] : "";
+    String appNo = parts.length > 4 ? parts[4] : "";
+
+    // 연도 월 기본 검증
+    if (!yyyy.matches("\\d{4}")) {
+      throw new IllegalArgumentException("삭제는 신청서 경로에서만 가능합니다.");
+    }
+    if (!mm.matches("\\d{2}")) {
+      throw new IllegalArgumentException("삭제는 신청서 경로에서만 가능합니다.");
+    }
+
+    // 신청서번호 패턴 제한
+    // 예: SB26-G0000
+    if (!appNo.matches("SB\\d{2}-G\\d{4}")) {
+      throw new IllegalArgumentException("삭제는 신청서 폴더에서만 가능합니다.");
+    }
+
+    // 상위 폴더 차단
+    // /ERP/YYYY, /ERP/YYYY/MM 자체 삭제 방지
+    if (parts.length == 4) {
+      throw new IllegalArgumentException("월 폴더는 삭제할 수 없습니다.");
+    }
+    if (parts.length == 3) {
+      throw new IllegalArgumentException("연도 폴더는 삭제할 수 없습니다.");
+    }
+  }
+
 
   private boolean hasChildren(String davPath) throws Exception {
 
@@ -1641,6 +1559,276 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     return responses.getLength();
   }
 
+
+  @Override
+  @Transactional
+  public String moveWithDbSync(String sourceDavPath, String destDavPath, boolean overwrite,
+      String userId) throws Exception {
+
+    String src = ErpDavPathUtil.normalizePathOrRoot(sourceDavPath);
+    String dst = ErpDavPathUtil.normalizePathOrRoot(destDavPath);
+
+    if (!src.startsWith("/")) {
+      src = "/" + src;
+    }
+    if (!dst.startsWith("/")) {
+      dst = "/" + dst;
+    }
+
+    WebDavItemDTO before = stat(src);
+    if (before == null) {
+      throw new IllegalArgumentException("원본이 존재하지 않습니다.");
+    }
+
+    boolean isDir = before.isDirectory();
+
+    String moved = move(src, dst, overwrite, userId);
+
+    if (isDir) {
+      try {
+        fileMngService.updateFolderMetaPathPrefix(src, dst, userId);
+      } catch (Exception e) {
+        log.warn("move folder meta sync fail. src={} dst={}", src, dst, e);
+      }
+    } else {
+      String newName = nameOfDavPath(dst);
+      try {
+        updateFileDetail(src, dst, newName, userId);
+      } catch (Exception e) {
+        log.warn("move file detail sync fail. src={} dst={}", src, dst, e);
+      }
+    }
+
+    return moved;
+  }
+
+  @Override
+  @Transactional
+  public String copyWithDbSync(String sourceDavPath, String destDavPath, boolean overwrite,
+      String userId, String metaMode) throws Exception {
+
+    String src = ErpDavPathUtil.normalizePathOrRoot(sourceDavPath);
+    String dst = ErpDavPathUtil.normalizePathOrRoot(destDavPath);
+
+    if (!src.startsWith("/")) {
+      src = "/" + src;
+    }
+    if (!dst.startsWith("/")) {
+      dst = "/" + dst;
+    }
+
+    WebDavItemDTO before = stat(src);
+    if (before == null) {
+      throw new IllegalArgumentException("원본이 존재하지 않습니다.");
+    }
+
+    boolean isDir = before.isDirectory();
+
+    // src와 dst가 같으면 자동으로 새 이름으로 목적지 생성
+    if (sameDavPath(src, dst)) {
+      String parent = parentOfDavPath(src);
+      String baseName = nameOfDavPath(src);
+
+      int i = 1;
+      while (true) {
+        String newName = buildCopyName(baseName, i);
+        String cand = parent.endsWith("/") ? parent + newName : parent + "/" + newName;
+
+        WebDavItemDTO exists = stat(cand);
+        if (exists == null) {
+          dst = cand;
+          break;
+        }
+        i++;
+
+        if (i > 999) {
+          throw new IllegalArgumentException("복사 대상 이름을 자동 생성할 수 없습니다.");
+        }
+      }
+    }
+
+    String copied;
+    if (isDir) {
+      copied = copyDav(src, dst, overwrite, 1);
+    } else {
+      copied = copyDav(src, dst, overwrite, -1);
+    }
+
+    String mode = metaMode == null ? "TOP_ONLY" : metaMode.trim();
+    if (mode.isEmpty()) {
+      mode = "TOP_ONLY";
+    }
+
+    if (isDir) {
+      if ("FULL".equalsIgnoreCase(mode)) {
+        try {
+          fileMngService.copyFolderMetaByPathPrefix(src, dst, userId);
+        } catch (Exception e) {
+          log.warn("copy folder meta full sync fail. src={} dst={}", src, dst, e);
+        }
+      } else {
+        try {
+          FolderMetaVO meta = new FolderMetaVO();
+          meta.setFolderPath(dst);
+          meta.setPathHash(DigestUtils.sha256Hex(dst));
+          meta.setUploadSrc("A");
+          meta.setCreatId(userId);
+          fileMngService.insertFolderMeta(meta);
+        } catch (Exception e) {
+          log.warn("copy folder meta top sync fail. dst={}", dst, e);
+        }
+      }
+    } else {
+      // 파일 복사 시 FILE_DETAIL_TB 메타 저장
+      try {
+        fileMngService.copyFileDetailByPathPrefix(src, dst, userId);
+      } catch (Exception e) {
+        log.warn("copy file meta sync fail. src={} dst={}", src, dst, e);
+      }
+    }
+
+    return copied;
+  }
+
+  private boolean sameDavPath(String a, String b) {
+    String pa = ErpDavPathUtil.normalizePathOrRoot(a);
+    String pb = ErpDavPathUtil.normalizePathOrRoot(b);
+    if (!pa.startsWith("/"))
+      pa = "/" + pa;
+    if (!pb.startsWith("/"))
+      pb = "/" + pb;
+    return pa.equals(pb);
+  }
+
+  private String buildCopyName(String name, int idx) {
+    if (name == null) {
+      return "copy_" + idx;
+    }
+    int dot = name.lastIndexOf(".");
+    if (dot > 0 && dot < name.length() - 1) {
+      String base = name.substring(0, dot);
+      String ext = name.substring(dot);
+      return base + " (" + idx + ")" + ext;
+    }
+    return name + " (" + idx + ")";
+  }
+
+  private String copyDav(String sourceDavPath, String destDavPath, boolean overwrite, int depth)
+      throws Exception {
+
+    String src = ErpDavPathUtil.normalizePathOrRoot(sourceDavPath);
+    String dst = ErpDavPathUtil.normalizePathOrRoot(destDavPath);
+
+    if (!src.startsWith("/")) {
+      src = "/" + src;
+    }
+    if (!dst.startsWith("/")) {
+      dst = "/" + dst;
+    }
+
+    String srcUrl = buildDavUrlFromDavPath(src);
+    String dstUrl = buildDavUrlFromDavPath(dst);
+
+    HttpRequestBase copyReq = new HttpEntityEnclosingRequestBase() {
+      @Override
+      public String getMethod() {
+        return "COPY";
+      }
+    };
+
+    copyReq.setURI(URI.create(srcUrl));
+    copyReq.setHeader("Authorization", authHeader);
+    copyReq.setHeader("Destination", dstUrl);
+    copyReq.setHeader("Overwrite", overwrite ? "T" : "F");
+
+    if (depth >= 0) {
+      copyReq.setHeader("Depth", String.valueOf(depth));
+    }
+
+    HttpResponse res = null;
+    try {
+      res = http.execute(copyReq);
+      int code = res.getStatusLine().getStatusCode();
+
+      if (code == 201 || code == 204) {
+        EntityUtils.consumeQuietly(res.getEntity());
+        return dst;
+      }
+
+      if (code == 412) {
+        EntityUtils.consumeQuietly(res.getEntity());
+        throw new NcBizException("대상 이름이 이미 존재합니다. 다른 이름을 사용해 주세요.");
+      }
+
+      if (code == 404) {
+        EntityUtils.consumeQuietly(res.getEntity());
+        throw new IllegalArgumentException("원본이 존재하지 않습니다.");
+      }
+
+      String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity(), "UTF-8") : "";
+      throw new RuntimeException(
+          "COPY fail: " + code + " src=" + srcUrl + " dst=" + dstUrl + " body=" + body);
+
+    } finally {
+      copyReq.releaseConnection();
+    }
+  }
+
+  /**
+   * 전달된 dav 경로에서 부모 폴더 경로를 반환한다 예시 /ERP/2026/02/SB26-G0000/00.공통폴더/IMG.jpg ->
+   * /ERP/2026/02/SB26-G0000/00.공통폴더 /ERP/2026/02/SB26-G0000 -> /ERP/2026/02 /ERP -> / 처리 순서 1. 경로를
+   * 정규화하여 슬래시 형식을 통일한다 2. 항상 절대경로 형태로 맞춘다 3. 마지막 슬래시 기준으로 상위 경로를 계산한다
+   */
+  private String parentOfDavPath(String davPath) {
+    if (davPath == null) {
+      return null;
+    }
+
+    // 입력 경로를 표준 형식으로 정규화
+    String p = ErpDavPathUtil.normalizePath(davPath);
+    if (p.length() <= 1) {
+      return "/";
+    }
+
+    // 마지막 슬래시 위치를 찾는다
+    int idx = p.lastIndexOf("/");
+
+    // 루트 수준이거나 더 이상 부모가 없으면 루트를 반환한다
+    if (idx <= 0) {
+      return "/";
+    }
+
+    // 마지막 슬래시 이전까지를 부모 경로로 반환한다
+    return p.substring(0, idx);
+  }
+
+  /**
+   * 전달된 dav 경로에서 파일명 또는 폴더명을 반환한다 예시 /ERP/2026/02/SB26-G0000/00.공통폴더/IMG.jpg -> IMG.jpg
+   * /ERP/2026/02/SB26-G0000/00.공통폴더 -> 00.공통폴더 IMG.jpg -> IMG.jpg 처리 순서 1. 경로를 정규화하여 슬래시 형식을 통일한다
+   * 2. 마지막 슬래시 이후의 문자열을 이름으로 추출한다
+   */
+  private String nameOfDavPath(String davPath) {
+    if (davPath == null) {
+      return null;
+    }
+    // 입력 경로를 표준 형식으로 정규화
+    String p = ErpDavPathUtil.normalizePathOrRoot(davPath);
+
+    if ("/".equals(p)) {
+      return "";
+    }
+
+    // 마지막 슬래시 위치를 찾는다
+    int idx = p.lastIndexOf("/");
+
+    // 슬래시가 없으면 전체를 이름으로 간주한다
+    if (idx < 0) {
+      return p;
+    }
+
+    // 마지막 슬래시 이후 문자열을 이름으로 반환한다
+    return p.substring(idx + 1);
+  }
 
 
 }

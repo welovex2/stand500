@@ -11,10 +11,10 @@ public interface SamService {
 
   boolean update(ImDTO req);
 
-  ImDTO detail(String sbkId);
+  ImDTO detail(String sbkId) throws Exception;
 
   int selectListCnt(ComParam param);
 
   List<ImSubDTO> selectList(ComParam param);
-  
+
 }

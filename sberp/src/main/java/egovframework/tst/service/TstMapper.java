@@ -22,6 +22,8 @@ public interface TstMapper {
 
   public Test selectDetail(Req req);
 
+  public int selectNextTestNo(Req req);
+
   public boolean insert(Req req);
 
   public List<Res> selectList(ComParam param);

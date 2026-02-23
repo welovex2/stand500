@@ -91,8 +91,9 @@
 	     SET STRE_FILE_NM     = #{newDavPath}
 	       , ORIGNL_FILE_NM   = #{newOriginalFileName}
 	       , FILE_EXTSN       = #{fileExtsn}
-	       , UPLOAD_SRC       = 'A'
 	       , STATE            = 'U'
+	       , UPDATE_ID 		  = #{updtId}
+	       , UPDATE_DT 		  = NOW()
 	   WHERE STRE_FILE_NM = #{oldDavPath}
 	</update>
 	
@@ -102,8 +103,9 @@
 	           #{newDavPath},
 	           SUBSTRING(STRE_FILE_NM, CHAR_LENGTH(#{oldDavPath}) + 1)
 	         )
-	       , UPLOAD_SRC   = 'A'
-	       , STATE        = 'U'
+	       , STATE          = 'U'
+	       , UPDATE_ID 		= #{updtId}
+	       , UPDATE_DT 		= NOW()
 	   WHERE STRE_FILE_NM LIKE CONCAT(#{oldDavPath}, '/%')
 	</update>
 	
@@ -118,6 +120,8 @@
         <if test="fileOrdr != null">
             FILE_ORDR = #{fileOrdr},
         </if>
+    			UPDATE_ID = #{creatId},
+	       		UPDATE_DT = NOW()
     </set>
 			WHERE ATCH_FILE_ID = #{atchFileId}
 			AND FILE_SN = #{fileSn}
@@ -126,7 +130,10 @@
 	<delete id="deleteFileDetail" parameterType="fileVO" >
 		<![CDATA[
 			UPDATE FILE_DETAIL_TB
-			SET STATE = 'D'
+			SET 
+				STATE = 'D'
+				, UPDATE_ID = #{creatId}
+	       		, UPDATE_DT = NOW()
 			WHERE
 				ATCH_FILE_ID = #{atchFileId}
 			AND	
@@ -222,11 +229,12 @@
 <!-- 			</isEqual>	 		 -->
  	</select>
  	
+ 	<!-- 26.02.11 시료리스트에서 creat_dt를 사용하는데, master creat_dt를 가지고 와서 detail로 변경 -->
   	<select id="selectImageFileList" parameterType="fileVO" resultMap="fileList" >
  		<![CDATA[
 			SELECT 
 				a.ATCH_FILE_ID, b.FILE_CN, b.FILE_MEMO, b.FILE_SN, b.FILE_STRE_COURS, b.STRE_FILE_NM,
-				b.FILE_EXTSN, b.ORIGNL_FILE_NM, b.FILE_SIZE, a.CREAT_DT, b.FILE_ORDR
+				b.FILE_EXTSN, b.ORIGNL_FILE_NM, b.FILE_SIZE, b.CREAT_DT, b.FILE_ORDR
 			FROM
 				FILE_TB a, FILE_DETAIL_TB b
 			WHERE
@@ -253,9 +261,14 @@
 	
 	<insert id="insertFolderMeta" parameterType="map">
 	  INSERT INTO FOLDER_META_TB
-	    (FOLDER_PATH, PATH_HASH, CREAT_ID, UPLOAD_SRC)
+	    (FOLDER_PATH, PATH_HASH, CREAT_ID, UPLOAD_SRC, STATE)
 	  VALUES
-	    (#{vo.folderPath}, #{vo.pathHash}, #{vo.creatId}, #{vo.uploadSrc})
+	    (#{vo.folderPath}, #{vo.pathHash}, #{vo.creatId}, #{vo.uploadSrc}, 'I')
+	  ON DUPLICATE KEY UPDATE
+	  	STATE     = 'A', -- 재사용
+	  	UPLOAD_SRC= VALUES(UPLOAD_SRC),
+    	UPDATE_ID = #{vo.creatId},
+    	UPDATED_AT = VALUES(UPDATED_AT);
 	</insert>
 	
 	<update id="updateFolderMetaByPathHash" parameterType="map">
@@ -278,14 +291,6 @@
 	   WHERE FOLDER_PATH = #{oldFolderPath}
 	</update>
 
-	<update id="updateDescendantsByPrefix" parameterType="map">
-	  UPDATE FOLDER_META_TB
-	     SET FOLDER_PATH = CONCAT(#{vo.folderPath}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1))
-	       , PATH_HASH   = SHA2(CONCAT(#{vo.folderPath}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1)), 256)
-	       , UPDATE_ID   = #{vo.creatId}
-	       , UPDATED_AT   = NOW()
-	   WHERE FOLDER_PATH LIKE CONCAT(#{oldPrefix}, '/%')
-	</update>
 	
  	<select id="selectFolderUploadSrcByPaths" parameterType="list"
 	        resultType="folderMetaVO">
@@ -325,5 +330,84 @@
 	      OR FOLDER_PATH LIKE CONCAT(#{folderPath}, '/%')
 	</update>
 
- 	
+	<update id="updateFolderMetaPathPrefix" parameterType="map">
+	  UPDATE FOLDER_META_TB
+	     SET FOLDER_PATH = CONCAT(#{vo.folderPath}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1))
+	       , PATH_HASH   = SHA2(CONCAT(#{vo.folderPath}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1)), 256)
+	       , UPLOAD_SRC  = #{vo.uploadSrc}
+	       , UPDATE_ID   = #{vo.creatId}
+	       , UPDATED_AT   = NOW()
+	   WHERE FOLDER_PATH LIKE CONCAT(#{oldPrefix}, '/%')
+	   AND STATE != 'D'
+	</update>
+	
+	<insert id="copyFolderMetaByPathPrefix" parameterType="map">
+	INSERT INTO FOLDER_META_TB (
+	        FOLDER_PATH, 
+	        PATH_HASH, 
+	        CREAT_ID, 
+	        UPLOAD_SRC, 
+	        STATE, 
+	        CREATED_AT
+	    )
+	    SELECT
+	        CONCAT(#{newPrefix}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1)) AS NEW_PATH,
+	        SHA2(CONCAT(#{newPrefix}, SUBSTRING(FOLDER_PATH, CHAR_LENGTH(#{oldPrefix}) + 1)), 256) AS NEW_HASH,
+	        #{userId} AS CREAT_ID,
+	        'A' AS UPLOAD_SRC,
+	        'C' AS STATE,
+	        SYSDATE() AS CREATED_AT
+	    FROM FOLDER_META_TB
+	    WHERE (FOLDER_PATH = #{oldPrefix} OR FOLDER_PATH LIKE CONCAT(#{oldPrefix}, '/%'))
+	      AND (STATE IS NULL OR STATE != 'D')
+	    ON DUPLICATE KEY UPDATE
+	        FOLDER_PATH = VALUES(FOLDER_PATH),
+	        PATH_HASH   = VALUES(PATH_HASH),
+	        UPDATE_ID   = #{userId},
+	        UPDATED_AT  = SYSDATE(),
+	        STATE       = 'U'
+	</insert>
+	
+	<insert id="copyFileDetailByPathPrefix" parameterType="map">
+	  INSERT INTO FILE_DETAIL_TB (
+	      ATCH_FILE_ID,
+	      FILE_STRE_COURS,
+	      FILE_SN,
+	      STRE_FILE_NM,
+	      ORIGNL_FILE_NM,
+	      FILE_EXTSN,
+	      UPLOAD_SRC,
+	      STATE,
+	      CREAT_ID,
+	      CREAT_DT
+	  )
+	  SELECT
+	      ATCH_FILE_ID,
+	      FILE_STRE_COURS,
+	      (
+	        SELECT IFNULL(MAX(F2.FILE_SN), 0) + 1
+	          FROM FILE_DETAIL_TB F2
+	         WHERE F2.ATCH_FILE_ID = F.ATCH_FILE_ID
+	      ) AS NEW_FILE_SN,
+	      CONCAT(#{newPrefix}, SUBSTRING(STRE_FILE_NM, CHAR_LENGTH(#{oldPrefix}) + 1)) AS NEW_STRE_FILE_NM,
+	      ORIGNL_FILE_NM,
+	      FILE_EXTSN,
+	      'A' AS UPLOAD_SRC,
+	      'C' AS STATE,
+	      #{userId} AS CREAT_ID,
+	      SYSDATE() AS CREAT_DT
+	  FROM FILE_DETAIL_TB F
+	  WHERE STRE_FILE_NM = #{oldPrefix}
+	    AND (STATE IS NULL OR STATE != 'D')
+	  ON DUPLICATE KEY UPDATE
+	      STRE_FILE_NM   = VALUES(STRE_FILE_NM),
+	      UPDATE_ID      = VALUES(UPDATE_ID),
+	      UPDATE_DT      = VALUES(UPDATE_DT),
+	      UPLOAD_SRC     = VALUES(UPLOAD_SRC),
+	      STATE          = VALUES(STATE),
+	      ORIGNL_FILE_NM = VALUES(ORIGNL_FILE_NM),
+	      FILE_EXTSN     = VALUES(FILE_EXTSN)
+	</insert>
+	
+	
 </mapper>

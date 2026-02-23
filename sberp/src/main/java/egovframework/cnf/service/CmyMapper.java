@@ -14,14 +14,14 @@ public interface CmyMapper {
   int selectListCnt(ComParam param);
 
   boolean insert(CmpyDTO req);
-  
+
   boolean delete(CmpyDTO req);
-  
+
   List<CmpyRelationDTO> selectPrntCmpyList(@Param("cmpySeq") int cmpySeq);
-  
+
   List<CmpyRelationDTO> selectChildCmpyList(@Param("cmpySeq") int cmpySeq);
 
-  boolean insertMng(@Param("cmpySeq") int cmpySeq, @Param("mngList") List<CmpyMng> sUItems);
+  boolean insertMng(@Param("cmpySeq") int cmpySeq, @Param("mng") CmpyMng sUItems);
 
   boolean updateMng(@Param("cmpySeq") int cmpySeq, @Param("mngList") List<CmpyMng> sUItems);
 
@@ -31,19 +31,24 @@ public interface CmyMapper {
 
   List<CmpyMng> selectMngList(int cmpySeq);
 
-  List<CmpyDTO> selectSameName(@Param("cmpyCode") String cmpyCode, @Param("cmpyName") String cmpyName);
-  
+  List<CmpyDTO> selectSameName(@Param("cmpyCode") String cmpyCode,
+      @Param("cmpyName") String cmpyName);
+
   int selectAllSameName(CmpyDTO req);
-  
+
   List<CmdDTO.Sub> selectCmdList(ComParam param);
-  
+
   CmdDTO.Sub selectCmdTotal(ComParam param);
 
   List<Integer> selectParentListByChild(int childCmpySeq);
-  
+
   int insertRelation(CmpyRelationDTO dto);
 
   int deleteByChildAndParentList(@Param("childCmpySeq") int childCmpySeq,
-                                 @Param("list") List<Integer> parentSeqList);
-  
+      @Param("list") List<Integer> parentSeqList);
+
+  void updateCmpyFileRefs(CmpyDTO req);
+
+  void updateMngSignUrls(@Param("cmpySeq") int cmpySeq, @Param("list") List<CmpyMng> targets);
+
 }

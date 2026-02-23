@@ -15,17 +15,12 @@ public interface NextcloudDavService {
 
   void deleteByDavPath(String davPath) throws Exception;
 
-  /**
-   * 필요하면 폴더를 생성(MKCOL). 없으면 자동 생성.
-   */
-  void ensureFolder(String relativeFolderPath) throws Exception;
-
 
   /** 폴더 1회 공유 토큰 기반 “원본 파일” direct URL */
   String buildPublicRawFileUrl(String davPath) throws Exception;
 
 
-  String resolveFileUrl(FileVO file) throws Exception;
+  String resolveFileUrl(FileVO file);
 
   /** 폴더/파일 목록 조회 (Depth: 1=현재폴더+자식, 0=자기 자신) */
   WebDavListResponseDTO list(String davPath, int depth) throws Exception;
@@ -65,5 +60,11 @@ public interface NextcloudDavService {
       throws Exception;
 
   void deleteWithDbSync(String davPath, boolean recursive, String userId) throws Exception;
+
+  String moveWithDbSync(String sourceDavPath, String destDavPath, boolean overwrite, String userId)
+      throws Exception;
+
+  String copyWithDbSync(String sourceDavPath, String destDavPath, boolean overwrite, String userId,
+      String metaMode) throws Exception;
 
 }

@@ -122,13 +122,11 @@
 			CNTRY_CODE,
 			HOMEPAGE,
 			RPRSN,
-			RPRSN_SIGN,
 			ENG_RPRSN,
 			RSDNT_RGNMB,
 			ADDR,
 			ENG_ADDR,
 			MEMO,
-			ATCH_FILE_ID,
 			INS_MEM_ID,
 			UDT_MEM_ID
 	    )
@@ -149,13 +147,11 @@
 	        #{cntryCode},
 	        #{homepage},
 	        #{rprsn},
-	        #{rprsnSign},
 	        #{engRprsn},
 	        #{rsdntRgnmb},
 	        #{addr},
 	        #{engAddr},
 	        #{memo},
-	        #{atchFileId},
 	        #{insMemId},
 	        #{udtMemId}
 		)
@@ -173,13 +169,11 @@
 	        CNTRY_CODE = #{cntryCode},
 	        HOMEPAGE = #{homepage},
 	        RPRSN = #{rprsn},
-	        RPRSN_SIGN = IF(#{rprsnSign} = '', '', IF(#{rprsnSign} IS NULL, RPRSN_SIGN, #{rprsnSign})),
 	        ENG_RPRSN = #{engRprsn},
 	        RSDNT_RGNMB = #{rsdntRgnmb},
 	        ADDR = #{addr},
 	        ENG_ADDR = #{engAddr},
 	        MEMO = #{memo},
-	        ATCH_FILE_ID = #{atchFileId},
 	        UDT_MEM_ID = #{udtMemId},
 	        UDT_DT = NOW(),
 	        STATE = 'U'
@@ -194,39 +188,35 @@
 		WHERE CMPY_SEQ = #{cmpySeq}
 	</update>
 	
-	<insert id="insertMng">
-		INSERT INTO CMPY_MNG_TB
-		(
-			CMPY_SEQ,
-			NAME,
-			PHONE,
-			FAX,
-			TEL,
-			EMAIL,
-			DEPT,
-			LEVEL,
-			MEMO,
-			SIGN_URL,
-			INS_MEM_ID
-		)
-		VALUES
-		<foreach collection="mngList" item="item" separator=",">
-		(
-			#{cmpySeq},
-			#{item.name},
-			#{item.phone},
-			#{item.fax},
-			#{item.tel},
-			#{item.email},
-			#{item.dept},
-			#{item.level},
-			#{item.memo},
-			#{item.signUrl},
-			#{item.insMemId}
-		)
-		</foreach>
+	<insert id="insertMng" useGeneratedKeys="true" keyProperty="mng.cmpyMngSeq">
+	  INSERT INTO CMPY_MNG_TB
+	  (
+	    CMPY_SEQ,
+	    NAME,
+	    PHONE,
+	    FAX,
+	    TEL,
+	    EMAIL,
+	    DEPT,
+	    LEVEL,
+	    MEMO,
+	    INS_MEM_ID
+	  )
+	  VALUES
+	  (
+	    #{cmpySeq},
+	    #{mng.name},
+	    #{mng.phone},
+	    #{mng.fax},
+	    #{mng.tel},
+	    #{mng.email},
+	    #{mng.dept},
+	    #{mng.level},
+	    #{mng.memo},
+	    #{mng.insMemId}
+	  )
 	</insert>
-	
+
 	<update id="updateMng">
 		<foreach collection="mngList" item="item" separator=";">
 		UPDATE CMPY_MNG_TB
@@ -240,7 +230,6 @@
 			LEVEL = #{item.level},
 			MEMO = #{item.memo},
 			STATE = #{item.state},
-			SIGN_URL = IF(#{item.orignlFileNm} = '', '', IF(#{item.signUrl} IS NULL, SIGN_URL, #{item.signUrl})),
 			UDT_MEM_ID = #{item.udtMemId}
 		WHERE CMPY_MNG_SEQ = #{item.cmpyMngSeq}
 		</foreach>
@@ -673,6 +662,28 @@
 	      #{parentSeq}
 	    </foreach>
 	</delete>
+	
+	<update id="updateCmpyFileRefs">
+	  UPDATE CMPY_TB
+	     SET ATCH_FILE_ID = #{atchFileId}
+       		, RPRSN_SIGN   = CASE
+                         WHEN #{rprsnSign} IS NULL OR #{rprsnSign} = '' THEN RPRSN_SIGN
+                         ELSE #{rprsnSign}
+                       END
+	       , UDT_MEM_ID   = #{udtMemId}
+	       , UDT_DT       = NOW()
+	   WHERE CMPY_SEQ = #{cmpySeq}
+	</update>
+	
+	<update id="updateMngSignUrls">
+	  <foreach collection="list" item="m" separator=";">
+	    UPDATE CMPY_MNG_TB
+	       SET SIGN_URL   = #{m.signUrl}
+	         , UDT_DT     = NOW()
+	     WHERE CMPY_SEQ = #{cmpySeq}
+	       AND CMPY_MNG_SEQ  = #{m.cmpyMngSeq}
+	  </foreach>
+	</update>
 	
 	
 </mapper>

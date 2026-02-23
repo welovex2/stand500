@@ -176,10 +176,16 @@ public interface EgovFileMngService {
 
   public int updateFileDetailByStreFileNm(FileDetailUpdateVO vo);
 
-  int markFileDetailDeletedByExactPath(String streFileNm, String updtId) throws Exception;
+  public int markFileDetailDeletedByExactPath(String streFileNm, String updtId) throws Exception;
 
-  int markFileDetailDeletedByPathPrefix(String folderPath, String updtId) throws Exception;
+  public int markFileDetailDeletedByPathPrefix(String folderPath, String updtId) throws Exception;
 
-  int deleteFolderMetaByPathPrefix(String folderPath, String updtId) throws Exception;
+  public int deleteFolderMetaByPathPrefix(String folderPath, String updtId) throws Exception;
+
+  public void updateFolderMetaPathPrefix(String src, String dst, String userId) throws Exception;
+
+  public void copyFolderMetaByPathPrefix(String src, String dst, String userId) throws Exception;
+
+  public void copyFileDetailByPathPrefix(String src, String dst, String userId) throws Exception;
 
 }

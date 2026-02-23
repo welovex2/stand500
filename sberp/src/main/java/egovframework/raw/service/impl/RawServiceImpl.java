@@ -14,6 +14,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
@@ -464,13 +465,9 @@ public class RawServiceImpl implements RawService {
         for (FileVO item : modResult) {
           PicDTO map = new PicDTO();
 
-          // if ("CDN".contentEquals(item.getFileLoc())) {
-          // map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-          // .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          // } else {
-          map.setImageUrl(propertyService.getString("img.url").concat(detail.getModUrl())
-              .concat("&fileSn=").concat(item.getFileSn()));
-          // }
+          FileVO photoVO = fileMngService.selectFileInf(item);
+
+          map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
           map.setFileSn(item.getFileSn());
 
           modList.add(map);
@@ -490,16 +487,13 @@ public class RawServiceImpl implements RawService {
       List<PicDTO> setupList = new ArrayList<PicDTO>();
       if (setupReulst != null) {
         for (FileVO item : setupReulst) {
-          PicDTO map = new PicDTO();
-          map.setTitle(item.getFileCn());
 
-          // if ("CDN".contentEquals(item.getFileLoc())) {
-          // map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-          // .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          // } else {
-          map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
-              .concat("&fileSn=").concat(item.getFileSn()));
-          // }
+          PicDTO map = new PicDTO();
+
+          FileVO photoVO = fileMngService.selectFileInf(item);
+
+          map.setTitle(item.getFileCn());
+          map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
           map.setFileSn(item.getFileSn());
 
           setupList.add(map);
@@ -999,8 +993,35 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
-  public ImgDTO imgDetail(ImgDTO req) {
-    return methodMapper.imgDetail(req);
+  public ImgDTO imgDetail(ImgDTO req) throws Exception {
+    ImgDTO img = methodMapper.imgDetail(req);
+
+    if (img != null) {
+      FileVO fileVO = new FileVO();
+      fileVO.setAtchFileId(img.getAtchFileId());
+
+      // 해당없음이 있기 때문에 fileInf로 확인
+      List<FileVO> fileReulst = fileMngService.selectFileOrdrInfs(fileVO);
+      List<PicDTO> resultList = new ArrayList<PicDTO>();
+      if (fileReulst != null) {
+        for (FileVO item : fileReulst) {
+          PicDTO pic = new PicDTO();
+
+          FileVO photoVO = fileMngService.selectFileInf(item);
+
+          pic.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
+          pic.setTitle(item.getFileCn());
+          pic.setMode(item.getFileMemo());
+          pic.setFileSn(item.getFileSn());
+          resultList.add(pic);
+
+        }
+      }
+      img.setPicYn(img.getPicYn());
+      img.setImgList(resultList);
+    }
+
+    return img;
   }
 
   @Override
@@ -1158,5 +1179,11 @@ public class RawServiceImpl implements RawService {
       default:
         return new int[] {0, 0, 0};
     }
+  }
+
+  @Override
+  public SbkInfoVO findByNcFolderPath(int testSeq) {
+
+    return rawMapper.findByNcFolderPath(testSeq);
   }
 }

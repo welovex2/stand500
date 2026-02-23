@@ -73,7 +73,7 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
   }
 
   /**
-   * 하나의 파일에 대한 정보(속성 및 상세)를 등록한다.
+   * 하나의 파일에 대한 정보(속성 및 상세)를 등록한다. ERP에서만 사용. 파일모달에서 사용 X
    *
    * @see egovframework.com.cmm.service.EgovFileMngService#insertFileInf(egovframework.com.cmm.service.FileVO)
    */
@@ -82,6 +82,7 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
 
     String atchFileId = fvo.getAtchFileId();
 
+    fvo.setUploadSrc("E");
     fileMapper.insertFileMaster(fvo);
     fileMapper.insertFileDetail(fvo);
 
@@ -89,7 +90,7 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
   }
 
   /**
-   * 여러 개의 파일에 대한 정보(속성 및 상세)를 등록한다.
+   * 여러 개의 파일에 대한 정보(속성 및 상세)를 등록한다. ERP 사용 / 파일모달 X
    *
    * @see egovframework.com.cmm.service.EgovFileMngService#insertFileInfs(java.util.List)
    */
@@ -118,10 +119,14 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     return atchFileId;
   }
 
+  /**
+   * ERP에서만 호출할것. 파일모달 호출 X
+   */
   @Override
   public String insertFileInfs(List<FileVO> fileList, String userId) throws Exception {
     for (FileVO vo : fileList) {
       vo.setCreatId(userId);
+      vo.setUploadSrc("E");
     }
     return insertFileInfs(fileList);
   }
@@ -166,10 +171,14 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     }
   }
 
+  /**
+   * ERP에서만 호출할것. 파일모달 호출 X
+   */
   @Override
   public void updateFileInfs(List<FileVO> fileList, String userId) throws Exception {
     for (FileVO vo : fileList) {
       vo.setCreatId(userId);
+      vo.setUploadSrc("E");
     }
     updateFileInfs(fileList);
   }
@@ -305,8 +314,12 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     fileDetail.setOldDavPath(targetDavPath);
 
     int result = 0;
+
+    // rename 대상 폴더 메타 1건을 갱신한다
     result = fileMapper.updateFolderMetaByPathHash(oldPathHash, vo);
-    result += fileMapper.updateDescendantsByPrefix(targetDavPath, vo);
+    // rename 대상 폴더 하위에 속한 모든 폴더 메타의 경로를 prefix 치환한다
+    result += fileMapper.updateFolderMetaPathPrefix(targetDavPath, vo);
+    // 폴더 rename 이후, 해당 폴더 하위의 파일 상세 테이블에 저장된 파일 경로도 prefix 치환한다
     result += fileMapper.updateFileDetailByFolderRename(fileDetail);
 
     return result;
@@ -366,6 +379,93 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
       throw new IllegalArgumentException("folderPath가 비어있습니다.");
     }
     return fileMapper.deleteFolderMetaByPathPrefix(folderPath, updtId);
+  }
+
+  @Override
+  @Transactional
+  public void updateFolderMetaPathPrefix(String oldPrefix, String newPrefix, String userId)
+      throws Exception {
+    if (oldPrefix == null || oldPrefix.trim().isEmpty()) {
+      throw new IllegalArgumentException("oldPrefix가 비어있습니다.");
+    }
+    if (newPrefix == null || newPrefix.trim().isEmpty()) {
+      throw new IllegalArgumentException("newPrefix가 비어있습니다.");
+    }
+    if (userId == null || userId.trim().isEmpty()) {
+      userId = "SYSTEM";
+    }
+
+    String op = normalizePrefix(oldPrefix);
+    String np = normalizePrefix(newPrefix);
+
+    FolderMetaVO meta = new FolderMetaVO();
+    meta.setFolderPath(np);
+    meta.setPathHash(DigestUtils.sha256Hex(np));
+    meta.setUploadSrc("A");
+    meta.setCreatId(userId);
+
+    fileMapper.updateFolderMetaPathPrefix(op, meta);
+  }
+
+  @Override
+  @Transactional
+  public void copyFolderMetaByPathPrefix(String oldPrefix, String newPrefix, String userId)
+      throws Exception {
+    if (oldPrefix == null || oldPrefix.trim().isEmpty()) {
+      throw new IllegalArgumentException("oldPrefix가 비어있습니다.");
+    }
+    if (newPrefix == null || newPrefix.trim().isEmpty()) {
+      throw new IllegalArgumentException("newPrefix가 비어있습니다.");
+    }
+    if (userId == null || userId.trim().isEmpty()) {
+      userId = "SYSTEM";
+    }
+
+    String op = normalizePrefix(oldPrefix);
+    String np = normalizePrefix(newPrefix);
+
+    Map<String, Object> param = new HashMap<String, Object>();
+    param.put("oldPrefix", op);
+    param.put("newPrefix", np);
+    param.put("userId", userId);
+
+    fileMapper.copyFolderMetaByPathPrefix(param);
+  }
+
+  @Override
+  @Transactional
+  public void copyFileDetailByPathPrefix(String oldPrefix, String newPrefix, String userId)
+      throws Exception {
+    if (oldPrefix == null || oldPrefix.trim().isEmpty()) {
+      throw new IllegalArgumentException("oldPrefix가 비어있습니다.");
+    }
+    if (newPrefix == null || newPrefix.trim().isEmpty()) {
+      throw new IllegalArgumentException("newPrefix가 비어있습니다.");
+    }
+    if (userId == null || userId.trim().isEmpty()) {
+      userId = "SYSTEM";
+    }
+
+    String op = normalizePrefix(oldPrefix);
+    String np = normalizePrefix(newPrefix);
+
+    Map<String, Object> param = new HashMap<String, Object>();
+    param.put("oldPrefix", op);
+    param.put("newPrefix", np);
+    param.put("userId", userId);
+
+    fileMapper.copyFileDetailByPathPrefix(param);
+  }
+
+  private String normalizePrefix(String p) {
+    String v = p.trim();
+    if (!v.startsWith("/")) {
+      v = "/" + v;
+    }
+    if (v.length() > 1 && v.endsWith("/")) {
+      v = v.substring(0, v.length() - 1);
+    }
+    return v;
   }
 
 }

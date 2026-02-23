@@ -276,16 +276,13 @@ public class SbkController {
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String msg = "";
     boolean result = false;
-    // if (user == null) { return new ResponseEntity(BasicResponse.res(StatusCode.UNAUTHORIZED,
-    // ResponseMessage.NO_LOGIN), HttpStatus.OK); }
 
     // 로그인정보
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    log.info(req.toString());
+
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
 
@@ -331,13 +328,16 @@ public class SbkController {
           FileResult = new FileVO();
           FileResult.setAtchFileId(idgenService.getNextStringId());
           atchFileId = fileMngService.insertFileMaster(FileResult);
-          req.setAtchFileId(atchFileId);
+          req.setNcAtchFileId(atchFileId);
 
           if (!result) {
             return BasicResponse.builder().result(false).message(ResponseMessage.RETRY).build();
           }
-        } else {
+        }
+        // 수정이면, 이미 저장된 folderName
+        else {
           SbkInfoVO info = sbkService.findBySbkNoAndProvision(req.getSbkId());
+          req.setNcAtchFileId(info.getAtchFileId());
           folderName = info.getNcFolderPath();
         }
 
@@ -346,14 +346,20 @@ public class SbkController {
 
         // 신청인 서명
         if (!ObjectUtils.isEmpty(appFile)) {
-          FileResult = fileUtil.parseFile(appFile, "", 0, "", folderName);
+          FileResult =
+              fileUtil.parseFile(appFile, "", 0, "", folderName + "/00.신청서 및 공통/00.신청관련서류");
+
+          FileResult.setCreatId(req.getInsMemId());
           atchFileId = fileMngService.insertFileInf(FileResult);
           req.setAppSignUrl(atchFileId);
         }
 
         // 신청인 동의 서명
         if (!ObjectUtils.isEmpty(agreeFile)) {
-          FileResult = fileUtil.parseFile(agreeFile, "", 0, "", folderName);
+          FileResult =
+              fileUtil.parseFile(agreeFile, "", 0, "", folderName + "/00.신청서 및 공통/00.신청관련서류");
+
+          FileResult.setCreatId(req.getInsMemId());
           atchFileId = fileMngService.insertFileInf(FileResult);
           req.setAppAgreeSignUrl(atchFileId);
         }
@@ -389,6 +395,7 @@ public class SbkController {
             delFile = new FileVO();
             delFile.setAtchFileId(del.getAtchFileId());
             delFile.setFileSn(del.getFileSn());
+            delFile.setCreatId(req.getUdtMemId());
             fileMngService.deleteFileInf(delFile);
           }
         }

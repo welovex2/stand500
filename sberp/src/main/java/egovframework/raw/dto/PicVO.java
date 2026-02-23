@@ -1,18 +1,19 @@
 package egovframework.raw.dto;
 
 import java.util.List;
-
 import javax.persistence.Column;
-
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
-@Getter @Setter
+@Getter
+@Setter
+@ToString
 public class PicVO {
 
-	@ApiModelProperty(value="시험장면사진", example = "")
-	@Column
-	private List<PicDTO> picList;
-	
+  @ApiModelProperty(value = "시험장면사진", example = "")
+  @Column
+  private List<PicDTO> picList;
+
 }

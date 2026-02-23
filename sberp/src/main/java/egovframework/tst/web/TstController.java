@@ -51,7 +51,7 @@ public class TstController {
 
   @Resource(name = "TstService")
   private TstService tstService;
-  
+
   @Resource(name = "RawService")
   private RawService rawService;
 
@@ -95,9 +95,7 @@ public class TstController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    log.info(req.toString());
 
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
@@ -106,7 +104,7 @@ public class TstController {
       if (tstService.selectDetail(req) != null) {
         result = false;
         msg = ResponseMessage.DUPLICATE_TEST;
-      } 
+      }
       // 값이 제대로 넘어왔는지 확인
       else if (req.getTestItemSeq() == 0 || StringUtils.isEmpty(req.getTestTypeCode())) {
         result = false;
@@ -138,55 +136,60 @@ public class TstController {
 
     param.setMemId(user.getId());
     param.setSecretYn(user.getSecretYn());
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     /**
      * OR 조건 검색 처리
      */
     // 같은 CODE로 그룹핑
-    Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
-    
+    Map<String, List<SearchVO>> reSearch =
+        param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
+
     // 받은 searchCode 삭제 후 다시 생성
-//    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    // param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) ||
+    // "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x ->
+    // {param.getSearchVO().remove(x);});
 
     SearchVO newSearch = new SearchVO();
     // 시험부
     if (reSearch.get("23") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("23");
-      newSearch.setSearchWords(reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
-    
+
     // 신청구분
     if (reSearch.get("22") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("22");
-      newSearch.setSearchWords(reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
-    
+
     // 시험상태
     if (reSearch.get("31") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("31");
-      newSearch.setSearchWords(reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
     /**
      * -- END OR 조건 검색 처리
      */
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -230,52 +233,55 @@ public class TstController {
 
     param.setMemId(user.getId());
     param.setSecretYn(user.getSecretYn());
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     /**
      * OR 조건 검색 처리
      */
     // 같은 CODE로 그룹핑
-    Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
-    
+    Map<String, List<SearchVO>> reSearch =
+        param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
+
     SearchVO newSearch = new SearchVO();
     // 시험부
     if (reSearch.get("23") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("23");
-      newSearch.setSearchWords(reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
-    
+
     // 신청구분
     if (reSearch.get("22") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("22");
-      newSearch.setSearchWords(reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
-    
+
     // 시험상태
     if (reSearch.get("31") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("31");
-      newSearch.setSearchWords(reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
     /**
      * -- END OR 조건 검색 처리
      */
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -307,18 +313,19 @@ public class TstController {
     summ.setTotalCnt(cnt);
     for (Res detail : list) {
       for (TestItemDTO sub : detail.getItems()) {
-        summ.setTotalNetSales(summ.getTotalNetSales()+sub.getNetSales());
+        summ.setTotalNetSales(summ.getTotalNetSales() + sub.getNetSales());
         summ.setNetSalesCnt(summ.getNetSalesCnt() + 1);
       }
     }
-    
-    BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).summary(summ).data(list).paging(pagingVO).build();
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).summary(summ).data(list)
+        .paging(pagingVO).build();
 
     return res;
   }
 
-  @ApiOperation(value = "시험담당자 저장", notes = "testSeq:시험고유항목, activ:수행지수, items[testMngrSeq: 1~3까지 고정, testMngId:시험담당자ID, memo:평가메모]")
+  @ApiOperation(value = "시험담당자 저장",
+      notes = "testSeq:시험고유항목, activ:수행지수, items[testMngrSeq: 1~3까지 고정, testMngId:시험담당자ID, memo:평가메모]")
   @PostMapping(value = "/testMemInsert.do")
   public BasicResponse testMemInsert(@RequestBody TestMngrDTO req) throws Exception {
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -333,12 +340,14 @@ public class TstController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       /**
        * 필수체크
        */
       // 1. 메인시험원 필수 체크
-      if (req.getItems().stream().filter(t -> 1 == t.getTestMngrSeq() && StringUtils.isEmpty(t.getTestMngId())).count() > 0) {
+      if (req.getItems().stream()
+          .filter(t -> 1 == t.getTestMngrSeq() && StringUtils.isEmpty(t.getTestMngId()))
+          .count() > 0) {
         result = false;
         msg = ResponseMessage.CHECK_DATA;
       }
@@ -346,11 +355,10 @@ public class TstController {
       else if (req.getItems().stream().mapToInt(TestMngr::getPartRate).sum() != 100) {
         result = false;
         msg = ResponseMessage.CHECK_RATE_SUM;
-      }
-      else {
+      } else {
         result = tstService.testMemInsert(req);
       }
-      
+
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
@@ -398,26 +406,27 @@ public class TstController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       /**
        * 평가박스 선택 되어있는지 확인
        */
       TestMngrDTO list = new TestMngrDTO();
 
       list = tstService.testMemList(Integer.toString(req.getTestSeq()));
-      
+
       for (TestMngr detail : list.getItems()) {
-        if (!StringUtils.isEmpty(detail.getTestMngId()) && StringUtils.isEmpty(detail.getRating())) {
-          
+        if (!StringUtils.isEmpty(detail.getTestMngId())
+            && StringUtils.isEmpty(detail.getRating())) {
+
           result = false;
           msg = ResponseMessage.CHECK_DATA;
-          
+
           BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
           return res;
         }
       }
-      
+
       result = tstService.testMemSatetUpdate(req);
     } else {
       result = false;
@@ -428,7 +437,7 @@ public class TstController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험상태 변경", notes = "testSeq:시험고유항목, 시험상태:공통코드(TS), memo:메모")
   @PostMapping(value = "/testStateInsert.do")
   public BasicResponse testStateInsert(@RequestBody TestDTO.Req req) throws Exception {
@@ -441,20 +450,20 @@ public class TstController {
     boolean result = false;
     String msg = "";
     TestDTO.Res detail = new TestDTO.Res();
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       // 상태 변경할 수 없는 것 체크
       detail = tstService.checkTestState(req.getTestSeq());
       if (detail != null) {
-        
+
         // 최신 상태가 시험취소(확정)이면 상태변경 불가능
         if ("19".equals(detail.getStateCode()) && detail.getCancelYn() == 1) {
           result = false;
           msg = ResponseMessage.CHECK_TEST_STATE;
-          
+
           BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
           return res;
@@ -463,23 +472,24 @@ public class TstController {
         else if ("18".equals(detail.getStateCode())) {
           result = false;
           msg = ResponseMessage.CHECK_TEST_STATE_END;
-          
+
           BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
           return res;
         }
       }
-      
+
       // 사유 필수 입력 체크
-      if (Arrays.asList("5", "19", "3", "4").contains(req.getStateCode()) && "".equals(req.getMemo().trim())) {
+      if (Arrays.asList("5", "19", "3", "4").contains(req.getStateCode())
+          && "".equals(req.getMemo().trim())) {
         result = false;
         msg = ResponseMessage.ERROR_WHY;
-        
+
         BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
         return res;
       }
-      
+
       result = tstService.testStateInsert(req);
     } else {
       result = false;
@@ -551,27 +561,28 @@ public class TstController {
     HashMap<String, String> map = new HashMap<>();
 
 
-    
+
     list = tstService.testBoardList(testSeq);
-    
+
     if (list == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
-    
+
     // 시험규격별 제품/모델명
     RawSearchDTO req = new RawSearchDTO();
     req.setTestSeq(Integer.valueOf(testSeq));
     RawData detail = rawService.labelDetail(req);
     if (detail != null) {
       map.put("prdctName", detail.getEqpmn());
-      map.put("modelName", detail.getModel());  
+      map.put("modelName", detail.getModel());
     }
-    
+
     // 확인요망여부
     int checkYn = tstService.selectCheckInfo(testSeq);
 
-    BasicResponse res = BasicResponse.builder().result(result).message(String.valueOf(checkYn)).data(list).summary(map).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(String.valueOf(checkYn))
+        .data(list).summary(map).build();
 
     return res;
   }
@@ -647,7 +658,7 @@ public class TstController {
     return res;
 
   }
-  
+
   @ApiOperation(value = "시험리스트 (부서장) ",
       notes = "결과값은 TestDTO.Res 참고" + "2.검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n"
           + " 신청구분:신규-1,기술기준변경-2,동일기자재-3,기술기준외변경-4\n" + " 시험부(TT), 미배정-9999\n" + " 시험상태(TS)")
@@ -661,55 +672,60 @@ public class TstController {
 
     param.setMemId(user.getId());
     param.setSecretYn(user.getSecretYn());
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     /**
      * OR 조건 검색 처리
      */
     // 같은 CODE로 그룹핑
-    Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
-    
+    Map<String, List<SearchVO>> reSearch =
+        param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
+
     // 받은 searchCode 삭제 후 다시 생성
-//    param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) || "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x -> {param.getSearchVO().remove(x);});
+    // param.getSearchVO().stream().filter(x -> "23".equals(x.getSearchCode()) ||
+    // "22".equals(x.getSearchCode())).collect(Collectors.toList()).forEach(x ->
+    // {param.getSearchVO().remove(x);});
 
     SearchVO newSearch = new SearchVO();
     // 시험부
     if (reSearch.get("23") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("23");
-      newSearch.setSearchWords(reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
-    
+
     // 신청구분
     if (reSearch.get("22") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("22");
-      newSearch.setSearchWords(reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("22").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
-    
+
     // 시험상태
     if (reSearch.get("31") != null) {
       newSearch = new SearchVO();
       newSearch.setSearchCode("31");
-      newSearch.setSearchWords(reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+      newSearch.setSearchWords(
+          reSearch.get("31").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
       param.getSearchVO().add(newSearch);
     }
     /**
      * -- END OR 조건 검색 처리
      */
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -742,7 +758,8 @@ public class TstController {
 
   @ApiOperation(value = "시험취소 내역")
   @GetMapping(value = "/cancel/detail.do")
-  public BasicResponse canCelDetail(@ApiParam(value = "시험규격 고유번호", required = true) @RequestParam(value = "testItemSeq") int testItemSeq) throws Exception {
+  public BasicResponse canCelDetail(@ApiParam(value = "시험규격 고유번호",
+      required = true) @RequestParam(value = "testItemSeq") int testItemSeq) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
@@ -760,7 +777,7 @@ public class TstController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험취소 등록")
   @PostMapping(value = "/cancel/insert.do")
   public BasicResponse cancelInsert(@RequestBody CanCelDTO req) throws Exception {
@@ -786,7 +803,7 @@ public class TstController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험게시판 확인요망", notes = "testSeq:시험고유항목, checkYn:확인요망여부")
   @PostMapping(value = "/check/insert.do")
   public BasicResponse testCheckInsert(@RequestBody TestDTO.Req req) throws Exception {
@@ -812,7 +829,7 @@ public class TstController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험게시판 고지부메모", notes = "sbkId:신청서번호, saleMemo:고지부메모")
   @PostMapping(value = "/saleMemo/insert.do")
   public BasicResponse saleMemoInsert(@RequestBody TestDTO.Req req) throws Exception {
@@ -838,5 +855,5 @@ public class TstController {
 
     return res;
   }
-  
+
 }

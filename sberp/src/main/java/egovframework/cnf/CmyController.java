@@ -37,6 +37,7 @@ import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.cnf.service.CmpyDTO;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.CmyService;
+import egovframework.ncc.dto.UploadPolicy;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sts.dto.CmdDTO;
@@ -180,22 +181,25 @@ public class CmyController {
 
     boolean result = false;
 
+    // 파일 제외 저장
+    result = cmyService.insert(req);
+
     // 파일처리
     List<FileVO> FileResult = null;
     String atchFileId = "";
     String folderName = "";
 
-    if (req.getCmpySeq() == 0)
-      folderName = req.getCmpyName();
+    if ("partner".equals(type))
+      folderName = "협력사/".concat(String.valueOf(req.getCmpySeq()));
     else
-      folderName = req.getCmpyName();
+      folderName = "고객사/".concat(String.valueOf(req.getCmpySeq()));
 
     if (!ObjectUtils.isEmpty(files)) {
 
       // 신규
       if (StringUtils.isEmpty(req.getAtchFileId())) {
-        FileResult = fileUtil.parseFile(files, "", 0, "", "company/".concat(folderName));
-        atchFileId = fileMngService.insertFileInfs(FileResult);
+        FileResult = fileUtil.parseFile(files, "", 0, "", "고객사 & 협력사 관리/".concat(folderName));
+        atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
         req.setAtchFileId(atchFileId);
       }
       // 수정
@@ -206,9 +210,9 @@ public class CmyController {
         int cnt = fileMngService.getMaxFileSN(fvo);
 
         // 추가파일 등록
-        List<FileVO> _result =
-            fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "company/".concat(folderName));
-        fileMngService.updateFileInfs(_result);
+        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(),
+            "고객사 & 협력사 관리/".concat(folderName));
+        fileMngService.updateFileInfs(_result, req.getInsMemId());
       }
 
     }
@@ -224,13 +228,16 @@ public class CmyController {
 
       if (!ObjectUtils.isEmpty(file)) {
 
-        signResult = fileUtil.parseFile(file, "", 0, "", "company/".concat(folderName));
+        // 동일한 매니져 서명파일은 매니져Seq로 1개만 관리
+        signResult = fileUtil.parseFile(file, String.valueOf(mng.getCmpyMngSeq()), 0, "",
+            "고객사 & 협력사 관리/".concat(folderName), UploadPolicy.OVERWRITE);
 
         int index = mng.getOrignlFileNm().lastIndexOf(".");
         String fileExt = mng.getOrignlFileNm().substring(index + 1);
 
         signResult.setFileExtsn(fileExt);
         signResult.setOrignlFileNm(mng.getOrignlFileNm());
+        signResult.setCreatId(req.getInsMemId());
         atchFileId = fileMngService.insertFileInf(signResult);
         mng.setSignUrl(atchFileId);
       }
@@ -238,7 +245,12 @@ public class CmyController {
     // 대표자서명
     FileVO FileRes = null;
     if (!ObjectUtils.isEmpty(rprsnSign)) {
-      FileRes = fileUtil.parseFile(rprsnSign, "", 0, "", "company/".concat(folderName));
+
+      // 대표자 서명 파일은 회사Seq로 덮어쓰기로 파일 1개만 관리
+      FileRes = fileUtil.parseFile(rprsnSign, String.valueOf(req.getCmpySeq()), 0, "",
+          "고객사 & 협력사 관리/".concat(folderName), UploadPolicy.OVERWRITE);
+
+      FileRes.setCreatId(req.getInsMemId());
       atchFileId = fileMngService.insertFileInf(FileRes);
       req.setRprsnSign(atchFileId);
     }
@@ -250,12 +262,14 @@ public class CmyController {
         delFile = new FileVO();
         delFile.setAtchFileId(del.getAtchFileId());
         delFile.setFileSn(del.getFileSn());
+        delFile.setCreatId(req.getUdtMemId());
         fileMngService.deleteFileInf(delFile);
       }
     }
     // -- END 파일처리
 
-    result = cmyService.insert(req);
+    // 업로드된 파일키를 DB에 반영
+    cmyService.updateFileRefsAfterUpload(req);
 
     BasicResponse res = BasicResponse.builder().result(result).build();
 

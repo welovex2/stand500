@@ -69,10 +69,15 @@ public class CmyServiceImpl implements CmyService {
 
     // 담당자 처리
     if (req.getMngList() != null) {
+
       List<CmpyMng> cIItems = req.getMngList().stream().filter(t -> "I".equals(t.getState()))
           .collect(Collectors.toList());
-      if (!ObjectUtils.isEmpty(cIItems))
-        cmyMapper.insertMng(req.getCmpySeq(), cIItems);
+      if (!ObjectUtils.isEmpty(cIItems)) {
+        for (CmpyMng mng : cIItems) {
+          mng.setCmpySeq(req.getCmpySeq());
+          cmyMapper.insertMng(req.getCmpySeq(), mng);
+        }
+      }
 
       List<CmpyMng> cUItems = req.getMngList().stream().filter(t -> "U".equals(t.getState()))
           .collect(Collectors.toList());
@@ -210,6 +215,26 @@ public class CmyServiceImpl implements CmyService {
     if (!deleteList.isEmpty()) {
       cmyMapper.deleteByChildAndParentList(childCmpySeq, deleteList);
     }
+  }
+
+  @Override
+  public void updateFileRefsAfterUpload(CmpyDTO req) {
+    cmyMapper.updateCmpyFileRefs(req);
+
+    if (req.getMngList() == null) {
+      return;
+    }
+
+    List<CmpyMng> targets =
+        req.getMngList().stream().filter(m -> m.getSignUrl() != null && !"".equals(m.getSignUrl()))
+            .collect(Collectors.toList());
+
+    if (ObjectUtils.isEmpty(targets)) {
+      return;
+    }
+
+    cmyMapper.updateMngSignUrls(req.getCmpySeq(), targets);
+
   }
 
 

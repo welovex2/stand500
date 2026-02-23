@@ -31,6 +31,10 @@ public class RawData {
   @Column
   private String sbkId;
 
+  @ApiModelProperty(value = "신청서 파일경로 ", example = "")
+  @Column
+  private String ncFolderPath;
+
   @ApiModelProperty(value = "신청서별 로데이터 번호 ", example = "")
   @Column
   private int sbkNo;
@@ -94,7 +98,7 @@ public class RawData {
   @Column
   private String testSignUrl;
 
-  
+
   @ApiModelProperty(value = "시험자서명 파일아이디 ", example = "")
   @Column
   private String testAtchFileId;
@@ -112,8 +116,8 @@ public class RawData {
   @ApiModelProperty(value = "기술책임자서서명 파일아이디 ", example = "")
   @Column
   private String revAtchFileId;
-  
-  
+
+
   @ApiModelProperty(value = "시험요구_KC_EMC ", example = "1")
   @Column
   private int tbrKcEmcYn;
@@ -172,30 +176,30 @@ public class RawData {
   @ApiModelProperty(value = "CLASS_ETC_MEMO ", example = "0")
   @Column
   private int classEtcYn;
-  
+
   /**
    * 9814 추가
    */
   @ApiModelProperty(value = "제품군 1 ", example = "0")
   @Column
-  private int class1Yn;  
-  
+  private int class1Yn;
+
   @ApiModelProperty(value = "제품군 2 ", example = "0")
   @Column
   private int class2Yn;
-  
+
   @ApiModelProperty(value = "제품군 3 ", example = "0")
   @Column
   private int class3Yn;
-  
+
   @ApiModelProperty(value = "제품군 4 ", example = "0")
   @Column
   private int class4Yn;
-  
+
   @ApiModelProperty(value = "제품군 5 ", example = "0")
   @Column
   private int class5Yn;
-  
+
   @ApiModelProperty(value = "제품군 UBD ", example = "0")
   @Column
   private int classUbdYn;
@@ -340,17 +344,17 @@ public class RawData {
   @Column
   private String stdMemo;
 
-  
+
   @ApiModelProperty(value = "규격적용 특이사항 YN ", example = "0")
   @Column
   private int stdYn;
-  
-  
+
+
   @ApiModelProperty(value = "규격적용 특이사항 기타 YN ", example = "0")
   @Column
   private int stdEtcYn;
 
-  
+
   @ApiModelProperty(value = "디스플레이 관찰 거리 ", example = "해당없다")
   @Column
   private String addTestDis;
@@ -367,22 +371,22 @@ public class RawData {
   @Column
   private String addTestAudio;
 
-  
-  @ApiModelProperty(value="성적서발급번호 ", example = "STB23-0158")
+
+  @ApiModelProperty(value = "성적서발급번호 ", example = "STB23-0158")
   @Column
   private String reportNo;
-  
-  
-  @ApiModelProperty(value="성적서 발급일 ", example = "2023-05-30")
-  @Column    
+
+
+  @ApiModelProperty(value = "성적서 발급일 ", example = "2023-05-30")
+  @Column
   private String reportDt;
-  
-  
-  @ApiModelProperty(value="성적서 발급사유 ", example = "최초발급")
-  @Column    
+
+
+  @ApiModelProperty(value = "성적서 발급사유 ", example = "최초발급")
+  @Column
   private String reportMemo;
-  
-  
+
+
   @ApiModelProperty(value = "등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;

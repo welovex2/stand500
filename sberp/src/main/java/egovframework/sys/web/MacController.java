@@ -56,12 +56,12 @@ public class MacController {
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
-  
+
   @Resource(name = "MinIoFileMngUtil")
   private MinIoFileMngUtil fileUtil;
-  
+
   private static final Marker ACC_MARKER = MarkerFactory.getMarker("ACC_MARKER");
-  
+
   @ApiOperation(value = "시험장비 리스트", notes = "searchCode:10, searchWord:공통코드(TM)")
   @GetMapping(value = "/list.do")
   public BasicResponse emdList(@ModelAttribute ComParam param) throws Exception {
@@ -82,7 +82,7 @@ public class MacController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험장비 등록", notes = "")
   @PostMapping(value = "/old/insert.do")
   public BasicResponse oldInsert(
@@ -120,8 +120,8 @@ public class MacController {
 
     boolean result = false;
 
-//    result = macService.insert(list);
-    
+    // result = macService.insert(list);
+
     BasicResponse res = BasicResponse.builder().result(result).build();
 
     return res;
@@ -163,12 +163,12 @@ public class MacController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험장비 순서,표시여부 수정", notes = "machineSeq, disOrdr(no)")
   @PostMapping(value = "/{type}/update.do")
   public BasicResponse updateSub(
       @ApiParam(value = "시험타입 : 공통코드(TM)", required = true,
-      example = "MF") @PathVariable(name = "type") String type,
+          example = "MF") @PathVariable(name = "type") String type,
       @ApiParam(value = "", required = true, example = "") @RequestBody List<MachineDTO> list)
       throws Exception {
 
@@ -204,14 +204,15 @@ public class MacController {
     boolean result = false;
 
     result = macService.updateSub(type, list);
-    
-    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/{type}/update.do", list.size());
-    
+
+    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(),
+        "/sys/mac/{type}/update.do", list.size());
+
     BasicResponse res = BasicResponse.builder().result(result).build();
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험장비 상세보기", notes = "searchCode:10, searchWord:공통코드(TM)")
   @GetMapping(value = "/{machineSeq}/detail.do")
   public BasicResponse detail(@ApiParam(value = "시험장비 고유번호", required = true,
@@ -224,8 +225,9 @@ public class MacController {
 
     detail = macService.selectDetail(machineSeq);
 
-    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/{machineSeq}/detail.do", machineSeq);
-    
+    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(),
+        "/sys/mac/{machineSeq}/detail.do", machineSeq);
+
     if (detail == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
@@ -235,8 +237,9 @@ public class MacController {
 
     return res;
   }
-  
-  @ApiOperation(value = "시험장비 리스트", notes = "51 부서명, 47 차기교정일, 81 대상분류, 48 사용장비명, 82 한글태그명, 27 모델명, 83 장비번호, 84 관리번호, 85 HCT번호")
+
+  @ApiOperation(value = "시험장비 리스트",
+      notes = "51 부서명, 47 차기교정일, 81 대상분류, 48 사용장비명, 82 한글태그명, 27 모델명, 83 장비번호, 84 관리번호, 85 HCT번호")
   @GetMapping(value = "/total/list.do")
   public BasicResponse totalList(@ModelAttribute ComParam param) throws Exception {
 
@@ -250,22 +253,24 @@ public class MacController {
      */
     if (!ObjectUtils.isEmpty(param.getSearchVO())) {
       // 같은 CODE로 그룹핑
-      Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
-      
-  
+      Map<String, List<SearchVO>> reSearch =
+          param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
+
+
       SearchVO newSearch = new SearchVO();
       // 관리부
       if (reSearch.get("51") != null) {
         newSearch = new SearchVO();
         newSearch.setSearchCode("51");
-        newSearch.setSearchWords(reSearch.get("51").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+        newSearch.setSearchWords(
+            reSearch.get("51").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
         param.getSearchVO().add(newSearch);
       }
     }
     /**
      * -- END OR 조건 검색 처리
      */
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -282,21 +287,23 @@ public class MacController {
     param.setTotalCount(cnt);
     pagingVO.setTotalCount(cnt);
     pagingVO.setTotalPage(
-        (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));    
+        (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
     list = macService.selecTotaltList(param);
 
-    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/total/list.do", param);
-    
+    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(),
+        "/sys/mac/total/list.do", param);
+
     if (list == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
+    BasicResponse res =
+        BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
 
     return res;
   }
-  
+
   @ApiOperation(value = "교정내역 리스트", notes = "")
   @GetMapping(value = "/cal/{machineSeq}/list.do")
   public BasicResponse calList(@ApiParam(value = "시험장비 고유번호", required = true,
@@ -307,12 +314,13 @@ public class MacController {
     String msg = "";
     List<MacCal> list = new ArrayList<MacCal>();
 
-    
+
 
     list = macService.selectMacCal(machineSeq);
-    
-    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/cal/{machineSeq}/list.do", machineSeq);
-    
+
+    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(),
+        "/sys/mac/cal/{machineSeq}/list.do", machineSeq);
+
     if (list == null) {
       msg = ResponseMessage.NO_DATA;
     }
@@ -321,14 +329,13 @@ public class MacController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "시험장비 등록", notes = "")
   @PostMapping(value = "/insert.do")
-  public BasicResponse insert(
-      @RequestPart(value = "mac") MachineDTO req,
+  public BasicResponse insert(@RequestPart(value = "mac") MachineDTO req,
       @RequestPart(value = "macPic", required = false) MultipartFile macPic,
       @ModelAttribute MacCalDTO macCal) // 교정성적서 추가
-      
+
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -338,6 +345,7 @@ public class MacController {
     req.setInsMemId(user.getId());
     req.setUdtMemId(user.getId());
 
+    log.info(req.toString());
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -355,11 +363,44 @@ public class MacController {
     boolean result = false;
 
     try {
-      
+
       // 1) 파일 제외한 값으로 먼저 저장 (mgmtNo 확보)
       MachineDTO saved = macService.insertBase(req);
-      String mgmtCode = String.format("%s-%04d", "SB", saved.getMachineSeq());
-      
+      String mgmtCode = "";
+
+      if (!ObjectUtils.isEmpty(saved)) {
+        MachineDTO detail = new MachineDTO();
+        detail = macService.selectDetail(req.getMachineSeq());
+
+        log.info(detail.getMgmtOrg());
+        switch (detail.getMgmtOrg()) {
+          case "EI":
+          case "ES":
+            mgmtCode = "EMC";
+            break;
+
+          case "MD":
+            mgmtCode = "MEDICAL";
+            break;
+
+          case "ST":
+            mgmtCode = "SAFETY";
+            break;
+
+          case "RF":
+            mgmtCode = "RF";
+            break;
+
+          case "SR":
+            mgmtCode = "SAR";
+            break;
+
+          default:
+            mgmtCode = "ETC";
+        }
+        mgmtCode = mgmtCode.concat(String.format("%s-%04d", "/SB", saved.getMachineSeq()));
+      }
+
       // 파일삭제
       FileVO delFile = null;
       if (!ObjectUtils.isEmpty(req.getDelFileList())) {
@@ -367,69 +408,81 @@ public class MacController {
           delFile = new FileVO();
           delFile.setAtchFileId(del);
           delFile.setFileSn("0");
+          delFile.setCreatId(req.getUdtMemId());
           fileMngService.deleteFileInf(delFile);
-          
+
           // 장비테이블에서도 삭제
           macService.macCalDelete(req.getMachineSeq(), delFile);
         }
       }
-      
+
       String atchFileId = "";
       FileVO FileResult = null;
-      
+
       // 파일 수정
       if (!ObjectUtils.isEmpty(macCal.getUptFileList())) {
         for (MacCal uptMacCal : macCal.getUptFileList()) {
-          
+
           atchFileId = "";
           FileResult = null;
-          
+
           if (!ObjectUtils.isEmpty(uptMacCal.getFile())) {
-      
-            FileResult = fileUtil.parseFile(uptMacCal.getFile(), "", 0, "", "machine/".concat(mgmtCode));
+
+            FileResult = fileUtil.parseFile(uptMacCal.getFile(), "", 0, "",
+                "시험장비관리/".concat(mgmtCode).concat("/교정성적서"));
+
+            FileResult.setCreatId(req.getInsMemId());
             atchFileId = fileMngService.insertFileInf(FileResult);
             uptMacCal.setCalFile(atchFileId);
-    
+
           }
         }
       }
-      
+
       // 교정장비 신규등록
-      if (!ObjectUtils.isEmpty(macCal.getMacCal()) && !ObjectUtils.isEmpty(macCal.getMacCal().getFile())) {
-        FileResult = fileUtil.parseFile(macCal.getMacCal().getFile(), "", 0, "", "machine/".concat(mgmtCode));
+      if (!ObjectUtils.isEmpty(macCal.getMacCal())
+          && !ObjectUtils.isEmpty(macCal.getMacCal().getFile())) {
+        FileResult = fileUtil.parseFile(macCal.getMacCal().getFile(), "", 0, "",
+            "시험장비관리/".concat(mgmtCode).concat("/교정성적서"));
+
+        FileResult.setCreatId(req.getInsMemId());
         atchFileId = fileMngService.insertFileInf(FileResult);
         macCal.getMacCal().setCalFile(atchFileId);
       }
-      
+
       // 시험장비 사진
       if (!ObjectUtils.isEmpty(macPic)) {
-        FileResult = fileUtil.parseFile(macPic, "", 0, "", "machine/".concat(mgmtCode).concat("/PIC"));
+        FileResult =
+            fileUtil.parseFile(macPic, "", 0, "", "시험장비관리/".concat(mgmtCode).concat("/장비사진"));
+        FileResult.setCreatId(req.getInsMemId());
         atchFileId = fileMngService.insertFileInf(FileResult);
         req.setPhoto(atchFileId);
       } else {
-        
+
         // 시험장비 사진 삭제
         if ("Y".equals(req.getAtchFileDelYn())) {
           req.setPhoto("");
         }
       }
 
-      
+
       // 장비추가
       result = macService.insert(req, macCal);
-    
-      log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/insert.do", req);
-      
+
+      log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/insert.do",
+          req);
+
     } catch (Exception e) {
 
       msg = ResponseMessage.RETRY;
-      
+
       System.out.println(e);
       log.warn("{} :: 오류 발생", user.getId(), e);
     }
-    
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(req.getMachineSeq()).build();
+
+    BasicResponse res =
+        BasicResponse.builder().result(result).message(msg).data(req.getMachineSeq()).build();
 
     return res;
   }
@@ -449,9 +502,7 @@ public class MacController {
     req.setUdtMemId(user.getId());
 
 
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
+    log.info(req.toString());
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
@@ -471,6 +522,9 @@ public class MacController {
 
     result = macService.update(req);
     BasicResponse res = BasicResponse.builder().result(result).build();
+
+    log.info(ACC_MARKER, "User: {}, Method: {}, Request: {}", user.getId(), "/sys/mac/update.do",
+        req);
 
     return res;
   }

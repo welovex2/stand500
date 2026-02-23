@@ -1,5 +1,8 @@
 package egovframework.wrp.web;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +29,6 @@ import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.PagingVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SearchVO;
-import egovframework.cmm.util.EgovFileMngUtil;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -47,44 +49,45 @@ public class WrpController {
 
   @Resource(name = "WrpService")
   private WrpService wrpService;
-  
+
   @Resource(name = "MinIoFileMngUtil")
   private MinIoFileMngUtil fileUtil;
-  
+
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
-  
+
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
-  
+
   @ApiOperation(value = "주간 시험 결과 (작성시 화면)")
   @GetMapping(value = "/insert/detail.do")
   public BasicResponse insertDetail(
-      @ApiParam(value = "시험부서코드(공통코드:WT)", required = true) 
-      @RequestParam(value = "testTypeCode") String testTypeCode) throws Exception {
+      @ApiParam(value = "시험부서코드(공통코드:WT)",
+          required = true) @RequestParam(value = "testTypeCode") String testTypeCode)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
     String msg = "";
-    
+
     WeekRepDTO data = new WeekRepDTO();
     List<WeekResultDTO> detail = new ArrayList<WeekResultDTO>();
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       // 최종보고 전까지 실시간 집계
       detail = wrpService.getDetail(testTypeCode);
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
       }
-      
+
       // 전회차 보고서 피드백
       data.setTotalResult(detail);
       data.setFeedBack(wrpService.getFeedback(testTypeCode));
-      
+
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
@@ -94,37 +97,36 @@ public class WrpController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "주간 시험 결과 (보고서 Seq 있을때 화면)")
   @GetMapping(value = "/update/detail.do")
   public BasicResponse updateDetail(
-      @ApiParam(value = "보고서 Seq", required = true) 
-      @RequestParam(value = "wrSeq") int wrSeq) throws Exception {
+      @ApiParam(value = "보고서 Seq", required = true) @RequestParam(value = "wrSeq") int wrSeq)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
     String msg = "";
-    
+
     WeekRepDTO data = new WeekRepDTO();
     // 주간보고시 통계데이터
     List<WeekResultDTO> detail = new ArrayList<WeekResultDTO>();
-    
+
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
       WeekResultDTO.Req check = wrpService.checkReport(wrSeq);
-      
+
       // seq가 있으나 데이터가 없으면 오류
       if (check == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
-      } 
-      else {
+      } else {
         // 최종보고가 된 보고서인지 확인
         if (check != null && !check.isFixYn()) {
           // 최종보고 전까지 실시간 집계
           detail = wrpService.getDetail(check.getTestTypeCode());
-          data.setFeedBack(wrpService.getFeedback(check.getTestTypeCode())); 
+          data.setFeedBack(wrpService.getFeedback(check.getTestTypeCode()));
         } else {
           // 최종보고 후 저장데이터 호출
           detail = wrpService.getFixDetail(wrSeq, check.getTestTypeCode());
@@ -143,18 +145,18 @@ public class WrpController {
           return doc;
         }).collect(Collectors.toList());
         report.setFileList(docResult);
-        
-        
+
+
         // 작성내역등 추가데이터 호출
         data.setTotalResult(detail);
         data.setReport(report);
-        
+
         if (detail == null) {
           result = false;
           msg = ResponseMessage.NO_DATA;
         }
       }
-      
+
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
@@ -164,7 +166,7 @@ public class WrpController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "주간보고 저장", notes = "")
   @PostMapping("/insert.do")
   public BasicResponse insertBoardArticle(
@@ -188,32 +190,28 @@ public class WrpController {
 
     // 파일이 있을때만 처리
     if (!ObjectUtils.isEmpty(files)) {
-      
+
       // 폴더명 얻기
-      String typeName = "";
-//      if (req.getWrSeq() == 0) {
-        typeName = testTypeConvert(req.getTestTypeCode());
-//      } else {
-//        WeekResultDTO.Req check = wrpService.checkReport(req.getWrSeq());
-//        typeName = testTypeConvert(check.getTestTypeCode());
-//      }
+      String typeName = LocalDate.now(ZoneId.of("Asia/Seoul"))
+          .format(DateTimeFormatter.ofPattern("yyyy")).concat("년");
 
       // 신규
       if (StringUtils.isEmpty((req.getAtchFileId()))) {
-        FileResult = fileUtil.parseFile(files, "", 0, atchFileId, "week/".concat(typeName));
-        atchFileId = fileMngService.insertFileInfs(FileResult);
+        FileResult = fileUtil.parseFile(files, "", 0, atchFileId, "주간보고/".concat(typeName));
+        atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
         req.setAtchFileId(atchFileId);
-      } 
+      }
       // 수정
       else {
         // 현재 등록된 파일 수 가져오기
         FileVO fvo = new FileVO();
         fvo.setAtchFileId(req.getAtchFileId());
         int cnt = fileMngService.getMaxFileSN(fvo);
-        
+
         // 추가파일 등록
-        List<FileVO> _result = fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "week/".concat(typeName));
-        fileMngService.updateFileInfs(_result);
+        List<FileVO> _result =
+            fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "주간보고/".concat(typeName));
+        fileMngService.updateFileInfs(_result, req.getInsMemId());
       }
 
     }
@@ -226,13 +224,14 @@ public class WrpController {
         delFile = new FileVO();
         delFile.setAtchFileId(del.getAtchFileId());
         delFile.setFileSn(del.getFileSn());
+        delFile.setCreatId(req.getUdtMemId());
         fileMngService.deleteFileInf(delFile);
       }
     }
-    
+
     // 게시글 저장 or 업데이트
     try {
-      
+
       if (req.getWrSeq() == 0) {
 
         if (StringUtils.isEmpty(req.getTestTypeCode())) {
@@ -241,54 +240,55 @@ public class WrpController {
           BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
           return res;
-        } 
-        
+        }
+
         result = wrpService.insert(req);
-      }
-      else
+      } else
         result = wrpService.update(req);
-      
+
     } catch (Exception e) {
 
       msg = ResponseMessage.RETRY;
 
     }
 
-    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(req.getWrSeq()).build();
+    BasicResponse res =
+        BasicResponse.builder().result(result).message(msg).data(req.getWrSeq()).build();
     return res;
   }
-  
+
   @ApiOperation(value = "게시판 목록", notes = "검색코드\n23 시험부, 2 보고자, 20  최종보고일")
   @GetMapping("/list.do")
-  public BasicResponse<BoardVO> selectList(@ModelAttribute ComParam param)
-      throws Exception {
+  public BasicResponse<BoardVO> selectList(@ModelAttribute ComParam param) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     boolean result = true;
     String msg = "";
 
     List<WeekRep> list = new ArrayList<WeekRep>();
-    
+
     /**
      * OR 조건 검색 처리
      */
     // 같은 CODE로 그룹핑
     if (!ObjectUtils.isEmpty(param.getSearchVO())) {
-      Map<String, List<SearchVO>> reSearch = param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
-      
+      Map<String, List<SearchVO>> reSearch =
+          param.getSearchVO().stream().collect(Collectors.groupingBy(SearchVO::getSearchCode));
+
       SearchVO newSearch = new SearchVO();
       // 시험부
       if (reSearch.get("23") != null) {
         newSearch = new SearchVO();
         newSearch.setSearchCode("23");
-        newSearch.setSearchWords(reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
+        newSearch.setSearchWords(
+            reSearch.get("23").stream().map(m -> m.getSearchWord()).collect(Collectors.toList()));
         param.getSearchVO().add(newSearch);
       }
     }
     /**
      * -- END OR 조건 검색 처리
      */
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -316,7 +316,7 @@ public class WrpController {
         BasicResponse.builder().result(result).message(msg).data(list).paging(pagingVO).build();
     return res;
   }
-  
+
   @ApiOperation(value = "최종보고 완료하기", notes = "wrSeq:시험고유항목, memo:피드백내용")
   @PostMapping(value = "/fix/insert.do")
   public BasicResponse fixInsert(@RequestBody WeekResultDTO.Req req) throws Exception {
@@ -330,7 +330,7 @@ public class WrpController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       result = wrpService.updateFix(req);
     } else {
       result = false;
@@ -341,7 +341,7 @@ public class WrpController {
 
     return res;
   }
-  
+
   @ApiOperation(value = "보고서 삭제", notes = "wrSeq:시험고유항목")
   @PostMapping(value = "/delete.do")
   public BasicResponse delete(@RequestBody WeekResultDTO.Req req) throws Exception {
@@ -355,7 +355,7 @@ public class WrpController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       // 최종보고가 완료된건은 삭제 불가
       WeekRep report = wrpService.getReport(req.getWrSeq());
       if (report.getWrCnt() != 0) {
@@ -364,7 +364,7 @@ public class WrpController {
         BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
         return res;
       }
-      
+
       result = wrpService.delete(req);
     } else {
       result = false;
@@ -375,7 +375,7 @@ public class WrpController {
 
     return res;
   }
-  
+
   /**
    * XSS 방지 처리.
    *
@@ -406,19 +406,19 @@ public class WrpController {
 
     return ret;
   }
-  
+
 
   private static final Map<String, String> TEST_TYPE_MAP = new HashMap<>();
 
   static {
-      TEST_TYPE_MAP.put("EM", "EMC");
-      TEST_TYPE_MAP.put("RS", "RF&SAR");
-      TEST_TYPE_MAP.put("SF", "SAFETY&효율신뢰");
-      TEST_TYPE_MAP.put("MD", "MEDICAL");
+    TEST_TYPE_MAP.put("EM", "EMC");
+    TEST_TYPE_MAP.put("RS", "RF&SAR");
+    TEST_TYPE_MAP.put("SF", "SAFETY&효율신뢰");
+    TEST_TYPE_MAP.put("MD", "MEDICAL");
   }
 
   public static String testTypeConvert(String testTypeCode) {
-      return TEST_TYPE_MAP.getOrDefault(testTypeCode, "UNKNOWN");
+    return TEST_TYPE_MAP.getOrDefault(testTypeCode, "UNKNOWN");
   }
-      
+
 }

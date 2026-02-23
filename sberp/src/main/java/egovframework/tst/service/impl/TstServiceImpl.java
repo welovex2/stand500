@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
+import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.ncc.service.NextcloudShareService;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
@@ -38,6 +39,9 @@ public class TstServiceImpl implements TstService {
   @Autowired
   NextcloudShareService nextcloudShareService;
 
+  @Autowired
+  NextcloudFolderService nextcloudFolderService;
+
   @Override
   public List<TestCate> selectCrtfList(int topCode) {
     return tstMapper.selectCrtfList(topCode);
@@ -54,8 +58,218 @@ public class TstServiceImpl implements TstService {
   }
 
   @Override
-  public boolean insert(Req req) {
-    return tstMapper.insert(req);
+  @Transactional
+  public boolean insert(Req req) throws Exception {
+
+    // 1. 별도의 쿼리로 testNo를 먼저 계산해서 객체에 담음
+    int nextNo = tstMapper.selectNextTestNo(req);
+    req.setTestNo(nextNo);
+
+    boolean result = tstMapper.insert(req);
+
+    // insert 실패면 중단
+    if (!result) {
+      return false;
+    }
+
+    // insert 후 시험ID 확보
+    int testNo = req.getTestNo();
+    String testTypeCode = req.getTestTypeCode();
+
+    // 1) TEST_TYPE_CODE 변환 (NS → SF)
+    String type = "NS".equals(testTypeCode) ? "SF" : testTypeCode;
+
+    // 2) TEST_NO 4자리 0패딩
+    String paddedTestNo = String.format("%04d", testNo);
+
+    // testSeq로 ERP DB에서 Nextcloud 경로/대상유저 조회
+    String g = tstMapper.selectNcGrantByApplyNo(req.getTestSeq());
+
+    // 최상위 폴더 경로
+    String basePath = g + "/" + type + paddedTestNo;
+
+    // Nextcloud 폴더 생성
+    nextcloudFolderService.ensureFolder(basePath);
+
+    // typeCode별 하위 폴더 구조 생성
+    createSubFolders(basePath, type);
+
+    return true;
+  }
+
+  /**
+   * typeCode별 하위 폴더 구조 생성
+   * @throws Exception 
+   */
+  private void createSubFolders(String basePath, String type) throws Exception {
+    switch (type) {
+      case "EM":
+        createEmFolders(basePath);
+        break;
+      case "RF":
+        createRfFolders(basePath);
+        break;
+      case "SR":
+        createSrFolders(basePath);
+        break;
+      case "SF":
+        createSfFolders(basePath);
+        break;
+      case "MD":
+        createMdFolders(basePath);
+        break;
+      default:
+        // 최상위 폴더만 생성 (이미 위에서 생성됨)
+        break;
+    }
+  }
+
+  /**
+   * EM 폴더 구조
+   * ├── 01.성적서
+   * ├── 02.데이터
+   * │   ├── 측정데이터
+   * │   └── Raw-Data
+   * ├── 03.시험사진
+   * │   └── 정전기포인트
+   * └── 04.참고자료
+   * @throws Exception 
+   */
+  private void createEmFolders(String basePath) throws Exception {
+    // 1뎁스
+    nextcloudFolderService.ensureFolder(basePath + "/01.성적서");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/03.시험사진");
+    nextcloudFolderService.ensureFolder(basePath + "/04.참고자료");
+
+    // 2뎁스 - 02.데이터 하위
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/측정데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/Raw-Data");
+
+    // 2뎁스 - 03.시험사진 하위
+    nextcloudFolderService.ensureFolder(basePath + "/03.시험사진/정전기포인트");
+  }
+
+  /**
+   * RF 폴더 구조
+   * ├── 01.성적서
+   * ├── 02.데이터
+   * │   ├── 측정데이터
+   * │   ├── Raw-Data
+   * │   └── 환경차트
+   * ├── 03.시험사진
+   * └── 04.참고자료
+   *     ├── 안테나사양서
+   *     ├── 사용자설명서
+   *     └── 회로도
+   * @throws Exception 
+   */
+  private void createRfFolders(String basePath) throws Exception {
+    // 1뎁스
+    nextcloudFolderService.ensureFolder(basePath + "/01.성적서");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/03.시험사진");
+    nextcloudFolderService.ensureFolder(basePath + "/04.참고자료");
+
+    // 2뎁스 - 02.데이터 하위
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/측정데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/Raw-Data");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/환경차트");
+
+    // 2뎁스 - 04.참고자료 하위
+    nextcloudFolderService.ensureFolder(basePath + "/04.참고자료/안테나사양서");
+    nextcloudFolderService.ensureFolder(basePath + "/04.참고자료/사용자설명서");
+    nextcloudFolderService.ensureFolder(basePath + "/04.참고자료/회로도");
+  }
+
+  /**
+   * SAR 폴더 구조
+   * ├── 01.성적서
+   * ├── 02.데이터
+   * │   ├── 01.Conducted Power
+   * │   │   └── Template
+   * │   ├── 02.Liquid
+   * │   ├── 03.Plot
+   * │   ├── 04.Worksheet Template
+   * │   └── 05.Raw data
+   * │       ├── VALIDATION
+   * │       └── PHONE
+   * ├── 03.시험사진
+   * └── 04.참고자료
+   * @throws Exception 
+   */
+  private void createSrFolders(String basePath) throws Exception {
+    // 1뎁스
+    nextcloudFolderService.ensureFolder(basePath + "/01.성적서");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/03.시험사진");
+    nextcloudFolderService.ensureFolder(basePath + "/04.참고자료");
+
+    // 2뎁스 - 02.데이터 하위
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/01.Conducted Power");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/02.Liquid");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/03.Plot");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/04.Worksheet Template");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/05.Raw data");
+
+    // 3뎁스 - 01.Conducted Power 하위
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/01.Conducted Power/Template");
+
+    // 3뎁스 - 05.Raw data 하위
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/05.Raw data/VALIDATION");
+    nextcloudFolderService.ensureFolder(basePath + "/02.데이터/05.Raw data/PHONE");
+  }
+
+  /**
+  * SAFETY 폴더 구조
+  * ├── 01.성적서
+  * ├── 02.이력보관용
+  * ├── 03.기술문서
+  * ├── 04.부품
+  * ├── 05.시험데이터
+  * └── 06.제출서류
+  *     └── KTC
+   * @throws Exception 
+  */
+  private void createSfFolders(String basePath) throws Exception {
+    // 1뎁스
+    nextcloudFolderService.ensureFolder(basePath + "/01.성적서");
+    nextcloudFolderService.ensureFolder(basePath + "/02.이력보관용");
+    nextcloudFolderService.ensureFolder(basePath + "/03.기술문서");
+    nextcloudFolderService.ensureFolder(basePath + "/04.부품");
+    nextcloudFolderService.ensureFolder(basePath + "/05.시험데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/06.제출서류");
+
+    // 2뎁스 - 06.제출서류 하위
+    nextcloudFolderService.ensureFolder(basePath + "/06.제출서류/KTC");
+  }
+
+  /**
+  * MEDICAL 폴더 구조
+  * ├── 01.성적서
+  * ├── 02.이력보관용
+  * ├── 03.기술문서
+  * ├── 04.부품
+  * ├── 05.시험데이터
+  * ├── 06.검토 [기술책임자 검토]
+  * └── 07.제출서류
+  *     ├── 식약처
+  *     └── CB
+   * @throws Exception 
+  */
+  private void createMdFolders(String basePath) throws Exception {
+    // 1뎁스
+    nextcloudFolderService.ensureFolder(basePath + "/01.성적서");
+    nextcloudFolderService.ensureFolder(basePath + "/02.이력보관용");
+    nextcloudFolderService.ensureFolder(basePath + "/03.기술문서");
+    nextcloudFolderService.ensureFolder(basePath + "/04.부품");
+    nextcloudFolderService.ensureFolder(basePath + "/05.시험데이터");
+    nextcloudFolderService.ensureFolder(basePath + "/06.검토 [기술책임자 검토]");
+    nextcloudFolderService.ensureFolder(basePath + "/07.제출서류");
+
+    // 2뎁스 - 07.제출서류 하위
+    nextcloudFolderService.ensureFolder(basePath + "/07.제출서류/식약처");
+    nextcloudFolderService.ensureFolder(basePath + "/07.제출서류/CB");
   }
 
   @Override

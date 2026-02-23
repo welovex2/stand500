@@ -84,7 +84,8 @@ public class MacServiceImpl implements MacService {
   public boolean insert(MachineDTO req, MacCalDTO macCal) {
 
     // 파일정보 추가
-    if (!ObjectUtils.isEmpty(req.getPhoto())) {
+    if (req.getPhoto() != null) {
+      // 사진만 삭제한 경우, photo가 '' 이므로 조건문에 isEmpty 사용하지 않음
       macMapper.updateMachineFile(req);
     }
 

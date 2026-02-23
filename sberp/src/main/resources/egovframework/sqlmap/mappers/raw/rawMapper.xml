@@ -523,6 +523,25 @@
 		    1 = 1
 		AND TEST_TB.TEST_SEQ = #{testSeq}    
 	</select>
+	
+	<select id="findByNcFolderPath" parameterType="int" resultType="egovframework.cmm.service.SbkInfoVO">
+		SELECT
+			NC_FOLDER_PATH AS ncFolderPath,
+			CONCAT (TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testNo
+		FROM
+		    TEST_TB
+			
+			INNER JOIN TEST_ITEM_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+		    LEFT JOIN TEST_TB orgTest ON orgTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+		    
+		    INNER JOIN JOB_TB ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM 
+			AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM 
+			AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+		    
+		WHERE 1=1
+		AND TEST_TB.TEST_SEQ = #{testSeq}	
+	</select>
 		
 	<select id="detail" parameterType="rawSearchDTO" resultType="rawData">
 		SELECT
@@ -533,6 +552,7 @@
 		    SBK_NO,
 		    CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
+		    NC_FOLDER_PATH AS ncFolderPath,
 		    TEST_TB.TEST_SEQ,
 		    /* 고정 > 신청인 */
 		    JOB_TB.CMPY_NAME APLCN,

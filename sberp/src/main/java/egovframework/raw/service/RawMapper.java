@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.SbkInfoVO;
 import egovframework.raw.dto.FileRawDTO;
 import egovframework.raw.dto.InfoDTO;
 import egovframework.raw.dto.RawSearchDTO;
@@ -98,4 +99,6 @@ public interface RawMapper {
   public List<Test> reportDetail(int rawSeq);
 
   public RawData labelDetail(RawSearchDTO req);
+
+  public SbkInfoVO findByNcFolderPath(int testSeq);
 }
