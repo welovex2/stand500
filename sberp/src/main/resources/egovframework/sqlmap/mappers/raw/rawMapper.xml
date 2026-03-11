@@ -1304,51 +1304,97 @@
 	        UNION ALL
 	
 	        /* RE - HZ1 / HZ2 / HZ3 컬럼 분리 */
-	        SELECT STR_TO_DATE(
-	            CONCAT(HZ1_MSRMN_YEAR, '-', LPAD(HZ1_MSRMN_MON, 2, '0'), '-', LPAD(HZ1_MSRMN_DAY, 2, '0')),
-	            '%Y-%m-%d'
-	        )
-	        FROM METHOD_RE_TB
-	        WHERE RAW_SEQ = #{rawSeq}
-	          AND HZ1_MSRMN_YEAR > 0 AND HZ1_MSRMN_MON > 0 AND HZ1_MSRMN_DAY > 0
-	          AND EXISTS (
-	              SELECT 1 FROM RAW_MET_TB
-	              WHERE RAW_SEQ = #{rawSeq}
-	                AND MET_SEQ = 15
-	                AND CHECK_YN = 1
-	          )
-          
-	        UNION ALL
-	
-	        SELECT STR_TO_DATE(
-	            CONCAT(HZ2_MSRMN_YEAR, '-', LPAD(HZ2_MSRMN_MON, 2, '0'), '-', LPAD(HZ2_MSRMN_DAY, 2, '0')),
-	            '%Y-%m-%d'
-	        )
-	        FROM METHOD_RE_TB
-	        WHERE RAW_SEQ = #{rawSeq}
-	          AND HZ2_MSRMN_YEAR > 0 AND HZ2_MSRMN_MON > 0 AND HZ2_MSRMN_DAY > 0
-	          AND EXISTS (
-	              SELECT 1 FROM RAW_MET_TB
-	              WHERE RAW_SEQ = #{rawSeq}
-	                AND MET_SEQ = 4
-	                AND CHECK_YN = 1
-	          )
-          	
-	        UNION ALL
-	
-	        SELECT STR_TO_DATE(
-	            CONCAT(HZ3_MSRMN_YEAR, '-', LPAD(HZ3_MSRMN_MON, 2, '0'), '-', LPAD(HZ3_MSRMN_DAY, 2, '0')),
-	            '%Y-%m-%d'
-	        )
-	        FROM METHOD_RE_TB
-	        WHERE RAW_SEQ = #{rawSeq}
-	          AND HZ3_MSRMN_YEAR > 0 AND HZ3_MSRMN_MON > 0 AND HZ3_MSRMN_DAY > 0
-	          AND EXISTS (
-	              SELECT 1 FROM RAW_MET_TB
-	              WHERE RAW_SEQ = #{rawSeq}
-	                AND MET_SEQ = 5
-	                AND CHECK_YN = 1
-	          )
+/* RE HZ1 */
+SELECT STR_TO_DATE(
+    CONCAT(HZ1_MSRMN_YEAR, '-', LPAD(HZ1_MSRMN_MON,2,'0'), '-', LPAD(HZ1_MSRMN_DAY,2,'0')),
+    '%Y-%m-%d'
+)
+FROM METHOD_RE_TB re
+WHERE re.RAW_SEQ = #{rawSeq}
+  AND HZ1_MSRMN_YEAR > 0 AND HZ1_MSRMN_MON > 0 AND HZ1_MSRMN_DAY > 0
+  AND EXISTS (
+      SELECT 1 FROM RAW_MET_TB rmt
+      WHERE rmt.RAW_SEQ = #{rawSeq}
+        AND CHECK_YN = 1
+        AND (
+            /* 규격 7,686,774,775 : HZ1 = MET_SEQ 15 */
+            (rmt.MET_SEQ = 15 AND EXISTS (
+                SELECT 1 FROM RAW_TB r
+                INNER JOIN TEST_TB tt ON r.TEST_SEQ = tt.TEST_SEQ
+                INNER JOIN TEST_ITEM_TB tit ON tt.TEST_ITEM_SEQ = tit.TEST_ITEM_SEQ
+                WHERE r.RAW_SEQ = #{rawSeq}
+                  AND tit.TEST_STNDR_SEQ IN (7, 686, 774, 775)
+            ))
+            OR
+            /* 그 외 규격 : HZ1 = MET_SEQ 4 */
+            (rmt.MET_SEQ = 4 AND NOT EXISTS (
+                SELECT 1 FROM RAW_TB r
+                INNER JOIN TEST_TB tt ON r.TEST_SEQ = tt.TEST_SEQ
+                INNER JOIN TEST_ITEM_TB tit ON tt.TEST_ITEM_SEQ = tit.TEST_ITEM_SEQ
+                WHERE r.RAW_SEQ = #{rawSeq}
+                  AND tit.TEST_STNDR_SEQ IN (7, 686, 774, 775)
+            ))
+        )
+  )
+
+UNION ALL
+
+/* RE HZ2 */
+SELECT STR_TO_DATE(
+    CONCAT(HZ2_MSRMN_YEAR, '-', LPAD(HZ2_MSRMN_MON,2,'0'), '-', LPAD(HZ2_MSRMN_DAY,2,'0')),
+    '%Y-%m-%d'
+)
+FROM METHOD_RE_TB re
+WHERE re.RAW_SEQ = #{rawSeq}
+  AND HZ2_MSRMN_YEAR > 0 AND HZ2_MSRMN_MON > 0 AND HZ2_MSRMN_DAY > 0
+  AND EXISTS (
+      SELECT 1 FROM RAW_MET_TB rmt
+      WHERE rmt.RAW_SEQ = #{rawSeq}
+        AND CHECK_YN = 1
+        AND (
+            /* 규격 7,686,774,775 : HZ2 = MET_SEQ 4 */
+            (rmt.MET_SEQ = 4 AND EXISTS (
+                SELECT 1 FROM RAW_TB r
+                INNER JOIN TEST_TB tt ON r.TEST_SEQ = tt.TEST_SEQ
+                INNER JOIN TEST_ITEM_TB tit ON tt.TEST_ITEM_SEQ = tit.TEST_ITEM_SEQ
+                WHERE r.RAW_SEQ = #{rawSeq}
+                  AND tit.TEST_STNDR_SEQ IN (7, 686, 774, 775)
+            ))
+            OR
+            /* 그 외 규격 : HZ2 = MET_SEQ 5 */
+            (rmt.MET_SEQ = 5 AND NOT EXISTS (
+                SELECT 1 FROM RAW_TB r
+                INNER JOIN TEST_TB tt ON r.TEST_SEQ = tt.TEST_SEQ
+                INNER JOIN TEST_ITEM_TB tit ON tt.TEST_ITEM_SEQ = tit.TEST_ITEM_SEQ
+                WHERE r.RAW_SEQ = #{rawSeq}
+                  AND tit.TEST_STNDR_SEQ IN (7, 686, 774, 775)
+            ))
+        )
+  )
+
+UNION ALL
+
+/* RE HZ3 : 규격 7,686,774,775 일때만 MET_SEQ 5, 그 외 규격은 HZ3 없으므로 무시 */
+SELECT STR_TO_DATE(
+    CONCAT(HZ3_MSRMN_YEAR, '-', LPAD(HZ3_MSRMN_MON,2,'0'), '-', LPAD(HZ3_MSRMN_DAY,2,'0')),
+    '%Y-%m-%d'
+)
+FROM METHOD_RE_TB re
+WHERE re.RAW_SEQ = #{rawSeq}
+  AND HZ3_MSRMN_YEAR > 0 AND HZ3_MSRMN_MON > 0 AND HZ3_MSRMN_DAY > 0
+  AND EXISTS (
+      SELECT 1 FROM RAW_TB r
+      INNER JOIN TEST_TB tt ON r.TEST_SEQ = tt.TEST_SEQ
+      INNER JOIN TEST_ITEM_TB tit ON tt.TEST_ITEM_SEQ = tit.TEST_ITEM_SEQ
+      WHERE r.RAW_SEQ = #{rawSeq}
+        AND tit.TEST_STNDR_SEQ IN (7, 686, 774, 775)
+  )
+  AND EXISTS (
+      SELECT 1 FROM RAW_MET_TB rmt
+      WHERE rmt.RAW_SEQ = #{rawSeq}
+        AND rmt.MET_SEQ = 5
+        AND CHECK_YN = 1
+  )
           	
 	        UNION ALL
 	

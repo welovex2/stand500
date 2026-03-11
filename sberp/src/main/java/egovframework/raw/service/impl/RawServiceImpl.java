@@ -1153,29 +1153,32 @@ public class RawServiceImpl implements RawService {
     if (ObjectUtils.isEmpty(macList))
       return;
 
+    // 날짜 조합 오류는 별도로 먼저 처리
+    LocalDate measurementDate;
+
     try {
 
       // 측정일 조합
-      LocalDate measurementDate = LocalDate.of(year, mon, day);
-
-      List<RawMac> insertedMacList = methodMapper.selectReformDate(rawSeq, macType);
-
-      for (RawMac mac : insertedMacList) {
-
-        if (mac.getReformDt() != null) {
-          LocalDate reformDate = LocalDate.parse(mac.getReformDt());
-          if (reformDate.isBefore(measurementDate)) {
-            String msg = String.format("장비 %d는 개조일(%s)이 측정일(%s)보다 빠릅니다. 저장 중단.",
-                mac.getMachineSeq(), reformDate, measurementDate);
-            System.out.println(msg);
-            throw new IllegalArgumentException("시험 장비의 차기 교정일을 확인해 주세요.");
-          }
-        }
-
-      }
+      measurementDate = LocalDate.of(year, mon, day);
 
     } catch (DateTimeException e) {
       log.warn("장비 측정일 조합 중 날짜 오류 발생 - year={}, month={}, day={}", year, mon, day);
+      return; // 날짜 자체가 잘못된 경우만 여기서 처리
+    }
+
+    List<RawMac> insertedMacList = methodMapper.selectReformDate(rawSeq, macType);
+
+    for (RawMac mac : insertedMacList) {
+
+      if (mac.getReformDt() != null) {
+        LocalDate reformDate = LocalDate.parse(mac.getReformDt());
+        if (reformDate.isBefore(measurementDate)) {
+          String msg = String.format("장비 %d는 개조일(%s)이 측정일(%s)보다 빠릅니다. 저장 중단.", mac.getMachineSeq(),
+              reformDate, measurementDate);
+          System.out.println(msg);
+          throw new IllegalArgumentException("시험 장비의 차기 교정일을 확인해 주세요.");
+        }
+      }
 
     }
 
