@@ -73,11 +73,8 @@ public class RawServiceImpl implements RawService {
   @Autowired
   EgovPropertyService propertyService;
 
-<<<<<<< HEAD
   @Autowired
   private NextcloudDavService nextcloudDavService;
-=======
->>>>>>> dev/#26-2
 
   @Override
   @Transactional
@@ -479,19 +476,10 @@ public class RawServiceImpl implements RawService {
         for (FileVO item : modResult) {
           PicDTO map = new PicDTO();
 
-<<<<<<< HEAD
           FileVO photoVO = fileMngService.selectFileInf(item);
 
           map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
-=======
-          // if ("CDN".contentEquals(item.getFileLoc())) {
-          // map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-          // .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          // } else {
-          map.setImageUrl(propertyService.getString("img.url").concat(detail.getModUrl())
-              .concat("&fileSn=").concat(item.getFileSn()));
-          // }
->>>>>>> dev/#26-2
+
           map.setFileSn(item.getFileSn());
 
           modList.add(map);
@@ -517,18 +505,7 @@ public class RawServiceImpl implements RawService {
           FileVO photoVO = fileMngService.selectFileInf(item);
 
           map.setTitle(item.getFileCn());
-<<<<<<< HEAD
           map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
-=======
-
-          // if ("CDN".contentEquals(item.getFileLoc())) {
-          // map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-          // .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-          // } else {
-          map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
-              .concat("&fileSn=").concat(item.getFileSn()));
-          // }
->>>>>>> dev/#26-2
           map.setFileSn(item.getFileSn());
 
           setupList.add(map);
@@ -593,11 +570,8 @@ public class RawServiceImpl implements RawService {
       }
     }
 
-<<<<<<< HEAD
-=======
     recalcAndUpdateTestDtRange(req.getRawSeq());
 
->>>>>>> dev/#26-2
     return result;
   }
 
@@ -813,11 +787,8 @@ public class RawServiceImpl implements RawService {
       }
     }
 
-<<<<<<< HEAD
-=======
     recalcAndUpdateTestDtRange(req.getRawSeq());
 
->>>>>>> dev/#26-2
     return result;
 
   }
@@ -858,11 +829,8 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-<<<<<<< HEAD
-=======
     recalcAndUpdateTestDtRange(req.getRawSeq());
 
->>>>>>> dev/#26-2
     return result;
 
   }
@@ -907,11 +875,8 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-<<<<<<< HEAD
-=======
     recalcAndUpdateTestDtRange(req.getRawSeq());
 
->>>>>>> dev/#26-2
     return result;
 
   }
@@ -985,11 +950,8 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-<<<<<<< HEAD
-=======
     recalcAndUpdateTestDtRange(req.getRawSeq());
 
->>>>>>> dev/#26-2
     return result;
 
   }
@@ -1024,11 +986,8 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-<<<<<<< HEAD
-=======
     recalcAndUpdateTestDtRange(req.getRawSeq());
 
->>>>>>> dev/#26-2
     return result;
 
   }
@@ -1211,41 +1170,14 @@ public class RawServiceImpl implements RawService {
       String macType) {
     if (ObjectUtils.isEmpty(macList))
       return;
-<<<<<<< HEAD
-=======
 
     // 날짜 조합 오류는 별도로 먼저 처리
     LocalDate measurementDate;
->>>>>>> dev/#26-2
 
     try {
 
       // 측정일 조합
-<<<<<<< HEAD
-      LocalDate measurementDate = LocalDate.of(year, mon, day);
 
-      List<RawMac> insertedMacList = methodMapper.selectReformDate(rawSeq, macType);
-
-      for (RawMac mac : insertedMacList) {
-
-        if (mac.getReformDt() != null) {
-          LocalDate reformDate = LocalDate.parse(mac.getReformDt());
-          if (reformDate.isBefore(measurementDate)) {
-            String msg = String.format("장비 %d는 개조일(%s)이 측정일(%s)보다 빠릅니다. 저장 중단.",
-                mac.getMachineSeq(), reformDate, measurementDate);
-            System.out.println(msg);
-            throw new IllegalArgumentException("시험 장비의 차기 교정일을 확인해 주세요.");
-          }
-        }
-
-      }
-
-    } catch (DateTimeException e) {
-      log.warn("장비 측정일 조합 중 날짜 오류 발생 - year={}, month={}, day={}", year, mon, day);
-
-    }
-
-=======
       measurementDate = LocalDate.of(year, mon, day);
 
     } catch (DateTimeException e) {
@@ -1269,7 +1201,6 @@ public class RawServiceImpl implements RawService {
 
     }
 
->>>>>>> dev/#26-2
   }
 
   private int[] extractMeasurementDate(ReDTO req) {
@@ -1285,17 +1216,17 @@ public class RawServiceImpl implements RawService {
     }
   }
 
-<<<<<<< HEAD
   @Override
   public SbkInfoVO findByNcFolderPath(int testSeq) {
 
     return rawMapper.findByNcFolderPath(testSeq);
-=======
+  }
+
   /**
-   * insert/update 후 호출.
-   * rawSeq 기준으로 모든 측정 테이블의 날짜를 재조회해
-   * TEST_S_DT(MIN), TEST_E_DT(MAX)를 다시 계산하여 업데이트한다.
-   */
+  * insert/update 후 호출.
+  * rawSeq 기준으로 모든 측정 테이블의 날짜를 재조회해
+  * TEST_S_DT(MIN), TEST_E_DT(MAX)를 다시 계산하여 업데이트한다.
+  */
   private void recalcAndUpdateTestDtRange(int rawSeq) {
     if (rawSeq == 0)
       return;
@@ -1311,6 +1242,5 @@ public class RawServiceImpl implements RawService {
       return;
 
     rawMapper.updateTestDtRange(rawSeq, startDt, endDt);
->>>>>>> dev/#26-2
   }
 }
