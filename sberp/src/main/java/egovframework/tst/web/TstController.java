@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import egovframework.cmm.code.TestStateCode;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.LoginVO;
@@ -357,6 +358,28 @@ public class TstController {
         msg = ResponseMessage.CHECK_RATE_SUM;
       } else {
         result = tstService.testMemInsert(req);
+
+        // 메인시험원이 존재하는 경우 시험상태 업데이트
+        boolean hasMainMngr = req.getItems().stream()
+            .anyMatch(t -> 1 == t.getTestMngrSeq() && !StringUtils.isEmpty(t.getTestMngId()));
+
+        if (hasMainMngr) {
+          // 상태가 없을때만 상태 업데이트
+          TestDTO.Res testState = tstService.checkTestState(req.getTestSeq());
+
+          if (testState == null) {
+            TestDTO.Req stateReq = new TestDTO.Req();
+
+            stateReq.setTestSeq(req.getTestSeq());
+            stateReq.setStateCode(TestStateCode.RECEIPT.getCode());
+            stateReq.setInsMemId(req.getInsMemId());
+            stateReq.setMemo("시스템 자동변경");
+
+            tstService.testStateInsert(stateReq); // 시험상태 업데이트 서비스 호출
+          }
+
+        }
+
       }
 
     } else {

@@ -1551,7 +1551,6 @@ public class RawController {
 
     log.info(RD_MARKER, req.toString());
 
-
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
     Validator validator = validatorFactory.getValidator();
 
@@ -1909,7 +1908,6 @@ public class RawController {
 
 
     log.info(RD_MARKER, req.toString());
-    log.info(RD_MARKER, pic.toString());
 
 
     ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
@@ -2030,10 +2028,6 @@ public class RawController {
 
           }
         }
-
-        rawService.insertImg(req);
-
-        // 파일삭제 - 해당없음 리스트용도
         FileVO delFile = null;
         if (req.getPicYn() == 0 && !ObjectUtils.isEmpty(delFileList)) {
           for (FileVO del : delFileList) {

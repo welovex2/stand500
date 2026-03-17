@@ -4,7 +4,7 @@
 
 	<select id="isCnfrmDt" parameterType="List" resultType="int">
 		select 
-			sum(if(SLS_TB.CNFRM_DT is null,0,1))
+			CASE WHEN SUM(IF(SLS_TB.CNFRM_DT IS NULL, 0, 1)) > 0 THEN 1 ELSE 0 END
 		from QUO_TB
 			left join SLS_TB
 		    on QUO_TB.QUO_SEQ = SLS_TB.QUO_SEQ
