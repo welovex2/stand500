@@ -102,5 +102,12 @@
 	        <bean class="egovframework.cmm.filter.AuthInterceptor" />
 	    </mvc:interceptor>
 	</mvc:interceptors>
+	
+	<mvc:interceptors>
+	    <mvc:interceptor>
+	        <mvc:mapping path="/**/*.do" />
+	        <bean class="egovframework.cmm.filter.ApiLogInterceptor" />
+	    </mvc:interceptor>
+	</mvc:interceptors>
 
 </beans>

@@ -77,6 +77,11 @@ public class Member {
   private int mngYn;
   
   
+  @ApiModelProperty(value = "보안문서권한 여부 ", example = "")
+  @Column
+  private int secretYn;
+  
+  
   @ApiModelProperty(value = "email ", example = "")
   @Column
   private String email;

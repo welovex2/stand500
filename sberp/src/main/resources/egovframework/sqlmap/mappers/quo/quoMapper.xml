@@ -139,8 +139,23 @@
 
 	<sql id="whereList">
 		
-		/* 보안견적서 */
-		<if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, JOB_TB.MNG_ID = #{memId}, 1)</if>
+	    /* 보안견적서 */
+	    <if test="secretYn == 0">  
+	    	AND IF(
+		      JOB_TB.SECRET_YN = 1,
+		      (
+		        #{memId} IN (JOB_TB.MNG_ID)
+		        OR EXISTS (
+		          SELECT 1
+		          FROM MEMBER_TB M
+		          WHERE M.ID = #{memId}
+		            AND M.SECRET_YN = 1
+		        )
+		      ),
+		      1
+			)
+		</if>
+		
 		<if test="searchVO != null">
 	        <foreach collection="searchVO" item="item" separator="">
 	       
@@ -921,7 +936,22 @@
             
         WHERE 1=1
         
-        <if test="secretYn == 0">AND IF(JOB_TB.SECRET_YN = 1, JOB_TB.MNG_ID = #{memId}, 1)</if>
+	    /* 보안견적서 */
+	    <if test="secretYn == 0">  
+	    	AND IF(
+		      JOB_TB.SECRET_YN = 1,
+		      (
+		        #{memId} IN (JOB_TB.MNG_ID)
+		        OR EXISTS (
+		          SELECT 1
+		          FROM MEMBER_TB M
+		          WHERE M.ID = #{memId}
+		            AND M.SECRET_YN = 1
+		        )
+		      ),
+		      1
+			)
+		</if>
         
         <if test="quoId != null and quoId != ''">
 		AND QUO_TB.QUO_YM = SUBSTRING(#{quoId},2,4)

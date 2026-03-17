@@ -4,6 +4,7 @@
     <Properties>
         <Property name="LOG_PATH">logs</Property>
         <Property name="LAYOUT_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="ERROR_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %method - %msg%n</Property>
     </Properties>
 
     <Appenders>
@@ -25,90 +26,66 @@
         <RollingFile name="ERROR_APPENDER" 
                      fileName="${LOG_PATH}/errorLog.log"
                      filePattern="${LOG_PATH}/archive/errorLog_%d{yyyyMMdd}.log">
-            <PatternLayout pattern="%d{MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %method - %msg%n"/>
+            <PatternLayout pattern="${ERROR_PATTERN}"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="30MB" />
                 <TimeBasedTriggeringPolicy interval="1" />
             </Policies>
         </RollingFile>
 
-		<RollingFile name="RD_MARKER_APPENDER"
-		             fileName="${LOG_PATH}/rdMarkerLog.log"
-		             filePattern="${LOG_PATH}/archive/rdMarkerLog_%d{yyyyMMdd}-%i.log">
-		    <PatternLayout pattern="${LAYOUT_PATTERN}"/>
-		    <Policies>
-		        <SizeBasedTriggeringPolicy size="30MB" />
-		        <TimeBasedTriggeringPolicy interval="1" />
-		    </Policies>
-		
-		    <Filters>
-		        <!-- RD_MARKER만 파일에 기록 -->
-		        <MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
-		    </Filters>
-		</RollingFile>
-		        
-		<RollingFile name="ACC_MARKER_APPENDER"
-		             fileName="${LOG_PATH}/accMarkerLog.log"
-		             filePattern="${LOG_PATH}/archive/accMarkerLog_%d{yyyyMMdd}-%i.log">
-		    <PatternLayout pattern="${LAYOUT_PATTERN}"/>
-		    <Policies>
-		        <SizeBasedTriggeringPolicy size="30MB" />
-		        <TimeBasedTriggeringPolicy interval="1" />
-		    </Policies>
-		
-		    <Filters>
-		        <!-- ACC_MARKER만 파일에 기록 -->
-		        <MarkerFilter marker="ACC_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
-		    </Filters>
-		</RollingFile>
-
+        <RollingFile name="RD_MARKER_APPENDER"
+                     fileName="${LOG_PATH}/rdMarkerLog.log"
+                     filePattern="${LOG_PATH}/archive/rdMarkerLog_%d{yyyyMMdd}-%i.log">
+            <PatternLayout pattern="${LAYOUT_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="30MB" />
+                <TimeBasedTriggeringPolicy interval="1" />
+            </Policies>
+            <MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
+        
+        <RollingFile name="ACC_MARKER_APPENDER"
+                     fileName="${LOG_PATH}/accMarkerLog.log"
+                     filePattern="${LOG_PATH}/archive/accMarkerLog_%d{yyyyMMdd}-%i.log">
+            <PatternLayout pattern="${LAYOUT_PATTERN}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="30MB" />
+                <TimeBasedTriggeringPolicy interval="1" />
+            </Policies>
+            <MarkerFilter marker="ACC_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
-        <Root level="DEBUG">
+        <Root level="INFO">
             <appender-ref ref="console" />
         </Root>
+
+        <logger name="egovframework" level="INFO" additivity="false">
+            <appender-ref ref="console" />
+            <appender-ref ref="FILE_APPENDER"/>
+            <appender-ref ref="ERROR_APPENDER" level="ERROR" />
+            <appender-ref ref="RD_MARKER_APPENDER" />
+            <appender-ref ref="ACC_MARKER_APPENDER" />
+        </logger>
 
         <logger name="jdbc.sqlonly" level="INFO" additivity="false">
             <appender-ref ref="console" />
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <!-- # SQL 실행시간 로그 끄기 -->
         <logger name="jdbc.sqltiming" level="WARN" additivity="false">
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <!-- # ResultSet 로그 WARN 이상만 -->
-        <logger name="jdbc.resultset" level="WARN" additivity="false">
+        <logger name="jdbc.resultsettable" level="INFO" additivity="false">
             <appender-ref ref="FILE_APPENDER"/>
         </logger>
-        <logger name="jdbc.resultsettable" level="WARN" additivity="false">
-            <appender-ref ref="FILE_APPENDER"/>
-        </logger>
-        
-        <logger name="egovframework" level="DEBUG" additivity="false">
-            <appender-ref ref="console" />
-            <appender-ref ref="FILE_APPENDER"/>
-            <appender-ref ref="ERROR_APPENDER" level="ERROR" />
-            
-		    <!-- 마커별 파일 -->
-		    <appender-ref ref="RD_MARKER_APPENDER" />
-		    <appender-ref ref="ACC_MARKER_APPENDER" />
-    
-        </logger>
+        <logger name="jdbc.resultset" level="WARN" additivity="false" />
+        <logger name="jdbc.audit" level="FATAL" additivity="false" />
+        <logger name="jdbc.connection" level="WARN" additivity="false" />
 
-        <logger name="org.springframework.transaction" level="WARN" additivity="false">
-            <appender-ref ref="console" />
-            <appender-ref ref="ERROR_APPENDER" />
-        </logger>
-        <logger name="java.sql" level="WARN" additivity="false">
-            <appender-ref ref="console" />
-            <appender-ref ref="ERROR_APPENDER" />
-        </logger>
-        
+        <logger name="org.springframework.transaction" level="WARN" />
+        <logger name="java.sql" level="WARN" />
         <logger name="org.apache.http" level="WARN"/>
-        <logger name="jdbc.audit" level="WARN" />
-        <logger name="jdbc.connection" level="WARN" />
-        
 
     </Loggers>
 </Configuration>

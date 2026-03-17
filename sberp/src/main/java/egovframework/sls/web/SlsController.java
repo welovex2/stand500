@@ -99,11 +99,11 @@ public class SlsController {
        * 미수금 총합 = 미수금이 없는 수
        * 순매출, 청구액 총합 = 화면리스트 수
        */
-      summ.setTotal(list.stream().mapToInt(SlsDTO.Res::getChrgs).sum());
+      summ.setTotal(list.stream().mapToLong(SlsDTO.Res::getChrgs).sum());
       summ.setTotalCnt(list.size());
-      summ.setTotalArrears(list.stream().mapToInt(SlsDTO.Res::getArrears).sum());
+      summ.setTotalArrears(list.stream().mapToLong(SlsDTO.Res::getArrears).sum());
       summ.setArrearsCnt((int) list.stream().filter(t -> t.getArrears() > 0).count());
-      summ.setTotalNetSales(list.stream().mapToInt(SlsDTO.Res::getNetSales).sum());
+      summ.setTotalNetSales(list.stream().mapToLong(SlsDTO.Res::getNetSales).sum());
       summ.setNetSalesCnt(list.size());
       
     } catch (Exception e) {
