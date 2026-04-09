@@ -234,12 +234,27 @@ public class RawServiceImpl implements RawService {
 
     // 측정설비
     if (!ObjectUtils.isEmpty(req.getMacList())) {
-      insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
+
+      if (req.getMacResetYn() == 1) {
+        methodMapper.deleteMac(req.getRawSeq(), "CA");
+        methodMapper.deleteMac(req.getRawSeq(), "CB");
+      }
+
+      // 신규
+      if (req.getMacList().stream().anyMatch(mac -> mac.getRawMacSeq() == 0))
+        methodMapper.insertTwoMac(req.getRawSeq(), req.getMacList());
+      // 수정
+      else
+        methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
+
 
       // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
+      if (isNew) {
         valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+            req.getRawSeq(), "CA");
+        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
+            req.getRawSeq(), "CB");
+      }
     }
 
     // 날짜 범위 업데이트
