@@ -12,27 +12,23 @@
 	        	<entry key="Globals.fileStorePath" value="webapps/sbfile/"/>
 	        	<entry key="Globals.addedOptions" value="false"/>
 	        	
-	        	<entry key="Globals.minio.endpoint" value="http://172.22.0.41:9000" />
-	        	<entry key="Globals.minio.accessKey" value="nextcloud" />
-	        	<entry key="Globals.minio.secretKey" value="next123!" />
-	        	<entry key="Globals.minio.bucket" value="nextcloud" />
-
-	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.41:8090/remote.php/dav/files" />
 	        	<entry key="Globals.nc.user" value="stderp" />
-	        	<entry key="Globals.nc.appPassword" value="WmwHN-XiqtG-5WWk6-J6HAJ-Awji8" />
 	        	<entry key="Globals.nc.rootFolder" value="ERP" />
+	        	
+	        	<!-- 41번서버 -->
+<!-- 	        	
+	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.41:8090/remote.php/dav/files" />
+	        	<entry key="Globals.nc.appPassword" value="WmwHN-XiqtG-5WWk6-J6HAJ-Awji8" />
 	        	<entry key="Globals.nc.base" value="http://172.22.0.41:8090" />
 	        	<entry key="Globals.nc.shareToken" value="CC2GXsoEBqsN859" />
-	        	
-	        	<entry key="ftp.url" value="iup.cdn1.cafe24.com" />
-	        	<entry key="ftp.port" value="21" />
-	        	<entry key="ftp.id" value="stand500admin" />
-	        	<entry key="ftp.password" value="stb9394!@!!" />
-	        	<entry key="ftp.path" value="sbfile/" />
-	        	
+ -->       	
+	        	<!-- 테스트서버 -->
+	        	<entry key="Globals.nc.webdav.base" value="http://172.22.1.138:8090/remote.php/dav/files" />
+	        	<entry key="Globals.nc.appPassword" value="9iCt3-6qNnH-LQGWY-wr79J-H2dxD" />
+	        	<entry key="Globals.nc.base" value="http://172.22.1.138:8090" />
+	        	<entry key="Globals.nc.shareToken" value="sBCKWAALbGdGw7g" />
+
 	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
-	        	<entry key="cdn.url" value="http://stand500admin.cdn1.cafe24.com/" />
-	        	
 	        	
 	        	
 	        </map>

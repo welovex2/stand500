@@ -36,7 +36,6 @@ import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
-import egovframework.ncc.dto.NcFileDTO;
 import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
@@ -1033,10 +1032,7 @@ public class RawController {
       msg = ResponseMessage.NO_DATA;
     }
 
-    List<NcFileDTO> files = nextcloudFolderService.listErpFolder("2025/12/RAW");
-
-    BasicResponse res =
-        BasicResponse.builder().result(result).message(msg).data(detail).summary(files).build();
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
   }

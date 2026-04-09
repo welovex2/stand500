@@ -52,19 +52,14 @@
 	 
 	<!-- MULTIPART RESOLVERS -->
     <!-- regular spring resolver -->    
-    <bean id="spring.RegularCommonsMultipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-    	<!-- 20메가 -->
-<!--         <property name="maxUploadSize"   value="200000000" /> -->
-		<property name="maxUploadSize"   value="1000000000" />
-        <property name="maxInMemorySize" value="1000000000" />
-    </bean>
-    <!-- custom multi file resolver -->    
-    <bean id="local.MultiCommonsMultipartResolver" class="egovframework.cmm.web.EgovMultipartResolver">
-        <property name="maxUploadSize"   value="200000000" />
-        <property name="maxInMemorySize" value="1000000000" />
-    </bean>
+	<bean id="spring.RegularCommonsMultipartResolver" 
+	    class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	    <property name="maxUploadSize"        value="2147483648" /> <!-- 2GB -->
+	    <property name="maxUploadSizePerFile" value="2147483648" /> <!-- 2GB -->
+	    <property name="maxInMemorySize"      value="10485760"/>    <!-- 10MB -->
+	    <property name="uploadTempDir"        value="/data/upload-tmp"/> <!-- ← 추가 -->
+	</bean>
     <!-- choose one from above and alias it to the name Spring expects -->
-    <!-- alias name="local.MultiCommonsMultipartResolver" alias="multipartResolver" /-->
     <alias name="spring.RegularCommonsMultipartResolver" alias="multipartResolver" />
 	 
 	<!--  excel start -->

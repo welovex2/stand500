@@ -13,7 +13,7 @@ public final class ErpDavPathUtil {
   private ErpDavPathUtil() {}
 
   private static final String ROOT = "/ERP";
-  private static final Pattern SBK_NO_PATTERN = Pattern.compile("(?i)(SB\\d{2}-G\\d+)");
+  private static final Pattern SBK_NO_PATTERN = Pattern.compile("(?i)(SB\\d{2}-[A-Z]\\d+)");
 
   public static String normalizePathOrRoot(String path) {
     if (path == null)

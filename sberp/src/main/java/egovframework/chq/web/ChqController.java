@@ -49,13 +49,12 @@ public class ChqController {
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     // 페이징
     param.setPageUnit(param.getPageUnit());
     param.setPageSize(propertyService.getInt("pageSize"));
@@ -127,13 +126,12 @@ public class ChqController {
       else if (chqService.isChq(quoIds) == 1) {
         result = false;
         msg = ResponseMessage.DUPLICATE_CHQ;
-      } 
+      }
       // 보안견적서가 포함되었는지 확인
       else if (chqService.isSecret(quoIds) == 1) {
         result = false;
         msg = ResponseMessage.SECRET_CHQ;
-      } 
-      else {
+      } else {
 
         // 취합견적서 생성
         req.setQuoIds(quoIds);
@@ -161,13 +159,12 @@ public class ChqController {
     if (!isAuthenticated) {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
       return res;
     }
-    
+
     req.setChqId(chqId);
     detail = chqService.selectDetail(req);
 
@@ -194,34 +191,33 @@ public class ChqController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      
+
       // 매출확정일이 있는 데이터가 있는지 확인
       for (String id : chqIds) {
         Res detail = new Res();
         ChqDTO req = new ChqDTO();
-  
+
         req.setChqId(id);
         detail = chqService.selectDetail(req);
-  
+
         if (!StringUtils.isEmpty(detail.getCnfrmDtStr())) {
           result = false;
           msg = ResponseMessage.DUPLICATE_CNFRMED;
           BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
-  
+
           return res;
         }
       }
-  
+
       result = chqService.delete(user.getId(), chqIds);
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
-      
-      BasicResponse res =
-          BasicResponse.builder().result(result).message(msg).build();
+
+      BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
     }
-    
+
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
     return res;

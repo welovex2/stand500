@@ -723,13 +723,16 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
   private String resolveListPathUsingDb(String inputDavPath) throws Exception {
     String p = ErpDavPathUtil.normalizePathOrRoot(inputDavPath); // 기존 함수 사용
+    log.info("[resolveListPath] inputDavPath={}, normalized={}", inputDavPath, p);
 
     // 1) 신청서번호 추출
     String sbkNo = ErpDavPathUtil.extractSbkNo(p);
+    log.info("[resolveListPath] sbkNo={}", sbkNo);
 
     // 2) DB 조회 (여기서 provisionIfMissing(result) 호출은 "list"에서는 비추)
     // list는 조회니까 폴더 생성까지 하면, 탐색만 해도 폴더가 생길 수 있음.
     SbkInfoVO sbk = sbkService.findBySbkNoReadonly(sbkNo);
+    log.info("[resolveListPath] sbk={}", sbk);
     if (sbk == null || sbk.getInsDt() == null) {
       // DB도 없으면 그냥 입력 그대로(혹은 빈 리스트 유도용으로 그대로)
       return p;
@@ -1477,7 +1480,7 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
     // 신청서번호 패턴 제한
     // 예: SB26-G0000
-    if (!appNo.matches("SB\\d{2}-G\\d{4}")) {
+    if (!appNo.matches("SB\\d{2}-[A-Z]\\d{4}")) {
       throw new IllegalArgumentException("삭제는 신청서 폴더에서만 가능합니다.");
     }
 
