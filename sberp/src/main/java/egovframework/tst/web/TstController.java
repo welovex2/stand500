@@ -503,7 +503,8 @@ public class TstController {
       }
 
       // 사유 필수 입력 체크
-      if (Arrays.asList("5", "19", "3", "4").contains(req.getStateCode())
+      // 시험상태변경 사유 필수입력건 (#26-3) RD지연(5) 제거
+      if (Arrays.asList("19", "3", "4").contains(req.getStateCode())
           && "".equals(req.getMemo().trim())) {
         result = false;
         msg = ResponseMessage.ERROR_WHY;
