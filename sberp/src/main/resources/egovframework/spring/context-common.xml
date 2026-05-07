@@ -8,6 +8,8 @@
 		<context:include-filter type="annotation" expression="org.springframework.stereotype.Service"/>
 		<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
 		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+		<!-- DispatcherServlet 전용 Springfox 설정/플러그인: 루트 컨텍스트에 중복 등록되면 Swagger 빈이 이중으로 뜰 수 있음 -->
+		<context:exclude-filter type="regex" expression="egovframework\.cmm\.swagger\..*"/>
     </context:component-scan>
 
 	<bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
