@@ -22,11 +22,11 @@
 	        	<entry key="Globals.nc.base" value="http://172.22.0.41:8090" />
 	        	<entry key="Globals.nc.shareToken" value="CC2GXsoEBqsN859" />
  -->       	
-	        	<!-- 테스트서버 -->
-	        	<entry key="Globals.nc.webdav.base" value="http://172.22.1.138:8090/remote.php/dav/files" />
-	        	<entry key="Globals.nc.appPassword" value="9iCt3-6qNnH-LQGWY-wr79J-H2dxD" />
-	        	<entry key="Globals.nc.base" value="http://172.22.1.138:8090" />
-	        	<entry key="Globals.nc.shareToken" value="sBCKWAALbGdGw7g" />
+	        	<!-- 파일서버 -->
+	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.46:8090/remote.php/dav/files" />
+	        	<entry key="Globals.nc.appPassword" value="FWS2E-WA3qG-snYog-pmarg-JSyKn" />
+	        	<entry key="Globals.nc.base" value="http://172.22.0.46:8090" />
+	        	<entry key="Globals.nc.shareToken" value="DmJFJWzpES5WmWA" />
 
 	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
 	        	
@@ -35,4 +35,4 @@
 		</property>
 	</bean>
 	
-</beans>	
+</beans>

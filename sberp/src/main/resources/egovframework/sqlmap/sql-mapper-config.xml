@@ -137,5 +137,6 @@
     	<typeAlias alias="fileDetailUpdateVO"	type="egovframework.ncc.dto.FileDetailUpdateVO"/>
     	<typeAlias alias="folderMetaVO"	type="egovframework.ncc.dto.FolderMetaVO"/>
     	<typeAlias alias="downloadLogVO"	type="egovframework.ncc.dto.DownloadLogVO"/>
+    	<typeAlias alias="fileOpLogVO"	type="egovframework.ncc.dto.FileOpLogVO"/>
     </typeAliases>
 </configuration>

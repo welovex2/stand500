@@ -62,6 +62,7 @@ import egovframework.raw.service.RawData;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.sbk.service.SbkService;
 import egovframework.sys.service.MacService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -91,6 +92,9 @@ public class RawController {
 
   @Resource(name = "NextcloudFolderService")
   private NextcloudFolderService nextcloudFolderService;
+
+  @Resource(name = "SbkService")
+  private SbkService sbkService;
 
   private static final Marker RD_MARKER = MarkerFactory.getMarker("RD_MARKER");
 
@@ -1952,78 +1956,103 @@ public class RawController {
         // 시험장면사진
         // TestSeq로 파일서버 루트폴더 찾기
         SbkInfoVO folderInfo = rawService.findByNcFolderPath(req.getTestSeq());
-        String folderName = folderInfo.getNcFolderPath();
-        String testNo = folderInfo.getTestNo();
+        String folderName = null;
+        String testNo = null;
+        if (folderInfo != null) {
+          folderName = folderInfo.getNcFolderPath();
+          testNo = folderInfo.getTestNo();
+          if (StringUtils.isEmpty(folderName) && !StringUtils.isEmpty(folderInfo.getSbkId())) {
+            try {
+              SbkInfoVO provisioned = sbkService.findBySbkNoAndProvision(folderInfo.getSbkId());
+              if (provisioned != null && !StringUtils.isEmpty(provisioned.getNcFolderPath())) {
+                folderName = provisioned.getNcFolderPath();
+              }
+            } catch (Exception e) {
+              log.error(RD_MARKER, "NC folder provision failed, testSeq={}, sbkId={}",
+                  req.getTestSeq(), folderInfo.getSbkId(), e);
+            }
+          }
+        }
         String subFolderName = "03.시험사진";
 
         if (!ObjectUtils.isEmpty(pic.getPicList())) {
 
-          // 신규등록
-          if (StringUtils.isEmpty(atchFileId)) {
+          if (folderInfo == null || StringUtils.isEmpty(folderName)) {
+            result = false;
+            msg = folderInfo == null ? ResponseMessage.NO_DATA : ResponseMessage.CHECK_DATA;
+          } else {
 
-            FileResult = fileUtil.parsePicFile(pic.getPicList(), req.getPicId(), 0, "",
-                folderName + "/" + testNo + "/" + subFolderName);
-            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
-            req.setAtchFileId(atchFileId);
-
-          }
-          // 수정
-          else {
-            // 현재 등록된 파일 수 가져오기
-            FileVO fvo = new FileVO();
-            fvo.setAtchFileId(atchFileId);
-            int cnt = fileMngService.getMaxFileSN(fvo);
-
-            /*
-             * // 추가 파일 등록 List<FileVO> _result = fileUtil.parsePicFile(pic.getPicList(), "RAW",
-             * cnt, atchFileId, ""); fileMngService.updateFileInfs(_result);
-             */
-
-            // 최종 결과 파일 리스트
-            List<FileVO> resultList = new ArrayList<>();
-
-            for (PicDTO picDto : pic.getPicList()) {
-              MultipartFile image = picDto.getImage();
-
-              // case 1. 이미지가 존재 → 신규 파일 처리
-              if (image != null && !image.isEmpty()) {
-                List<FileVO> files =
-                    fileUtil.parsePicFile(Collections.singletonList(picDto), req.getPicId(), cnt++,
-                        atchFileId, folderName + "/" + testNo + "/" + subFolderName);
-                resultList.addAll(files);
-              }
-              // case 2. 이미지 없고 mode = U → fileOrdr만 수정
-              else if (image == null && "U".equalsIgnoreCase(picDto.getState())) {
-                FileVO updateFvo = new FileVO();
-                updateFvo.setAtchFileId(atchFileId);
-                updateFvo.setFileSn(picDto.getFileSn());
-                updateFvo.setFileOrdr(picDto.getFileOrdr());
-                updateFvo.setCreatId(req.getInsMemId());
-                fileMngService.updateFileDetail(updateFvo);
-              }
-              // case 3. 이미지 없고 mode = D → 파일 삭제
-              else if (image == null && "D".equalsIgnoreCase(picDto.getState())) {
-                FileVO delFvo = new FileVO();
-                delFvo.setAtchFileId(atchFileId);
-                delFvo.setFileSn(picDto.getFileSn());
-                delFvo.setCreatId(req.getInsMemId());
-                fileMngService.deleteFileInf(delFvo);
-              }
-              // case 4. 이미지 없고, pic_yn = 0 → 해당없음 추가, 수정이나 삭제는 영향 받지 않아야 함
-              else if (image == null && req.getPicYn() == 0) {
-                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "",
-                    cnt++, atchFileId, folderName + "/" + testNo + "/" + subFolderName);
-                resultList.addAll(files);
-              }
-            }
-
-            // 신규 파일이 존재할 경우 한 번에 업데이트
-            if (!resultList.isEmpty()) {
-              fileMngService.updateFileInfs(resultList, req.getInsMemId());
-            }
-
+	          // 신규등록
+	          if (StringUtils.isEmpty(atchFileId)) {
+	
+	            FileResult = fileUtil.parsePicFile(pic.getPicList(), req.getPicId(), 0, "",
+	                folderName + "/" + testNo + "/" + subFolderName);
+	            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
+	            req.setAtchFileId(atchFileId);
+	
+	          }
+	          // 수정
+	          else {
+	            // 현재 등록된 파일 수 가져오기
+	            FileVO fvo = new FileVO();
+	            fvo.setAtchFileId(atchFileId);
+	            int cnt = fileMngService.getMaxFileSN(fvo);
+	
+	            /*
+	             * // 추가 파일 등록 List<FileVO> _result = fileUtil.parsePicFile(pic.getPicList(), "RAW",
+	             * cnt, atchFileId, ""); fileMngService.updateFileInfs(_result);
+	             */
+	
+	            // 최종 결과 파일 리스트
+	            List<FileVO> resultList = new ArrayList<>();
+	
+	            for (PicDTO picDto : pic.getPicList()) {
+	              MultipartFile image = picDto.getImage();
+	
+	              // case 1. 이미지가 존재 → 신규 파일 처리
+	              if (image != null && !image.isEmpty()) {
+	                List<FileVO> files =
+	                    fileUtil.parsePicFile(Collections.singletonList(picDto), req.getPicId(), cnt++,
+	                        atchFileId, folderName + "/" + testNo + "/" + subFolderName);
+	                resultList.addAll(files);
+	              }
+	              // case 2. 이미지 없고 mode = U → fileOrdr만 수정
+	              else if (image == null && "U".equalsIgnoreCase(picDto.getState())) {
+	                FileVO updateFvo = new FileVO();
+	                updateFvo.setAtchFileId(atchFileId);
+	                updateFvo.setFileSn(picDto.getFileSn());
+	                updateFvo.setFileOrdr(picDto.getFileOrdr());
+	                updateFvo.setCreatId(req.getInsMemId());
+	                fileMngService.updateFileDetail(updateFvo);
+	              }
+	              // case 3. 이미지 없고 mode = D → 파일 삭제
+	              else if (image == null && "D".equalsIgnoreCase(picDto.getState())) {
+	                FileVO delFvo = new FileVO();
+	                delFvo.setAtchFileId(atchFileId);
+	                delFvo.setFileSn(picDto.getFileSn());
+	                delFvo.setCreatId(req.getInsMemId());
+	                fileMngService.deleteFileInf(delFvo);
+	              }
+	              // case 4. 이미지 없고, pic_yn = 0 → 해당없음 추가, 수정이나 삭제는 영향 받지 않아야 함
+	              else if (image == null && req.getPicYn() == 0) {
+	                List<FileVO> files = fileUtil.parsePicFile(Collections.singletonList(picDto), "",
+	                    cnt++, atchFileId, folderName + "/" + testNo + "/" + subFolderName);
+	                resultList.addAll(files);
+	              }
+	            }
+	
+	            // 신규 파일이 존재할 경우 한 번에 업데이트
+	            if (!resultList.isEmpty()) {
+	              fileMngService.updateFileInfs(resultList, req.getInsMemId());
+	            }
+	
+	          }
           }
         }
+
+        rawService.insertImg(req);
+
+        // 파일삭제 - 해당없음 리스트용도
         FileVO delFile = null;
         if (req.getPicYn() == 0 && !ObjectUtils.isEmpty(delFileList)) {
           for (FileVO del : delFileList) {

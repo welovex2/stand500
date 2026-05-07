@@ -527,7 +527,9 @@
 	<select id="findByNcFolderPath" parameterType="int" resultType="egovframework.cmm.service.SbkInfoVO">
 		SELECT
 			NC_FOLDER_PATH AS ncFolderPath,
-			CONCAT (TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testNo
+			CONCAT (TEST_TB.TEST_TYPE_CODE,LPAD(TEST_TB.TEST_NO,4,0)) testNo,
+			CONCAT ('SB', JOB_TB.SBK_YM, '-' , JOB_TB.SBK_TYPE, LPAD(JOB_TB.SBK_SEQ,4,0),
+				IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId
 		FROM
 		    TEST_TB
 			

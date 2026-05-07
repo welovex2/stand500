@@ -1,9 +1,12 @@
 package egovframework.cmm.service.impl;
 
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.transaction.Transactional;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +14,12 @@ import org.springframework.stereotype.Service;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileMapper;
 import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.LoginVO;
+import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.ncc.dto.FileDetailUpdateVO;
+import egovframework.ncc.dto.FileOpLogVO;
 import egovframework.ncc.dto.FolderMetaVO;
+import egovframework.ncc.service.FileOpLogService;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.cmmn.EgovAbstractServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +46,12 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
 
   @Autowired
   private NextcloudDavService nextcloudDavService;
+
+  @Autowired
+  private FileOpLogService fileOpLogService;
+
+  private static final String STRE_COURS_NEXTCLOUD = "NEXTCLOUD_DAV";
+  private static final Pattern SBK_NO_PATTERN = Pattern.compile("(?i)(SB\\d{2}-[A-Z]\\d+)");
 
   /**
    * 여러 개의 파일을 삭제한다.
@@ -83,8 +96,15 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     String atchFileId = fvo.getAtchFileId();
 
     fvo.setUploadSrc("E");
-    fileMapper.insertFileMaster(fvo);
-    fileMapper.insertFileDetail(fvo);
+    Long logId = startErpFileOpLog("UPLOAD", fvo);
+    try {
+      fileMapper.insertFileMaster(fvo);
+      fileMapper.insertFileDetail(fvo);
+      markSuccess(logId, parseLongSafe(fvo.getFileMg()), null);
+    } catch (Exception e) {
+      markFail(logId, e, parseLongSafe(fvo.getFileMg()), null);
+      throw e;
+    }
 
     return atchFileId;
   }
@@ -109,7 +129,14 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
       while (iter.hasNext()) {
         vo = (FileVO) iter.next();
 
-        fileMapper.insertFileDetail(vo);
+        Long logId = startErpFileOpLog("UPLOAD", vo);
+        try {
+          fileMapper.insertFileDetail(vo);
+          markSuccess(logId, parseLongSafe(vo.getFileMg()), null);
+        } catch (Exception e) {
+          markFail(logId, e, parseLongSafe(vo.getFileMg()), null);
+          throw e;
+        }
       }
 
     }
@@ -167,7 +194,20 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     while (iter.hasNext()) {
       vo = (FileVO) iter.next();
 
-      fileMapper.insertFileDetail(vo);
+      // 파일모달(/nc/upload)은 컨트롤러에서 이미 FILE_OP_LOG 기록 — 여기서 중복(폴더+파일 2건) 방지
+      boolean skipModalFileOpLog = "A".equals(vo.getUploadSrc());
+      Long logId = skipModalFileOpLog ? null : startErpFileOpLog("UPLOAD", vo);
+      try {
+        fileMapper.insertFileDetail(vo);
+        if (!skipModalFileOpLog) {
+          markSuccess(logId, parseLongSafe(vo.getFileMg()), null);
+        }
+      } catch (Exception e) {
+        if (!skipModalFileOpLog) {
+          markFail(logId, e, parseLongSafe(vo.getFileMg()), null);
+        }
+        throw e;
+      }
     }
   }
 
@@ -205,21 +245,179 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     if (file == null)
       return;
 
+    Long logId = startErpFileOpLog("DELETE", file);
     // 2) 외부 파일 삭제는 실패해도 DB 삭제는 진행
     try {
-      if ("NEXTCLOUD_DAV".equals(file.getFileStreCours())) {
+      if (STRE_COURS_NEXTCLOUD.equals(file.getFileStreCours())) {
         nextcloudDavService.deleteByDavPath(file.getStreFileNm());
       }
     } catch (Exception e) {
       // 실패해도 업무 흐름은 유지
       log.warn("외부 파일 삭제 실패(무시하고 DB 삭제 진행). atchFileId={}, fileSn={}, path={}",
           file.getAtchFileId(), file.getFileSn(), file.getStreFileNm(), e);
+      // 외부 삭제 실패는 기록만 FAIL 처리. DB 삭제는 계속 진행.
+      markFail(logId, e, parseLongSafe(file.getFileMg()), null);
 
       // (선택) 삭제 실패를 DB에 기록하고 싶으면 여기서 업데이트 한 번 더
       // fileDAO.updateDeleteFailInfo(file.getAtchFileId(), file.getFileSn(), e.getMessage());
     }
 
     fileMapper.deleteFileDetail(fvo);
+    // 외부 삭제 실패로 이미 FAIL을 찍었어도, DB 삭제까지 완료됐으면 SUCCESS로 덮어쓰지 않는다.
+    // (FAIL이 더 강한 의미이므로 그대로 둠)
+    if (logId != null) {
+      // FAIL로 찍힌 게 아니면 SUCCESS 처리
+      // (FileOpLogService는 상태를 덮어쓰므로, try/catch로 판단)
+      try {
+        fileOpLogService.success(logId, parseLongSafe(file.getFileMg()), null);
+      } catch (Exception ignore) {
+        // ignore
+      }
+    }
+  }
+
+  private Long startErpFileOpLog(String opType, FileVO f) {
+    if (f == null) {
+      return null;
+    }
+    if (!STRE_COURS_NEXTCLOUD.equals(f.getFileStreCours())) {
+      return null;
+    }
+    String davPath = f.getStreFileNm();
+    FileOpLogVO vo = new FileOpLogVO();
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    vo.setUserId(user != null ? user.getId() : f.getCreatId());
+    vo.setDept(user == null ? null : user.getDeptName());
+    vo.setSbkNo(extractSbkNoOrNull(davPath));
+    vo.setOpType(opType);
+    vo.setUploadSrc(f.getUploadSrc() == null ? "E" : f.getUploadSrc());
+    vo.setDavPath(davPath);
+    vo.setSrcPath(null);
+    vo.setDstPath(null);
+    vo.setIsFolder("N");
+    vo.setFileName(f.getOrignlFileNm());
+    vo.setContentType(guessContentTypeForFileOpLog(f));
+    vo.setFileSize(parseLongSafe(f.getFileMg()));
+    vo.setBytesSent(0L);
+    vo.setClientIp(null);
+    vo.setUserAgent(null);
+    vo.setResultCd("START");
+    vo.setErrMsg(null);
+    try {
+      return fileOpLogService.start(vo);
+    } catch (Exception e) {
+      // 로깅 실패가 본업무(업로드/DB반영)를 막으면 안 됨
+      log.warn("FILE_OP_LOG_TB insert fail (ignore). opType={}, davPath={}", opType, davPath, e);
+      return null;
+    }
+  }
+
+  /**
+   * FileVO에 MIME이 없으므로 원본명/확장자로 유추 (로그용).
+   */
+  private String guessContentTypeForFileOpLog(FileVO f) {
+    if (f == null) {
+      return null;
+    }
+    String name = f.getOrignlFileNm();
+    if (name != null && !name.trim().isEmpty()) {
+      String ct = URLConnection.guessContentTypeFromName(name.trim());
+      if (ct != null && !ct.isEmpty()) {
+        return ct;
+      }
+    }
+    String ext = f.getFileExtsn();
+    if (ext == null || ext.trim().isEmpty()) {
+      if (name != null && name.contains(".")) {
+        int dot = name.lastIndexOf('.');
+        if (dot >= 0 && dot < name.length() - 1) {
+          ext = name.substring(dot + 1);
+        }
+      }
+    }
+    if (ext == null) {
+      return null;
+    }
+    ext = ext.trim().toLowerCase();
+    switch (ext) {
+      case "jpg":
+      case "jpeg":
+        return "image/jpeg";
+      case "png":
+        return "image/png";
+      case "gif":
+        return "image/gif";
+      case "bmp":
+        return "image/bmp";
+      case "webp":
+        return "image/webp";
+      case "pdf":
+        return "application/pdf";
+      case "zip":
+        return "application/zip";
+      case "txt":
+        return "text/plain";
+      case "html":
+      case "htm":
+        return "text/html";
+      case "xlsx":
+        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      case "xls":
+        return "application/vnd.ms-excel";
+      case "doc":
+        return "application/msword";
+      case "docx":
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      case "hwp":
+        return "application/x-hwp";
+      default:
+        return "application/octet-stream";
+    }
+  }
+
+  private String extractSbkNoOrNull(String path) {
+    if (path == null) {
+      return null;
+    }
+    Matcher m = SBK_NO_PATTERN.matcher(path);
+    if (!m.find()) {
+      return null;
+    }
+    return m.group(1).toUpperCase();
+  }
+
+  private Long parseLongSafe(String s) {
+    if (s == null) {
+      return 0L;
+    }
+    try {
+      return Long.parseLong(s);
+    } catch (Exception e) {
+      return 0L;
+    }
+  }
+
+  private void markSuccess(Long logId, Long fileSize, Long bytesSent) {
+    if (logId == null) {
+      return;
+    }
+    try {
+      fileOpLogService.success(logId, fileSize, bytesSent);
+    } catch (Exception e) {
+      log.warn("FILE_OP_LOG_TB success update fail (ignore). logId={}", logId, e);
+    }
+  }
+
+  private void markFail(Long logId, Exception e, Long fileSize, Long bytesSent) {
+    if (logId == null) {
+      return;
+    }
+    String msg = e == null ? null : e.getMessage();
+    try {
+      fileOpLogService.fail(logId, msg, fileSize, bytesSent);
+    } catch (Exception ex) {
+      log.warn("FILE_OP_LOG_TB fail update fail (ignore). logId={}", logId, ex);
+    }
   }
 
   /**

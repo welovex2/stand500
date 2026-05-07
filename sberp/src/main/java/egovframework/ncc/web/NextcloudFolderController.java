@@ -30,7 +30,7 @@ import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.util.CountingOutputStream;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.ErpDavPathUtil;
-import egovframework.ncc.dto.DownloadLogVO;
+import egovframework.ncc.dto.FileOpLogVO;
 import egovframework.ncc.dto.NcCopyRequest;
 import egovframework.ncc.dto.NcCreateFolderRequest;
 import egovframework.ncc.dto.NcDeleteRequest;
@@ -41,11 +41,12 @@ import egovframework.ncc.dto.UploadResultDTO;
 import egovframework.ncc.dto.WebDavItemDTO;
 import egovframework.ncc.dto.WebDavListResponseDTO;
 import egovframework.ncc.dto.WebDavNodeDTO;
-import egovframework.ncc.service.DownloadLogService;
+import egovframework.ncc.service.FileOpLogService;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 @Api(tags = {"파일서버"})
 @RestController
@@ -61,8 +62,8 @@ public class NextcloudFolderController {
   @Resource
   private ServletContext servletContext;
 
-  @Resource(name = "DownloadLogService")
-  private DownloadLogService downloadLogService;
+  @Resource(name = "FileOpLogService")
+  private FileOpLogService fileOpLogService;
 
   /** 4) 선택 폴더 안의 폴더+파일 목록(Depth=1) */
   @ApiOperation(value = "폴더 목록 조회",
@@ -101,7 +102,8 @@ public class NextcloudFolderController {
   @GetMapping("/tree")
   public Map<String, Object> tree(
       @RequestParam(name = "path", required = false, defaultValue = "") String path,
-      @RequestParam(name = "depth", required = false, defaultValue = "3") int depth,
+      @ApiParam(value = "조회 깊이", example = "3") @RequestParam(name = "depth", required = false,
+          defaultValue = "3") int depth,
       @RequestParam(name = "onlyDir", required = false, defaultValue = "true") boolean onlyDir)
       throws Exception {
 
@@ -123,7 +125,8 @@ public class NextcloudFolderController {
   @ApiOperation(value = "폴더 생성",
       notes = "davPath 생성할 부모 경로 예시 /ERP/2026/02/SB26-G0000\n" + "folderName 생성할 폴더명 예시 00.공통폴더\n")
   @PostMapping(value = "/folder", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public NcSimpleResult createFolder(@RequestBody NcCreateFolderRequest req) throws Exception {
+  public NcSimpleResult createFolder(@RequestBody NcCreateFolderRequest req,
+      HttpServletRequest request) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
@@ -140,10 +143,14 @@ public class NextcloudFolderController {
     if (parentErr != null)
       return NcSimpleResult.fail(parentErr);
 
+    Long logId =
+        startFileOpLog("MKDIR", parent + "/" + name, null, null, true, null, null, 0L, request);
     try {
       String created = nextcloudDavService.createFolder(parent, name, user.getId());
+      markFileOpLogSuccess(logId, null, null);
       return NcSimpleResult.ok(created);
     } catch (RuntimeException e) {
+      markFileOpLogFail(logId, e, null, null);
       return NcSimpleResult.fail(e.getMessage());
     }
 
@@ -154,7 +161,7 @@ public class NextcloudFolderController {
       notes = "path 업로드할 폴더 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n" + "file 업로드 파일 Multipart\n")
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public UploadResultDTO upload(@RequestParam("path") String folderPath,
-      @RequestPart("file") MultipartFile file) throws Exception {
+      @RequestPart("file") MultipartFile file, HttpServletRequest request) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
@@ -174,22 +181,35 @@ public class NextcloudFolderController {
     // 3) 요청 path가 baseFolder 하위인지 검증 (핵심)
     validateUnderBase(baseFolder, reqPath);
 
-    // 4) Nextcloud 업로드
+    // 4) Nextcloud 업로드 (로그 davPath는 실제 파일 경로만 기록 — 폴더 경로만으로 UPLOAD 로그 남기지 않음)
     UploadResultDTO up = nextcloudDavService.uploadToFolder(reqPath, file);
-    if (!up.isOk())
+    if (!up.isOk()) {
+      Long failLogId = startFileOpLog("UPLOAD", reqPath, null, null, false,
+          file == null ? null : file.getOriginalFilename(), file == null ? null : file.getContentType(),
+          file == null ? null : file.getSize(), request);
+      markFileOpLogFail(failLogId, new RuntimeException(up.getMessage()), file == null ? null : file.getSize(), null);
       return up;
+    }
 
-    // 5) 메타 저장 (FILE_DETAIL_TB)
-    // creatId는 ERP 로그인 사용자
-    String creatId = user.getId();
+    String fileDavPath = ErpDavPathUtil.normalizePath(up.getDavPath());
+    Long logId = startFileOpLog("UPLOAD", fileDavPath, null, null, false,
+        file == null ? null : file.getOriginalFilename(), file == null ? null : file.getContentType(),
+        file == null ? null : file.getSize(), request);
+    try {
+      // 5) 메타 저장 (FILE_DETAIL_TB)
+      String creatId = user.getId();
+      nextcloudDavService.insertFileDetail(atchFileId, reqPath,
+          up.getDavPath(),
+          file == null ? null : file.getOriginalFilename(), file == null ? null : file.getSize(), creatId);
 
-    nextcloudDavService.insertFileDetail(atchFileId, reqPath, // FILE_STRE_COURS 후보 (혹은 상대경로)
-        up.getDavPath(), // 실제 저장 경로/파일명
-        file.getOriginalFilename(), file.getSize(), creatId);
+      markFileOpLogSuccess(logId, file == null ? null : file.getSize(), null);
+      return up;
+    } catch (Exception e) {
+      markFileOpLogFail(logId, e, file == null ? null : file.getSize(), null);
+      throw e;
+    }
 
     // 필요하면 FILE_TB에 ATCH_FILE_ID가 없을 때 생성/USE_AT 갱신 등도 여기서 처리
-
-    return up;
 
   }
 
@@ -234,7 +254,8 @@ public class NextcloudFolderController {
   @ApiOperation(value = "이름 변경", notes = "targetDavPath 대상 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
       + "newName 새 이름 예시 00.공통폴더_수정\n" + "overwrite 대상 이름이 이미 존재할 때 덮어쓰기 여부\n")
   @PostMapping(value = "/rename", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public NcSimpleResult rename(@RequestBody NcRenameRequest req) throws Exception {
+  public NcSimpleResult rename(@RequestBody NcRenameRequest req, HttpServletRequest request)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
@@ -260,14 +281,25 @@ public class NextcloudFolderController {
       return NcSimpleResult.fail("허용되지 않은 경로입니다.");
     }
 
-    String changed = nextcloudDavService.rename(path, newName, req.isOverwrite(), user.getId());
-    return NcSimpleResult.ok(changed);
+    // src/dst 를 분리해서 이력에 남김
+    String dstPath = ErpDavPathUtil.normalizePath(parent + "/" + newName);
+    Long logId = startFileOpLog("RENAME", dstPath, path, dstPath, false, newName, null, null,
+        request);
+    try {
+      String changed = nextcloudDavService.rename(path, newName, req.isOverwrite(), user.getId());
+      markFileOpLogSuccess(logId, null, null);
+      return NcSimpleResult.ok(changed);
+    } catch (Exception e) {
+      markFileOpLogFail(logId, e, null, null);
+      throw e;
+    }
   }
 
   @ApiOperation(value = "삭제", notes = "davPath 삭제 대상 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
       + "recursive 폴더일 때 하위까지 삭제 여부\n")
   @PostMapping(value = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public NcSimpleResult delete(@RequestBody NcDeleteRequest req) throws Exception {
+  public NcSimpleResult delete(@RequestBody NcDeleteRequest req, HttpServletRequest request)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
@@ -275,9 +307,16 @@ public class NextcloudFolderController {
 
     boolean recursive = req.isRecursive();
 
-    nextcloudDavService.deleteWithDbSync(path, recursive, user.getId());
-
-    return NcSimpleResult.ok("OK");
+    Long logId = startFileOpLog("DELETE", path, null, null, recursive, extractNameFromPath(path),
+        null, null, request);
+    try {
+      nextcloudDavService.deleteWithDbSync(path, recursive, user.getId());
+      markFileOpLogSuccess(logId, null, null);
+      return NcSimpleResult.ok("OK");
+    } catch (Exception e) {
+      markFileOpLogFail(logId, e, null, null);
+      throw e;
+    }
   }
 
   // -----------------------------
@@ -301,7 +340,8 @@ public class NextcloudFolderController {
     String fileName = extractNameFromPath(davPath);
     String contentType = detectContentType(fileName);
 
-    Long logId = startDownloadLog("download", davPath, false, fileName, null, contentType, request);
+    Long logId = startFileOpLog("DOWNLOAD", davPath, null, null, false, fileName, contentType, null,
+        request);
     long bytesSent = 0L;
 
     response.setStatus(200);
@@ -315,10 +355,10 @@ public class NextcloudFolderController {
     try {
 
       bytesSent = streamFileToResponse(davPath, response);
-      markDownloadLogSuccess(logId, bytesSent);
+      markFileOpLogSuccess(logId, null, bytesSent);
 
     } catch (Exception e) {
-      markDownloadLogFail(logId, e, bytesSent);
+      markFileOpLogFail(logId, e, null, bytesSent);
       throw e;
     } finally {
       safeClose(bout);
@@ -344,12 +384,18 @@ public class NextcloudFolderController {
     String fileName = extractNameFromPath(davPath);
     String contentType = detectContentType(fileName);
 
-    Long logId = startDownloadLog("preview", davPath, false, fileName, null, contentType, request);
+    // PREVIEW는 이력에서 제외
+    Long logId = null;
 
     long bytesSent = 0L;
 
     response.setStatus(200);
-    response.setContentType(contentType);
+    // 바이너리 미리보기(PDF/이미지 등)에 charset 이 끼면 일부 환경에서 인라인 렌더 실패.
+    // setContentType 은 필터(CharacterEncodingFilter 등)에 의해 charset 이 강제 부착될 수 있어
+    // 헤더를 직접 set 하고, characterEncoding 도 비워둔다.
+    response.setCharacterEncoding(null);
+    response.setHeader("Content-Type", contentType);
+    response.setHeader("X-Content-Type-Options", "nosniff");
 
     // inline 미리보기
     response.setHeader("Content-Disposition",
@@ -360,15 +406,55 @@ public class NextcloudFolderController {
     BufferedOutputStream bout = null;
     try {
       bytesSent = streamFileToResponse(davPath, response);
-      markDownloadLogSuccess(logId, bytesSent);
+      markFileOpLogSuccess(logId, null, bytesSent);
     } catch (Exception e) {
-      markDownloadLogFail(logId, e, bytesSent);
+      markFileOpLogFail(logId, e, null, bytesSent);
       throw e;
     } finally {
       safeClose(bout);
       safeClose(bin);
       safeClose(in);
     }
+  }
+
+  /**
+   * PDF 미리보기 전용 — Nextcloud 의 files_pdfviewer 와 동일한 방식.
+   * 브라우저 내장 PDF 뷰어가 비활성화/다운로드 처리되는 환경에서도 미리보기가 보장되도록
+   * Mozilla PDF.js prebuilt 의 viewer.html 로 리다이렉트한다.
+   *
+   * 사용 전 준비: sberp/src/main/webapp/pdfjs/web/viewer.html 가 배포되어 있어야 한다.
+   */
+  @ApiOperation(value = "PDF 미리보기 뷰어",
+      notes = "PDF 전용 PDF.js 뷰어로 리다이렉트한다. 사용 예: /api/nc/preview-viewer?path=/ERP/2026/05/.../A.pdf")
+  @GetMapping("/preview-viewer")
+  public void previewViewer(@RequestParam("path") String path, HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
+
+    String davPath = ErpDavPathUtil.normalizePathOrRoot(path);
+
+    String pathErr = validateDownloadPathStrong(davPath);
+    if (pathErr != null) {
+      response.setStatus(400);
+      response.setContentType("application/json;charset=UTF-8");
+      response.getWriter().write("{\"ok\":false,\"message\":\"" + escapeJson(pathErr) + "\"}");
+      return;
+    }
+
+    String fileName = extractNameFromPath(davPath);
+    String lower = fileName == null ? "" : fileName.toLowerCase();
+    if (!lower.endsWith(".pdf")) {
+      response.setStatus(400);
+      response.setContentType("application/json;charset=UTF-8");
+      response.getWriter().write("{\"ok\":false,\"message\":\"PDF 파일만 지원합니다.\"}");
+      return;
+    }
+
+    String ctx = request.getContextPath() == null ? "" : request.getContextPath();
+    String pdfUrl = ctx + "/api/nc/preview?path=" + urlEncodeUtf8(davPath);
+    String viewerUrl =
+        ctx + "/pdfjs/web/viewer.html?file=" + urlEncodeUtf8(pdfUrl);
+
+    response.sendRedirect(viewerUrl);
   }
 
   @GetMapping("/download-folder")
@@ -387,8 +473,8 @@ public class NextcloudFolderController {
 
     String zipName = buildZipDownloadName(folderPath);
 
-    Long logId = startDownloadLog("download_folder", folderPath, true, null, zipName,
-        "application/zip", request);
+    Long logId = startFileOpLog("DOWNLOAD_FOLDER", folderPath, null, null, true, null,
+        "application/zip", null, request);
 
     response.setStatus(200);
     response.setContentType("application/zip");
@@ -413,11 +499,11 @@ public class NextcloudFolderController {
 
       // 최종적으로 전송된 바이트 수 획득
       long bytesSent = cos.getBytesWritten();
-      markDownloadLogSuccess(logId, bytesSent);
+      markFileOpLogSuccess(logId, null, bytesSent);
 
     } catch (Exception e) {
       long bytesSentSoFar = (cos != null) ? cos.getBytesWritten() : 0L;
-      markDownloadLogFail(logId, e, bytesSentSoFar);
+      markFileOpLogFail(logId, e, null, bytesSentSoFar);
       throw e;
     } finally {
       safeClose(zos);
@@ -431,7 +517,8 @@ public class NextcloudFolderController {
           + "destDavPath 목적지 경로 예시 /ERP/2026/02/SB26-G0000/01.신청서\n"
           + "overwrite 목적지에 동일 이름이 있을 때 덮어쓰기 여부\n")
   @PostMapping("/move")
-  public NcSimpleResult moveWithSync(@RequestBody NcMoveRequest req) throws Exception {
+  public NcSimpleResult moveWithSync(@RequestBody NcMoveRequest req, HttpServletRequest request)
+      throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String userId = user.getId();
@@ -440,8 +527,15 @@ public class NextcloudFolderController {
     String dst = req == null ? "" : req.getDestDavPath();
     boolean overwrite = req != null && req.isOverwrite();
 
-    String moved = nextcloudDavService.moveWithDbSync(src, dst, overwrite, userId);
-    return NcSimpleResult.ok(moved);
+    Long logId = startFileOpLog("MOVE", dst, src, dst, true, null, null, null, request);
+    try {
+      String moved = nextcloudDavService.moveWithDbSync(src, dst, overwrite, userId);
+      markFileOpLogSuccess(logId, null, null);
+      return NcSimpleResult.ok(moved);
+    } catch (Exception e) {
+      markFileOpLogFail(logId, e, null, null);
+      throw e;
+    }
   }
 
   @ApiOperation(value = "복사 COPY함",
@@ -449,7 +543,8 @@ public class NextcloudFolderController {
           + "destDavPath 목적지 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더_복사\n"
           + "overwrite 목적지에 동일 이름이 있을 때 덮어쓰기 여부\n" + "metaMode 메타 반영 방식 TOP_ONLY 또는 FULL(기본)\n")
   @PostMapping("/copy")
-  public NcSimpleResult copyWithSync(@RequestBody NcCopyRequest req) throws Exception {
+  public NcSimpleResult copyWithSync(@RequestBody NcCopyRequest req, HttpServletRequest request)
+      throws Exception {
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
     String userId = user.getId();
 
@@ -458,8 +553,15 @@ public class NextcloudFolderController {
     boolean overwrite = req != null && req.isOverwrite();
     String metaMode = req == null ? null : req.getMetaMode();
 
-    String copied = nextcloudDavService.copyWithDbSync(src, dst, overwrite, userId, metaMode);
-    return NcSimpleResult.ok(copied);
+    Long logId = startFileOpLog("COPY", dst, src, dst, true, null, null, null, request);
+    try {
+      String copied = nextcloudDavService.copyWithDbSync(src, dst, overwrite, userId, metaMode);
+      markFileOpLogSuccess(logId, null, null);
+      return NcSimpleResult.ok(copied);
+    } catch (Exception e) {
+      markFileOpLogFail(logId, e, null, null);
+      throw e;
+    }
   }
 
   private long streamFileToResponse(String davPath, HttpServletResponse response) throws Exception {
@@ -808,10 +910,39 @@ public class NextcloudFolderController {
       ct = servletContext.getMimeType(fileName);
     }
     if (ct == null || ct.trim().isEmpty()) {
-      // 기본값
-      ct = "application/octet-stream";
+      ct = detectContentTypeByExt(fileName);
     }
     return ct;
+  }
+
+  private String detectContentTypeByExt(String fileName) {
+    String lower = fileName == null ? "" : fileName.toLowerCase();
+    int dot = lower.lastIndexOf('.');
+    String ext = dot < 0 ? "" : lower.substring(dot + 1);
+    if ("pdf".equals(ext)) return "application/pdf";
+    if ("jpg".equals(ext) || "jpeg".equals(ext)) return "image/jpeg";
+    if ("png".equals(ext)) return "image/png";
+    if ("gif".equals(ext)) return "image/gif";
+    if ("webp".equals(ext)) return "image/webp";
+    if ("bmp".equals(ext)) return "image/bmp";
+    if ("svg".equals(ext)) return "image/svg+xml";
+    if ("txt".equals(ext) || "log".equals(ext)) return "text/plain;charset=UTF-8";
+    if ("html".equals(ext) || "htm".equals(ext)) return "text/html;charset=UTF-8";
+    if ("json".equals(ext)) return "application/json;charset=UTF-8";
+    if ("xml".equals(ext)) return "application/xml;charset=UTF-8";
+    if ("csv".equals(ext)) return "text/csv;charset=UTF-8";
+    if ("zip".equals(ext)) return "application/zip";
+    if ("mp4".equals(ext)) return "video/mp4";
+    if ("mp3".equals(ext)) return "audio/mpeg";
+    if ("doc".equals(ext)) return "application/msword";
+    if ("docx".equals(ext)) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if ("xls".equals(ext)) return "application/vnd.ms-excel";
+    if ("xlsx".equals(ext)) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if ("ppt".equals(ext)) return "application/vnd.ms-powerpoint";
+    if ("pptx".equals(ext)) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if ("hwp".equals(ext)) return "application/x-hwp";
+    if ("hwpx".equals(ext)) return "application/haansofthwpx";
+    return "application/octet-stream";
   }
 
   private String buildContentDispositionByUa(String type, String originalFileName,
@@ -829,8 +960,26 @@ public class NextcloudFolderController {
     }
 
     // 3. 최신 브라우저 (Chrome, Safari, Firefox 등) 대응
-    // filename은 ASCII만 지원하므로 비워두거나 간단한 대체값 사용, filename*에 실제 한글 이름 저장
-    return type + "; filename=\"" + "download.zip" + "\"; filename*=UTF-8''" + encodedName;
+    // filename 은 ASCII 만 안전하므로 한글/특수문자는 '_'로 대체한 ASCII fallback 을 함께 내려보낸다.
+    // 실제 표시용 한글 이름은 RFC 5987 의 filename* 로 전달.
+    String asciiFallback = toAsciiFallbackName(original);
+    return type + "; filename=\"" + asciiFallback + "\"; filename*=UTF-8''" + encodedName;
+  }
+
+  private String toAsciiFallbackName(String original) {
+    if (original == null || original.isEmpty()) return "file";
+    StringBuilder sb = new StringBuilder(original.length());
+    for (int i = 0; i < original.length(); i++) {
+      char c = original.charAt(i);
+      // ASCII 가시문자만 허용. 따옴표/역슬래시/세미콜론은 헤더 파싱 안전을 위해 제거.
+      if (c >= 0x20 && c < 0x7F && c != '"' && c != '\\' && c != ';') {
+        sb.append(c);
+      } else {
+        sb.append('_');
+      }
+    }
+    String s = sb.toString().trim();
+    return s.isEmpty() ? "file" : s;
   }
 
   private boolean isLegacyIeFamily(String ua) {
@@ -896,45 +1045,59 @@ public class NextcloudFolderController {
     return request.getRemoteAddr();
   }
 
-  private DownloadLogVO buildDownloadLog(String mode, String davPath, boolean isFolder,
-      String fileName, String zipName, String contentType,
+  private FileOpLogVO buildFileOpLog(String opType, String davPath, String srcPath, String dstPath,
+      boolean isFolder, String fileName, String contentType, Long fileSize,
       javax.servlet.http.HttpServletRequest request) {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
-    DownloadLogVO log = new DownloadLogVO();
+    FileOpLogVO log = new FileOpLogVO();
     log.setUserId(user == null ? null : user.getId());
-    log.setSbkNo(ErpDavPathUtil.extractSbkNo(davPath));
+    log.setDept(user == null ? null : user.getDeptName());
+
+    // sbkNo는 경로에서 최대한 뽑아냄
+    String sbkNo = ErpDavPathUtil.extractSbkNo(davPath);
+    if ((sbkNo == null || sbkNo.trim().isEmpty()) && srcPath != null) {
+      sbkNo = ErpDavPathUtil.extractSbkNo(srcPath);
+    }
+    if ((sbkNo == null || sbkNo.trim().isEmpty()) && dstPath != null) {
+      sbkNo = ErpDavPathUtil.extractSbkNo(dstPath);
+    }
+
+    log.setSbkNo(sbkNo);
+    log.setOpType(opType);
+    log.setUploadSrc("A"); // Nextcloud API(/nc)는 파일 모달/연동 경로로 취급
     log.setDavPath(davPath);
+    log.setSrcPath(srcPath);
+    log.setDstPath(dstPath);
     log.setIsFolder(isFolder ? "Y" : "N");
-    log.setMode(mode);
     log.setFileName(fileName);
-    log.setZipName(zipName);
     log.setContentType(contentType);
+    log.setFileSize(fileSize == null ? 0L : fileSize);
+    log.setBytesSent(0L);
     log.setClientIp(resolveClientIp(request));
     log.setUserAgent(request == null ? null : request.getHeader("User-Agent"));
     log.setResultCd("START");
     log.setErrMsg(null);
-    log.setBytesSent(0L);
     return log;
   }
 
-  private Long startDownloadLog(String mode, String davPath, boolean isFolder, String fileName,
-      String zipName, String contentType, javax.servlet.http.HttpServletRequest request) {
+  private Long startFileOpLog(String opType, String davPath, String srcPath, String dstPath,
+      boolean isFolder, String fileName, String contentType, Long fileSize,
+      javax.servlet.http.HttpServletRequest request) {
 
-    DownloadLogVO log =
-        buildDownloadLog(mode, davPath, isFolder, fileName, zipName, contentType, request);
-
-    return downloadLogService.startLog(log);
+    FileOpLogVO log = buildFileOpLog(opType, davPath, srcPath, dstPath, isFolder, fileName,
+        contentType, fileSize, request);
+    return fileOpLogService.start(log);
   }
 
-  private void markDownloadLogSuccess(Long logId, long bytesSent) {
-    downloadLogService.success(logId, bytesSent);
+  private void markFileOpLogSuccess(Long logId, Long fileSize, Long bytesSent) {
+    fileOpLogService.success(logId, fileSize, bytesSent);
   }
 
-  private void markDownloadLogFail(Long logId, Exception e, long bytesSent) {
+  private void markFileOpLogFail(Long logId, Exception e, Long fileSize, Long bytesSent) {
     String msg = e == null ? null : e.getMessage();
-    downloadLogService.fail(logId, msg, bytesSent);
+    fileOpLogService.fail(logId, msg, fileSize, bytesSent);
   }
 
 

@@ -44,9 +44,9 @@ import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.VdipDTO;
+import egovframework.ncc.service.NextcloudDavService;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
-import egovframework.rte.fdl.property.EgovPropertyService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -61,9 +61,9 @@ public class RepController {
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
 
-  @Resource(name = "propertiesService")
-  protected EgovPropertyService propertyService;
-  
+  @Resource(name = "NextcloudDavService")
+  private NextcloudDavService nextcloudDavService;
+
   @ApiOperation(value = "성적서 상세보기")
   @GetMapping(value = "/raw/{testSeq}/report.do")
   public BasicResponse rawReport(@ApiParam(value = "시험 고유번호", required = true,
@@ -206,17 +206,9 @@ public class RepController {
             for (FileVO item : setupReulst) {
               PicDTO map = new PicDTO();
               map.setTitle(item.getFileCn());
-              
-//              if ("CDN".contentEquals(item.getFileLoc())) {
-//                map.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-//                    .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-//              } else {
-                map.setImageUrl(propertyService.getString("img.url").concat(detail.getSetupUrl())
-                    .concat("&fileSn=").concat(item.getFileSn()));
-//              }
-              
+              FileVO photoVO = fileMngService.selectFileInf(item);
+              map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
               setupList.add(map);
-    
             }
           }
           detail.setSetupList(setupList);
@@ -229,13 +221,9 @@ public class RepController {
         List<String> modList = new ArrayList<String>();
         if (modResult != null) {
           for (FileVO item : modResult) {
-//            if ("CDN".contentEquals(item.getFileLoc())) {
-//              modList.add(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-//                  .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-//            } else {
-              modList.add(propertyService.getString("img.url").concat(detail.getModUrl()).concat("&fileSn=")
-                  .concat(item.getFileSn()));
-//            }
+            FileVO photoVO = fileMngService.selectFileInf(item);
+            String url = nextcloudDavService.resolveFileUrl(photoVO);
+            modList.add(url != null ? url : "");
           }
         }
         detail.setModFileList(modList);
@@ -598,14 +586,8 @@ public class RepController {
               for (FileVO item : fileReulst) {
                 PicDTO pic = new PicDTO();
                 pic.setPicId(Integer.toString(i));
-                
-//                if ("CDN".contentEquals(item.getFileLoc())) {
-//                  pic.setImageUrl(propertyService.getString("cdn.url").concat(item.getFileStreCours()).concat("/")
-//                      .concat(item.getStreFileNm()).concat(".").concat(item.getFileExtsn()));
-//                } else {
-                  pic.setImageUrl(propertyService.getString("img.url").concat(img.getAtchFileId())
-                      .concat("&fileSn=").concat(item.getFileSn()));
-//                }
+                FileVO photoVO = fileMngService.selectFileInf(item);
+                pic.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
                 pic.setTitle(item.getFileCn());
                 pic.setMode(item.getFileMemo());
                 // 성적서에서만 사용
