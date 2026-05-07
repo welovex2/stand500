@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.ncc.service.FileOpLogMapper">
+
+  <insert id="insertFileOpLog" parameterType="fileOpLogVO" useGeneratedKeys="true"
+      keyProperty="logId">
+    INSERT INTO FILE_OP_LOG_TB
+    (
+      USER_ID,
+      DEPT,
+      SBK_NO,
+      OP_TYPE,
+      UPLOAD_SRC,
+      DAV_PATH,
+      SRC_PATH,
+      DST_PATH,
+      IS_FOLDER,
+      FILE_NAME,
+      CONTENT_TYPE,
+      FILE_SIZE,
+      BYTES_SENT,
+      CLIENT_IP,
+      USER_AGENT,
+      RESULT_CD,
+      ERR_MSG,
+      CREAT_DT
+    )
+    VALUES
+    (
+      #{userId},
+      #{dept},
+      #{sbkNo},
+      #{opType},
+      #{uploadSrc},
+      #{davPath},
+      #{srcPath},
+      #{dstPath},
+      #{isFolder},
+      #{fileName},
+      #{contentType},
+      #{fileSize},
+      #{bytesSent},
+      #{clientIp},
+      #{userAgent},
+      #{resultCd},
+      #{errMsg},
+      NOW()
+    )
+  </insert>
+
+  <update id="updateFileOpLogResult" parameterType="fileOpLogVO">
+    UPDATE FILE_OP_LOG_TB
+       SET RESULT_CD  = #{resultCd},
+           ERR_MSG    = #{errMsg},
+           FILE_SIZE  = COALESCE(#{fileSize}, FILE_SIZE),
+           BYTES_SENT = COALESCE(#{bytesSent}, BYTES_SENT),
+           UPDT_DT    = NOW()
+     WHERE LOG_ID = #{logId}
+  </update>
+
+</mapper>
+
