@@ -36,54 +36,60 @@
 	</select>
 
 	<select id="selectList" parameterType="comParam" resultType="egovMap">
-		set @rownum:=0;
-		
 		SELECT
-			@rownum:=@rownum+1 as no, 
+			@rownum:=@rownum+1 as no,
 			lst.*
 		FROM
 			(
 				SELECT
-					TEST_STNDR_TB.TEST_STNDR_SEQ,
-					TEST_STNDR_TB.TEST_STNDR,
-					IFNULL(TEST_STNDR_TB.TEST_TYPE_CODE, '') TEST_TYPE_CODE,
-					IFNULL(IF (TEST_STNDR_TB.TEST_TYPE_CODE = 'AA', '공통', FN_CODE_NAME (TEST_STNDR_TB.TEST_TYPE_CODE,'TT')), '') TEST_TYPE,
-					COUNT(DISTINCT TEST_TB.TEST_SEQ) AS useCnt,
-					IFNULL(TEST_STNDR_TB.MEMO, '') MEMO,
-					DATE_FORMAT(TEST_STNDR_TB.ins_dt, '%Y-%m-%d') insDtStr,
-					IFNULL(FN_MEM_NAME (TEST_STNDR_TB.ins_mem_id), '') memName
+					ts.TEST_STNDR_SEQ,
+					ts.TEST_STNDR,
+					IFNULL(ts.TEST_TYPE_CODE, '') TEST_TYPE_CODE,
+					IFNULL(IF (ts.TEST_TYPE_CODE = 'AA', '공통', FN_CODE_NAME (ts.TEST_TYPE_CODE,'TT')), '') TEST_TYPE,
+					IFNULL(u.useCnt, 0) AS useCnt,
+					IFNULL(ts.MEMO, '') MEMO,
+					DATE_FORMAT(ts.ins_dt, '%Y-%m-%d') insDtStr,
+					IFNULL(FN_MEM_NAME (ts.ins_mem_id), '') memName
 				FROM
-				    TEST_STNDR_TB
-				
-				LEFT JOIN TEST_ITEM_TB ON TEST_STNDR_TB.TEST_STNDR_SEQ = TEST_ITEM_TB.TEST_STNDR_SEQ AND TEST_ITEM_TB.STATE != 'D'
-				LEFT JOIN TEST_TB ON TEST_ITEM_TB.TEST_ITEM_SEQ = TEST_TB.TEST_ITEM_SEQ
-				
+				    TEST_STNDR_TB ts
+				LEFT JOIN (
+					SELECT
+						ti.TEST_STNDR_SEQ,
+						COUNT(DISTINCT t.TEST_SEQ) AS useCnt
+					FROM
+						TEST_ITEM_TB ti
+					LEFT JOIN TEST_TB t
+						ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+					WHERE
+						ti.STATE != 'D'
+					GROUP BY
+						ti.TEST_STNDR_SEQ
+				) u
+					ON ts.TEST_STNDR_SEQ = u.TEST_STNDR_SEQ
 				WHERE
-				    TEST_STNDR_TB.STATE != 'D'
-    
+				    ts.STATE != 'D'
+
 				<if test="searchVO != null">
 			        <foreach collection="searchVO" item="item" separator="">
-			       
+
 			        	<choose>
 			        		<!-- 2-작성자 -->
-	        				<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(TEST_STNDR_TB.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
+	        				<when test="item.searchCode == 2">AND IFNULL(FN_MEM_NAME(ts.INS_MEM_ID), '') LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 15-작성일 -->
-			        		<when test="item.searchCode == 15">AND DATE_FORMAT(TEST_STNDR_TB.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+			        		<when test="item.searchCode == 15">AND DATE_FORMAT(ts.INS_DT, '%Y%m%d') between date_format(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
 							<!-- 40	시험규격 -->
-							<when test="item.searchCode == 40">AND TEST_STNDR_TB.TEST_STNDR LIKE CONCAT('%',#{item.searchWord},'%')</when>
+							<when test="item.searchCode == 40">AND ts.TEST_STNDR LIKE CONCAT('%',#{item.searchWord},'%')</when>
 							<!-- 23	시험부 -->
-			        		<when test="item.searchCode == 23 and item.searchWords != null">AND TEST_STNDR_TB.TEST_TYPE_CODE IN
+			        		<when test="item.searchCode == 23 and item.searchWords != null">AND ts.TEST_TYPE_CODE IN
 			        			<foreach collection="item.searchWords" item="sub" open="(" close=")" separator=",">#{sub}</foreach>
 			        		</when>
 						</choose>
 					</foreach>
 				</if>
-				
-				GROUP BY TEST_STNDR_TB.TEST_STNDR_SEQ
-				ORDER BY TEST_STNDR_TB.TEST_STNDR_SEQ ASC
+
+				ORDER BY ts.TEST_STNDR_SEQ DESC
 			) lst
-		ORDER BY
-			no desc
+			CROSS JOIN (SELECT @rownum:=0) r
 	</select>
 	
 	<insert id="insert" parameterType="testStndrDTO">
