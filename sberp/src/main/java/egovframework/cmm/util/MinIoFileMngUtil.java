@@ -229,6 +229,7 @@ public class MinIoFileMngUtil {
       String fileExt = "";
       String newName = "";
       long _size = 0;
+      String davPath = "";
 
       if (file != null) {
 
@@ -286,7 +287,6 @@ public class MinIoFileMngUtil {
         String safeOriginal = "";
         boolean isUploaded = false;
         int count = 0;
-        String davPath = "";
 
         // 파일명 구성
         String fileExtForName = fileExt.isEmpty() ? "" : "." + fileExt;
@@ -343,25 +343,22 @@ public class MinIoFileMngUtil {
           davPath = nextcloudDavService.upload(file, objectKey);
 
         }
-
-        // === (6) FileVO 생성 ===
-        fvo = new FileVO();
-        fvo.setFileExtsn(fileExt);
-        fvo.setFileStreCours("NEXTCLOUD_DAV");
-        fvo.setFileMg(Long.toString(_size));
-        fvo.setOrignlFileNm(orginFileName);
-        fvo.setStreFileNm(davPath);
-        fvo.setAtchFileId(atchFileIdString);
-        fvo.setFileSn(String.valueOf(fileKey));
-        fvo.setFileOrdr(files.get(i).getFileOrdr() == 0 ? fileKey : files.get(i).getFileOrdr());
-        fvo.setFileCn(files.get(i).getTitle());
-        fvo.setFileMemo(files.get(i).getMode());
-
-        result.add(fvo);
-
-        fileKey++;
       }
 
+      fvo = new FileVO();
+      fvo.setFileExtsn(fileExt);
+      fvo.setFileStreCours("NEXTCLOUD_DAV");
+      fvo.setFileMg(Long.toString(_size));
+      fvo.setOrignlFileNm(orginFileName);
+      fvo.setStreFileNm(davPath);
+      fvo.setAtchFileId(atchFileIdString);
+      fvo.setFileSn(String.valueOf(fileKey));
+      fvo.setFileOrdr(files.get(i).getFileOrdr() == 0 ? fileKey : files.get(i).getFileOrdr());
+      fvo.setFileCn(files.get(i).getTitle());
+      fvo.setFileMemo(files.get(i).getMode());
+      result.add(fvo);
+
+      fileKey++;
       i++;
     }
 
