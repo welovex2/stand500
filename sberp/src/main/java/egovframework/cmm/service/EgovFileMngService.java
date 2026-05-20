@@ -188,4 +188,14 @@ public interface EgovFileMngService {
 
   public void copyFileDetailByPathPrefix(String src, String dst, String userId) throws Exception;
 
+  /**
+   * 첨부파일 ID로 표시용 이미지 URL을 반환한다. Nextcloud / 기존 ERP 저장소를 구분한다.
+   */
+  String resolveImageUrl(String atchFileId) throws Exception;
+
+  String resolveImageUrl(String atchFileId, String fileSn) throws Exception;
+
+  /** atchFileId, fileSn이 채워진 FileVO 기준 (목록 조회 후 URL 변환용) */
+  String resolveImageUrl(FileVO fileQuery) throws Exception;
+
 }

@@ -19,7 +19,6 @@ import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.JobMngr;
 import egovframework.cmm.service.SbkInfoVO;
-import egovframework.ncc.service.NextcloudDavService;
 import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.rte.fdl.idgnr.EgovIdGnrService;
 import egovframework.sbk.service.SbkDTO;
@@ -50,27 +49,15 @@ public class SbkServiceImpl implements SbkService {
   @Autowired
   EgovFileMngService fileMngService;
 
-  @Autowired
-  private NextcloudDavService nextcloudDavService;
-
   @Override
   public SbkDTO.Res selectDetail(Req req) throws Exception {
     SbkDTO.Res detail;
 
     detail = sbkMapper.selectDetail(req);
 
-    // 신청인 서명 이미지
     if (!ObjectUtils.isEmpty(detail)) {
-      FileVO fileVO = new FileVO();
-      fileVO.setAtchFileId(detail.getAppSignUrl());
-      FileVO photoVO = fileMngService.selectFileInf(fileVO);
-      detail.setAppSignUrl(nextcloudDavService.resolveFileUrl(photoVO));
-
-      // 회사연동 서명 이미지
-      fileVO = new FileVO();
-      fileVO.setAtchFileId(detail.getRprsnSignUrl());
-      photoVO = fileMngService.selectFileInf(fileVO);
-      detail.setRprsnSignUrl(nextcloudDavService.resolveFileUrl(photoVO));
+      detail.setAppSignUrl(fileMngService.resolveImageUrl(detail.getAppSignUrl()));
+      detail.setRprsnSignUrl(fileMngService.resolveImageUrl(detail.getRprsnSignUrl()));
     }
 
     if (detail != null) {

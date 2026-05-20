@@ -9,13 +9,11 @@ import egovframework.cmm.service.CmmService;
 import egovframework.cmm.service.Comcode;
 import egovframework.cmm.service.Dept;
 import egovframework.cmm.service.EgovFileMngService;
-import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.Job;
 import egovframework.cmm.service.JobMngr;
 import egovframework.cnf.service.Cmpy;
 import egovframework.cnf.service.CmpyMng;
 import egovframework.cnf.service.Member;
-import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.cmmn.EgovAbstractServiceImpl;
 
 @Service("CmmService")
@@ -26,9 +24,6 @@ public class CmmServiceImpl extends EgovAbstractServiceImpl implements CmmServic
 
   @Autowired
   EgovFileMngService fileMngService;
-
-  @Autowired
-  private NextcloudDavService nextcloudDavService;
 
 
   @Override
@@ -59,11 +54,7 @@ public class CmmServiceImpl extends EgovAbstractServiceImpl implements CmmServic
     if (detail == null)
       throw processException("info.nodata.msg");
 
-    // 서명 이미지
-    FileVO fileVO = new FileVO();
-    fileVO.setAtchFileId(detail.getRprsnSign());
-    FileVO rprsnSignVO = fileMngService.selectFileInf(fileVO);
-    detail.setRprsnSignUrl(nextcloudDavService.resolveFileUrl(rprsnSignVO));
+    detail.setRprsnSignUrl(fileMngService.resolveImageUrl(detail.getRprsnSign()));
 
     return detail;
   }

@@ -10,7 +10,6 @@ import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
-import egovframework.ncc.service.NextcloudDavService;
 import egovframework.sys.service.MacCal;
 import egovframework.sys.service.MacCalDTO;
 import egovframework.sys.service.MacMapper;
@@ -27,9 +26,6 @@ public class MacServiceImpl implements MacService {
   @Autowired
   EgovFileMngService fileMngService;
 
-  @Autowired
-  private NextcloudDavService nextcloudDavService;
-
   @Override
   public MachineDTO selectDetail(int machineSeq) {
 
@@ -39,10 +35,7 @@ public class MacServiceImpl implements MacService {
       detail = macMapper.selectDetail(machineSeq);;
       // 장비이미지
       if (!ObjectUtils.isEmpty(detail)) {
-        FileVO fileVO = new FileVO();
-        fileVO.setAtchFileId(detail.getAtchFileId());
-        FileVO photoVO = fileMngService.selectFileInf(fileVO);
-        detail.setPhoto(nextcloudDavService.resolveFileUrl(photoVO));
+        detail.setPhoto(fileMngService.resolveImageUrl(detail.getAtchFileId()));
       }
 
       // 교정정보 추가하기

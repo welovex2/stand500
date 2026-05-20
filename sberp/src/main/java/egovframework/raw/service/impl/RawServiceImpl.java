@@ -16,7 +16,6 @@ import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
 import egovframework.cmm.service.SbkInfoVO;
-import egovframework.ncc.service.NextcloudDavService;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
 import egovframework.raw.dto.CsDTO;
@@ -72,9 +71,6 @@ public class RawServiceImpl implements RawService {
 
   @Autowired
   EgovPropertyService propertyService;
-
-  @Autowired
-  private NextcloudDavService nextcloudDavService;
 
   @Override
   @Transactional
@@ -424,7 +420,7 @@ public class RawServiceImpl implements RawService {
           PicDTO map = new PicDTO();
           map.setTitle(item.getFileCn());
           map.setFileSn(item.getFileSn());
-          map.setImageUrl(nextcloudDavService.resolveFileUrl(item));
+          map.setImageUrl(fileMngService.resolveImageUrl(item));
 
           setupList.add(map);
 
@@ -471,6 +467,9 @@ public class RawServiceImpl implements RawService {
 
 
     if (detail != null) {
+      detail.setTestSignUrl(fileMngService.resolveImageUrl(detail.getTestAtchFileId()));
+      detail.setRevSignUrl(fileMngService.resolveImageUrl(detail.getRevAtchFileId()));
+
       // 성적서 발급내역 리스트 가져오기
       detail.setReportList(rawMapper.reportDetail(req.getTestSeq()));
 
@@ -491,9 +490,7 @@ public class RawServiceImpl implements RawService {
         for (FileVO item : modResult) {
           PicDTO map = new PicDTO();
 
-          FileVO photoVO = fileMngService.selectFileInf(item);
-
-          map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
+          map.setImageUrl(fileMngService.resolveImageUrl(item));
 
           map.setFileSn(item.getFileSn());
 
@@ -516,11 +513,8 @@ public class RawServiceImpl implements RawService {
         for (FileVO item : setupReulst) {
 
           PicDTO map = new PicDTO();
-
-          FileVO photoVO = fileMngService.selectFileInf(item);
-
           map.setTitle(item.getFileCn());
-          map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
+          map.setImageUrl(fileMngService.resolveImageUrl(item));
           map.setFileSn(item.getFileSn());
 
           setupList.add(map);
@@ -1053,9 +1047,7 @@ public class RawServiceImpl implements RawService {
         for (FileVO item : fileReulst) {
           PicDTO pic = new PicDTO();
 
-          FileVO photoVO = fileMngService.selectFileInf(item);
-
-          pic.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
+          pic.setImageUrl(fileMngService.resolveImageUrl(item));
           pic.setTitle(item.getFileCn());
           pic.setMode(item.getFileMemo());
           pic.setFileSn(item.getFileSn());

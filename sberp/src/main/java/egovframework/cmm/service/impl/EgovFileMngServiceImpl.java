@@ -430,6 +430,43 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     return fileMapper.selectFileInf(fvo);
   }
 
+  @Override
+  public String resolveImageUrl(String atchFileId) throws Exception {
+    return resolveImageUrl(atchFileId, "0");
+  }
+
+  @Override
+  public String resolveImageUrl(String atchFileId, String fileSn) throws Exception {
+    if (atchFileId == null || atchFileId.trim().isEmpty()) {
+      return "";
+    }
+    FileVO q = new FileVO();
+    q.setAtchFileId(atchFileId.trim());
+    q.setFileSn(fileSn == null || fileSn.trim().isEmpty() ? "0" : fileSn.trim());
+    FileVO file = fileMapper.selectFileInf(q);
+    if (file == null) {
+      return "";
+    }
+    String url = nextcloudDavService.resolveFileUrl(file);
+    return url == null ? "" : url;
+  }
+
+  @Override
+  public String resolveImageUrl(FileVO fileQuery) throws Exception {
+    if (fileQuery == null) {
+      return "";
+    }
+    String atchFileId = fileQuery.getAtchFileId();
+    if (atchFileId == null || atchFileId.trim().isEmpty()) {
+      return "";
+    }
+    if (fileQuery.getFileStreCours() != null && !fileQuery.getFileStreCours().trim().isEmpty()) {
+      String url = nextcloudDavService.resolveFileUrl(fileQuery);
+      return url == null ? "" : url;
+    }
+    return resolveImageUrl(atchFileId, fileQuery.getFileSn());
+  }
+
   /**
    * 파일 구분자에 대한 최대값을 구한다.
    *

@@ -10,14 +10,12 @@ import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.Dept;
 import egovframework.cmm.service.EgovFileMngService;
-import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.Pos;
 import egovframework.cmm.util.EgovFileScrty;
 import egovframework.cnf.service.MemMapper;
 import egovframework.cnf.service.MemService;
 import egovframework.cnf.service.Member;
-import egovframework.ncc.service.NextcloudDavService;
 
 @Service("MemService")
 public class MemServiceImpl implements MemService {
@@ -27,9 +25,6 @@ public class MemServiceImpl implements MemService {
 
   @Autowired
   EgovFileMngService fileMngService;
-
-  @Autowired
-  private NextcloudDavService nextcloudDavService;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MemServiceImpl.class);
 
@@ -63,11 +58,7 @@ public class MemServiceImpl implements MemService {
     Member detail = memMapper.detail(cmpySeq);
 
     if (detail != null) {
-      // 서명 이미지
-      FileVO fileVO = new FileVO();
-      fileVO.setAtchFileId(detail.getSgnUrl());
-      FileVO rprsnSignVO = fileMngService.selectFileInf(fileVO);
-      detail.setSgnUrl(nextcloudDavService.resolveFileUrl(rprsnSignVO));
+      detail.setSgnUrl(fileMngService.resolveImageUrl(detail.getSgnUrl()));
     }
 
     return detail;

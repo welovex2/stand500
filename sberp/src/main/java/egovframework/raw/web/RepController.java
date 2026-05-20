@@ -44,7 +44,6 @@ import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.VdipDTO;
-import egovframework.ncc.service.NextcloudDavService;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
 import io.swagger.annotations.Api;
@@ -60,9 +59,6 @@ public class RepController {
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
-
-  @Resource(name = "NextcloudDavService")
-  private NextcloudDavService nextcloudDavService;
 
   @ApiOperation(value = "성적서 상세보기")
   @GetMapping(value = "/raw/{testSeq}/report.do")
@@ -206,8 +202,7 @@ public class RepController {
             for (FileVO item : setupReulst) {
               PicDTO map = new PicDTO();
               map.setTitle(item.getFileCn());
-              FileVO photoVO = fileMngService.selectFileInf(item);
-              map.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
+              map.setImageUrl(fileMngService.resolveImageUrl(item));
               setupList.add(map);
             }
           }
@@ -221,9 +216,7 @@ public class RepController {
         List<String> modList = new ArrayList<String>();
         if (modResult != null) {
           for (FileVO item : modResult) {
-            FileVO photoVO = fileMngService.selectFileInf(item);
-            String url = nextcloudDavService.resolveFileUrl(photoVO);
-            modList.add(url != null ? url : "");
+            modList.add(fileMngService.resolveImageUrl(item));
           }
         }
         detail.setModFileList(modList);
@@ -586,8 +579,7 @@ public class RepController {
               for (FileVO item : fileReulst) {
                 PicDTO pic = new PicDTO();
                 pic.setPicId(Integer.toString(i));
-                FileVO photoVO = fileMngService.selectFileInf(item);
-                pic.setImageUrl(nextcloudDavService.resolveFileUrl(photoVO));
+                pic.setImageUrl(fileMngService.resolveImageUrl(item));
                 pic.setTitle(item.getFileCn());
                 pic.setMode(item.getFileMemo());
                 // 성적서에서만 사용
