@@ -66,11 +66,7 @@ public class SbkServiceImpl implements SbkService {
 
     if (detail != null) {
       detail.setItems(sbkMapper.selectTestItemList(req));
-      if (detail.getItems() != null) {
-        for (egovframework.tst.service.TestItem item : detail.getItems()) {
-          item.setRevSignUrl(fileMngService.resolveImageUrl(item.getAtchFileId()));
-        }
-      }
+      resolveRevSignUrls(detail.getItems());
     }
     return detail;
   }
@@ -152,6 +148,7 @@ public class SbkServiceImpl implements SbkService {
         List<TestItemDTO> subList = sbkMapper.selectSubList(item.getSbkId(), param.getSearchVO());
 
         if (!ObjectUtils.isEmpty(subList)) {
+          resolveRevSignUrls(subList);
           item.setItems(subList);
         }
       }
@@ -164,6 +161,26 @@ public class SbkServiceImpl implements SbkService {
     }
 
     return list;
+  }
+
+  private void resolveRevSignUrls(List<TestItemDTO> items) {
+    if (items == null) {
+      return;
+    }
+    for (TestItemDTO item : items) {
+      String atchFileId = item.getAtchFileId();
+      if (atchFileId == null || atchFileId.isEmpty()) {
+        atchFileId = item.getRevSignUrl();
+      }
+      if (atchFileId == null || atchFileId.isEmpty()) {
+        continue;
+      }
+      try {
+        item.setRevSignUrl(fileMngService.resolveImageUrl(atchFileId));
+      } catch (Exception e) {
+        item.setRevSignUrl("");
+      }
+    }
   }
 
   @Override

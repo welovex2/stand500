@@ -50,8 +50,10 @@
 		SELECT
 		    CONCAT('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ,4,0),
 		           IF(REVISION > 0, CONCAT('-', REVISION), '')) AS sbkId,
-			MAX(CASE WHEN FDT.FILE_CN = '제품 전면' THEN CONCAT('/api/file/getImage.do?atchFileId=',MIT.ATCH_FILE_ID,'&fileSn=',FDT.FILE_SN) END) AS picFront,
-    		MAX(CASE WHEN FDT.FILE_CN = '제품 후면' THEN CONCAT('/api/file/getImage.do?atchFileId=',MIT.ATCH_FILE_ID,'&fileSn=',FDT.FILE_SN) END) AS picBack,
+			MAX(CASE WHEN FDT.FILE_CN = '제품 전면' THEN MIT.ATCH_FILE_ID END) AS picFrontAtchFileId,
+    		MAX(CASE WHEN FDT.FILE_CN = '제품 전면' THEN FDT.FILE_SN END) AS picFrontFileSn,
+    		MAX(CASE WHEN FDT.FILE_CN = '제품 후면' THEN MIT.ATCH_FILE_ID END) AS picBackAtchFileId,
+    		MAX(CASE WHEN FDT.FILE_CN = '제품 후면' THEN FDT.FILE_SN END) AS picBackFileSn,
 		    TEST_TB.REPORT_NO,
 		    RAW_TB.REV_BY,
 		    RPRSN_SIGN AS RPRSN_SIGN,

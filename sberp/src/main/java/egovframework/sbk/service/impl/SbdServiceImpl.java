@@ -28,6 +28,7 @@ public class SbdServiceImpl implements SbdService {
   public Sbd selectBhDetail(String sbkId) {
     Sbd detail = sbdMapper.selectBhDetail(sbkId);
     resolveRprsnSign(detail);
+    resolveProductPics(detail);
     return detail;
   }
 
@@ -56,6 +57,25 @@ public class SbdServiceImpl implements SbdService {
       detail.setRprsnSign(fileMngService.resolveImageUrl(detail.getRprsnSign()));
     } catch (Exception e) {
       detail.setRprsnSign("");
+    }
+  }
+
+  private void resolveProductPics(Sbd detail) {
+    if (ObjectUtils.isEmpty(detail)) {
+      return;
+    }
+    try {
+      if (detail.getPicFrontAtchFileId() != null && !detail.getPicFrontAtchFileId().isEmpty()) {
+        String fileSn = detail.getPicFrontFileSn() != null ? detail.getPicFrontFileSn() : "0";
+        detail.setPicFront(fileMngService.resolveImageUrl(detail.getPicFrontAtchFileId(), fileSn));
+      }
+      if (detail.getPicBackAtchFileId() != null && !detail.getPicBackAtchFileId().isEmpty()) {
+        String fileSn = detail.getPicBackFileSn() != null ? detail.getPicBackFileSn() : "0";
+        detail.setPicBack(fileMngService.resolveImageUrl(detail.getPicBackAtchFileId(), fileSn));
+      }
+    } catch (Exception e) {
+      detail.setPicFront("");
+      detail.setPicBack("");
     }
   }
 }

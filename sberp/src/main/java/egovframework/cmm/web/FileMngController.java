@@ -61,7 +61,7 @@ public class FileMngController {
     }
     
     /**
-     * 첨부된 이미지에 대한 미리보기 기능을 제공한다.
+     * 첨부된 이미지에 대한 미리보기 기능을 제공한다. (구 로컬 파일서버 전용)
      *
      * @param atchFileId
      * @param fileSn
@@ -74,25 +74,32 @@ public class FileMngController {
 	@RequestMapping("/getImage.do")
     public void getImageInf(ModelMap model, @RequestParam Map<String, Object> commandMap, HttpServletResponse response) throws Exception {
 
-		//@RequestParam("atchFileId") String atchFileId,
-		//@RequestParam("fileSn") String fileSn,
 		String atchFileId = (String)commandMap.get("atchFileId");
 		String fileSn = (String)commandMap.get("fileSn");
 
 		FileVO vo = new FileVO();
-
 		vo.setAtchFileId(atchFileId);
 		vo.setFileSn(fileSn);
 
 		FileVO fvo = fileService.selectFileInf(vo);
+		if (fvo == null) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
 
-		//String fileLoaction = fvo.getFileStreCours() + fvo.getStreFileNm();
+		if ("NEXTCLOUD_DAV".equals(fvo.getFileStreCours())) {
+			LOGGER.debug("getImage.do is legacy-only. atchFileId={}", atchFileId);
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
 
-		
-		//File file = addImageWatermark(new File(fvo.getFileStreCours(), fvo.getStreFileNm()),new File(fvo.getFileStreCours(), fvo.getStreFileNm()), new File(fvo.getFileStreCours(), fvo.getStreFileNm()));
 		File file = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
-		FileInputStream fis = null;
+		if (!file.exists() || file.length() <= 0) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
 
+		FileInputStream fis = null;
 		BufferedInputStream in = null;
 		ByteArrayOutputStream bStream = null;
 		try{

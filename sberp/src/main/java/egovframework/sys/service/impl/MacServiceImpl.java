@@ -2,7 +2,6 @@ package egovframework.sys.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -170,12 +169,15 @@ public class MacServiceImpl implements MacService {
 
     List<MachineDTO> list = macMapper.selectTotalList(param);
 
-    list.stream().map(mac -> {
-      if (!"-".equals(mac.getPhoto())) { // '-' 값이 아닐 경우에만 변환
-        mac.setPhoto("/api/file/getImage.do?atchFileId=" + mac.getPhoto() + "&fileSn=0");
+    for (MachineDTO mac : list) {
+      if (mac.getPhoto() != null && !"-".equals(mac.getPhoto())) {
+        try {
+          mac.setPhoto(fileMngService.resolveImageUrl(mac.getPhoto()));
+        } catch (Exception e) {
+          mac.setPhoto("");
+        }
       }
-      return mac;
-    }).collect(Collectors.toList());
+    }
 
     // 번호 매기기
     for (int i = 0; i < list.size(); i++) {

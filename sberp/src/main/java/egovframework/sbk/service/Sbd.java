@@ -17,6 +17,10 @@ public class Sbd {
   private String rprsnSign;
   private String picFront;
   private String picBack;
+  private String picFrontAtchFileId;
+  private String picFrontFileSn;
+  private String picBackAtchFileId;
+  private String picBackFileSn;
   private String reportNo;
   private String revBy;
   private String prdIdntf;

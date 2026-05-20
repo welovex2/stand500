@@ -9,7 +9,6 @@ import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
-import egovframework.ncc.service.NextcloudDavService;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
 import egovframework.sam.service.ImSub;
@@ -24,9 +23,6 @@ public class SamServiceImpl implements SamService {
 
   @Autowired
   EgovFileMngService fileMngService;
-
-  @Autowired
-  private NextcloudDavService nextcloudDavService;
 
   @Override
   @Transactional
@@ -100,9 +96,13 @@ public class SamServiceImpl implements SamService {
 
       List<FileVO> picResult = fileMngService.selectImageFileList(fileVO);
 
-      picResult.forEach(pic -> {
-        pic.setFileStreCours(nextcloudDavService.resolveFileUrl(pic));
-      });
+      for (FileVO pic : picResult) {
+        try {
+          pic.setFileStreCours(fileMngService.resolveImageUrl(pic));
+        } catch (Exception e) {
+          pic.setFileStreCours("");
+        }
+      }
 
       result.setPicList(picResult);
     }
