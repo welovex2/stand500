@@ -7,9 +7,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.text.Collator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -88,13 +93,18 @@ public class NextcloudFolderController {
 
   /** 4) 선택 폴더 안의 폴더+파일 목록(Depth=1) */
   @ApiOperation(value = "폴더 목록 조회",
-      notes = "path 폴더 경로 예시 /ERP/2026/02/SB26-G0000\n" + "path 비우면 루트 기준으로 조회\n")
+      notes = "path 폴더 경로 예시 /ERP/2026/02/SB26-G0000\n" + "path 비우면 루트 기준으로 조회\n"
+          + "sort 정렬 기준: name(기본, 숫자 자연 정렬) | date | size\n" + "order 정렬 방향: asc(기본) | desc\n")
   @GetMapping("/list")
   public Map<String, Object> list(
-      @RequestParam(name = "path", required = false, defaultValue = "") String path)
+      @RequestParam(name = "path", required = false, defaultValue = "") String path,
+      @RequestParam(name = "sort", required = false, defaultValue = "name") String sort,
+      @RequestParam(name = "order", required = false, defaultValue = "asc") String order)
       throws Exception {
 
     String base = ErpDavPathUtil.normalizePathOrRoot(path);
+    String sortKey = normalizeListSort(sort);
+    String orderKey = normalizeListOrder(order);
 
     WebDavListResponseDTO raw = nextcloudDavService.list(base, 1);
 
@@ -104,17 +114,12 @@ public class NextcloudFolderController {
             .filter(it -> !ErpDavPathUtil.normalizePath(it.getDavPath()).equals(raw.getDavPath()))
             .collect(Collectors.toList());
 
-    // 폴더 먼저, 파일 나중(정렬)
-    items.sort((a, b) -> {
-      if (a.isDirectory() != b.isDirectory())
-        return a.isDirectory() ? -1 : 1;
-      String an = a.getName() == null ? "" : a.getName();
-      String bn = b.getName() == null ? "" : b.getName();
-      return an.compareToIgnoreCase(bn);
-    });
+    sortWebDavItems(items, sortKey, orderKey);
 
     Map<String, Object> res = new LinkedHashMap<String, Object>();
     res.put("path", raw.getDavPath());
+    res.put("sort", sortKey);
+    res.put("order", orderKey);
     res.put("items", items);
     return res;
   }
@@ -246,17 +251,144 @@ public class NextcloudFolderController {
     if (node.getChildren() == null)
       return;
 
-    node.getChildren().sort((a, b) -> {
-      if (a.isDirectory() != b.isDirectory())
-        return a.isDirectory() ? -1 : 1;
-      String an = a.getName() == null ? "" : a.getName();
-      String bn = b.getName() == null ? "" : b.getName();
-      return an.compareToIgnoreCase(bn);
-    });
+    sortWebDavNodes(node.getChildren(), "name", "asc");
 
     for (WebDavNodeDTO c : node.getChildren()) {
       sortTree(c);
     }
+  }
+
+  private static String normalizeListSort(String sort) {
+    if (sort == null) {
+      return "name";
+    }
+    String key = sort.trim().toLowerCase(Locale.ROOT);
+    if ("date".equals(key) || "size".equals(key)) {
+      return key;
+    }
+    return "name";
+  }
+
+  private static String normalizeListOrder(String order) {
+    if (order != null && "desc".equalsIgnoreCase(order.trim())) {
+      return "desc";
+    }
+    return "asc";
+  }
+
+  /** 폴더 우선, 동일 유형 내 sort/order 적용 */
+  private void sortWebDavItems(List<WebDavItemDTO> items, String sort, String order) {
+    if (items == null || items.isEmpty()) {
+      return;
+    }
+    Comparator<WebDavItemDTO> bySort = buildWebDavItemComparator(sort);
+    if ("desc".equals(order)) {
+      bySort = bySort.reversed();
+    }
+    final Comparator<WebDavItemDTO> itemComparator = bySort;
+    items.sort((a, b) -> {
+      if (a.isDirectory() != b.isDirectory()) {
+        return a.isDirectory() ? -1 : 1;
+      }
+      return itemComparator.compare(a, b);
+    });
+  }
+
+  private void sortWebDavNodes(List<WebDavNodeDTO> nodes, String sort, String order) {
+    if (nodes == null || nodes.isEmpty()) {
+      return;
+    }
+    Comparator<WebDavNodeDTO> bySort = buildWebDavNodeComparator(sort);
+    if ("desc".equals(order)) {
+      bySort = bySort.reversed();
+    }
+    final Comparator<WebDavNodeDTO> nodeComparator = bySort;
+    nodes.sort((a, b) -> {
+      if (a.isDirectory() != b.isDirectory()) {
+        return a.isDirectory() ? -1 : 1;
+      }
+      return nodeComparator.compare(a, b);
+    });
+  }
+
+  private static final Pattern NATURAL_NAME_PARTS = Pattern.compile("\\d+|\\D+");
+
+  private static final Collator KOREAN_NAME_COLLATOR;
+
+  static {
+    KOREAN_NAME_COLLATOR = Collator.getInstance(Locale.KOREAN);
+    KOREAN_NAME_COLLATOR.setStrength(Collator.PRIMARY);
+  }
+
+  /** 파일명 숫자 구간은 수치로, 나머지는 한글 locale 로 비교 (1 → 2 → 10 순) */
+  private static int compareNaturalFileName(String a, String b) {
+    if (a == null) {
+      a = "";
+    }
+    if (b == null) {
+      b = "";
+    }
+    if (a.equals(b)) {
+      return 0;
+    }
+
+    Matcher ma = NATURAL_NAME_PARTS.matcher(a);
+    Matcher mb = NATURAL_NAME_PARTS.matcher(b);
+
+    while (ma.find() && mb.find()) {
+      String pa = ma.group();
+      String pb = mb.group();
+      boolean da = Character.isDigit(pa.charAt(0));
+      boolean db = Character.isDigit(pb.charAt(0));
+      int cmp;
+      if (da && db) {
+        cmp = compareNumericToken(pa, pb);
+      } else {
+        cmp = KOREAN_NAME_COLLATOR.compare(pa, pb);
+      }
+      if (cmp != 0) {
+        return cmp;
+      }
+    }
+    if (ma.hitEnd() && mb.hitEnd()) {
+      return 0;
+    }
+    return ma.hitEnd() ? -1 : 1;
+  }
+
+  private static int compareNumericToken(String a, String b) {
+    if (a.length() != b.length()) {
+      return a.length() - b.length();
+    }
+    return a.compareTo(b);
+  }
+
+  private Comparator<WebDavItemDTO> buildWebDavItemComparator(String sort) {
+    if ("date".equals(sort)) {
+      return Comparator.comparing(
+          it -> it.getLastModified() == null ? "" : it.getLastModified(),
+          String.CASE_INSENSITIVE_ORDER);
+    }
+    if ("size".equals(sort)) {
+      return Comparator.comparing(it -> it.getSize() == null ? 0L : it.getSize());
+    }
+    return (a, b) -> compareNaturalFileName(
+        a.getName() == null ? "" : a.getName(),
+        b.getName() == null ? "" : b.getName());
+  }
+
+  private Comparator<WebDavNodeDTO> buildWebDavNodeComparator(String sort) {
+    if ("date".equals(sort)) {
+      return Comparator.comparing(
+          it -> it.getLastModified() == null ? "" : it.getLastModified(),
+          String.CASE_INSENSITIVE_ORDER);
+    }
+    if ("size".equals(sort)) {
+      return Comparator.comparing(it -> it.getSize() == null ? 0L : it.getSize());
+    }
+    return (a, b) -> compareNaturalFileName(
+        a.getName() == null ? "" : a.getName(),
+        b.getName() == null ? "" : b.getName());
   }
 
   private static final String ROOT = "/ERP"; // 설정값으로 빼는 걸 추천
