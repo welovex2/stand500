@@ -117,24 +117,24 @@
 	
 	<select id="comcodeList" parameterType="String" resultType="egovMap">
 		SELECT 
-			type_cd,
-			type_name,
-			memo
+			TYPE_CD,
+			TYPE_NAME,
+			MEMO
 		FROM COMCODE_TB
-		WHERE use_yn = 1
-		AND top_cd = #{code}
+		WHERE USE_YN = 1
+		AND TOP_CD = #{CODE}
 		ORDER BY DIS_ORDR, COMCODE_SEQ;
 	</select>
 	
 	<select id="deptList" resultType="egovMap">
-		select 
-			dept_seq
-			, name
-		from DEPT_TB
-		where 1=1
-		and state != 'D'
-		and TEST_YN = 1
-		order by oder
+		SELECT 
+			DEPT_SEQ
+			, NAME
+		FROM DEPT_TB
+		WHERE 1=1
+		AND STATE != 'D'
+		AND TEST_YN = 1
+		ORDER BY ODER
 	</select>
 	
 	<select id="revMemList" parameterType="int" resultType="egovMap">
@@ -159,7 +159,8 @@
 		AND STATE != 'D'
 		/*and REV_YN = 1*/
 		AND WORK_STATE = '1'
-		AND DEPT_SEQ = #{deptSeq};
+		AND DEPT_SEQ = #{deptSeq}
+		ORDER BY MEM_NAME;
 	</select>
 	
 	<update id="jobStateUpdate" parameterType="job">

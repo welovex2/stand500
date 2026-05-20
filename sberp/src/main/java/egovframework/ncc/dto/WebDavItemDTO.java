@@ -18,6 +18,15 @@ public class WebDavItemDTO {
   private boolean canWrite;
   private String uploadSrc;
 
+  /** 파일의 MIME 타입. 예: "application/pdf", "image/jpeg". 폴더면 null. */
+  private String mimeType;
+
+  /** 프론트에서 "보기" 버튼을 노출할지 여부. 폴더는 false. */
+  private boolean previewable;
+
+  /** 미리보기 분류. "IMAGE" | "PDF" | "ONLYOFFICE" | "NONE". 폴더는 "NONE". */
+  private String previewType;
+
   public String getDavPath() {
     return decode(davPath);
   }

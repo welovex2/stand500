@@ -61,6 +61,23 @@ public class TstServiceImpl implements TstService {
   @Transactional
   public boolean insert(Req req) throws Exception {
 
+    // 시험부 코드: TEST_ITEM_TB 단일 원천 (요청값과 불일치 시 요청 무시)
+    String authoritative = tstMapper.selectTestTypeCodeByTestItemSeq(req.getTestItemSeq());
+    if (!StringUtils.hasText(authoritative)) {
+      log.warn("makeTest: TEST_ITEM_TB.TEST_TYPE_CODE 없음 또는 삭제된 항목. testItemSeq={}",
+          req.getTestItemSeq());
+      return false;
+    }
+    authoritative = authoritative.trim();
+
+    String fromClient = req.getTestTypeCode();
+    if (StringUtils.hasText(fromClient) && !sameTestTypeBucket(authoritative, fromClient.trim())) {
+      log.warn(
+          "makeTest: 요청 testTypeCode 와 TEST_ITEM_TB 불일치 — DB 값 사용. testItemSeq={} db={} client={}",
+          req.getTestItemSeq(), authoritative, fromClient);
+    }
+    req.setTestTypeCode(authoritative);
+
     // 1. 별도의 쿼리로 testNo를 먼저 계산해서 객체에 담음
     int nextNo = tstMapper.selectNextTestNo(req);
     req.setTestNo(nextNo);
@@ -95,6 +112,16 @@ public class TstServiceImpl implements TstService {
     createSubFolders(basePath, type);
 
     return true;
+  }
+
+  /** NS/SF 는 채번·표시 로직과 동일하게 동일 시험부 묶음으로 본다. */
+  private static boolean sameTestTypeBucket(String a, String b) {
+    if (a == null || b == null) {
+      return false;
+    }
+    String na = "NS".equals(a) ? "SF" : a;
+    String nb = "NS".equals(b) ? "SF" : b;
+    return na.equals(nb);
   }
 
   /**

@@ -22,6 +22,11 @@ public interface TstMapper {
 
   public Test selectDetail(Req req);
 
+  /**
+   * 시험 신청 시 시험부 코드의 단일 원천. 클라이언트 {@code testTypeCode} 대신 DB 값을 사용한다.
+   */
+  String selectTestTypeCodeByTestItemSeq(@Param("testItemSeq") int testItemSeq);
+
   public int selectNextTestNo(Req req);
 
   public boolean insert(Req req);

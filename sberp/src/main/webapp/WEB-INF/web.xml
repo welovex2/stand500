@@ -81,6 +81,12 @@
 	<welcome-file-list>
 		<welcome-file>index.jsp</welcome-file>
 	</welcome-file-list>
+
+	<!-- PDF.js 4.x: viewer.mjs 등 ES 모듈. Tomcat 기본 mime 에 없으면 스크립트 로드 실패로 뷰어가 비어 보일 수 있음 -->
+	<mime-mapping>
+		<extension>mjs</extension>
+		<mime-type>text/javascript</mime-type>
+	</mime-mapping>
     
     <session-config>
     	<!-- 60 = 1시간 , 600 = 10시간 -->

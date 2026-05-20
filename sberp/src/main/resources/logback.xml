@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SLF4J 구현체가 Logback일 때 적용됨.
+  log4jdbc는 log4jdbc.log4j2.properties 의 Slf4jSpyLogDelegator 로 jdbc.* 카테고리를 SLF4J에 남김.
+  Root 가 INFO 이면 jdbc.resultset 등이 기본 상속되어 콘솔에 찍히므로 아래에서 명시적으로 끔.
+-->
+<configuration scan="true" scanPeriod="30 seconds">
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+
+  <!-- log4jdbc: SQL 위주, ResultSet/테이블 덤프·감사·커넥션 상세는 OFF -->
+  <logger name="jdbc.sqlonly" level="INFO"/>
+  <logger name="jdbc.sqltiming" level="WARN"/>
+  <logger name="jdbc.resultset" level="OFF"/>
+  <logger name="jdbc.resultsettable" level="OFF"/>
+  <logger name="jdbc.audit" level="OFF"/>
+  <logger name="jdbc.connection" level="OFF"/>
+
+  <logger name="org.apache.http.wire" level="WARN"/>
+  <logger name="org.apache.http.headers" level="WARN"/>
+</configuration>

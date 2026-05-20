@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,12 +21,21 @@ import io.swagger.annotations.Api;
 @RequestMapping("/err")
 public class ErrorController {
 
+	/**
+	 * 서블릿 컨테이너의 error-page 포워드는 보통 GET 이다. POST 만 두면 405 WARN 이 반복된다.
+	 */
+	@GetMapping(value = "/error.do")
+	public BasicResponse errorGet(HttpServletRequest request) throws Exception {
+		return error(request, null);
+	}
+
 	@PostMapping(value="/error.do")
 	public BasicResponse error(HttpServletRequest request, Exception ex) throws Exception {
 		boolean result = false;
 		String msg;
 		
-		String error_code = request.getAttribute("javax.servlet.error.status_code").toString();
+		Object codeObj = request.getAttribute("javax.servlet.error.status_code");
+		String error_code = codeObj == null ? "500" : codeObj.toString();
 		
 		try {
             int status_code = Integer.parseInt(error_code);

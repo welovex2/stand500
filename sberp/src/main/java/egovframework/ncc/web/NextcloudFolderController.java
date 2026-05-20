@@ -6,31 +6,44 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
 import javax.annotation.Resource;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.util.CountingOutputStream;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.ErpDavPathUtil;
+import egovframework.cmm.util.FilePreviewPolicy;
+import egovframework.cmm.util.OnlyOfficeEditorConfig;
+import egovframework.cmm.util.OnlyOfficeEditorHtml;
+import egovframework.cmm.util.OnlyOfficeIntegration;
+import egovframework.cmm.util.OnlyOfficePreviewSupport;
 import egovframework.ncc.dto.FileOpLogVO;
+import egovframework.ncc.dto.OnlyOfficeOpLogRequest;
 import egovframework.ncc.dto.NcCopyRequest;
 import egovframework.ncc.dto.NcCreateFolderRequest;
 import egovframework.ncc.dto.NcDeleteRequest;
@@ -43,6 +56,8 @@ import egovframework.ncc.dto.WebDavListResponseDTO;
 import egovframework.ncc.dto.WebDavNodeDTO;
 import egovframework.ncc.service.FileOpLogService;
 import egovframework.ncc.service.NextcloudDavService;
+import egovframework.ncc.service.NextcloudOnlyofficeConnectorService;
+import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -56,6 +71,9 @@ public class NextcloudFolderController {
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
 
+  @Resource(name = "NextcloudOnlyofficeConnectorService")
+  private NextcloudOnlyofficeConnectorService nextcloudOnlyofficeConnectorService;
+
   @Resource(name = "SbkService")
   private SbkService sbkService;
 
@@ -64,6 +82,9 @@ public class NextcloudFolderController {
 
   @Resource(name = "FileOpLogService")
   private FileOpLogService fileOpLogService;
+
+  @Resource(name = "propertiesService")
+  private EgovPropertyService propertyService;
 
   /** 4) 선택 폴더 안의 폴더+파일 목록(Depth=1) */
   @ApiOperation(value = "폴더 목록 조회",
@@ -449,13 +470,121 @@ public class NextcloudFolderController {
       return;
     }
 
+    // contextPath 가 이미 "/api" 이므로, 컨트롤러 기준 경로(/nc/preview, /pdfjs/...) 만 더한다.
     String ctx = request.getContextPath() == null ? "" : request.getContextPath();
-    String pdfUrl = ctx + "/api/nc/preview?path=" + urlEncodeUtf8(davPath);
+    String pdfUrl = ctx + "/nc/preview?path=" + urlEncodeUtf8(davPath);
     String viewerUrl =
         ctx + "/pdfjs/web/viewer.html?file=" + urlEncodeUtf8(pdfUrl);
 
     response.sendRedirect(viewerUrl);
   }
+
+  /**
+   * ONLYOFFICE 뷰어 HTML. Nextcloud ONLYOFFICE 커넥터 OCS 로 설정을 받고, 저장은 Nextcloud 가 처리한다.
+   */
+  @ApiOperation(value = "ONLYOFFICE 미리보기/편집(HTML)",
+      notes = "mode=view(기본) | edit. 예: /api/nc/preview-onlyoffice?path=/ERP/.../a.xlsx&amp;mode=edit")
+  @GetMapping(value = "/preview-onlyoffice", produces = "text/html;charset=UTF-8")
+  public void previewOnlyoffice(@RequestParam("path") String path,
+      @RequestParam(value = "mode", required = false, defaultValue = "view") String mode,
+      HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+    if (!OnlyOfficeIntegration.isEnabled(propertyService)) {
+      response.setStatus(503);
+      response.setContentType("text/plain;charset=UTF-8");
+      response.getWriter().write("ONLYOFFICE 연동이 비활성입니다. Globals.nc.* 및 NC ONLYOFFICE 앱을 확인하세요.");
+      return;
+    }
+
+    String davPath = ErpDavPathUtil.normalizePathOrRoot(path);
+    String pathErr = validateDownloadPathStrong(davPath);
+    if (pathErr != null) {
+      response.setStatus(400);
+      response.setContentType("text/plain;charset=UTF-8");
+      response.getWriter().write(pathErr);
+      return;
+    }
+
+    String fileName = extractNameFromPath(davPath);
+    if (!OnlyOfficePreviewSupport.isPreviewableExtension(fileName)) {
+      response.setStatus(400);
+      response.setContentType("text/plain;charset=UTF-8");
+      response.getWriter().write("이 확장자는 ONLYOFFICE 미리보기 대상이 아닙니다.");
+      return;
+    }
+
+    boolean editMode = "edit".equalsIgnoreCase(mode == null ? "" : mode.trim());
+    String contentType = detectContentType(fileName);
+    Long openLogId = null;
+    if (editMode) {
+      openLogId = startFileOpLog("ONLYOFFICE_OPEN", davPath, null, null, false, fileName,
+          contentType, null, request);
+    }
+    try {
+      Map<String, Object> cfg =
+          nextcloudOnlyofficeConnectorService.fetchEditorConfig(davPath, !editMode);
+      if (editMode && OnlyOfficeEditorConfig.isSpreadsheetFile(fileName)) {
+        OnlyOfficeEditorConfig.applyStrictCoEditing(cfg);
+      }
+      Object dsUrl = cfg.get("documentServerUrl");
+      if (dsUrl == null) {
+        throw new IllegalStateException("documentServerUrl missing in NC ONLYOFFICE config");
+      }
+      String dsJs = OnlyOfficeEditorHtml.normalizeDocumentServerApiJs(dsUrl.toString());
+      OnlyOfficeEditorHtml.write(response, fileName, cfg, dsJs, davPath, editMode);
+      if (openLogId != null) {
+        markFileOpLogSuccess(openLogId, null, null);
+      }
+    } catch (Exception e) {
+      if (openLogId != null) {
+        markFileOpLogFail(openLogId, e, null, null);
+      }
+      response.setStatus(502);
+      response.setContentType("text/plain;charset=UTF-8");
+      response.getWriter().write("Nextcloud ONLYOFFICE 연동 오류: " + e.getMessage());
+    }
+  }
+
+  /**
+   * ONLYOFFICE 편집기(브라우저)에서 저장 완료 시 호출. NC 가 실제 파일을 저장한다.
+   */
+  @ApiOperation(value = "ONLYOFFICE 저장 이력", notes = "편집기 iframe 내부에서 ONLYOFFICE_SAVE 로 호출")
+  @PostMapping("/onlyoffice-op-log")
+  public Map<String, Object> onlyofficeOpLog(@RequestBody OnlyOfficeOpLogRequest body,
+      HttpServletRequest request) {
+    Map<String, Object> res = new LinkedHashMap<String, Object>();
+    if (body == null || body.getPath() == null || body.getOpType() == null) {
+      res.put("ok", false);
+      res.put("message", "path, opType required");
+      return res;
+    }
+    String opType = body.getOpType().trim().toUpperCase();
+    if (!"ONLYOFFICE_SAVE".equals(opType)) {
+      res.put("ok", false);
+      res.put("message", "unsupported opType");
+      return res;
+    }
+    try {
+      String davPath = ErpDavPathUtil.normalizePathOrRoot(body.getPath());
+      String pathErr = validateDownloadPathStrong(davPath);
+      if (pathErr != null) {
+        res.put("ok", false);
+        res.put("message", pathErr);
+        return res;
+      }
+      String fileName = extractNameFromPath(davPath);
+      Long logId = startFileOpLog(opType, davPath, null, null, false, fileName,
+          detectContentType(fileName), null, request);
+      markFileOpLogSuccess(logId, null, null);
+      res.put("ok", true);
+      return res;
+    } catch (Exception e) {
+      res.put("ok", false);
+      res.put("message", e.getMessage());
+      return res;
+    }
+  }
+
 
   @GetMapping("/download-folder")
   public void downloadFolderAsZip(@RequestParam("path") String path, HttpServletRequest request,
@@ -916,33 +1045,7 @@ public class NextcloudFolderController {
   }
 
   private String detectContentTypeByExt(String fileName) {
-    String lower = fileName == null ? "" : fileName.toLowerCase();
-    int dot = lower.lastIndexOf('.');
-    String ext = dot < 0 ? "" : lower.substring(dot + 1);
-    if ("pdf".equals(ext)) return "application/pdf";
-    if ("jpg".equals(ext) || "jpeg".equals(ext)) return "image/jpeg";
-    if ("png".equals(ext)) return "image/png";
-    if ("gif".equals(ext)) return "image/gif";
-    if ("webp".equals(ext)) return "image/webp";
-    if ("bmp".equals(ext)) return "image/bmp";
-    if ("svg".equals(ext)) return "image/svg+xml";
-    if ("txt".equals(ext) || "log".equals(ext)) return "text/plain;charset=UTF-8";
-    if ("html".equals(ext) || "htm".equals(ext)) return "text/html;charset=UTF-8";
-    if ("json".equals(ext)) return "application/json;charset=UTF-8";
-    if ("xml".equals(ext)) return "application/xml;charset=UTF-8";
-    if ("csv".equals(ext)) return "text/csv;charset=UTF-8";
-    if ("zip".equals(ext)) return "application/zip";
-    if ("mp4".equals(ext)) return "video/mp4";
-    if ("mp3".equals(ext)) return "audio/mpeg";
-    if ("doc".equals(ext)) return "application/msword";
-    if ("docx".equals(ext)) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    if ("xls".equals(ext)) return "application/vnd.ms-excel";
-    if ("xlsx".equals(ext)) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    if ("ppt".equals(ext)) return "application/vnd.ms-powerpoint";
-    if ("pptx".equals(ext)) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-    if ("hwp".equals(ext)) return "application/x-hwp";
-    if ("hwpx".equals(ext)) return "application/haansofthwpx";
-    return "application/octet-stream";
+    return FilePreviewPolicy.detectMimeByExt(fileName);
   }
 
   private String buildContentDispositionByUa(String type, String originalFileName,

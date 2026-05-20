@@ -82,10 +82,11 @@ public class TstController {
     return result;
   }
 
-  @ApiOperation(value = "시험 신청하기")
+  @ApiOperation(value = "시험 신청하기",
+      notes = "testItemSeq 필수. 시험부코드(TEST_TYPE_CODE)는 TEST_ITEM_TB 기준으로 서버에서 적용(요청의 testTypeCode는 생략 가능·불일치 시 무시).")
   @PostMapping(value = "/makeTest.do")
   public BasicResponse makeTest(
-      @ApiParam(value = "testItemSeq, testTypeCode 값 전송") @RequestBody TestDTO.Req req)
+      @ApiParam(value = "testItemSeq 필수, testTypeCode 생략 가능(서버가 항목 DB 사용)") @RequestBody TestDTO.Req req)
       throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -106,13 +107,16 @@ public class TstController {
         result = false;
         msg = ResponseMessage.DUPLICATE_TEST;
       }
-      // 값이 제대로 넘어왔는지 확인
-      else if (req.getTestItemSeq() == 0 || StringUtils.isEmpty(req.getTestTypeCode())) {
+      // 시험항목만 필수 (시험부 코드는 TstService.insert 에서 TEST_ITEM_TB 조회)
+      else if (req.getTestItemSeq() == 0) {
         result = false;
         msg = ResponseMessage.CHECK_DATA;
       } else {
-        // 시험 생성
+        // 시험 생성 (시험부 코드는 서비스에서 TEST_ITEM_TB 기준 적용)
         result = tstService.insert(req);
+        if (!result) {
+          msg = ResponseMessage.CHECK_DATA;
+        }
       }
 
     }

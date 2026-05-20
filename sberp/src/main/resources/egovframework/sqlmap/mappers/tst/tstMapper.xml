@@ -28,6 +28,14 @@
 		where TEST_ITEM_TB.test_item_seq = #{testItemSeq}
 	</select>
 
+	<select id="selectTestTypeCodeByTestItemSeq" resultType="java.lang.String">
+		SELECT TEST_TYPE_CODE
+		FROM TEST_ITEM_TB
+		WHERE TEST_ITEM_SEQ = #{testItemSeq}
+		  AND STATE != 'D'
+		LIMIT 1
+	</select>
+
 	<select id="selectNextTestNo" parameterType="testReq" resultType="int">
 		# 해당 발급년도에 신청된 시험
 		SELECT 
