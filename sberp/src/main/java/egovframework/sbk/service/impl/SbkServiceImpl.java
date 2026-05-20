@@ -26,6 +26,7 @@ import egovframework.sbk.service.SbkDTO.Req;
 import egovframework.sbk.service.SbkDTO.Res;
 import egovframework.sbk.service.SbkMapper;
 import egovframework.sbk.service.SbkService;
+import egovframework.rte.psl.dataaccess.util.EgovMap;
 import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItemRej;
 import lombok.extern.slf4j.Slf4j;
@@ -163,24 +164,58 @@ public class SbkServiceImpl implements SbkService {
     return list;
   }
 
-  private void resolveRevSignUrls(List<TestItemDTO> items) {
+  private void resolveRevSignUrls(List<?> items) {
     if (items == null) {
       return;
     }
-    for (TestItemDTO item : items) {
-      String atchFileId = item.getAtchFileId();
-      if (atchFileId == null || atchFileId.isEmpty()) {
-        atchFileId = item.getRevSignUrl();
-      }
-      if (atchFileId == null || atchFileId.isEmpty()) {
-        continue;
-      }
-      try {
-        item.setRevSignUrl(fileMngService.resolveImageUrl(atchFileId));
-      } catch (Exception e) {
-        item.setRevSignUrl("");
+    for (Object row : items) {
+      if (row instanceof TestItemDTO) {
+        resolveRevSignUrlOnDto((TestItemDTO) row);
+      } else if (row instanceof EgovMap) {
+        resolveRevSignUrlOnMap((EgovMap) row);
       }
     }
+  }
+
+  private void resolveRevSignUrlOnDto(TestItemDTO item) {
+    String atchFileId = item.getAtchFileId();
+    if (atchFileId == null || atchFileId.isEmpty()) {
+      atchFileId = item.getRevSignUrl();
+    }
+    if (atchFileId == null || atchFileId.isEmpty()) {
+      return;
+    }
+    try {
+      item.setRevSignUrl(fileMngService.resolveImageUrl(atchFileId));
+    } catch (Exception e) {
+      item.setRevSignUrl("");
+    }
+  }
+
+  /** detail items는 egovMap — 프론트가 RevName, SIGN_STATE 등 기존 키를 사용 */
+  private void resolveRevSignUrlOnMap(EgovMap map) {
+    String atchFileId = mapString(map, "atchFileId", "ATCH_FILE_ID");
+    if (atchFileId.isEmpty()) {
+      atchFileId = mapString(map, "revSignUrl", "REV_SIGN_URL");
+    }
+    if (atchFileId.isEmpty()) {
+      return;
+    }
+    try {
+      map.put("revSignUrl", fileMngService.resolveImageUrl(atchFileId));
+    } catch (Exception e) {
+      map.put("revSignUrl", "");
+    }
+  }
+
+  private static String mapString(EgovMap map, String... keys) {
+    for (String key : keys) {
+      Object v = map.get(key);
+      if (v != null && !v.toString().trim().isEmpty()) {
+        return v.toString().trim();
+      }
+    }
+    return "";
   }
 
   @Override

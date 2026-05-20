@@ -1,6 +1,7 @@
 package egovframework.sbk.service;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,9 +18,13 @@ public class Sbd {
   private String rprsnSign;
   private String picFront;
   private String picBack;
+  @JsonIgnore
   private String picFrontAtchFileId;
+  @JsonIgnore
   private String picFrontFileSn;
+  @JsonIgnore
   private String picBackAtchFileId;
+  @JsonIgnore
   private String picBackFileSn;
   private String reportNo;
   private String revBy;

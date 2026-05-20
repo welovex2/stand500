@@ -450,6 +450,7 @@ public class SbkController {
     if (detail == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      return BasicResponse.builder().result(result).message(msg).build();
     }
 
     // 신청서류 - 파일리스트

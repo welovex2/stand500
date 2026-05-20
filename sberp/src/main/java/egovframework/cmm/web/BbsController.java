@@ -223,6 +223,7 @@ public class BbsController {
     if (detail == null) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      return BasicResponse.builder().result(result).message(msg).build();
     }
 
     // 파일리스트

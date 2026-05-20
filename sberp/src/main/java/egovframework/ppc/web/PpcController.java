@@ -321,13 +321,12 @@ public class PpcController {
         if (detail == null) {
           result = false;
           msg = ResponseMessage.NO_DATA;
-        }
-
+        } else {
         // 사전통관에 연결된 신청서 정보 저장
         pp.setPpId(ppId);
         pp.setSbkId(detail.getSbkId());
         ppcService.sbkIdUpdate(pp);
-        
+        }
 
       }
 

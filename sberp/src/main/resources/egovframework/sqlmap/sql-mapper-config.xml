@@ -53,7 +53,10 @@
     	
     	<!-- 시료 -->
     	<typeAlias alias="imDTO"		type="egovframework.sam.dto.ImDTO"/>
+    	<typeAlias alias="imSub"			type="egovframework.sam.service.ImSub"/>
     	<typeAlias alias="imSubDTO"		type="egovframework.sam.dto.ImSubDTO"/>
+    	<typeAlias alias="hisDTO"		type="egovframework.cmm.service.HisDTO"/>
+    	<typeAlias alias="testItemRej"	type="egovframework.tst.service.TestItemRej"/>
     	
     	<!-- 시험 -->
     	<typeAlias alias="testReq"		type="egovframework.tst.dto.TestDTO$Req"/>
