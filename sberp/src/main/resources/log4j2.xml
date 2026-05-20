@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Log4j2 설정 (log4j-core가 클래스패스에 있을 때 적용)
+
+  log4jdbc 권장 로그 정책:
+  - jdbc.sqlonly     : 실행 SQL 문장 (필요 시 INFO, 운영은 WARN 또는 파일만)
+  - jdbc.sqltiming   : 느린 쿼리·실행시간 (WARN 권장)
+  - jdbc.resultset   : ResultSet 행 덤프 → 용량·보안 이슈, 운영에서는 OFF
+  - jdbc.resultsettable : 결과를 테이블 형태로 덤프 → OFF
+  - jdbc.audit       : PreparedStatement 바인딩 등 상세 감사 → OFF
+  - jdbc.connection  : 커넥션 open/close → 보통 OFF 또는 WARN
+-->
 <Configuration status="WARN">
-    
+
     <Properties>
         <Property name="LOG_PATH">logs</Property>
         <Property name="LAYOUT_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
@@ -12,7 +23,7 @@
             <PatternLayout pattern="${LAYOUT_PATTERN}" />
         </Console>
 
-        <RollingFile name="FILE_APPENDER" 
+        <RollingFile name="FILE_APPENDER"
                      fileName="${LOG_PATH}/dailyLog.log"
                      filePattern="${LOG_PATH}/archive/dailyLog_%d{yyyyMMdd}-%i.log">
             <PatternLayout pattern="${LAYOUT_PATTERN}"/>
@@ -23,7 +34,7 @@
             <DefaultRolloverStrategy max="10" />
         </RollingFile>
 
-        <RollingFile name="ERROR_APPENDER" 
+        <RollingFile name="ERROR_APPENDER"
                      fileName="${LOG_PATH}/errorLog.log"
                      filePattern="${LOG_PATH}/archive/errorLog_%d{yyyyMMdd}.log">
             <PatternLayout pattern="${ERROR_PATTERN}"/>
@@ -43,7 +54,7 @@
             </Policies>
             <MarkerFilter marker="RD_MARKER" onMatch="ACCEPT" onMismatch="DENY"/>
         </RollingFile>
-        
+
         <RollingFile name="ACC_MARKER_APPENDER"
                      fileName="${LOG_PATH}/accMarkerLog.log"
                      filePattern="${LOG_PATH}/archive/accMarkerLog_%d{yyyyMMdd}-%i.log">
@@ -57,35 +68,36 @@
     </Appenders>
 
     <Loggers>
+        <!-- 애플리케이션·프레임워크 기본: 콘솔만 -->
         <Root level="INFO">
-            <appender-ref ref="console" />
+            <AppenderRef ref="console" />
         </Root>
 
-        <logger name="egovframework" level="INFO" additivity="false">
-            <appender-ref ref="console" />
-            <appender-ref ref="FILE_APPENDER"/>
-            <appender-ref ref="ERROR_APPENDER" level="ERROR" />
-            <appender-ref ref="RD_MARKER_APPENDER" />
-            <appender-ref ref="ACC_MARKER_APPENDER" />
-        </logger>
+        <Logger name="egovframework" level="INFO" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="FILE_APPENDER"/>
+            <AppenderRef ref="ERROR_APPENDER" level="ERROR" />
+            <AppenderRef ref="RD_MARKER_APPENDER" />
+            <AppenderRef ref="ACC_MARKER_APPENDER" />
+        </Logger>
 
-        <logger name="jdbc.sqlonly" level="INFO" additivity="false">
-            <appender-ref ref="console" />
-            <appender-ref ref="FILE_APPENDER"/>
-        </logger>
-        <logger name="jdbc.sqltiming" level="WARN" additivity="false">
-            <appender-ref ref="FILE_APPENDER"/>
-        </logger>
-        <logger name="jdbc.resultsettable" level="INFO" additivity="false">
-            <appender-ref ref="FILE_APPENDER"/>
-        </logger>
-        <logger name="jdbc.resultset" level="WARN" additivity="false" />
-        <logger name="jdbc.audit" level="FATAL" additivity="false" />
-        <logger name="jdbc.connection" level="WARN" additivity="false" />
+        <!-- log4jdbc: SQL만 남김 (콘솔+일일로그). ResultSet류는 전부 차단 -->
+        <Logger name="jdbc.sqlonly" level="INFO" additivity="false">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="FILE_APPENDER"/>
+        </Logger>
+        <Logger name="jdbc.sqltiming" level="WARN" additivity="false">
+            <AppenderRef ref="FILE_APPENDER"/>
+        </Logger>
+        <Logger name="jdbc.resultset" level="OFF" additivity="false" />
+        <Logger name="jdbc.resultsettable" level="OFF" additivity="false" />
+        <Logger name="jdbc.audit" level="OFF" additivity="false" />
+        <Logger name="jdbc.connection" level="OFF" additivity="false" />
 
-        <logger name="org.springframework.transaction" level="WARN" />
-        <logger name="java.sql" level="WARN" />
-        <logger name="org.apache.http" level="WARN"/>
-
+        <Logger name="org.springframework.transaction" level="WARN" />
+        <Logger name="java.sql" level="WARN" />
+        <Logger name="org.apache.http" level="WARN"/>
+        <Logger name="org.apache.http.wire" level="WARN"/>
+        <Logger name="org.apache.http.headers" level="WARN"/>
     </Loggers>
 </Configuration>

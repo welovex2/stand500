@@ -22,15 +22,15 @@
 	        	<entry key="Globals.nc.base" value="http://172.22.0.41:8090" />
 	        	<entry key="Globals.nc.shareToken" value="CC2GXsoEBqsN859" />
  -->       	
-	        	<!-- 파일서버 -->
-	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.46:8090/remote.php/dav/files" />
+	        	<!-- 파일서버 (포트 80 으로 변경) -->
+	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.46/remote.php/dav/files" />
 	        	<entry key="Globals.nc.appPassword" value="FWS2E-WA3qG-snYog-pmarg-JSyKn" />
-	        	<entry key="Globals.nc.base" value="http://172.22.0.46:8090" />
+	        	<entry key="Globals.nc.base" value="http://172.22.0.46" />
 	        	<entry key="Globals.nc.shareToken" value="DmJFJWzpES5WmWA" />
 
 	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
-	        	
-	        	
+
+	        	<!-- ONLYOFFICE: NC 커넥터 앱 + Document Server URL 은 Nextcloud 관리 화면에서 설정 -->
 	        </map>
 		</property>
 	</bean>
