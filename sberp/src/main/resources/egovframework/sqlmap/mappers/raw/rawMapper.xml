@@ -587,10 +587,8 @@
 		    TEST_S_DT,
 		    TEST_E_DT,
 		    TEST_BY,
-		    FN_GET_IMAGE (RAW_TB.TEST_SIGN_URL, 0) TEST_SIGN_URL,
 		    RAW_TB.TEST_SIGN_URL TEST_ATCH_FILE_ID,
 		    REV_BY,
-		    FN_GET_IMAGE (RAW_TB.REV_SIGN_URL, 0) REV_SIGN_URL,
 		    RAW_TB.REV_SIGN_URL REV_ATCH_FILE_ID,
 		    TBR_KC_EMC_YN,
 		    TBR_KC_RF_EMC_YN,
@@ -1015,9 +1013,9 @@
 		    STD_MEMO,
 		    /* 1. 시험원 */
 		    TEST_BY,
-		    FN_GET_IMAGE (RAW_TB.TEST_SIGN_URL, 0) TEST_SIGN_URL,
+		    RAW_TB.TEST_SIGN_URL TEST_ATCH_FILE_ID,
 		    REV_BY,
-		    FN_GET_IMAGE (RAW_TB.REV_SIGN_URL, 0) REV_SIGN_URL,
+		    RAW_TB.REV_SIGN_URL REV_ATCH_FILE_ID,
 		    /* 3.2 시험항목 >> methodList */
 		    /* 3.3 피시험기기의 보완내용 >> modList  */
 		    MOD_URL,

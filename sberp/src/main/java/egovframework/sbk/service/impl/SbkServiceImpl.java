@@ -60,8 +60,17 @@ public class SbkServiceImpl implements SbkService {
       detail.setRprsnSignUrl(fileMngService.resolveImageUrl(detail.getRprsnSignUrl()));
     }
 
+    if (!ObjectUtils.isEmpty(detail)) {
+      detail.setWorkSignUrl(fileMngService.resolveImageUrl(detail.getAtchFileId()));
+    }
+
     if (detail != null) {
       detail.setItems(sbkMapper.selectTestItemList(req));
+      if (detail.getItems() != null) {
+        for (egovframework.tst.service.TestItem item : detail.getItems()) {
+          item.setRevSignUrl(fileMngService.resolveImageUrl(item.getAtchFileId()));
+        }
+      }
     }
     return detail;
   }

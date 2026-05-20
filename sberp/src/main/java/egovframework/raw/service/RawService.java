@@ -117,7 +117,7 @@ public interface RawService {
 
   List<HisDTO> hisList(String rawSeq);
 
-  ReportDTO report(int rawSeq);
+  ReportDTO report(int rawSeq) throws Exception;
 
   boolean insertFile(FileRaw req);
 

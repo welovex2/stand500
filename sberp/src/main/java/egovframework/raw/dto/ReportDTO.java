@@ -252,15 +252,21 @@ public class ReportDTO {
   @Column
   private String testSignUrl;
 
+  @ApiModelProperty(hidden = true)
+  @Column
+  private String testAtchFileId;
 
   @ApiModelProperty(value = "1. 시험원  ", example = "")
   @Column
   private String revBy;
 
-
   @ApiModelProperty(value = "1. 시험원  ", example = "")
   @Column
   private String revSignUrl;
+
+  @ApiModelProperty(hidden = true)
+  @Column
+  private String revAtchFileId;
 
 
   @ApiModelProperty(value = "3.2 시험항목 >> methodList  ", example = "")

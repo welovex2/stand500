@@ -264,6 +264,7 @@ public class RawServiceImpl implements RawService {
     CeDTO detail = methodMapper.ceDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("CA", rawSeq));
       detail.getMacList().addAll(macList("CB", rawSeq));
@@ -338,6 +339,9 @@ public class RawServiceImpl implements RawService {
     ReDTO detail = methodMapper.reDetail(rawSeq);
 
     if (detail != null) {
+      detail.setHz1SignUrl(resolveImageUrlSafe(detail.getHz1AtchFileId()));
+      detail.setHz2SignUrl(resolveImageUrlSafe(detail.getHz2AtchFileId()));
+      detail.setHz3SignUrl(resolveImageUrlSafe(detail.getHz3AtchFileId()));
       // 측정설비
       // 3235
       if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571
@@ -405,6 +409,7 @@ public class RawServiceImpl implements RawService {
     EsdDTO detail = methodMapper.esdDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("ED", rawSeq));
       // 직접인가
@@ -589,6 +594,7 @@ public class RawServiceImpl implements RawService {
     RsDTO detail = methodMapper.rsDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("RS", rawSeq));
       // 시험결과 > 인가부위
@@ -656,6 +662,7 @@ public class RawServiceImpl implements RawService {
     EftDTO detail = methodMapper.eftDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("ET", rawSeq));
       // 시험결과 > 포트
@@ -736,6 +743,7 @@ public class RawServiceImpl implements RawService {
     SurgeDTO detail = methodMapper.surgeDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("SG", rawSeq));
       // 시험결과 > 포트
@@ -807,6 +815,7 @@ public class RawServiceImpl implements RawService {
     CsDTO detail = methodMapper.csDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("CS", rawSeq));
       // 시험결과 > 인가부위
@@ -849,6 +858,7 @@ public class RawServiceImpl implements RawService {
     MfDTO detail = methodMapper.mfDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("MF", rawSeq));
     }
@@ -895,6 +905,7 @@ public class RawServiceImpl implements RawService {
     VdipDTO detail = methodMapper.vdipDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("VD", rawSeq));
     }
@@ -970,6 +981,7 @@ public class RawServiceImpl implements RawService {
     ClkDTO detail = methodMapper.clkDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("CK", rawSeq));
     }
@@ -1006,6 +1018,7 @@ public class RawServiceImpl implements RawService {
     DpDTO detail = methodMapper.dpDetail(rawSeq);
 
     if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
       // 측정설비
       detail.setMacList(macList("DP", rawSeq));
     }
@@ -1015,6 +1028,10 @@ public class RawServiceImpl implements RawService {
   @Override
   public TelDTO telDetail(int rawSeq) {
     TelDTO detail = methodMapper.telDetail(rawSeq);
+
+    if (detail != null) {
+      detail.setSignUrl(resolveImageUrlSafe(detail.getAtchFileId()));
+    }
 
     return detail;
   }
@@ -1083,8 +1100,13 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
-  public ReportDTO report(int rawSeq) {
-    return rawMapper.report(rawSeq);
+  public ReportDTO report(int rawSeq) throws Exception {
+    ReportDTO report = rawMapper.report(rawSeq);
+    if (report != null) {
+      report.setTestSignUrl(fileMngService.resolveImageUrl(report.getTestAtchFileId()));
+      report.setRevSignUrl(fileMngService.resolveImageUrl(report.getRevAtchFileId()));
+    }
+    return report;
   }
 
   @Override
@@ -1229,11 +1251,6 @@ public class RawServiceImpl implements RawService {
     return rawMapper.findByNcFolderPath(testSeq);
   }
 
-  /**
-  * insert/update 후 호출.
-  * rawSeq 기준으로 모든 측정 테이블의 날짜를 재조회해
-  * TEST_S_DT(MIN), TEST_E_DT(MAX)를 다시 계산하여 업데이트한다.
-  */
   private void recalcAndUpdateTestDtRange(int rawSeq) {
     if (rawSeq == 0)
       return;
@@ -1249,5 +1266,17 @@ public class RawServiceImpl implements RawService {
       return;
 
     rawMapper.updateTestDtRange(rawSeq, startDt, endDt);
+  }
+
+  private String resolveImageUrlSafe(String atchFileId) {
+    if (atchFileId == null || atchFileId.trim().isEmpty()) {
+      return "";
+    }
+    try {
+      return fileMngService.resolveImageUrl(atchFileId);
+    } catch (Exception e) {
+      log.warn("resolveImageUrl failed. atchFileId={}", atchFileId, e);
+      return "";
+    }
   }
 }

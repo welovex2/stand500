@@ -3,6 +3,7 @@ package egovframework.cmm.service.impl;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.EgovLoginService;
 import egovframework.cmm.service.LoginMapper;
 import egovframework.cmm.service.LoginVO;
@@ -39,6 +40,9 @@ public class EgovLoginServiceImpl extends EgovAbstractServiceImpl implements Ego
   @Autowired
   private LoginMapper loginMapper;
 
+  @Autowired
+  private EgovFileMngService fileMngService;
+
   /**
    * 일반 로그인을 처리한다
    * 
@@ -62,6 +66,9 @@ public class EgovLoginServiceImpl extends EgovAbstractServiceImpl implements Ego
     if (loginVO != null && !loginVO.getId().equals("")) {
       // 4. 마지막 로그인 정보를 기록한다.
       loginMapper.updateLogin(vo);
+      if (loginVO.getAtchFileId() != null && !loginVO.getAtchFileId().trim().isEmpty()) {
+        loginVO.setSgnUrl(fileMngService.resolveImageUrl(loginVO.getAtchFileId()));
+      }
     } else {
       // 5. 로그인 실패시 실패횟수 기록한다.
       loginMapper.updateLoginFailCnt(vo);

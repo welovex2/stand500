@@ -46,6 +46,12 @@ public class MacServiceImpl implements MacService {
       // 수리내역 추가하기
       if (!ObjectUtils.isEmpty(detail)) {
         detail.setRprHistList(macMapper.selectRprHist(machineSeq));
+        if (detail.getRprHistList() != null) {
+          for (RprHist hist : detail.getRprHistList()) {
+            hist.setRcvrSignUrl(fileMngService.resolveImageUrl(hist.getRcvrSign()));
+            hist.setCnfmSignUrl(fileMngService.resolveImageUrl(hist.getCnfmSign()));
+          }
+        }
       }
 
       return detail;

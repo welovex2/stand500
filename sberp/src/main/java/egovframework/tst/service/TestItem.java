@@ -83,6 +83,10 @@ public class TestItem {
   @Column
   private String revSignUrl;
 
+  @ApiModelProperty(hidden = true)
+  @Column
+  private String atchFileId;
+
 
   @ApiModelProperty(value = "서명요청상태(공통코드:SS)", notes = "01 서명요청전 02 서명요청완료 ", example = "")
   @Column
