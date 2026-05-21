@@ -287,12 +287,13 @@ public class RepController {
                   if (ObjectUtils.isEmpty(re))
                     re = rawService.reDetail(rawSeq);
                   if (re != null) {
-                    if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571 || detail.getTestStndrSeq() == 14)
+                    if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571 || detail.getTestStndrSeq() == 14) {
                       re.setMacList(rawService.macList("RA", rawSeq));
-                    else 
+                      if ("0".equals(re.getHz1ResultCode())) totalResult = false;
+                    } else {
                       re.setMacList(rawService.macList("RE2", rawSeq));
-                    
-                    if ("0".equals(re.getHz2ResultCode())) totalResult = false;
+                      if ("0".equals(re.getHz2ResultCode())) totalResult = false;
+                    }
                   }
                   detail.setRe1(re);
                   break;
@@ -302,12 +303,13 @@ public class RepController {
                   if (ObjectUtils.isEmpty(re))
                     re = rawService.reDetail(rawSeq);
                   if (re != null) {
-                    if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571 || detail.getTestStndrSeq() == 14)
+                    if (detail.getTestStndrSeq() == 10 || detail.getTestStndrSeq() == 571 || detail.getTestStndrSeq() == 14) {
                       re.setMacList(rawService.macList("RB", rawSeq));
-                    else 
+                      if ("0".equals(re.getHz2ResultCode())) totalResult = false;
+                    } else {
                       re.setMacList(rawService.macList("RE3", rawSeq));
-                    
-                    if ("0".equals(re.getHz3ResultCode())) totalResult = false;
+                      if ("0".equals(re.getHz3ResultCode())) totalResult = false;
+                    }
                   }
                   detail.setRe2(re);
                   break;
