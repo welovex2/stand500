@@ -290,7 +290,8 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     vo.setDept(user == null ? null : user.getDeptName());
     vo.setSbkNo(extractSbkNoOrNull(davPath));
     vo.setOpType(opType);
-    vo.setUploadSrc(f.getUploadSrc() == null ? "E" : f.getUploadSrc());
+    String uploadSrc = f.getUploadSrc();
+    vo.setUploadSrc(uploadSrc == null || uploadSrc.trim().isEmpty() ? "E" : uploadSrc);
     vo.setDavPath(davPath);
     vo.setSrcPath(null);
     vo.setDstPath(null);

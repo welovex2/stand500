@@ -25,6 +25,7 @@
 		<result property="fileStreCours" column="FILE_STRE_COURS" />
 		<result property="orignlFileNm" column="ORIGNL_FILE_NM" />
 		<result property="streFileNm" column="STRE_FILE_NM" />
+		<result property="uploadSrc" column="UPLOAD_SRC" />
 	</resultMap>	
 
 
@@ -153,7 +154,7 @@
  		<![CDATA[
 			SELECT 
 				ATCH_FILE_ID, FILE_CN, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM,
-				FILE_EXTSN, ORIGNL_FILE_NM, FILE_SIZE
+				FILE_EXTSN, ORIGNL_FILE_NM, FILE_SIZE, UPLOAD_SRC
 			FROM
 				FILE_DETAIL_TB
 			WHERE

@@ -21,7 +21,7 @@ public enum PicType {
     CS("11", "CS"),
     M_Field("12", "M-Field"),
     V_Dip("13", "V-Dip"),
-    MAC("14", "V-Dip");
+    MAC("14", "시험기자재");
   
     private final String picId;
     private final String description;
