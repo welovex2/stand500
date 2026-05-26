@@ -8,6 +8,7 @@ import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.CanCelDTO;
+import egovframework.tst.dto.NcTestFolderContext;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.dto.TestItemDTO;
@@ -83,4 +84,6 @@ public interface TstMapper {
   public boolean saleMemoInsert(Req req);
 
   public String selectNcGrantByApplyNo(int testSeq);
+
+  NcTestFolderContext selectTestFolderContext(int testSeq);
 }

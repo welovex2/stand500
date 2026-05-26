@@ -30,6 +30,15 @@ public interface NextcloudFolderService {
    */
   String ensureApplyFolder(String yearMonth, String applyNo) throws Exception;
 
+  /**
+   * 재발행 시험 폴더 생성 (하위 폴더 없음)
+   *
+   * @param originalFolderPath 원본 신청서 NC_FOLDER_PATH
+   * @param reissueTestId 재발행 시험번호 (예: "SB25-G1578-EM0001-1")
+   * @return 재발행 시험 폴더 상대 경로
+   */
+  String ensureReissueTestFolder(String originalFolderPath, String reissueTestId) throws Exception;
+
 
   /**
    * 필요하면 폴더를 생성(MKCOL). 없으면 자동 생성.

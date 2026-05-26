@@ -26,6 +26,7 @@ import egovframework.sbk.service.SbkDTO.Req;
 import egovframework.sbk.service.SbkDTO.Res;
 import egovframework.sbk.service.SbkMapper;
 import egovframework.sbk.service.SbkService;
+import egovframework.sbk.util.SbkIdSupport;
 import egovframework.rte.psl.dataaccess.util.EgovMap;
 import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItemRej;
@@ -297,7 +298,13 @@ public class SbkServiceImpl implements SbkService {
     // 2) 폴더 생성 + DB 반영
     if (needFolder) {
 
-      String davPath = nextcloudFolderService.ensureApplyFolder(yearMonth, sbk.getSbkId());
+      String davPath;
+      if (SbkIdSupport.isReissueSbkId(sbk.getSbkId())) {
+        davPath = resolveOriginalFolderPath(SbkIdSupport.toOriginalSbkId(sbk.getSbkId()),
+            sbk.getInsDt());
+      } else {
+        davPath = nextcloudFolderService.ensureApplyFolder(yearMonth, sbk.getSbkId());
+      }
       sbk.setNcFolderPath(davPath);
       sbkMapper.updateNcFolderPath(sbk);
 
@@ -316,6 +323,25 @@ public class SbkServiceImpl implements SbkService {
     // (선택) 조건부 업데이트로 인해 내가 set한 값이 실제 DB 반영 실패했을 수 있으니
     // 안전하게 재조회하는 방식도 가능:
     // sbk = sbkService.findBySbkNo(sbk.getSbkNo());
+  }
+
+  private String resolveOriginalFolderPath(String originalSbkId, Date fallbackInsDt)
+      throws Exception {
+    SbkInfoVO original = sbkMapper.selectSbkBySbkNo(originalSbkId);
+    if (original == null) {
+      throw new RuntimeException("원본 신청서를 찾을 수 없습니다: " + originalSbkId);
+    }
+
+    if (StringUtils.isEmpty(original.getNcFolderPath())) {
+      String yearMonth = formatYearMonthFromInsDt(
+          original.getInsDt() != null ? original.getInsDt() : fallbackInsDt);
+      String davPath = nextcloudFolderService.ensureApplyFolder(yearMonth, originalSbkId);
+      original.setNcFolderPath(davPath);
+      original.setSbkId(originalSbkId);
+      sbkMapper.updateNcFolderPath(original);
+    }
+
+    return original.getNcFolderPath();
   }
 
   private String formatYearMonthFromInsDt(Date insDt) {

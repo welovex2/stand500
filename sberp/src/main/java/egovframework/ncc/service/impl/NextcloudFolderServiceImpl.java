@@ -245,7 +245,25 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
     String relativePath = yearMonth + "/" + applyNo;
 
     ensureFolder(relativePath);
+    ensureApplySubFolders(relativePath);
 
+    return relativePath;
+  }
+
+  @Override
+  public String ensureReissueTestFolder(String originalFolderPath, String reissueTestId)
+      throws Exception {
+    String basePath = normalizeRelativePath(originalFolderPath);
+    String reissueParent = basePath + "/재발행 및 수정";
+    String testPath = reissueParent + "/" + reissueTestId;
+
+    ensureFolder(reissueParent);
+    ensureFolder(testPath);
+
+    return testPath;
+  }
+
+  private void ensureApplySubFolders(String relativePath) throws Exception {
     String commonSubFolderName1 = "00.신청서 및 공통";
     ensureFolder(relativePath + "/" + commonSubFolderName1);
 
@@ -261,8 +279,34 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
 
     commonSubFolderName2 = "02.접수(완료자료)";
     ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
+  }
 
-    return relativePath;
+  private String normalizeRelativePath(String path) {
+    if (path == null || path.trim().isEmpty()) {
+      throw new NcBizException("폴더 경로가 비어 있습니다.");
+    }
+
+    String normalized = path.trim().replace("\\", "/").replaceAll("/{2,}", "/");
+    if (normalized.startsWith("/"))
+      normalized = normalized.substring(1);
+    if (normalized.endsWith("/"))
+      normalized = normalized.substring(0, normalized.length() - 1);
+
+    if (normalized.indexOf("..") >= 0) {
+      throw new NcBizException("허용되지 않는 경로입니다: " + path);
+    }
+
+    String rf = (rootFolder == null) ? "" : rootFolder.trim().replace("\\", "/");
+    if (!rf.isEmpty()) {
+      if (normalized.equals(rf)) {
+        return "";
+      }
+      if (normalized.startsWith(rf + "/")) {
+        normalized = normalized.substring((rf + "/").length());
+      }
+    }
+
+    return normalized;
   }
 
   /**

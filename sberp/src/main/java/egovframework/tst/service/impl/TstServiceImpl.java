@@ -13,6 +13,7 @@ import egovframework.sbk.service.SbkDTO;
 import egovframework.sys.service.TestStndr;
 import egovframework.tst.dto.CanCelDTO;
 import egovframework.tst.dto.DebugDTO;
+import egovframework.tst.dto.NcTestFolderContext;
 import egovframework.tst.dto.TestDTO.Req;
 import egovframework.tst.dto.TestDTO.Res;
 import egovframework.tst.dto.TestItemDTO;
@@ -24,6 +25,7 @@ import egovframework.tst.service.TestMngr;
 import egovframework.tst.service.TstMapper;
 import egovframework.tst.service.TstParam;
 import egovframework.tst.service.TstService;
+import egovframework.tst.util.TestFolderSupport;
 import lombok.extern.slf4j.Slf4j;
 
 @Service("TstService")
@@ -99,17 +101,24 @@ public class TstServiceImpl implements TstService {
     // 2) TEST_NO 4자리 0패딩
     String paddedTestNo = String.format("%04d", testNo);
 
-    // testSeq로 ERP DB에서 Nextcloud 경로/대상유저 조회
-    String g = tstMapper.selectNcGrantByApplyNo(req.getTestSeq());
+    NcTestFolderContext folderContext = tstMapper.selectTestFolderContext(req.getTestSeq());
+    if (folderContext == null || !StringUtils.hasText(folderContext.getNcFolderPath())) {
+      log.error("makeTest: NC_FOLDER_PATH not found. testSeq={}", req.getTestSeq());
+      return true;
+    }
 
-    // 최상위 폴더 경로
-    String basePath = g + "/" + type + paddedTestNo;
-
-    // Nextcloud 폴더 생성
-    nextcloudFolderService.ensureFolder(basePath);
-
-    // typeCode별 하위 폴더 구조 생성
-    createSubFolders(basePath, type);
+    try {
+      if (folderContext.getSbkRevision() > 0) {
+        String testId = TestFolderSupport.buildTestId(folderContext, type, paddedTestNo);
+        nextcloudFolderService.ensureReissueTestFolder(folderContext.getNcFolderPath(), testId);
+      } else {
+        String basePath = folderContext.getNcFolderPath() + "/" + type + paddedTestNo;
+        nextcloudFolderService.ensureFolder(basePath);
+        createSubFolders(basePath, type);
+      }
+    } catch (Exception e) {
+      log.error("Nextcloud test folder create fail testSeq={}", req.getTestSeq(), e);
+    }
 
     return true;
   }
