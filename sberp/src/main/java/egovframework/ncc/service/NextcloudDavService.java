@@ -31,6 +31,17 @@ public interface NextcloudDavService {
   /** 업로드(화면에서 업로드하는 경우: 대상 폴더 davPath + 파일) */
   UploadResultDTO uploadToFolder(String folderDavPath, MultipartFile file) throws Exception;
 
+  /**
+   * 업로드(폴더 드롭·webkitRelativePath 지원).
+   *
+   * @param folderDavPath  화면 현재 폴더 DAV 경로 ({@code path} 파라미터)
+   * @param file           multipart 파일
+   * @param relativePath   base 폴더 기준 상대 경로(파일명 포함). null/blank면 flat 업로드
+   * @param creatId        업로드 사용자 ID (폴더 메타 FOLDER_META_TB 등록용, null이면 폴더 메타 생략)
+   */
+  UploadResultDTO uploadToFolder(String folderDavPath, MultipartFile file, String relativePath,
+      String creatId) throws Exception;
+
   String createFolder(String parentDavPath, String folderName, String string) throws Exception;
 
   /**

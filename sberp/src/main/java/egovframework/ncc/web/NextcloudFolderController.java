@@ -60,6 +60,7 @@ import egovframework.ncc.dto.WebDavItemDTO;
 import egovframework.ncc.dto.WebDavListResponseDTO;
 import egovframework.ncc.dto.WebDavNodeDTO;
 import egovframework.ncc.service.FileOpLogService;
+import egovframework.ncc.service.NcBrowsePathResolver;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.ncc.service.NextcloudOnlyofficeConnectorService;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -88,6 +89,9 @@ public class NextcloudFolderController {
   @Resource(name = "FileOpLogService")
   private FileOpLogService fileOpLogService;
 
+  @Resource(name = "NcBrowsePathResolver")
+  private NcBrowsePathResolver ncBrowsePathResolver;
+
   @Resource(name = "propertiesService")
   private EgovPropertyService propertyService;
 
@@ -102,7 +106,7 @@ public class NextcloudFolderController {
       @RequestParam(name = "order", required = false, defaultValue = "asc") String order)
       throws Exception {
 
-    String base = ErpDavPathUtil.normalizePathOrRoot(path);
+    String base = ncBrowsePathResolver.resolveBrowsePath(path);
     String sortKey = normalizeListSort(sort);
     String orderKey = normalizeListOrder(order);
 
@@ -133,7 +137,7 @@ public class NextcloudFolderController {
       @RequestParam(name = "onlyDir", required = false, defaultValue = "true") boolean onlyDir)
       throws Exception {
 
-    String base = ErpDavPathUtil.normalizePathOrRoot(path);
+    String base = ncBrowsePathResolver.resolveBrowsePath(path);
 
     WebDavListResponseDTO raw = nextcloudDavService.list(base, depth);
 
@@ -182,19 +186,55 @@ public class NextcloudFolderController {
 
   }
 
-  /** 5) 파일 업로드 (완료 신호는 JSON 응답으로) */
+  /**
+   * 5) 파일 업로드 (완료 신호는 JSON 응답으로)
+   *
+   * <p>단일 파일·다중 파일·폴더 드롭을 모두 이 API 하나로 처리합니다.
+   * <ul>
+   *   <li>{@code path} — 화면에서 사용자가 보고 있는 현재 폴더 DAV 경로</li>
+   *   <li>{@code file} — multipart 파일 1개 (폴더 드롭 시 프론트가 파일마다 1회씩 호출)</li>
+   *   <li>{@code relativePath} — (선택) base(path) 기준 상대 경로. 프론트는 {@code file.webkitRelativePath || file.name} 전달</li>
+   * </ul>
+   *
+   * <p>relativePath 예:
+   * <ul>
+   *   <li>일반 파일 드롭: {@code report.pdf}</li>
+   *   <li>폴더 드롭: {@code 내폴더/01.서류/report.pdf}</li>
+   * </ul>
+   */
   @ApiOperation(value = "파일 업로드",
-      notes = "path 업로드할 폴더 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n" + "file 업로드 파일 Multipart\n")
+      notes = "path=업로드 기준 폴더 DAV 경로 (예: /ERP/2026/02/SB26-G0000/00.공통폴더)\n"
+          + "file=Multipart 파일\n"
+          + "relativePath=(선택) base 아래 상대 경로. 드래그앤드롭 시 webkitRelativePath || file.name\n"
+          + "  - 일반 파일: report.pdf\n"
+          + "  - 폴더 드롭: 내폴더/01.서류/report.pdf\n")
   @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public UploadResultDTO upload(@RequestParam("path") String folderPath,
-      @RequestPart("file") MultipartFile file, HttpServletRequest request) throws Exception {
+      @RequestPart("file") MultipartFile file,
+      @RequestParam(value = "relativePath", required = false) String relativePath,
+      HttpServletRequest request) throws Exception {
 
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
-    String reqPath = ErpDavPathUtil.normalizePathOrRoot(folderPath);
+    // path: 화면 현재 폴더 (업로드 기준점). 재발행 번호는 원본 폴더 기준으로 해석
+    String reqPath = ncBrowsePathResolver.resolveBrowsePath(folderPath);
 
-    // 1) 신청서번호 추출
-    String sbkNo = ErpDavPathUtil.extractSbkNo(reqPath);
+    /*
+     * relativePath가 있으면 최종 업로드 대상 "파일" DAV 경로를 미리 계산합니다.
+     * 권한 검증(validateUnderBase)은 폴더뿐 아니라 하위 경로까지 포함한 최종 파일 경로 기준으로 수행합니다.
+     *
+     * 예) path=/ERP/.../00.공통, relativePath=내폴더/a.pdf
+     *     → resolvedFilePath=/ERP/.../00.공통/내폴더/a.pdf
+     */
+    String resolvedFilePath = reqPath;
+    String safeRelative = ErpDavPathUtil.resolveUploadRelativePath(relativePath,
+        file == null ? null : file.getOriginalFilename());
+    if (safeRelative != null && !safeRelative.isEmpty()) {
+      resolvedFilePath = ErpDavPathUtil.joinUnderBase(reqPath, safeRelative);
+    }
+
+    // 1) 신청서번호 추출 (resolvedFilePath 기준 — SBxx-Gxxxx가 경로에 포함되어야 함)
+    String sbkNo = ErpDavPathUtil.extractSbkNo(resolvedFilePath);
 
     // 2) 신청서 조회 (SBK_TB)
     SbkInfoVO sbk = sbkService.findBySbkNoAndProvision(sbkNo);
@@ -204,29 +244,35 @@ public class NextcloudFolderController {
     String baseFolder = ErpDavPathUtil.normalizePath(sbk.getNcFolderPath()); // /ERP/2025/12/SB25-G1583
     String atchFileId = sbk.getAtchFileId();
 
-    // 3) 요청 path가 baseFolder 하위인지 검증 (핵심)
-    validateUnderBase(baseFolder, reqPath);
+    // 3) 최종 파일 경로가 신청서 baseFolder 하위인지 검증 (폴더 드롭 시 하위 폴더까지 포함)
+    validateUnderBase(baseFolder, resolvedFilePath);
 
-    // 4) Nextcloud 업로드 (로그 davPath는 실제 파일 경로만 기록 — 폴더 경로만으로 UPLOAD 로그 남기지 않음)
-    UploadResultDTO up = nextcloudDavService.uploadToFolder(reqPath, file);
+    // 로그/DB에 남길 표시용 파일명 (relativePath 우선, 없으면 multipart originalFilename)
+    String logFileName = safeRelative != null && !safeRelative.isEmpty()
+        ? ErpDavPathUtil.fileNameFromRelativePath(safeRelative)
+        : (file == null ? null : file.getOriginalFilename());
+
+    // 4) Nextcloud WebDAV 업로드 (relativePath 있으면 하위 폴더 MKCOL + PUT)
+    UploadResultDTO up = nextcloudDavService.uploadToFolder(reqPath, file, relativePath,
+        user.getId());
     if (!up.isOk()) {
-      Long failLogId = startFileOpLog("UPLOAD", reqPath, null, null, false,
-          file == null ? null : file.getOriginalFilename(), file == null ? null : file.getContentType(),
+      Long failLogId = startFileOpLog("UPLOAD", resolvedFilePath, relativePath, null, false,
+          logFileName, file == null ? null : file.getContentType(),
           file == null ? null : file.getSize(), request);
       markFileOpLogFail(failLogId, new RuntimeException(up.getMessage()), file == null ? null : file.getSize(), null);
       return up;
     }
 
     String fileDavPath = ErpDavPathUtil.normalizePath(up.getDavPath());
-    Long logId = startFileOpLog("UPLOAD", fileDavPath, null, null, false,
-        file == null ? null : file.getOriginalFilename(), file == null ? null : file.getContentType(),
-        file == null ? null : file.getSize(), request);
+    Long logId = startFileOpLog("UPLOAD", fileDavPath, relativePath, null, false, logFileName,
+        file == null ? null : file.getContentType(), file == null ? null : file.getSize(), request);
     try {
-      // 5) 메타 저장 (FILE_DETAIL_TB)
+      // 5) 메타 저장 (FILE_DETAIL_TB) — originalName은 uploadToFolder가 확정한 파일명 사용
       String creatId = user.getId();
-      nextcloudDavService.insertFileDetail(atchFileId, reqPath,
-          up.getDavPath(),
-          file == null ? null : file.getOriginalFilename(), file == null ? null : file.getSize(), creatId);
+      String storedName =
+          up.getOriginalName() != null ? up.getOriginalName() : logFileName;
+      nextcloudDavService.insertFileDetail(atchFileId, reqPath, up.getDavPath(), storedName,
+          file == null ? null : file.getSize(), creatId);
 
       markFileOpLogSuccess(logId, file == null ? null : file.getSize(), null);
       return up;
@@ -480,7 +526,7 @@ public class NextcloudFolderController {
   public void downloadFile(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
 
-    String davPath = ErpDavPathUtil.normalizePathOrRoot(path);
+    String davPath = ncBrowsePathResolver.resolveBrowsePath(path);
 
     String pathErr = validateDownloadPathStrong(davPath);
     if (pathErr != null) {
@@ -524,7 +570,7 @@ public class NextcloudFolderController {
   public void previewFile(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
 
-    String davPath = ErpDavPathUtil.normalizePathOrRoot(path);
+    String davPath = ncBrowsePathResolver.resolveBrowsePath(path);
 
     String pathErr = validateDownloadPathStrong(davPath);
     if (pathErr != null) {
@@ -583,7 +629,7 @@ public class NextcloudFolderController {
   public void previewViewer(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
 
-    String davPath = ErpDavPathUtil.normalizePathOrRoot(path);
+    String davPath = ncBrowsePathResolver.resolveBrowsePath(path);
 
     String pathErr = validateDownloadPathStrong(davPath);
     if (pathErr != null) {
@@ -628,7 +674,7 @@ public class NextcloudFolderController {
       return;
     }
 
-    String davPath = ErpDavPathUtil.normalizePathOrRoot(path);
+    String davPath = ncBrowsePathResolver.resolveBrowsePath(path);
     String pathErr = validateDownloadPathStrong(davPath);
     if (pathErr != null) {
       response.setStatus(400);
@@ -697,7 +743,7 @@ public class NextcloudFolderController {
       return res;
     }
     try {
-      String davPath = ErpDavPathUtil.normalizePathOrRoot(body.getPath());
+      String davPath = ncBrowsePathResolver.resolveBrowsePath(body.getPath());
       String pathErr = validateDownloadPathStrong(davPath);
       if (pathErr != null) {
         res.put("ok", false);
@@ -722,7 +768,7 @@ public class NextcloudFolderController {
   public void downloadFolderAsZip(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
 
-    String folderPath = ErpDavPathUtil.normalizePathOrRoot(path);
+    String folderPath = ncBrowsePathResolver.resolveBrowsePath(path);
 
     String pathErr = validateDownloadPathStrong(folderPath);
     if (pathErr != null) {

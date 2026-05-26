@@ -531,28 +531,82 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
   @Override
   public UploadResultDTO uploadToFolder(String folderDavPath, MultipartFile file) throws Exception {
-    // folderDavPath: "/ERP/2025/12/SB25-G1583/00.공통폴더" 또는 "2025/12/SB25-G1583/00.공통폴더"
+    return uploadToFolder(folderDavPath, file, null, null);
+  }
+
+  @Override
+  public UploadResultDTO uploadToFolder(String folderDavPath, MultipartFile file,
+      String relativePath, String creatId) throws Exception {
+    // folderDavPath: "/ERP/2025/12/SB25-G1583/00.공통폴더" (화면에서 선택한 현재 폴더)
     if (file == null || file.getOriginalFilename() == null) {
       return UploadResultDTO.fail("파일이 없습니다.");
     }
 
-    // 업로드 전에 폴더 존재 보장: ensureFolder는 "relativeFolderPath" 기준 (rootFolder 하위)
-    String relFolder = toRelativePathUnderRoot(folderDavPath); // "/ERP/..." -> "2025/12/..."
+    /*
+     * relativePath 해석
+     * ─────────────────────────────────────────────────────────
+     * [없음/null/blank]  → folderDavPath 바로 아래에 multipart originalFilename 업로드 (기존 동작)
+     * [있음]             → folderDavPath + relativePath 위치에 업로드
+     *                      예) path=/ERP/.../00.공통, relativePath=내폴더/01.서류/a.pdf
+     *                      → /ERP/.../00.공통/내폴더/01.서류/a.pdf
+     *
+     * 프론트는 드래그앤드롭 시 file.webkitRelativePath || file.name 을 relativePath로 전달합니다.
+     */
+    String safeRelative = ErpDavPathUtil.resolveUploadRelativePath(relativePath,
+        file.getOriginalFilename());
+    String uploadFileName;
+    String targetFolderDavPath;
+    String parentRelForMeta = "";
+
+    if (safeRelative == null || safeRelative.isEmpty()) {
+      // ── 케이스 A: relativePath 미전달 (구 클라이언트 / relativePath 생략)
+      targetFolderDavPath = folderDavPath;
+      uploadFileName = file.getOriginalFilename().replaceAll("[\\\\/:*?\"<>|]", "_");
+    } else {
+      // ── 케이스 B: relativePath 전달 (일반 파일 name 또는 폴더 드롭 webkitRelativePath)
+      uploadFileName = ErpDavPathUtil.fileNameFromRelativePath(safeRelative);
+      if (uploadFileName == null || uploadFileName.isEmpty()) {
+        return UploadResultDTO.fail("relativePath에 파일명이 없습니다.");
+      }
+
+      String parentRel = ErpDavPathUtil.parentRelativePath(safeRelative);
+      parentRelForMeta = parentRel;
+      if (parentRel.isEmpty()) {
+        // relativePath = "report.pdf" → 현재 폴더 바로 아래
+        targetFolderDavPath = folderDavPath;
+      } else {
+        // relativePath = "내폴더/01.서류/report.pdf" → 중간 폴더 포함
+        targetFolderDavPath = ErpDavPathUtil.joinUnderBase(folderDavPath, parentRel);
+      }
+    }
+
+    log.info(
+        "[NC-UPLOAD] folderDavPath={}, relativePath(param)={}, originalFilename={}, safeRelative={}, targetFolder={}, uploadFileName={}",
+        folderDavPath, relativePath, file.getOriginalFilename(), safeRelative,
+        targetFolderDavPath, uploadFileName);
+
+    /*
+     * WebDAV MKCOL: 업로드 대상 폴더(및 중간 하위 폴더) 존재 보장
+     * ensureFolder는 rootFolder(ERP) 하위 relative 경로 기준이므로 변환 후 호출
+     */
+    String relFolder = toRelativePathUnderRoot(targetFolderDavPath);
     nextcloudFolderService.ensureFolder(relFolder);
 
-    String safeOriginal = file.getOriginalFilename().replaceAll("[\\\\/:*?\"<>|]", "_");
+    // 폴더 드롭: path(base) 아래 새로 생긴 중간 폴더만 FOLDER_META_TB uploadSrc='A'(수동) 등록
+    registerManualFolderMetaForUpload(folderDavPath, parentRelForMeta, creatId);
 
     // Windows 스타일: 동일 폴더에 동일 파일명이 있으면 " (1)", " (2)" ... 를 붙여서 업로드
     String uploadedDavPath = null;
 
     for (int i = 0; i <= 999; i++) {
-      String candidateName =
-          (i == 0) ? safeOriginal : ErpDavPathUtil.withWindowsCopySuffix(safeOriginal, i);
-      String candidateRelativePath = (relFolder.isEmpty() ? "" : relFolder + "/") + candidateName;
+      String candidateName = (i == 0) ? uploadFileName
+          : ErpDavPathUtil.withWindowsCopySuffix(uploadFileName, i);
+      String candidateRelativePath =
+          (relFolder.isEmpty() ? "" : relFolder + "/") + candidateName;
 
       try {
         uploadedDavPath = uploadIfNotExists(file, candidateRelativePath);
-        break; // 성공
+        break;
       } catch (DavAlreadyExistsException ex) {
         // 412 Precondition Failed: 동일 경로에 파일이 이미 존재함
         if (ex.getStatusCode() == 412) {
@@ -566,8 +620,35 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       return UploadResultDTO.fail("동일 파일명이 너무 많아 업로드할 수 없습니다.");
     }
 
-    String publicUrl = buildPublicRawFileUrl(uploadedDavPath); // 공유 raw url
-    return UploadResultDTO.ok(uploadedDavPath, publicUrl, file.getOriginalFilename());
+    String publicUrl = buildPublicRawFileUrl(uploadedDavPath);
+    return UploadResultDTO.ok(uploadedDavPath, publicUrl, uploadFileName);
+  }
+
+  /**
+   * 폴더 업로드(relativePath에 하위 폴더 포함) 시 FOLDER_META_TB에 uploadSrc='A' 등록.
+   * ERP 상위·업로드 base 폴더는 제외하고 base 아래 중간 세그먼트만 대상.
+   */
+  private void registerManualFolderMetaForUpload(String folderDavPath, String parentRel,
+      String creatId) {
+    if (parentRel == null || parentRel.isEmpty()) {
+      return;
+    }
+    if (creatId == null || creatId.trim().isEmpty()) {
+      return;
+    }
+    for (String folderPath : ErpDavPathUtil.expandFolderDavPathsUnderBase(folderDavPath,
+        parentRel)) {
+      FolderMetaVO meta = new FolderMetaVO();
+      meta.setFolderPath(folderPath);
+      meta.setPathHash(DigestUtils.sha256Hex(folderPath));
+      meta.setUploadSrc("A");
+      meta.setCreatId(creatId);
+      try {
+        fileMngService.insertFolderMeta(meta);
+      } catch (Exception e) {
+        log.warn("folder upload manual meta upsert fail. path={}", folderPath, e);
+      }
+    }
   }
 
   @Override
