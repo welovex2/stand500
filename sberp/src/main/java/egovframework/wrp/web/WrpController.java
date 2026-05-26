@@ -191,13 +191,11 @@ public class WrpController {
     // 파일이 있을때만 처리
     if (!ObjectUtils.isEmpty(files)) {
 
-      // 폴더명 얻기
-      String typeName = LocalDate.now(ZoneId.of("Asia/Seoul"))
-          .format(DateTimeFormatter.ofPattern("yyyy")).concat("년");
+      String storePath = weekRepAttachStorePath();
 
       // 신규
       if (StringUtils.isEmpty((req.getAtchFileId()))) {
-        FileResult = fileUtil.parseFile(files, "", 0, atchFileId, "주간보고/".concat(typeName));
+        FileResult = fileUtil.parseFile(files, "", 0, atchFileId, storePath);
         atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
         req.setAtchFileId(atchFileId);
       }
@@ -210,7 +208,7 @@ public class WrpController {
 
         // 추가파일 등록
         List<FileVO> _result =
-            fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), "주간보고/".concat(typeName));
+            fileUtil.parseFile(files, "", cnt, req.getAtchFileId(), storePath);
         fileMngService.updateFileInfs(_result, req.getInsMemId());
       }
 
@@ -419,6 +417,13 @@ public class WrpController {
 
   public static String testTypeConvert(String testTypeCode) {
     return TEST_TYPE_MAP.getOrDefault(testTypeCode, "UNKNOWN");
+  }
+
+  /** Nextcloud: ERP / 주간 보고 / {yyyy}년 / 첨부파일 */
+  private static String weekRepAttachStorePath() {
+    String yearFolder = LocalDate.now(ZoneId.of("Asia/Seoul"))
+        .format(DateTimeFormatter.ofPattern("yyyy")).concat("년");
+    return "주간 보고/" + yearFolder + "/첨부파일";
   }
 
 }
