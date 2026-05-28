@@ -141,5 +141,7 @@
     	<typeAlias alias="folderMetaVO"	type="egovframework.ncc.dto.FolderMetaVO"/>
     	<typeAlias alias="downloadLogVO"	type="egovframework.ncc.dto.DownloadLogVO"/>
     	<typeAlias alias="fileOpLogVO"	type="egovframework.ncc.dto.FileOpLogVO"/>
+    	<typeAlias alias="fileOpLogListItem"	type="egovframework.ncc.dto.FileOpLogListItemDTO"/>
+    	<typeAlias alias="fileOpLogSummary"	type="egovframework.ncc.dto.FileOpLogSummaryDTO"/>
     </typeAliases>
 </configuration>

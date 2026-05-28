@@ -58,5 +58,104 @@
      WHERE LOG_ID = #{logId}
   </update>
 
+  <sql id="fileOpLogSearchWhere">
+    WHERE 1 = 1
+    <if test="searchVO != null">
+      <foreach collection="searchVO" item="item" separator="">
+        <choose>
+          <!-- 50 신청서번호 -->
+          <when test="item.searchCode == 50">AND L.SBK_NO LIKE CONCAT('%', #{item.searchWord}, '%')</when>
+          <!-- 53 이용자 ID -->
+          <when test="item.searchCode == 53">AND L.USER_ID = #{item.searchWord}</when>
+          <!-- 87 작업일시 -->
+          <when test="item.searchCode == 87">AND DATE_FORMAT(L.CREAT_DT, '%Y%m%d') BETWEEN DATE_FORMAT(#{item.startDate}, '%Y%m%d') AND DATE_FORMAT(#{item.endDate}, '%Y%m%d')</when>
+          <!-- 88 파일명 -->
+          <when test="item.searchCode == 88">AND (
+            L.FILE_NAME LIKE CONCAT('%', #{item.searchWord}, '%')
+            OR L.DAV_PATH LIKE CONCAT('%', #{item.searchWord}, '%')
+          )</when>
+          <!-- 89 작업유형 -->
+          <when test="item.searchCode == 89">AND L.OP_TYPE = #{item.searchWord}</when>
+          <!-- 90 형식 -->
+          <when test="item.searchCode == 90 and item.searchWord == 'FOLDER'">AND L.IS_FOLDER = 'Y'</when>
+          <when test="item.searchCode == 90 and item.searchWord == 'FILE'">AND L.IS_FOLDER = 'N'</when>
+          <!-- 91 구분 -->
+          <when test="item.searchCode == 91">AND L.UPLOAD_SRC = #{item.searchWord}</when>
+          <!-- 92 결과코드 -->
+          <when test="item.searchCode == 92">AND L.RESULT_CD = #{item.searchWord}</when>
+          <!-- 93 부서 -->
+          <when test="item.searchCode == 93">AND L.DEPT LIKE CONCAT('%', #{item.searchWord}, '%')</when>
+        </choose>
+      </foreach>
+    </if>
+  </sql>
+
+  <select id="selectListCnt" parameterType="comParam" resultType="int">
+    SELECT COUNT(1)
+      FROM FILE_OP_LOG_TB L
+    <include refid="fileOpLogSearchWhere"/>
+  </select>
+
+  <select id="selectList" parameterType="comParam" resultType="fileOpLogListItem">
+    SELECT
+      L.LOG_ID AS logId,
+      CASE WHEN L.IS_FOLDER = 'Y' THEN '폴더' ELSE '파일' END AS itemType,
+      CASE
+        WHEN L.IS_FOLDER = 'Y' THEN
+          SUBSTRING_INDEX(SUBSTRING_INDEX(L.DAV_PATH, '/', -2), '/', 1)
+        ELSE
+          SUBSTRING_INDEX(SUBSTRING_INDEX(L.DAV_PATH, '/', -2), '/', 1)
+      END AS folderLocation,
+      COALESCE(
+        NULLIF(L.FILE_NAME, ''),
+        SUBSTRING_INDEX(L.DAV_PATH, '/', -1)
+      ) AS fileName,
+      L.DEPT AS dept,
+      L.USER_ID AS userId,
+      M.MEM_NAME AS userName,
+      L.OP_TYPE AS opType,
+      CASE L.OP_TYPE
+        WHEN 'UPLOAD' THEN '업로드'
+        WHEN 'DOWNLOAD' THEN '다운로드'
+        WHEN 'DOWNLOAD_FOLDER' THEN '폴더다운로드'
+        WHEN 'MKDIR' THEN '생성'
+        WHEN 'DELETE' THEN '삭제'
+        WHEN 'RENAME' THEN '이름변경'
+        WHEN 'MOVE' THEN '이동'
+        WHEN 'COPY' THEN '복사'
+        WHEN 'PREVIEW' THEN '미리보기'
+        WHEN 'ONLYOFFICE_OPEN' THEN '편집열기'
+        WHEN 'ONLYOFFICE_SAVE' THEN '편집저장'
+        WHEN 'CONVERT_TO_PDF' THEN 'PDF변환'
+        WHEN 'CONVERT_TO_PDF_SAVE' THEN 'PDF변환저장'
+        ELSE L.OP_TYPE
+      END AS opTypeLabel,
+      L.FILE_SIZE AS fileSize,
+      L.UPLOAD_SRC AS uploadSrc,
+      CASE L.UPLOAD_SRC
+        WHEN 'E' THEN 'ERP'
+        WHEN 'A' THEN '연동'
+        ELSE '-'
+      END AS uploadSrcLabel,
+      DATE_FORMAT(L.CREAT_DT, '%Y-%m-%d %H:%i') AS creatDt,
+      L.DAV_PATH AS davPath,
+      L.SBK_NO AS sbkNo,
+      L.RESULT_CD AS resultCd
+    FROM FILE_OP_LOG_TB L
+    LEFT JOIN MEMBER_TB M ON M.ID = L.USER_ID
+    <include refid="fileOpLogSearchWhere"/>
+    ORDER BY L.CREAT_DT DESC, L.LOG_ID DESC
+    LIMIT #{pageUnit} OFFSET #{firstIndex}
+  </select>
+
+  <select id="selectSummary" parameterType="comParam" resultType="fileOpLogSummary">
+    SELECT
+      COALESCE(SUM(CASE WHEN L.IS_FOLDER = 'N' THEN L.FILE_SIZE ELSE 0 END), 0) AS totalBytes,
+      COALESCE(SUM(CASE WHEN L.IS_FOLDER = 'N' THEN 1 ELSE 0 END), 0) AS totalFileCount,
+      COALESCE(SUM(CASE WHEN L.IS_FOLDER = 'Y' THEN 1 ELSE 0 END), 0) AS totalFolderCount
+    FROM FILE_OP_LOG_TB L
+    <include refid="fileOpLogSearchWhere"/>
+  </select>
+
 </mapper>
 
