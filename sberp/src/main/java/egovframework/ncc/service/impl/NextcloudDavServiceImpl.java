@@ -21,6 +21,7 @@ import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -1912,6 +1913,53 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
     // 마지막 슬래시 이후 문자열을 이름으로 반환한다
     return p.substring(idx + 1);
+  }
+
+  @Override
+  public boolean existsFile(String davPath) throws Exception {
+    WebDavItemDTO item = stat(ErpDavPathUtil.normalizePath(davPath));
+    return item != null && !item.isDirectory();
+  }
+
+  @Override
+  public String uploadBytes(byte[] content, String davPath, String contentType,
+      boolean overwrite) throws Exception {
+    if (content == null || content.length == 0) {
+      throw new IllegalArgumentException("업로드할 내용이 비어 있습니다.");
+    }
+
+    String normalized = ErpDavPathUtil.normalizePath(davPath);
+    String relativePath = toRelativePathUnderRoot(normalized);
+    URI uri = buildFileUri(relativePath);
+
+    HttpPut put = new HttpPut(uri);
+    put.setHeader("Authorization", authHeader);
+    put.setHeader("Content-Type",
+        contentType == null || contentType.trim().isEmpty() ? "application/octet-stream"
+            : contentType);
+    if (!overwrite) {
+      put.setHeader("If-None-Match", "*");
+    }
+
+    try {
+      put.setEntity(new ByteArrayEntity(content));
+      HttpResponse res = http.execute(put);
+      int code = res.getStatusLine().getStatusCode();
+
+      if (!overwrite && code == 412) {
+        String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity()) : "";
+        throw new DavAlreadyExistsException("PUT already exists: " + body, 412);
+      }
+
+      if (!(code == 201 || code == 204)) {
+        String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity()) : "";
+        throw new RuntimeException("PUT fail: " + code + " " + body);
+      }
+    } finally {
+      put.releaseConnection();
+    }
+
+    return "/" + rootFolder + "/" + relativePath;
   }
 
 

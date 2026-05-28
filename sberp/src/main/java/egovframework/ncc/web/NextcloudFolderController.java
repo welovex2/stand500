@@ -38,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import egovframework.cmm.service.LoginVO;
+import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.util.CountingOutputStream;
 import egovframework.cmm.util.EgovUserDetailsHelper;
@@ -52,6 +53,8 @@ import egovframework.ncc.dto.OnlyOfficeOpLogRequest;
 import egovframework.ncc.dto.NcCopyRequest;
 import egovframework.ncc.dto.NcCreateFolderRequest;
 import egovframework.ncc.dto.NcDeleteRequest;
+import egovframework.ncc.dto.NcImagesToPdfRequest;
+import egovframework.ncc.dto.NcImagesToPdfResult;
 import egovframework.ncc.dto.NcMoveRequest;
 import egovframework.ncc.dto.NcRenameRequest;
 import egovframework.ncc.dto.NcSimpleResult;
@@ -61,6 +64,8 @@ import egovframework.ncc.dto.WebDavListResponseDTO;
 import egovframework.ncc.dto.WebDavNodeDTO;
 import egovframework.ncc.service.FileOpLogService;
 import egovframework.ncc.service.NcBrowsePathResolver;
+import egovframework.ncc.service.NcImagePdfException;
+import egovframework.ncc.service.NcImagePdfService;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.ncc.service.NextcloudOnlyofficeConnectorService;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -91,6 +96,9 @@ public class NextcloudFolderController {
 
   @Resource(name = "NcBrowsePathResolver")
   private NcBrowsePathResolver ncBrowsePathResolver;
+
+  @Resource(name = "NcImagePdfService")
+  private NcImagePdfService ncImagePdfService;
 
   @Resource(name = "propertiesService")
   private EgovPropertyService propertyService;
@@ -817,6 +825,65 @@ public class NextcloudFolderController {
       safeClose(bout);
       safeClose(cos);
     }
+  }
+
+  @ApiOperation(value = "이미지 PDF 변환 다운로드 (한 페이지 2장)",
+      notes = "선택한 Nextcloud 이미지를 A4 세로 PDF로 합쳐 다운로드합니다.\n"
+          + "- 페이지당 2장(위·아래), paths 배열 순서 유지\n"
+          + "- PDF 파일명: 사진이 있는 폴더명.pdf (자동)\n"
+          + "- paths 예: [\"/ERP/2026/05/SB26-G0000/00.시험사진/a.jpg\"]")
+  @PostMapping(value = "/images-to-pdf", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public void convertImagesToPdf(@RequestBody NcImagesToPdfRequest req, HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
+
+    if (!EgovUserDetailsHelper.isAuthenticated()) {
+      writePdfError(response, 401, ResponseMessage.UNAUTHORIZED);
+      return;
+    }
+
+    try {
+      ncImagePdfService.download(req, request, response);
+    } catch (NcImagePdfException e) {
+      writePdfError(response, e.getStatusCode(), e.getMessage());
+    }
+  }
+
+  @ApiOperation(value = "이미지 PDF 변환 저장 (한 페이지 2장)",
+      notes = "선택한 이미지를 PDF로 변환해 원본과 같은 폴더에 저장합니다.\n"
+          + "- PDF 파일명: 사진이 있는 폴더명.pdf (자동)\n"
+          + "- overwrite=true 이면 동일 파일명 PDF 덮어쓰기")
+  @PostMapping(value = "/images-to-pdf/save", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public NcImagesToPdfResult saveImagesAsPdf(@RequestBody NcImagesToPdfRequest req,
+      HttpServletRequest request, HttpServletResponse response) {
+
+    if (!EgovUserDetailsHelper.isAuthenticated()) {
+      response.setStatus(401);
+      return NcImagesToPdfResult.fail(ResponseMessage.UNAUTHORIZED);
+    }
+
+    try {
+      NcImagesToPdfResult result = ncImagePdfService.save(req, request);
+      response.setStatus(200);
+      return result;
+    } catch (NcImagePdfException e) {
+      response.setStatus(e.getStatusCode());
+      return NcImagesToPdfResult.fail(e.getMessage());
+    } catch (Exception e) {
+      response.setStatus(502);
+      return NcImagesToPdfResult.fail(
+          e.getMessage() == null ? "PDF 저장에 실패했습니다." : e.getMessage());
+    }
+  }
+
+  private void writePdfError(HttpServletResponse response, int status, String message)
+      throws Exception {
+    if (response.isCommitted()) {
+      return;
+    }
+    response.resetBuffer();
+    response.setStatus(status);
+    response.setContentType("application/json;charset=UTF-8");
+    response.getWriter().write("{\"ok\":false,\"message\":\"" + escapeJson(message) + "\"}");
   }
 
   @ApiOperation(value = "이동 MOVE",

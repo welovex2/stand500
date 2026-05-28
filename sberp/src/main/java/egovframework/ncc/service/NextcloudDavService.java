@@ -78,4 +78,16 @@ public interface NextcloudDavService {
   String copyWithDbSync(String sourceDavPath, String destDavPath, boolean overwrite, String userId,
       String metaMode) throws Exception;
 
+  /** 파일 존재 여부 (폴더는 false) */
+  boolean existsFile(String davPath) throws Exception;
+
+  /**
+   * 바이트 배열을 DAV 경로에 PUT 업로드.
+   *
+   * @param overwrite false 이면 동일 경로 존재 시 412
+   * @return 업로드된 DAV 경로
+   */
+  String uploadBytes(byte[] content, String davPath, String contentType, boolean overwrite)
+      throws Exception;
+
 }

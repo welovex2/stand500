@@ -226,6 +226,13 @@
 		  <version>4.5.13</version>
 		</dependency>
 
+		<!-- 이미지 → PDF 변환 (Apache PDFBox) -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>2.0.32</version>
+		</dependency>
+
 <!-- 이미지변환 라이브러리 // 용량이 200메가정도 차지해서 속도 문제 아니면 보류 -->
 <!-- <dependency> -->
 <!--     <groupId>de.akquinet.android.marvin</groupId> -->

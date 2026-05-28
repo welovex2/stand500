@@ -1,1 +1,4 @@
 sberp/target/
+.metadata/
+.vscode/
+Servers/
