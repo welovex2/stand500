@@ -834,8 +834,23 @@ public class RawController {
 
         // TestSeq로 파일서버 루트폴더 찾기
         SbkInfoVO folderInfo = rawService.findByNcFolderPath(req.getTestSeq());
-        String folderName = folderInfo.getNcFolderPath();
-        String testNo = folderInfo.getTestNo();
+        String folderName = null;
+        String testNo = null;
+        if (folderInfo != null) {
+          folderName = folderInfo.getNcFolderPath();
+          testNo = folderInfo.getTestNo();
+          if (StringUtils.isEmpty(folderName) && !StringUtils.isEmpty(folderInfo.getSbkId())) {
+            try {
+              SbkInfoVO provisioned = sbkService.findBySbkNoAndProvision(folderInfo.getSbkId());
+              if (provisioned != null && !StringUtils.isEmpty(provisioned.getNcFolderPath())) {
+                folderName = provisioned.getNcFolderPath();
+              }
+            } catch (Exception e) {
+              log.error(RD_MARKER, "NC folder provision failed, testSeq={}, sbkId={}",
+                  req.getTestSeq(), folderInfo.getSbkId(), e);
+            }
+          }
+        }
 
         // FileVO oneFile = null;
         String atchFileId = "";
@@ -851,24 +866,30 @@ public class RawController {
         // 정전기 방전 인가부위
         if (!ObjectUtils.isEmpty(img.getImgList())) {
 
-          // 신규등록
-          if (StringUtils.isEmpty(req.getImgUrl())) {
-            FileResult = fileUtil.parsePicFile(img.getImgList(), "", 0, "",
-                folderName + "/" + testNo + "/03.시험사진/정전기포인트");
-            atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
-            req.setImgUrl(atchFileId);
-          }
-          // 수정
-          else {
-            // 현재 등록된 파일 수 가져오기
-            FileVO fvo = new FileVO();
-            fvo.setAtchFileId(req.getImgUrl());
-            int cnt = fileMngService.getMaxFileSN(fvo);
+          // 폴더 경로(NC_FOLDER_PATH)가 없으면 "/ERP/null/..." 경로로 잘못 업로드되는 것을 방지
+          if (folderInfo == null || StringUtils.isEmpty(folderName)) {
+            result = false;
+            msg = folderInfo == null ? ResponseMessage.NO_DATA : ResponseMessage.CHECK_DATA;
+          } else {
+            // 신규등록
+            if (StringUtils.isEmpty(req.getImgUrl())) {
+              FileResult = fileUtil.parsePicFile(img.getImgList(), "", 0, "",
+                  folderName + "/" + testNo + "/03.시험사진/정전기포인트");
+              atchFileId = fileMngService.insertFileInfs(FileResult, req.getInsMemId());
+              req.setImgUrl(atchFileId);
+            }
+            // 수정
+            else {
+              // 현재 등록된 파일 수 가져오기
+              FileVO fvo = new FileVO();
+              fvo.setAtchFileId(req.getImgUrl());
+              int cnt = fileMngService.getMaxFileSN(fvo);
 
-            // 추가 파일 등록
-            List<FileVO> _result = fileUtil.parsePicFile(img.getImgList(), "RAW", cnt,
-                req.getImgUrl(), folderName + "/" + testNo + "/03.시험사진/정전기포인트");
-            fileMngService.updateFileInfs(_result, req.getInsMemId());
+              // 추가 파일 등록
+              List<FileVO> _result = fileUtil.parsePicFile(img.getImgList(), "RAW", cnt,
+                  req.getImgUrl(), folderName + "/" + testNo + "/03.시험사진/정전기포인트");
+              fileMngService.updateFileInfs(_result, req.getInsMemId());
+            }
           }
 
         }

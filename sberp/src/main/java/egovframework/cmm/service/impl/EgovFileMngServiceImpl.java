@@ -283,6 +283,10 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     if (!STRE_COURS_NEXTCLOUD.equals(f.getFileStreCours())) {
       return null;
     }
+    // 빈 이미지 슬롯(파일명/경로 없음)은 FILE_DETAIL_TB에는 적재하되 FILE_OP_LOG에는 남기지 않는다.
+    if (isBlank(f.getOrignlFileNm()) && isBlank(f.getStreFileNm())) {
+      return null;
+    }
     String davPath = f.getStreFileNm();
     FileOpLogVO vo = new FileOpLogVO();
     LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
@@ -385,6 +389,10 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
       return null;
     }
     return m.group(1).toUpperCase();
+  }
+
+  private boolean isBlank(String s) {
+    return s == null || s.trim().isEmpty();
   }
 
   private Long parseLongSafe(String s) {
