@@ -175,8 +175,6 @@
 		<!-- CA, CB가 한페이지에 나와야 하므로 머신타입 유지 -->
 		<if test="machineType == 'CA' or machineType == 'CB'">
 			AND (MACHINE_TYPE = 'CE' OR MACHINE_TYPE = #{machineType})
-			<if test="machineType == 'CA'">and CEA_YN = 1</if>
-			<if test="machineType == 'CB'">and CEB_YN = 1</if>
 		</if>
 		<if test="machineType == 'RA' or machineType == 'RB'">
 			AND (MACHINE_TYPE = 'RE' OR MACHINE_TYPE = #{machineType})
