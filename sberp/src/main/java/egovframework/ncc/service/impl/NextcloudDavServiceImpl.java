@@ -1671,7 +1671,15 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
 
     if (isDir) {
       try {
-        fileMngService.updateFolderMetaPathPrefix(src, dst, userId);
+        // 이동된 폴더 자신 + 하위 폴더 메타 + 하위 파일상세 경로를 모두 src->dst 로 갱신한다.
+        // updateFolderMetaPathPrefix 는 LIKE 'src/%' (하위)만 갱신해 이동 폴더 자신이 누락되므로
+        // rename 과 동일하게 updateFolderMetaByPathHash 를 사용한다.
+        FolderMetaVO meta = new FolderMetaVO();
+        meta.setFolderPath(dst);
+        meta.setPathHash(DigestUtils.sha256Hex(dst));
+        meta.setUploadSrc("A");
+        meta.setCreatId(userId);
+        fileMngService.updateFolderMetaByPathHash(src, meta);
       } catch (Exception e) {
         log.warn("move folder meta sync fail. src={} dst={}", src, dst, e);
       }
