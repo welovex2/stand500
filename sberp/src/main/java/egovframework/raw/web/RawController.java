@@ -397,11 +397,39 @@ public class RawController {
 
         // TestSeq로 파일서버 루트폴더 찾기
         SbkInfoVO folderInfo = rawService.findByNcFolderPath(req.getTestSeq());
-        String folderName = folderInfo.getNcFolderPath();
-        String testNo = folderInfo.getTestNo();
+        String folderName = null;
+        String testNo = null;
+        if (folderInfo != null) {
+          folderName = folderInfo.getNcFolderPath();
+          testNo = folderInfo.getTestNo();
+          // NC_FOLDER_PATH가 없으면 신청서 기준으로 폴더를 프로비저닝해서 경로 확보
+          if (StringUtils.isEmpty(folderName) && !StringUtils.isEmpty(folderInfo.getSbkId())) {
+            try {
+              SbkInfoVO provisioned = sbkService.findBySbkNoAndProvision(folderInfo.getSbkId());
+              if (provisioned != null && !StringUtils.isEmpty(provisioned.getNcFolderPath())) {
+                folderName = provisioned.getNcFolderPath();
+              }
+            } catch (Exception e) {
+              log.error(RD_MARKER, "NC folder provision failed, testSeq={}, sbkId={}",
+                  req.getTestSeq(), folderInfo.getSbkId(), e);
+            }
+          }
+        }
         List<FileVO> FileResult = null;
         FileVO oneFile = null;
         String atchFileId = "";
+
+        // 폴더 경로(NC_FOLDER_PATH)가 없으면 "/ERP/null/..." 로 잘못 업로드되는 것을 방지
+        boolean ncFolderReady = !StringUtils.isEmpty(folderName);
+        boolean hasUploads = !ObjectUtils.isEmpty(raw.getModFileList())
+            || !ObjectUtils.isEmpty(raw.getSetupList());
+        if (hasUploads && !ncFolderReady) {
+          result = false;
+          msg = folderInfo == null ? ResponseMessage.NO_DATA : ResponseMessage.CHECK_DATA;
+          BasicResponse res =
+              BasicResponse.builder().result(result).data(req.getRawSeq()).message(msg).build();
+          return res;
+        }
 
         // 시험자 서명
         // if (!ObjectUtils.isEmpty(raw.getTestSign())) {
