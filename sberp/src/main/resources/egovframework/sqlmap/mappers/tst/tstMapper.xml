@@ -154,8 +154,17 @@
 		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
-		    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
-		    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+		    /* 시험리스트_시험상태값 경과일차수 확대적용건 (#26-4) - 프로젝트완료, 시험취소, 시험미필요 제외 후 나머지 모두 적용 */
+		    IF (TEST_TB.TEST_STATE_CODE NOT IN (18, 19, 20),
+			    IFNULL (
+			        IF (
+			            DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT)) > 99,
+			            '99+',
+			            DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT))
+			        ),
+			        0
+			    ),
+			    '') addDay,
 		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
 		    IFNULL (DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%y-%m-%d'), '-') estCmpDt,
 		    '미반입' imPoint,
@@ -827,8 +836,17 @@
                      
         TEST_TB.TEST_STATE_CODE,
 	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
-	    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
-	    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+        /* 시험리스트_시험상태값 경과일차수 확대적용건 (#26-4) - 프로젝트완료, 시험취소, 시험미필요 제외 후 나머지 모두 적용 */
+        IF (TEST_TB.TEST_STATE_CODE NOT IN (18, 19, 20),
+            IFNULL (
+                IF (
+                    DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT)) > 99,
+                    '99+',
+                    DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT))
+                ),
+                0
+            ),
+            '') addDay,
 	    IF (CANCEL_YN = 1, 'Y', 'N') cancelFixYn,
 		TEST_ITEM_TB.NET_SALES netSales,
 
@@ -1018,8 +1036,17 @@
                      
         TEST_TB.TEST_STATE_CODE,
 	    IFNULL (CODE_TS.TYPE_NAME, '-') testState,
-	    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
-	    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+        /* 시험리스트_시험상태값 경과일차수 확대적용건 (#26-4) - 프로젝트완료, 시험취소, 시험미필요 제외 후 나머지 모두 적용 */
+        IF (TEST_TB.TEST_STATE_CODE NOT IN (18, 19, 20),
+            IFNULL (
+                IF (
+                    DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT)) > 99,
+                    '99+',
+                    DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT))
+                ),
+                0
+            ),
+            '') addDay,
 	    IF (CANCEL_YN = 1, 'Y', 'N') cancelFixYn,
 		TEST_ITEM_TB.NET_SALES netSales,
 
@@ -1126,8 +1153,17 @@
 		    			'-', IF (TEST_TB.TEST_TYPE_CODE = 'NS', 'SF', TEST_TB.TEST_TYPE_CODE), LPAD(TEST_TB.TEST_NO,4,0),
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) testId,
 		    IFNULL (FN_CODE_NAME(TEST_TB.TEST_STATE_CODE,'TS'), '-') test_state,
-		    /* 시험상태 설정 업그레이드 (#27) - 시험중, 디버깅, 홀딩, 시험완료, RD작성완료, RD검토99%, 성적서작성중 */
-		    IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), IFNULL (IF (DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT) > 99, '99+', DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT)), 0), '') addDay,
+		    /* 시험리스트_시험상태값 경과일차수 확대적용건 (#26-4) - 프로젝트완료, 시험취소, 시험미필요 제외 후 나머지 모두 적용 */
+            IF (TEST_TB.TEST_STATE_CODE NOT IN (18, 19, 20),
+                IFNULL (
+                    IF (
+                        DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT)) > 99,
+                        '99+',
+                        DATEDIFF (CURRENT_DATE(), IF (TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT))
+                    ),
+                    0
+                ),
+                '') addDay,
 		    IFNULL (TEST_TB.TEST_STATE_CODE, '') STATE_CODE,
 		    IFNULL (DATE_FORMAT(TEST_ITEM_TB.EST_CMP_DT, '%y-%m-%d'), '-') estCmpDt,
 		    '미반입' imPoint,
