@@ -33,7 +33,7 @@ import egovframework.sbk.service.SbkService;
 public class NcImagePdfServiceImpl implements NcImagePdfService {
 
   private static final String ROOT = "/ERP";
-  private static final long MAX_IMAGE_BYTES = 20L * 1024L * 1024L;
+  private static final long MAX_IMAGE_BYTES = 50L * 1024L * 1024L;
 
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;

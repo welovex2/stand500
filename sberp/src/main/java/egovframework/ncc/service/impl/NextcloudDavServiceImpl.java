@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -41,6 +43,8 @@ import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.SbkInfoVO;
 import egovframework.cmm.util.ErpDavPathUtil;
+import egovframework.cmm.util.FilePreviewPolicy;
+import egovframework.cmm.util.OnlyOfficeIntegration;
 import egovframework.ncc.dto.FileDetailUpdateVO;
 import egovframework.ncc.dto.FolderMetaVO;
 import egovframework.ncc.dto.UploadResultDTO;
@@ -787,7 +791,9 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       }
     }
 
-    // 4) DTO에 매칭해서 세팅
+    boolean onlyofficeEnabled = OnlyOfficeIntegration.isEnabled(propertyService);
+
+    // 4) DTO에 uploadSrc · previewType · mimeType 매칭
     for (WebDavItemDTO it : items) {
       if (it == null)
         continue;
@@ -795,8 +801,19 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       if (it.isDirectory()) {
         String norm = (it.getDavPath() == null) ? null : it.getDavPath().replaceAll("/+$", "");
         it.setUploadSrc(norm == null ? "E" : folderSrcMap.getOrDefault(norm, "E"));
+        it.setMimeType(null);
+        it.setPreviewable(false);
+        it.setPreviewType(FilePreviewPolicy.TYPE_NONE);
       } else {
         it.setUploadSrc(fileSrcMap.get(it.getDavPath()));
+        String fileName = it.getName();
+        if (fileName == null || fileName.trim().isEmpty()) {
+          fileName = nameOfDavPath(it.getDavPath());
+        }
+        FilePreviewPolicy.Info preview = FilePreviewPolicy.classify(fileName, onlyofficeEnabled);
+        it.setMimeType(preview.getMimeType());
+        it.setPreviewable(preview.isPreviewable());
+        it.setPreviewType(preview.getPreviewType());
       }
     }
 
@@ -1003,12 +1020,12 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     return idx >= 0 ? s.substring(idx + 1) : s;
   }
 
-  /** href에서 "/ERP/..." 형태로 복원(대략) */
+  /** href에서 "/ERP/..." 형태로 복원. WebDAV href 는 세그먼트별 URL 인코딩되어 있으므로 디코딩한다. */
   private String toErpDavPathFromHref(String href) {
     if (href == null)
       return "/" + rootFolder;
 
-    // href 예: "/remote.php/dav/files/user/ERP/신청서/..."
+    // href 예: "/remote.php/dav/files/user/ERP/%EC%8B%A0%EC%B2%AD%EC%84%9C/..."
     // 또는 full URL이 올 수도 있음 -> "dav/files/" 이후만 잘라냄
     String h = href;
     int pos = h.indexOf("/dav/files/");
@@ -1021,8 +1038,34 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       h = h.substring(prefix.length());
     }
     if (!h.startsWith("/"))
-      h = "/" + h; // "/ERP/..."
-    return h;
+      h = "/" + h;
+    return decodeDavPathFromHref(h);
+  }
+
+  /** PROPFIND href 경로 세그먼트를 UTF-8 디코딩 후 NFC 정규화 (DB FOLDER_PATH 와 매칭용). */
+  private static String decodeDavPathFromHref(String path) {
+    if (path == null || path.isEmpty()) {
+      return path;
+    }
+    String p = path.replace("\\", "/").replaceAll("/{2,}", "/");
+    if (!p.startsWith("/")) {
+      p = "/" + p;
+    }
+    String[] parts = p.split("/");
+    StringBuilder sb = new StringBuilder();
+    for (String part : parts) {
+      if (part == null || part.isEmpty()) {
+        continue;
+      }
+      sb.append('/');
+      try {
+        sb.append(URLDecoder.decode(part, "UTF-8"));
+      } catch (UnsupportedEncodingException e) {
+        sb.append(part);
+      }
+    }
+    String decoded = sb.length() == 0 ? "/" : sb.toString();
+    return Normalizer.normalize(decoded, Normalizer.Form.NFC);
   }
 
   @Override
