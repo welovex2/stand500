@@ -12,20 +12,13 @@
 	        	<entry key="Globals.fileStorePath" value="webapps/sbfile/"/>
 	        	<entry key="Globals.addedOptions" value="false"/>
 	        	
-	        	<entry key="Globals.nc.user" value="stderp" />
-	        	<entry key="Globals.nc.rootFolder" value="ERP" />
-	        	
-	        	<!-- 41번서버 -->
-	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.41:8090/remote.php/dav/files" />
-	        	<entry key="Globals.nc.appPassword" value="WmwHN-XiqtG-5WWk6-J6HAJ-Awji8" />
-	        	<entry key="Globals.nc.base" value="http://172.22.0.41:8090" />
-	        	<entry key="Globals.nc.shareToken" value="CC2GXsoEBqsN859" />
-
-	        	<!-- 파일서버 (포트 80 으로 변경) -->
-<!-- 	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.46/remote.php/dav/files" /> -->
-<!-- 	        	<entry key="Globals.nc.appPassword" value="FWS2E-WA3qG-snYog-pmarg-JSyKn" /> -->
-<!-- 	        	<entry key="Globals.nc.base" value="http://172.22.0.46" /> -->
-<!-- 	        	<entry key="Globals.nc.shareToken" value="DmJFJWzpES5WmWA" /> -->
+	        	<!-- Nextcloud: 환경변수 / erp.properties / erp-local.properties (context-bean-env.xml) -->
+	        	<entry key="Globals.nc.user" value="${GLOBALS_NC_USER}" />
+	        	<entry key="Globals.nc.rootFolder" value="${GLOBALS_NC_ROOT_FOLDER}" />
+	        	<entry key="Globals.nc.webdav.base" value="${GLOBALS_NC_WEBDAV_BASE}" />
+	        	<entry key="Globals.nc.appPassword" value="${GLOBALS_NC_APP_PASSWORD}" />
+	        	<entry key="Globals.nc.base" value="${GLOBALS_NC_BASE}" />
+	        	<entry key="Globals.nc.shareToken" value="${GLOBALS_NC_SHARE_TOKEN}" />
 
 	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
 
@@ -40,18 +33,10 @@
 
 	        	<!-- AI (견적 AI 초안) : 내부 AI 서비스(ai-svc) 호출 -->
 	        	<!-- 외부 LLM egress·API 키·모델은 ai-svc 컨테이너(.env)에서 관리 -->
-	        	<!-- 운영 활성화 전 확인: ① ai-svc 기동 ② 내부 토큰 일치 ③ enabled=true -->
-	        	<!-- [로컬 테스트] ai-svc 를 localhost:8000 으로 띄운 경우 -->
-	        	<entry key="Globals.ai.enabled"   value="true" />
-	        	<entry key="Globals.ai.baseUrl"   value="http://localhost:8000" />
-	        	<entry key="Globals.ai.token"     value="" />
-	        	<entry key="Globals.ai.timeoutMs" value="30000" />
-	        	<!-- [운영/도커] 아래 값으로 되돌릴 것
-	        	<entry key="Globals.ai.enabled"   value="false" />
-	        	<entry key="Globals.ai.baseUrl"   value="http://ai-svc:8000" />
-	        	<entry key="Globals.ai.token"     value="change-me-internal-token" />
-	        	<entry key="Globals.ai.timeoutMs" value="30000" />
-	        	-->
+	        	<entry key="Globals.ai.enabled"   value="${GLOBALS_AI_ENABLED}" />
+	        	<entry key="Globals.ai.baseUrl"   value="${GLOBALS_AI_BASE_URL}" />
+	        	<entry key="Globals.ai.token"     value="${GLOBALS_AI_TOKEN}" />
+	        	<entry key="Globals.ai.timeoutMs" value="${GLOBALS_AI_TIMEOUT_MS}" />
 	        </map>
 		</property>
 	</bean>

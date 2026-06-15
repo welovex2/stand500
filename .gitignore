@@ -2,3 +2,8 @@ sberp/target/
 .metadata/
 .vscode/
 Servers/
+
+# 환경별 비밀 설정 (예시 파일만 Git 에 포함)
+sberp/.env
+sberp/config/erp.properties
+sberp/src/main/resources/egovframework/env/erp-local.properties

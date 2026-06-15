@@ -4,25 +4,15 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
         http://www.springframework.org/schema/jdbc  http://www.springframework.org/schema/jdbc/spring-jdbc-4.0.xsd">
 	
-	<!-- 테스트 실행용 --> 
-<!-- 	<jdbc:embedded-database id="dataSource" type="HSQL"> -->
-<!-- 		<jdbc:script location= "classpath:/db/sampledb.sql"/> -->
-<!-- 	</jdbc:embedded-database> -->
-     
 	<bean id="dataSourceSpied" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
 		<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
-		<!-- 운영 -->
-<!-- 		<property name="url" value="jdbc:mysql://172.22.0.44:3306/erp?allowMultiQueries=true&amp;characterEncoding=utf8" /> -->
-		<!-- 개발 -->
-		<property name="url" value="jdbc:mysql://172.22.0.40:3306/erp?allowMultiQueries=true&amp;characterEncoding=utf8" />
-		<!-- 운영 -->
-		<property name="username" value="erp_user"/>
-        <property name="password" value="stb9394!@!!"/>
+		<!-- 환경변수 / erp.properties / erp-local.properties 에서 주입 (context-bean-env.xml) -->
+		<property name="url" value="${DB_URL}"/>
+		<property name="username" value="${DB_USERNAME}"/>
+        <property name="password" value="${DB_PASSWORD}"/>
         
         <!-- validationQuery 활성화 -->
 	    <property name="validationQuery" value="SELECT 1"/>
-<!-- 	    <property name="testWhileIdle" value="true"/> -->
-<!-- 	    <property name="timeBetweenEvictionRunsMillis" value="300000"/> -->
     </bean>
     <bean id="dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
         <constructor-arg ref="dataSourceSpied" />
