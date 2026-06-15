@@ -202,7 +202,7 @@ public class RepController {
             for (FileVO item : setupReulst) {
               PicDTO map = new PicDTO();
               map.setTitle(item.getFileCn());
-              map.setImageUrl(fileMngService.resolveImageUrl(item));
+              map.setImageUrl(fileMngService.resolveReportImageUrl(item));
               setupList.add(map);
             }
           }
@@ -216,7 +216,7 @@ public class RepController {
         List<String> modList = new ArrayList<String>();
         if (modResult != null) {
           for (FileVO item : modResult) {
-            modList.add(fileMngService.resolveImageUrl(item));
+            modList.add(fileMngService.resolveReportImageUrl(item));
           }
         }
         detail.setModFileList(modList);
@@ -581,7 +581,7 @@ public class RepController {
               for (FileVO item : fileReulst) {
                 PicDTO pic = new PicDTO();
                 pic.setPicId(Integer.toString(i));
-                pic.setImageUrl(fileMngService.resolveImageUrl(item));
+                pic.setImageUrl(fileMngService.resolveReportImageUrl(item));
                 pic.setTitle(item.getFileCn());
                 pic.setMode(item.getFileMemo());
                 // 성적서에서만 사용

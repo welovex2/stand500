@@ -1,14 +1,11 @@
 package egovframework.cmm.util;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
-import javax.imageio.ImageIO;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +17,6 @@ import egovframework.ncc.service.impl.NextcloudDavServiceImpl.DavAlreadyExistsEx
 import egovframework.raw.dto.PicDTO;
 import egovframework.rte.fdl.idgnr.EgovIdGnrService;
 import egovframework.rte.fdl.property.EgovPropertyService;
-import net.coobird.thumbnailator.Thumbnails;
 
 @Component("MinIoFileMngUtil")
 public class MinIoFileMngUtil {
@@ -108,6 +104,7 @@ public class MinIoFileMngUtil {
 
       String finalFileName = null; // ✅ 실제 저장된 파일명
 
+      // 원본 그대로 저장 (리사이즈는 report.do 노출 시점에 수행)
       long _size = file.getSize();
 
       // === (3) MinIO objectKey 생성 ===
@@ -245,43 +242,8 @@ public class MinIoFileMngUtil {
         // 기존 naming 유지
         newName = (fileKey == 0) ? "" : String.valueOf(fileKey);
 
-        // === (3) 리사이즈/원본 결정 ===
-        BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
-        int newWidth = bufferedImage.getWidth();
-        int newHeight = bufferedImage.getHeight();
-
-        byte[] uploadBytes;
-
-        // 350KB 이하는 원본 그대로
-        if (file.getSize() <= 358400) {
-
-          uploadBytes = file.getBytes();
-          _size = uploadBytes.length;
-
-        } else {
-
-          if (file.getSize() < 512000) {
-            newWidth = (int) (bufferedImage.getWidth() * 0.5);
-            newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
-          } else if (file.getSize() < 2097152) {
-            newWidth = (int) (bufferedImage.getWidth() * 0.4);
-            newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
-          } else {
-            newWidth = (int) (bufferedImage.getWidth() * 0.3);
-            newHeight = (bufferedImage.getHeight() * newWidth) / bufferedImage.getWidth();
-          }
-
-          // === (4) Thumbnailator를 메모리에서 실행 ===
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-          // Thumbnailator 올바른 사용법
-          Thumbnails.of(bufferedImage).size(newWidth, newHeight).outputFormat(fileExt)
-              .toOutputStream(baos); // jpg,png 등원확장자 유지
-
-          uploadBytes = baos.toByteArray();
-          _size = uploadBytes.length;
-
-        }
+        // 원본 그대로 저장 (리사이즈는 report.do 노출 시점에 수행)
+        _size = file.getSize();
 
         // === (5) MinIO objectKey 만들고 업로드 ===
         String safeOriginal = "";

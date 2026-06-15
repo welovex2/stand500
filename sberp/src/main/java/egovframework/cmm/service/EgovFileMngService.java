@@ -198,4 +198,10 @@ public interface EgovFileMngService {
   /** atchFileId, fileSn이 채워진 FileVO 기준 (목록 조회 후 URL 변환용) */
   String resolveImageUrl(FileVO fileQuery) throws Exception;
 
+  /**
+   * 성적서(report.do) 노출용 이미지 URL을 반환한다. 원본은 그대로 두고 Nextcloud 저장 이미지는 ERP 리사이즈 프록시 URL로 변환해
+   * 축소 이미지를 노출한다.
+   */
+  String resolveReportImageUrl(FileVO fileQuery) throws Exception;
+
 }

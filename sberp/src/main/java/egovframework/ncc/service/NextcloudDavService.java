@@ -22,6 +22,15 @@ public interface NextcloudDavService {
 
   String resolveFileUrl(FileVO file);
 
+  /**
+   * 성적서(report.do) 노출용 이미지 URL을 생성한다.
+   *
+   * <p>원본 파일은 그대로 두고, Nextcloud 저장 이미지는 ERP 리사이즈 프록시
+   * ({@code Globals.report.imageUrl}) URL로 변환해 축소 이미지를 노출한다. 레거시 등 그 외 저장소는
+   * {@link #resolveFileUrl(FileVO)} 결과를 그대로 반환한다.
+   */
+  String resolveReportImageUrl(FileVO file);
+
   /** 폴더/파일 목록 조회 (Depth: 1=현재폴더+자식, 0=자기 자신) */
   WebDavListResponseDTO list(String davPath, int depth) throws Exception;
 

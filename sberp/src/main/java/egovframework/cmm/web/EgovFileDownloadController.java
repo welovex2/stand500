@@ -1,13 +1,20 @@
 package egovframework.cmm.web;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import javax.annotation.Resource;
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -20,6 +27,7 @@ import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.ncc.service.NextcloudDavService;
+import net.coobird.thumbnailator.Thumbnails;
 
 /**
  * 파일 다운로드를 위한 컨트롤러 클래스
@@ -196,6 +204,103 @@ public class EgovFileDownloadController {
       LOGGER.error("[DOWN] download failed. atchFileId={}, fileSn={}", atchFileId, fileSn, ex);
       // 필요시 에러 응답
       // response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * 성적서(report.do) 노출용 이미지 리사이즈 프록시.
+   *
+   * <p>원본 파일은 Nextcloud에 그대로 두고, 요청 시점에 메모리에서 축소(긴 변 기준 {@code w} 픽셀, 비율 유지,
+   * 업스케일 없음)해 작은 이미지로 응답한다. 성적서 화면을 브라우저에서 PDF로 저장할 때 임베드되는 이미지 용량을 줄이기 위한 용도.
+   *
+   * <p>이미지의 원본은 이미 공개 공유 토큰 URL로 노출되는 영역과 동일하므로 별도 인증 없이 접근 가능하다.
+   *
+   * @param encodedPath 원본 파일 DAV 경로의 Base64URL(무패딩) 인코딩 값
+   *        (예: {@code /ERP/2026/02/SB.../01.제품사진/a.jpg}를 인코딩한 문자열)
+   * @param maxSize 긴 변 최대 픽셀 (기본 1280)
+   * @param quality JPEG 품질 0~1 (기본 0.6, 낮을수록 용량 작음)
+   */
+  @GetMapping("/file/reportImage.do")
+  public void reportImage(@RequestParam("path") String encodedPath,
+      @RequestParam(value = "w", required = false, defaultValue = "1280") int maxSize,
+      @RequestParam(value = "q", required = false, defaultValue = "0.6") float quality,
+      HttpServletResponse response) {
+
+    if (encodedPath == null || encodedPath.trim().isEmpty()) {
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      return;
+    }
+
+    // path는 Base64URL(무패딩)로 전달됨 → DAV 경로로 디코딩
+    String davPath;
+    try {
+      davPath = new String(Base64.getUrlDecoder().decode(encodedPath.trim()), StandardCharsets.UTF_8);
+    } catch (IllegalArgumentException ex) {
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      return;
+    }
+
+    // 경로 검증 (디렉터리 트래버설 차단)
+    if (davPath.trim().isEmpty() || davPath.contains("..")) {
+      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+      return;
+    }
+
+    String lower = davPath.toLowerCase();
+    boolean isPng = lower.endsWith(".png");
+    String outputFormat = isPng ? "png" : "jpg";
+    int size = maxSize <= 0 ? 1280 : maxSize;
+    // 품질 범위 보정 (0.1 ~ 1.0)
+    float jpegQuality = quality;
+    if (jpegQuality <= 0f || jpegQuality > 1f) {
+      jpegQuality = 0.6f;
+    }
+
+    try (InputStream in = nextcloudDavService.downloadStreamByDavPath(davPath)) {
+
+      BufferedImage src = ImageIO.read(in);
+      if (src == null) {
+        // 이미지로 디코딩 불가
+        response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+        return;
+      }
+
+      int longSide = Math.max(src.getWidth(), src.getHeight());
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      Thumbnails.Builder<BufferedImage> builder = Thumbnails.of(src);
+
+      if (longSide > size) {
+        // 긴 변을 size에 맞춰 비율 유지 축소 (업스케일 없음)
+        builder.size(size, size).keepAspectRatio(true);
+      } else {
+        // 이미 충분히 작으면 크기 유지(JPEG는 품질 압축만)
+        builder.scale(1.0d);
+      }
+
+      // PNG는 무손실이라 품질 옵션 미적용
+      if (!isPng) {
+        builder.outputQuality(jpegQuality);
+      }
+
+      builder.outputFormat(outputFormat).toOutputStream(baos);
+      byte[] bytes = baos.toByteArray();
+
+      response.setContentType(isPng ? "image/png" : "image/jpeg");
+      response.setContentLength(bytes.length);
+      // 동일 이미지 반복 요청 캐시 (1일)
+      response.setHeader("Cache-Control", "public, max-age=86400");
+
+      try (OutputStream out = response.getOutputStream()) {
+        out.write(bytes);
+        out.flush();
+      }
+
+    } catch (Exception e) {
+      LOGGER.error("[REPORT-IMG] resize failed. path={}, w={}", davPath, maxSize, e);
+      if (!response.isCommitted()) {
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      }
     }
   }
 

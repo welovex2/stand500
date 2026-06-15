@@ -16,21 +16,42 @@
 	        	<entry key="Globals.nc.rootFolder" value="ERP" />
 	        	
 	        	<!-- 41번서버 -->
-<!-- 	        	
 	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.41:8090/remote.php/dav/files" />
 	        	<entry key="Globals.nc.appPassword" value="WmwHN-XiqtG-5WWk6-J6HAJ-Awji8" />
 	        	<entry key="Globals.nc.base" value="http://172.22.0.41:8090" />
 	        	<entry key="Globals.nc.shareToken" value="CC2GXsoEBqsN859" />
- -->       	
+
 	        	<!-- 파일서버 (포트 80 으로 변경) -->
-	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.46/remote.php/dav/files" />
-	        	<entry key="Globals.nc.appPassword" value="FWS2E-WA3qG-snYog-pmarg-JSyKn" />
-	        	<entry key="Globals.nc.base" value="http://172.22.0.46" />
-	        	<entry key="Globals.nc.shareToken" value="DmJFJWzpES5WmWA" />
+<!-- 	        	<entry key="Globals.nc.webdav.base" value="http://172.22.0.46/remote.php/dav/files" /> -->
+<!-- 	        	<entry key="Globals.nc.appPassword" value="FWS2E-WA3qG-snYog-pmarg-JSyKn" /> -->
+<!-- 	        	<entry key="Globals.nc.base" value="http://172.22.0.46" /> -->
+<!-- 	        	<entry key="Globals.nc.shareToken" value="DmJFJWzpES5WmWA" /> -->
 
 	        	<entry key="img.url" value="/api/file/getImage.do?atchFileId=" />
 
+	        	<!-- 성적서(report.do) 노출용 이미지 리사이즈 프록시 -->
+	        	<!-- 원본은 그대로 저장하고, report.do 화면에서만 축소 이미지를 노출(브라우저 PDF 저장 용량 절감) -->
+	        	<!-- imageMaxSize: 긴 변 최대 픽셀 / imageQuality: JPEG 품질(0~1, 낮을수록 용량 작음) -->
+	        	<entry key="Globals.report.imageUrl" value="/api/file/reportImage.do" />
+	        	<entry key="Globals.report.imageMaxSize" value="1024" />
+	        	<entry key="Globals.report.imageQuality" value="0.6" />
+
 	        	<!-- ONLYOFFICE: NC 커넥터 앱 + Document Server URL 은 Nextcloud 관리 화면에서 설정 -->
+
+	        	<!-- AI (견적 AI 초안) : 내부 AI 서비스(ai-svc) 호출 -->
+	        	<!-- 외부 LLM egress·API 키·모델은 ai-svc 컨테이너(.env)에서 관리 -->
+	        	<!-- 운영 활성화 전 확인: ① ai-svc 기동 ② 내부 토큰 일치 ③ enabled=true -->
+	        	<!-- [로컬 테스트] ai-svc 를 localhost:8000 으로 띄운 경우 -->
+	        	<entry key="Globals.ai.enabled"   value="true" />
+	        	<entry key="Globals.ai.baseUrl"   value="http://localhost:8000" />
+	        	<entry key="Globals.ai.token"     value="" />
+	        	<entry key="Globals.ai.timeoutMs" value="30000" />
+	        	<!-- [운영/도커] 아래 값으로 되돌릴 것
+	        	<entry key="Globals.ai.enabled"   value="false" />
+	        	<entry key="Globals.ai.baseUrl"   value="http://ai-svc:8000" />
+	        	<entry key="Globals.ai.token"     value="change-me-internal-token" />
+	        	<entry key="Globals.ai.timeoutMs" value="30000" />
+	        	-->
 	        </map>
 		</property>
 	</bean>

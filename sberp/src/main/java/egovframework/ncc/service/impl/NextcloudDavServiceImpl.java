@@ -445,6 +445,45 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     }
   }
 
+  @Override
+  public String resolveReportImageUrl(FileVO file) {
+    if (file == null)
+      return "";
+
+    try {
+      String streCours = file.getFileStreCours();
+      String davPath = file.getStreFileNm();
+
+      // Nextcloud 저장 이미지: ERP 리사이즈 프록시 URL로 변환
+      if ("NEXTCLOUD_DAV".equals(streCours) && davPath != null && !davPath.trim().isEmpty()) {
+        String prefix = propertyService.getString("Globals.report.imageUrl");
+        if (prefix == null || prefix.trim().isEmpty()) {
+          prefix = "/api/file/reportImage.do";
+        }
+        String size = propertyService.getString("Globals.report.imageMaxSize");
+        if (size == null || size.trim().isEmpty()) {
+          size = "1280";
+        }
+        String quality = propertyService.getString("Globals.report.imageQuality");
+        if (quality == null || quality.trim().isEmpty()) {
+          quality = "0.6";
+        }
+        // path는 *.do XSS 필터(HTMLTagFilter)나 URL 디코딩의 영향을 받지 않도록 Base64URL(무패딩)로 전달.
+        // 파일명에 괄호 '(1)'·시험그래프 '(count)' 등이 포함될 수 있어 일반 URL 인코딩만으로는 안전하지 않음.
+        String encodedPath = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(davPath.trim().getBytes(StandardCharsets.UTF_8));
+        return prefix + "?path=" + encodedPath + "&w=" + size + "&q=" + quality;
+      }
+
+      // 그 외(레거시 등)는 기존 URL 그대로
+      return resolveFileUrl(file);
+    } catch (Exception e) {
+      log.warn("resolveReportImageUrl 실패. streFileNm={}", file.getStreFileNm(), e);
+      // 실패 시 원본 URL로 폴백
+      return resolveFileUrl(file);
+    }
+  }
+
   /**
    * ERP에서 파일 삭제할때 물리적 삭제. deleteWithDbSync 메소드는 파일서버 모달에서 삭제+DB처리
    */

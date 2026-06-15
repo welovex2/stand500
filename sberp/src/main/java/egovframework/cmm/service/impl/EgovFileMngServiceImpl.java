@@ -476,6 +476,15 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     return resolveImageUrl(atchFileId, fileQuery.getFileSn());
   }
 
+  @Override
+  public String resolveReportImageUrl(FileVO fileQuery) throws Exception {
+    if (fileQuery == null) {
+      return "";
+    }
+    String url = nextcloudDavService.resolveReportImageUrl(fileQuery);
+    return url == null ? "" : url;
+  }
+
   /**
    * 파일 구분자에 대한 최대값을 구한다.
    *
