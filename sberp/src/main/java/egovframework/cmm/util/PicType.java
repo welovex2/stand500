@@ -21,7 +21,12 @@ public enum PicType {
     CS("11", "CS"),
     M_Field("12", "M-Field"),
     V_Dip("13", "V-Dip"),
-    MAC("14", "시험기자재");
+    MAC("14", "시험기자재"),
+    CE_LOAD_AUX_PORT("15", "CE (부하 및 부가포트)"),
+    CLICK("16", "Click"),
+    DP("17", "DP"),
+    RE("18", "RE"),
+    MEASURE_PIC("19", "측정사진");
   
     private final String picId;
     private final String description;

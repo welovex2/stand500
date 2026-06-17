@@ -210,21 +210,19 @@ public class MinIoFileMngUtil {
     int i = 0;
     while (files.size() > i) {
 
-      MultipartFile file = files.get(i).getImage();
+      PicDTO pic = files.get(i);
+      MultipartFile file = pic.getImage();
+      String title = pic.getTitle();
 
-      // fileSn에 따라 폴더 경로 동적 변경
-      // 시험그래프 여부 판단
-      boolean isGraph = !"14".equals(picId) && files.get(i).getTitle() != null
-          && "3".equals(files.get(i).getTitle());
-      String storePathString = storePath;
-      if (isGraph) {
-        // 시험그래프일 경우, storePath의 마지막 폴더를 02.데이터/측정데이터로 교체
-        storePathString = storePath.replaceAll("/03\\.시험사진$", "/02.데이터/측정데이터");
-      }
+      boolean isGraph = isGraph(picId, title);     // 시험그래프
+      boolean isEquipment = "14".equals(picId);    // 시험기자재
+      boolean isMeasure = "19".equals(picId);      // TEL 측정사진
+
+      // 저장 폴더 결정
+      String storePathString = resolvePicStorePath(storePath, isGraph, isEquipment);
 
       String orginFileName = "";
       String fileExt = "";
-      String newName = "";
       long _size = 0;
       String davPath = "";
 
@@ -236,74 +234,26 @@ public class MinIoFileMngUtil {
           continue;
         }
 
-        int index = orginFileName.lastIndexOf(".");
-        fileExt = orginFileName.substring(index + 1);
-
-        // 기존 naming 유지
-        newName = (fileKey == 0) ? "" : String.valueOf(fileKey);
-
-        // 원본 그대로 저장 (리사이즈는 report.do 노출 시점에 수행)
+        fileExt = orginFileName.substring(orginFileName.lastIndexOf(".") + 1);
         _size = file.getSize();
 
-        // === (5) MinIO objectKey 만들고 업로드 ===
-        String safeOriginal = "";
-        boolean isUploaded = false;
-        int count = 0;
-
-        // 파일명 구성
-        String fileExtForName = fileExt.isEmpty() ? "" : "." + fileExt;
-
-        if (isGraph) {
-          // 시험그래프: 원본파일명 기준, AUTO_RENAME
-          String originBase = orginFileName.substring(0, orginFileName.lastIndexOf("."))
-              .replaceAll("[\\\\/:*?\"<>|]", "_");
-          fileExtForName = fileExt.isEmpty() ? "" : "." + fileExt;
-
-          while (!isUploaded) {
-            String currentName = (count == 0) ? originBase + fileExtForName
-                : originBase + "(" + count + ")" + fileExtForName;
-
-            String objectKey = storePathString + "/" + currentName;
-            try {
-              // 폴더 보장(MKCOL)
-              nextcloudFolderService.ensureFolder(storePathString);
-              davPath = nextcloudDavService.uploadIfNotExists(file, objectKey);
-              isUploaded = true;
-            } catch (DavAlreadyExistsException e) {
-              count++;
-              if (count > 100)
-                throw new Exception("파일 업로드 재시도 횟수가 너무 많습니다.");
-            }
-          }
-
+        if (isGraph || isMeasure) {
+          // 시험그래프/측정사진: 원본 파일명 사용 / 자동 넘버링 없이 중복 시에만 번호
+          // (측정사진은 title 이 화면용 코드값이라 파일명으로 쓰지 않고 원본 파일명 사용)
+          davPath = uploadAutoRename(file, storePathString, sanitize(stripExt(orginFileName)),
+              fileExt);
+        } else if (isEquipment) {
+          // 시험기자재: Title 사용(없으면 원본 파일명) / 자동 넘버링 없이 중복 시에만 번호
+          String baseName = !ObjectUtils.isEmpty(title) ? sanitize(title)
+              : sanitize(stripExt(orginFileName));
+          davPath = uploadAutoRename(file, storePathString, baseName, fileExt);
         } else {
-          // 기존 로직 유지: safeOriginal 결정
+          // 기본: PicType 설명(없으면 원본 파일명) + 자동 넘버링
           PicType type = PicType.fromId(picId);
-
-          if (type == null) {
-            String baseName = orginFileName.substring(0, orginFileName.lastIndexOf("."));
-            safeOriginal = baseName.replaceAll("[\\\\/:*?\"<>|]", "_");
-          } else {
-            safeOriginal = type.getDescription().replaceAll("[\\\\/:*?\"<>|]", "_");
-          }
-
-          // newName이 빈값이면 숫자 없이 "파일명.확장자", 있으면 "파일명 숫자.확장자"
-          String finalFileName =
-              safeOriginal + (newName.isEmpty() ? "" : " " + newName) + "." + fileExt;
-          String objectKey = storePathString + "/" + finalFileName;
-
-          /*
-           * ObjectMetadata meta = new ObjectMetadata(); meta.setContentLength(_size);
-           * meta.setContentType(file.getContentType());
-           * 
-           * try (InputStream is = new ByteArrayInputStream(uploadBytes)) { s3.putObject(bucketName,
-           * objectKey, is, meta); }
-           */
-          // 폴더 보장(MKCOL)
-          nextcloudFolderService.ensureFolder(storePathString);
-          // 업로드(Nextcloud가 MinIO에 저장 + 인덱스 등록)
-          davPath = nextcloudDavService.upload(file, objectKey);
-
+          String baseName =
+              type != null ? sanitize(type.getDescription()) : sanitize(stripExt(orginFileName));
+          String numberSuffix = (fileKey == 0) ? "" : String.valueOf(fileKey);
+          davPath = uploadStandard(file, storePathString, baseName, numberSuffix, fileExt);
         }
       }
 
@@ -315,9 +265,9 @@ public class MinIoFileMngUtil {
       fvo.setStreFileNm(davPath);
       fvo.setAtchFileId(atchFileIdString);
       fvo.setFileSn(String.valueOf(fileKey));
-      fvo.setFileOrdr(files.get(i).getFileOrdr() == 0 ? fileKey : files.get(i).getFileOrdr());
-      fvo.setFileCn(files.get(i).getTitle());
-      fvo.setFileMemo(files.get(i).getMode());
+      fvo.setFileOrdr(pic.getFileOrdr() == 0 ? fileKey : pic.getFileOrdr());
+      fvo.setFileCn(title);
+      fvo.setFileMemo(pic.getMode());
       result.add(fvo);
 
       fileKey++;
@@ -326,6 +276,65 @@ public class MinIoFileMngUtil {
 
     return result;
 
+  }
+
+  /** 파일명/경로에 사용할 수 없는 문자를 _ 로 치환 */
+  private String sanitize(String name) {
+    return name == null ? "" : name.replaceAll("[\\\\/:*?\"<>|]", "_");
+  }
+
+  /** 확장자를 제외한 파일명 반환 */
+  private String stripExt(String fileName) {
+    int idx = fileName.lastIndexOf(".");
+    return idx < 0 ? fileName : fileName.substring(0, idx);
+  }
+
+  /** 시험그래프 여부: picId 14/19 가 아니면서 title 이 "3" 인 경우 */
+  private boolean isGraph(String picId, String title) {
+    return !"14".equals(picId) && !"19".equals(picId) && "3".equals(title);
+  }
+
+  /** picId 별 저장 폴더 결정 */
+  private String resolvePicStorePath(String storePath, boolean isGraph, boolean isEquipment) {
+    if (isGraph) {
+      // 시험그래프: 마지막 폴더(03.시험사진)를 02.데이터/측정데이터로 교체
+      return storePath.replaceAll("/03\\.시험사진$", "/02.데이터/측정데이터");
+    }
+    if (isEquipment) {
+      // 시험기자재: testNo/03.시험사진을 걷어내고 folderName 하위의 00.신청서 및 공통/01.제품사진으로 교체
+      return storePath.replaceAll("/[^/]+/03\\.시험사진$", "/00.신청서 및 공통/01.제품사진");
+    }
+    return storePath;
+  }
+
+  /** 자동 넘버링 없이, 파일명 중복 시에만 뒤에 (n) 을 붙여 업로드 */
+  private String uploadAutoRename(MultipartFile file, String storePathString, String baseName,
+      String fileExt) throws Exception {
+    String extForName = fileExt.isEmpty() ? "" : "." + fileExt;
+    int count = 0;
+    while (true) {
+      String currentName =
+          (count == 0) ? baseName + extForName : baseName + " (" + count + ")" + extForName;
+      String objectKey = storePathString + "/" + currentName;
+      try {
+        nextcloudFolderService.ensureFolder(storePathString);
+        return nextcloudDavService.uploadIfNotExists(file, objectKey);
+      } catch (DavAlreadyExistsException e) {
+        count++;
+        if (count > 100)
+          throw new Exception("파일 업로드 재시도 횟수가 너무 많습니다.");
+      }
+    }
+  }
+
+  /** 파일명 + 자동 넘버링(numberSuffix) 으로 업로드 */
+  private String uploadStandard(MultipartFile file, String storePathString, String baseName,
+      String numberSuffix, String fileExt) throws Exception {
+    String finalFileName =
+        baseName + (numberSuffix.isEmpty() ? "" : " " + numberSuffix) + "." + fileExt;
+    String objectKey = storePathString + "/" + finalFileName;
+    nextcloudFolderService.ensureFolder(storePathString);
+    return nextcloudDavService.upload(file, objectKey);
   }
 
   /**
