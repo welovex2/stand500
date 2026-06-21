@@ -3,6 +3,7 @@ package egovframework.cmm.web;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,6 +28,7 @@ import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.ncc.service.NextcloudDavService;
+import egovframework.rte.fdl.property.EgovPropertyService;
 import net.coobird.thumbnailator.Thumbnails;
 
 /**
@@ -55,6 +57,9 @@ public class EgovFileDownloadController {
 
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
+
+  @Resource(name = "propertiesService")
+  private EgovPropertyService propertyService;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EgovFileDownloadController.class);
 
@@ -248,7 +253,6 @@ public class EgovFileDownloadController {
 
     String lower = davPath.toLowerCase();
     boolean isPng = lower.endsWith(".png");
-    String outputFormat = isPng ? "png" : "jpg";
     int size = maxSize <= 0 ? 1280 : maxSize;
     // 품질 범위 보정 (0.1 ~ 1.0)
     float jpegQuality = quality;
@@ -256,9 +260,19 @@ public class EgovFileDownloadController {
       jpegQuality = 0.6f;
     }
 
+    long skipBytes = parseReportImageSkipBytes();
+
     try (InputStream in = nextcloudDavService.downloadStreamByDavPath(davPath)) {
 
-      BufferedImage src = ImageIO.read(in);
+      byte[] original = readAllBytes(in);
+
+      // 500KB 이하: 재인코딩 없이 원본 그대로 (측정 그래프·얇은 선/글자 보존)
+      if (skipBytes > 0 && original.length > 0 && original.length <= skipBytes) {
+        writeImageResponse(response, original, guessImageContentType(davPath));
+        return;
+      }
+
+      BufferedImage src = ImageIO.read(new ByteArrayInputStream(original));
       if (src == null) {
         // 이미지로 디코딩 불가
         response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
@@ -283,24 +297,63 @@ public class EgovFileDownloadController {
         builder.outputQuality(jpegQuality);
       }
 
+      String outputFormat = isPng ? "png" : "jpg";
       builder.outputFormat(outputFormat).toOutputStream(baos);
-      byte[] bytes = baos.toByteArray();
-
-      response.setContentType(isPng ? "image/png" : "image/jpeg");
-      response.setContentLength(bytes.length);
-      // 동일 이미지 반복 요청 캐시 (1일)
-      response.setHeader("Cache-Control", "public, max-age=86400");
-
-      try (OutputStream out = response.getOutputStream()) {
-        out.write(bytes);
-        out.flush();
-      }
+      writeImageResponse(response, baos.toByteArray(),
+          isPng ? "image/png" : "image/jpeg");
 
     } catch (Exception e) {
       LOGGER.error("[REPORT-IMG] resize failed. path={}, w={}", davPath, maxSize, e);
       if (!response.isCommitted()) {
         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       }
+    }
+  }
+
+  private long parseReportImageSkipBytes() {
+    try {
+      String v = propertyService.getString("Globals.report.imageSkipBytes");
+      if (v != null && !v.trim().isEmpty()) {
+        return Long.parseLong(v.trim());
+      }
+    } catch (Exception ignore) {
+      // fall through
+    }
+    return 512_000L;
+  }
+
+  private static byte[] readAllBytes(InputStream in) throws IOException {
+    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+    byte[] chunk = new byte[8192];
+    int n;
+    while ((n = in.read(chunk)) != -1) {
+      buf.write(chunk, 0, n);
+    }
+    return buf.toByteArray();
+  }
+
+  private static String guessImageContentType(String davPath) {
+    String lower = davPath.toLowerCase();
+    if (lower.endsWith(".png")) {
+      return "image/png";
+    }
+    if (lower.endsWith(".gif")) {
+      return "image/gif";
+    }
+    if (lower.endsWith(".webp")) {
+      return "image/webp";
+    }
+    return "image/jpeg";
+  }
+
+  private static void writeImageResponse(HttpServletResponse response, byte[] bytes,
+      String contentType) throws IOException {
+    response.setContentType(contentType);
+    response.setContentLength(bytes.length);
+    response.setHeader("Cache-Control", "public, max-age=86400");
+    try (OutputStream out = response.getOutputStream()) {
+      out.write(bytes);
+      out.flush();
     }
   }
 

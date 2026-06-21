@@ -25,9 +25,11 @@
 	        	<!-- 성적서(report.do) 노출용 이미지 리사이즈 프록시 -->
 	        	<!-- 원본은 그대로 저장하고, report.do 화면에서만 축소 이미지를 노출(브라우저 PDF 저장 용량 절감) -->
 	        	<!-- imageMaxSize: 긴 변 최대 픽셀 / imageQuality: JPEG 품질(0~1, 낮을수록 용량 작음) -->
+	        	<!-- imageSkipBytes: 이 크기(바이트) 이하는 리사이즈·재압축 없이 원본 그대로 노출 (측정 그래프 등) -->
 	        	<entry key="Globals.report.imageUrl" value="/api/file/reportImage.do" />
 	        	<entry key="Globals.report.imageMaxSize" value="800" />
 	        	<entry key="Globals.report.imageQuality" value="0.5" />
+	        	<entry key="Globals.report.imageSkipBytes" value="512000" />
 
 	        	<!-- ONLYOFFICE: NC 커넥터 앱 + Document Server URL 은 Nextcloud 관리 화면에서 설정 -->
 

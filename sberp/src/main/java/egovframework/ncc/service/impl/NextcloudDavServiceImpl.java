@@ -454,8 +454,13 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       String streCours = file.getFileStreCours();
       String davPath = file.getStreFileNm();
 
-      // Nextcloud 저장 이미지: ERP 리사이즈 프록시 URL로 변환
+      // Nextcloud 저장 이미지: 작은 파일은 원본 URL, 큰 파일만 리사이즈 프록시
       if ("NEXTCLOUD_DAV".equals(streCours) && davPath != null && !davPath.trim().isEmpty()) {
+        long skipBytes = parseReportImageSkipBytes();
+        if (isReportImageSkipResize(file.getFileMg(), skipBytes)) {
+          return resolveFileUrl(file);
+        }
+
         String prefix = propertyService.getString("Globals.report.imageUrl");
         if (prefix == null || prefix.trim().isEmpty()) {
           prefix = "/api/file/reportImage.do";
@@ -481,6 +486,31 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       log.warn("resolveReportImageUrl 실패. streFileNm={}", file.getStreFileNm(), e);
       // 실패 시 원본 URL로 폴백
       return resolveFileUrl(file);
+    }
+  }
+
+  /** 성적서 이미지: 이 바이트 이하는 리사이즈·재압축 생략 (기본 500KB = 512000) */
+  private long parseReportImageSkipBytes() {
+    try {
+      String v = propertyService.getString("Globals.report.imageSkipBytes");
+      if (v != null && !v.trim().isEmpty()) {
+        return Long.parseLong(v.trim());
+      }
+    } catch (Exception ignore) {
+      // fall through
+    }
+    return 512_000L;
+  }
+
+  private boolean isReportImageSkipResize(String fileMg, long skipBytes) {
+    if (skipBytes <= 0 || fileMg == null || fileMg.trim().isEmpty()) {
+      return false;
+    }
+    try {
+      long bytes = Long.parseLong(fileMg.trim());
+      return bytes > 0 && bytes <= skipBytes;
+    } catch (NumberFormatException e) {
+      return false;
     }
   }
 
