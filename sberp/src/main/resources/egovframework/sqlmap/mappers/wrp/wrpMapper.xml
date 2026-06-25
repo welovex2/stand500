@@ -335,31 +335,33 @@
 	</select>
 	
 	<select id="selectList" resultType="weekRep" parameterType="comParam">
-		SELECT 
-			@rownum:=@rownum+1 as no,
+		SELECT
+			(#{totalCount} - #{firstIndex} - (@rownum := @rownum + 1) + 1) AS no,
 			lst.*
 		FROM (
-		    SELECT 
+		    SELECT
 		        WR_SEQ,
 		        TEST_TYPE_CODE,
 		        FN_CODE_NAME(TEST_TYPE_CODE, 'WT') TEST_TYPE,
 		        NTT_SJ,
-			    IF(WEEKREP_TB.ATCH_FILE_ID IS NULL, 0, IF(fd.ATCH_FILE_ID IS NOT NULL, 1, 0)) AS attchYn,
+		        CASE
+		            WHEN WEEKREP_TB.ATCH_FILE_ID IS NULL THEN 0
+		            WHEN EXISTS (
+		                SELECT 1
+		                FROM FILE_DETAIL_TB fd
+		                WHERE fd.ATCH_FILE_ID = WEEKREP_TB.ATCH_FILE_ID
+		                  AND fd.STATE != 'D'
+		            ) THEN 1
+		            ELSE 0
+		        END AS attchYn,
 		        WR_CNT,
-		        IFNULL (FN_MEM_NAME (INS_MEM_ID), '') insName,
+		        IFNULL(FN_MEM_NAME(INS_MEM_ID), '') insName,
 		        DATE_FORMAT(INS_DT, '%Y-%m-%d') insDtStr,
 		        FN_POS_NAME(INS_MEM_ID) insPos,
-		        IF (WR_CNT IS NULL, '-', DATE_FORMAT(UDT_DT, '%Y-%m-%d')) udtDtStr,
+		        IF(WR_CNT IS NULL, '-', DATE_FORMAT(UDT_DT, '%Y-%m-%d')) udtDtStr,
 		        STATE
-		    FROM 
+		    FROM
 		        WEEKREP_TB
-		        LEFT JOIN (
-		            SELECT ATCH_FILE_ID
-		            FROM FILE_DETAIL_TB
-		            WHERE STATE != 'D'
-		            GROUP BY ATCH_FILE_ID
-		        ) fd ON fd.ATCH_FILE_ID = WEEKREP_TB.ATCH_FILE_ID
-		        INNER JOIN (SELECT @rownum:=0) r
 		    WHERE STATE != 'D'
 	    	
 	<if test="searchVO != null">
@@ -378,10 +380,10 @@
 			
 		</foreach>
 	</if>
-			ORDER BY WR_SEQ
+		    ORDER BY WR_SEQ DESC
+		    LIMIT #{pageUnit} OFFSET #{firstIndex}
 		) lst
-	    ORDER BY NO DESC
-		LIMIT #{pageUnit} OFFSET #{firstIndex};
+		CROSS JOIN (SELECT @rownum := 0) r
 	</select>
 	
 	<update id="delete" parameterType="weekRepReq">

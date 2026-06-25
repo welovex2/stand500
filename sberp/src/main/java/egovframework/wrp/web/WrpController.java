@@ -301,6 +301,7 @@ public class WrpController {
 
     int cnt = wrpService.selectListCnt(param);
     pagingVO.setTotalCount(cnt);
+    param.setTotalCount(cnt);
     pagingVO.setTotalPage(
         (int) Math.ceil(pagingVO.getTotalCount() / (double) pagingVO.getDisplayRow()));
 
