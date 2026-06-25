@@ -344,13 +344,7 @@
 		        TEST_TYPE_CODE,
 		        FN_CODE_NAME(TEST_TYPE_CODE, 'WT') TEST_TYPE,
 		        NTT_SJ,
-			    (CASE 
-			        WHEN ATCH_FILE_ID IS NULL THEN 0 
-			        ELSE (SELECT IF(COUNT(1) > 0, 1, 0) 
-			              FROM FILE_DETAIL_TB sub 
-			              WHERE sub.ATCH_FILE_ID = WEEKREP_TB.ATCH_FILE_ID 
-			              AND sub.STATE != 'D') 
-			     END) AS attchYn,
+			    IF(WEEKREP_TB.ATCH_FILE_ID IS NULL, 0, IF(fd.ATCH_FILE_ID IS NOT NULL, 1, 0)) AS attchYn,
 		        WR_CNT,
 		        IFNULL (FN_MEM_NAME (INS_MEM_ID), '') insName,
 		        DATE_FORMAT(INS_DT, '%Y-%m-%d') insDtStr,
@@ -359,7 +353,12 @@
 		        STATE
 		    FROM 
 		        WEEKREP_TB
-		        
+		        LEFT JOIN (
+		            SELECT ATCH_FILE_ID
+		            FROM FILE_DETAIL_TB
+		            WHERE STATE != 'D'
+		            GROUP BY ATCH_FILE_ID
+		        ) fd ON fd.ATCH_FILE_ID = WEEKREP_TB.ATCH_FILE_ID
 		        INNER JOIN (SELECT @rownum:=0) r
 		    WHERE STATE != 'D'
 	    	
