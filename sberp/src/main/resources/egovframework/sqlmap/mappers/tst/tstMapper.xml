@@ -1275,8 +1275,8 @@
 	
 	<sql id="orderBy">
         ORDER BY 
-    		<if test="sort == 'addDayAsc'">IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT), 0) ASC</if>
-    		<if test="sort == 'addDayDesc'">IF (TEST_TB.TEST_STATE_CODE IN (2, 3, 4, 5, 6, 21, 8), DATEDIFF (CURRENT_DATE(), TEST_TB.TEST_STATE_DT), 0) DESC</if>
+    		<if test="sort == 'addDayAsc'">IF (TEST_TB.TEST_STATE_CODE NOT IN (18, 19, 20), IFNULL(DATEDIFF(CURRENT_DATE(), IF(TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT)), 0), 0) ASC</if>
+    		<if test="sort == 'addDayDesc'">IF (TEST_TB.TEST_STATE_CODE NOT IN (18, 19, 20), IFNULL(DATEDIFF(CURRENT_DATE(), IF(TEST_TB.TEST_STATE_CODE = 0, TEST_TB.INS_DT, TEST_TB.TEST_STATE_DT)), 0), 0) DESC</if>
 	</sql>
 	
 	<select id="cancelInfo" parameterType="int" resultType="canCelDTO">
