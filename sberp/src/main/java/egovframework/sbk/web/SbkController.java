@@ -56,6 +56,7 @@ import egovframework.sbk.service.Sbd;
 import egovframework.sbk.service.SbdService;
 import egovframework.sbk.service.SbkDTO;
 import egovframework.sbk.service.SbkService;
+import egovframework.sbk.util.SbkAppDateSupport;
 import egovframework.tst.dto.TestItemDTO;
 import egovframework.tst.service.TestItemRej;
 import io.swagger.annotations.Api;
@@ -309,6 +310,12 @@ public class SbkController {
         BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
         return res;
 
+      }
+
+      // 신규 작성(수정 아님): 신청일은 오늘만 허용
+      if (StringUtils.isEmpty(req.getSbkId())
+          && !SbkAppDateSupport.matchesToday(req.getAppYear(), req.getAppMon(), req.getAppDay())) {
+        return BasicResponse.builder().result(false).message(ResponseMessage.ERROR_APP_DATE).build();
       }
 
 

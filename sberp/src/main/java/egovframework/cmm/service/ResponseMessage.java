@@ -23,6 +23,7 @@ public class ResponseMessage {
     public static final String ERROR_BILL = "신청금액이 미수금보다 큽니다";
     public static final String ERROR_ITEM_DELETE = "시험이 진행되어 시험항목을 삭제할 수 없습니다";
     public static final String ERROR_MNG = "업무담당자는 필수입니다";
+    public static final String ERROR_APP_DATE = "신청일은 오늘 날짜만 입력 가능합니다.";
     public static final String ERROR_WHY = "사유를 입력하세요";
     public static final String ERROR_PAYER = "입금자명을 입력해주세요.";
     public static final String ERROR_PRTN = "컨설팅선택은 필수입니다.";
