@@ -26,7 +26,9 @@ public enum PicType {
     CLICK("16", "Click"),
     DP("17", "DP"),
     RE("18", "RE"),
-    MEASURE_PIC("19", "측정사진");
+    MEASURE_PIC("19", "측정사진"),
+    MEASURE_SCREEN_DIRECT("20", "측정 화면 (직접 접속 방식)"),
+    MEASURE_SCREEN_CLOUD("21", "측정 화면 (클라우드 접속 방식)");
   
     private final String picId;
     private final String description;

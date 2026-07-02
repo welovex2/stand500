@@ -243,7 +243,7 @@ public class RawController {
     // 시험장면 사진
     ImgDTO pic = new ImgDTO();
     pic.setRawSeq(detail.getRawSeq());
-    for (int i = 1; i < 20; i++) {
+    for (int i = 1; i < 22; i++) {
       pic.setPicId(Integer.toString(i));
       if (!ObjectUtils.isEmpty(rawService.imgDetail(pic))) {
         detail.setPcYn(1);

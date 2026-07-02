@@ -2332,6 +2332,11 @@
 			MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 			SIGN, SIGN_URL, 
 			RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
+			RESULT_PWD3_CODE, RESULT_PWD3_MEMO, RESULT_PWD2_CODE, RESULT_PWD2_MEMO,
+			RESULT_LOCK_CNT_CODE, RESULT_LOCK_TIME_CODE,
+			RESULT_CLOUD_CODE, RESULT_CLOUD_RESET_CODE,
+			RESULT_CLOUD_PWD3_CODE, RESULT_CLOUD_PWD3_MEMO, RESULT_CLOUD_PWD2_CODE, RESULT_CLOUD_PWD2_MEMO,
+			RESULT_CLOUD_REG_CODE, RESULT_CLOUD_ACCESS_CODE, RESULT_CLOUD_LOCK_CNT_CODE, RESULT_CLOUD_LOCK_TIME_CODE,
 			CMNT_A_YN, CMNT_B_YN, CMNT_ETC, CMNT_ETC_YN,
 			INS_MEM_ID, UDT_MEM_ID
 		)
@@ -2342,6 +2347,11 @@
 			#{msrmnYear}, #{msrmnMon}, #{msrmnDay}, #{msrmnHour}, #{msrmnMin},
 			#{sign}, #{atchFileId}, 
 			#{resultCode}, #{resultPassCode}, #{resultResetCode}, #{resultNoPassCode}, #{resultNewPassCode},
+			#{resultPwd3Code}, #{resultPwd3Memo}, #{resultPwd2Code}, #{resultPwd2Memo},
+			#{resultLockCntCode}, #{resultLockTimeCode},
+			#{resultCloudCode}, #{resultCloudResetCode}, #{resultCloudPwd3Code}, #{resultCloudPwd3Memo},
+			#{resultCloudPwd2Code}, #{resultCloudPwd2Memo},
+			#{resultCloudRegCode}, #{resultCloudAccessCode}, #{resultCloudLockCntCode}, #{resultCloudLockTimeCode},
 			#{cmntAYn}, #{cmntBYn}, #{cmntEtc},#{cmntEtcYn},
 			#{insMemId}, #{udtMemId}
 		)
@@ -2362,6 +2372,22 @@
 			RESULT_RESET_CODE = #{resultResetCode}, 
 			RESULT_NO_PASS_CODE = #{resultNoPassCode}, 
 			RESULT_NEW_PASS_CODE = #{resultNewPassCode},
+			RESULT_PWD3_CODE = #{resultPwd3Code},
+			RESULT_PWD3_MEMO = #{resultPwd3Memo},
+			RESULT_PWD2_CODE = #{resultPwd2Code},
+			RESULT_PWD2_MEMO = #{resultPwd2Memo},
+			RESULT_LOCK_CNT_CODE = #{resultLockCntCode},
+			RESULT_LOCK_TIME_CODE = #{resultLockTimeCode},
+			RESULT_CLOUD_CODE = #{resultCloudCode},
+			RESULT_CLOUD_RESET_CODE = #{resultCloudResetCode},
+			RESULT_CLOUD_PWD3_CODE = #{resultCloudPwd3Code},
+			RESULT_CLOUD_PWD3_MEMO = #{resultCloudPwd3Memo},
+			RESULT_CLOUD_PWD2_CODE = #{resultCloudPwd2Code},
+			RESULT_CLOUD_PWD2_MEMO = #{resultCloudPwd2Memo},
+			RESULT_CLOUD_REG_CODE = #{resultCloudRegCode},
+			RESULT_CLOUD_ACCESS_CODE = #{resultCloudAccessCode},
+			RESULT_CLOUD_LOCK_CNT_CODE = #{resultCloudLockCntCode},
+			RESULT_CLOUD_LOCK_TIME_CODE = #{resultCloudLockTimeCode},
 			CMNT_A_YN = #{cmntAYn},
 			CMNT_B_YN = #{cmntBYn}, 
 			CMNT_ETC = #{cmntEtc}, 
@@ -2376,6 +2402,11 @@
 		    MSRMN_YEAR, MSRMN_MON, MSRMN_DAY, MSRMN_HOUR, MSRMN_MIN,
 		    SIGN, SIGN_URL ATCH_FILE_ID,
 		    RESULT_CODE, RESULT_PASS_CODE, RESULT_RESET_CODE, RESULT_NO_PASS_CODE, RESULT_NEW_PASS_CODE,
+		    RESULT_PWD3_CODE, RESULT_PWD3_MEMO, RESULT_PWD2_CODE, RESULT_PWD2_MEMO,
+		    RESULT_LOCK_CNT_CODE, RESULT_LOCK_TIME_CODE,
+		    RESULT_CLOUD_CODE, RESULT_CLOUD_RESET_CODE,
+		    RESULT_CLOUD_PWD3_CODE, RESULT_CLOUD_PWD3_MEMO, RESULT_CLOUD_PWD2_CODE, RESULT_CLOUD_PWD2_MEMO,
+		    RESULT_CLOUD_REG_CODE, RESULT_CLOUD_ACCESS_CODE, RESULT_CLOUD_LOCK_CNT_CODE, RESULT_CLOUD_LOCK_TIME_CODE,
 			CMNT_A_YN, CMNT_B_YN, CMNT_ETC, CMNT_ETC_YN
 		FROM METHOD_TEL_TB
 		WHERE 1=1
@@ -2423,12 +2454,14 @@
 
 	<select id="imgList" parameterType="int" resultType="imgDTO">
         SELECT 
-			IFNULL(METHOD_IMG_TB.RAW_SEQ, #{rawSeq}), cast(num as unsigned) pic_id, IFNULL(IF(num = 14, 1, RAW_MET_TB.CHECK_YN), 0) check_yn, IFNULL(PIC_YN, 0) pic_yn, 
+			IFNULL(METHOD_IMG_TB.RAW_SEQ, #{rawSeq}), cast(num as unsigned) pic_id,
+			IFNULL(IF(num = 14 OR num IN (19, 20, 21), 1, RAW_MET_TB.CHECK_YN), 0) check_yn,
+			IFNULL(PIC_YN, 0) pic_yn,
 			(SELECT COUNT(1) FROM FILE_DETAIL_TB WHERE ATCH_FILE_ID = METHOD_IMG_TB.ATCH_FILE_ID AND STATE != 'D') regCnt
         FROM (
 			SELECT @num := @num + 1 AS num
 			FROM INFORMATION_SCHEMA.TABLES, (SELECT @num := 0) temp
-			LIMIT 0, 19
+			LIMIT 0, 21
         ) numb
 			
 			LEFT JOIN METHOD_IMG_TB

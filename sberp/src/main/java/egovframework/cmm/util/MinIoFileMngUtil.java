@@ -216,7 +216,7 @@ public class MinIoFileMngUtil {
 
       boolean isGraph = isGraph(picId, title);     // 시험그래프
       boolean isEquipment = "14".equals(picId);    // 시험기자재
-      boolean isMeasure = "19".equals(picId);      // TEL 측정사진
+      boolean isMeasure = isMeasurePic(picId);     // TEL 측정사진/측정화면
 
       // 저장 폴더 결정
       String storePathString = resolvePicStorePath(storePath, isGraph, isEquipment);
@@ -289,9 +289,14 @@ public class MinIoFileMngUtil {
     return idx < 0 ? fileName : fileName.substring(0, idx);
   }
 
-  /** 시험그래프 여부: picId 14/19 가 아니면서 title 이 "3" 인 경우 */
+  /** 시험그래프 여부: picId 14/19/20/21 가 아니면서 title 이 "3" 인 경우 */
   private boolean isGraph(String picId, String title) {
-    return !"14".equals(picId) && !"19".equals(picId) && "3".equals(title);
+    return !isMeasurePic(picId) && !"14".equals(picId) && "3".equals(title);
+  }
+
+  /** TEL 측정사진·측정화면 picId */
+  private boolean isMeasurePic(String picId) {
+    return "19".equals(picId) || "20".equals(picId) || "21".equals(picId);
   }
 
   /** picId 별 저장 폴더 결정 */

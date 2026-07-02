@@ -110,6 +110,70 @@ public class MethodTel {
   @Column
   private String resultNewPassCode;
 
+  @ApiModelProperty(value = "1.1-4 3조합 8자리 이상 비밀번호 결과 ", example = "")
+  @Column
+  private String resultPwd3Code;
+
+  @ApiModelProperty(value = "1.1-4 3조합 비밀번호 길이 수기입력 ", example = "")
+  @Column
+  private String resultPwd3Memo;
+
+  @ApiModelProperty(value = "1.1-5 2조합 10자리 이상 비밀번호 결과 ", example = "")
+  @Column
+  private String resultPwd2Code;
+
+  @ApiModelProperty(value = "1.1-5 2조합 비밀번호 길이 수기입력 ", example = "")
+  @Column
+  private String resultPwd2Memo;
+
+  @ApiModelProperty(value = "1.1-6 접속 차단 연속 오입력 횟수 결과 ", example = "")
+  @Column
+  private String resultLockCntCode;
+
+  @ApiModelProperty(value = "1.1-7 비밀번호 인증 실패 시 접속 차단 시간 결과 ", example = "")
+  @Column
+  private String resultLockTimeCode;
+
+  @ApiModelProperty(value = "1.2 시험 결과 ", example = "")
+  @Column
+  private String resultCloudCode;
+
+  @ApiModelProperty(value = "1.2-1 공장초기화 후 클라우드 등록 전 제어 불가 확인 ", example = "")
+  @Column
+  private String resultCloudResetCode;
+
+  @ApiModelProperty(value = "1.2-2 3조합 8자리 이상 비밀번호 결과 ", example = "")
+  @Column
+  private String resultCloudPwd3Code;
+
+  @ApiModelProperty(value = "1.2-2 3조합 비밀번호 길이 수기입력 ", example = "")
+  @Column
+  private String resultCloudPwd3Memo;
+
+  @ApiModelProperty(value = "1.2-3 2조합 10자리 이상 비밀번호 결과 ", example = "")
+  @Column
+  private String resultCloudPwd2Code;
+
+  @ApiModelProperty(value = "1.2-3 2조합 비밀번호 길이 수기입력 ", example = "")
+  @Column
+  private String resultCloudPwd2Memo;
+
+  @ApiModelProperty(value = "1.2-4 보안 등록 과정 확인 결과 ", example = "")
+  @Column
+  private String resultCloudRegCode;
+
+  @ApiModelProperty(value = "1.2-5 등록 후 조회/제어 동작 확인 결과 ", example = "")
+  @Column
+  private String resultCloudAccessCode;
+
+  @ApiModelProperty(value = "1.2-6 접속 차단 연속 오입력 횟수 결과 ", example = "")
+  @Column
+  private String resultCloudLockCntCode;
+
+  @ApiModelProperty(value = "1.2-7 비밀번호 인증 실패 시 접속 차단 시간 결과 ", example = "")
+  @Column
+  private String resultCloudLockTimeCode;
+
 
   @ApiModelProperty(value = "시험자의견A_YN ", example = "")
   @Column
