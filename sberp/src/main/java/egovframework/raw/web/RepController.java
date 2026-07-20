@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,10 +23,13 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import egovframework.cmm.pdf.PdfServiceClient;
+import egovframework.cmm.util.HttpContentDispositionUtil;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
@@ -41,15 +45,22 @@ import egovframework.raw.dto.MfDTO;
 import egovframework.raw.dto.PicDTO;
 import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
+import egovframework.raw.dto.TelDTO;
+import egovframework.raw.report.ReportCommonPaths;
+import egovframework.raw.report.ReportHtmlPostProcessor;
+import egovframework.raw.report.ReportHtmlTemplateService;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
+import egovframework.rte.fdl.property.EgovPropertyService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Api(tags = {"성적서"})
 @RestController
 public class RepController {
@@ -59,6 +70,25 @@ public class RepController {
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
+
+  // -------------------------------------------------------------------------
+  // PDF / HTML 미리보기 (서버 Freemarker → pdf-svc)
+  //
+  // GET /raw/{testSeq}/report/pdf/download.do   → PDF 다운로드
+  // GET /raw/{testSeq}/report/html/preview.do   → HTML 미리보기 (디버그)
+  //
+  // template 생략 시 report_tel_3078 (TEL, /report/common 자산)
+  // -------------------------------------------------------------------------
+  @Resource(name = "PdfServiceClient")
+  private PdfServiceClient pdfServiceClient;
+
+  /** ReportDTO → 페이지 모델 → Freemarker HTML */
+  @Resource(name = "ReportHtmlTemplateService")
+  private ReportHtmlTemplateService reportHtmlTemplateService;
+
+  /** Globals.report.publicBaseUrl — pdf-svc 가 CSS fetch 할 Tomcat ROOT URL */
+  @Resource(name = "propertiesService")
+  private EgovPropertyService prop;
 
   @ApiOperation(value = "성적서 상세보기")
   @GetMapping(value = "/raw/{testSeq}/report.do")
@@ -157,6 +187,347 @@ public class RepController {
       }
   }
 
+  /**
+   * [PDF] 서버 템플릿 → HTML → pdf-svc → application/pdf.
+   *
+   * <pre>
+   * testSeq → getDetail(ReportDTO) → ReportHtmlTemplateService.render
+   *        → PdfServiceClient.renderPdf(html, null)
+   * </pre>
+   *
+   * <p>Docker: {@code GLOBALS_REPORT_PUBLIC_BASE_URL=http://host.docker.internal:8080}
+   * (pdf-svc 가 CSS·reportImage.do fetch)
+   */
+  @ApiOperation(value = "성적서 PDF 다운로드 (서버 HTML 템플릿 → pdf-svc)",
+      notes = "classpath 템플릿 + ReportDTO. template 생략 시 report_tel_3078.")
+  @GetMapping("/raw/{testSeq}/report/pdf/download.do")
+  public void downloadReportPdfFromTemplate(
+      @ApiParam(value = "시험 고유번호", required = true) @PathVariable int testSeq,
+      @ApiParam(value = "템플릿명(확장자 제외)", example = "report_tel_3078")
+      @RequestParam(name = "template", required = false) String template,
+      @ApiParam(value = "드래프트 성적서 — 페이지 중앙 DRAFT 워터마크")
+      @RequestParam(name = "draft", required = false, defaultValue = "false") boolean draft,
+      HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
+
+    ReportDTO report = rawService.report(testSeq);
+    if (report == null) {
+      writeApiErrorJson(response, HttpServletResponse.SC_NOT_FOUND,
+          ResponseMessage.NO_DATA + " (testSeq=" + testSeq + ")");
+      return;
+    }
+
+    ReportDTO detail = getDetail(report);
+    embedSignImagesForPdf(detail);
+    embedReportImagesForPdf(detail);
+    String templateName = ReportHtmlTemplateService.resolveTemplateName(detail, template);
+
+    String templateErr = reportHtmlTemplateService.templateErrorMessage(templateName);
+    if (templateErr != null) {
+      writeApiErrorJson(response, HttpServletResponse.SC_NOT_FOUND,
+          "template error [" + templateName + "]: " + templateErr);
+      return;
+    }
+
+    String publicBaseUrl = resolveReportPublicBaseUrl(request);
+    long t0 = System.currentTimeMillis();
+    String html;
+    try {
+      html = reportHtmlTemplateService.render(templateName, detail, publicBaseUrl);
+    } catch (IllegalArgumentException e) {
+      writeApiErrorJson(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+      return;
+    } catch (Exception e) {
+      log.error("report template render failed testSeq={} template={}", testSeq, templateName, e);
+      writeApiErrorJson(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+          "template render failed: " + e.getMessage());
+      return;
+    }
+
+    if (draft) {
+      html = ReportHtmlPostProcessor.injectDraftWatermark(html);
+    }
+    long tRender = System.currentTimeMillis();
+
+    byte[] pdfBytes;
+    try {
+      pdfBytes = pdfServiceClient.renderPdf(html, ReportCommonPaths.assetBase(publicBaseUrl) + "/");
+    } catch (Exception e) {
+      log.error("pdf-svc render failed testSeq={}", testSeq, e);
+      writeApiErrorJson(response, HttpServletResponse.SC_BAD_GATEWAY,
+          "pdf-svc 실패: " + e.getMessage());
+      return;
+    }
+    long tPdf = System.currentTimeMillis();
+    log.info("report pdf timing testSeq={} templateMs={} pdfSvcMs={} totalMs={}",
+        testSeq, tRender - t0, tPdf - tRender, tPdf - t0);
+
+    try {
+      writePdfResponse(detail, testSeq, pdfBytes, request, response);
+    } catch (Exception e) {
+      log.error("report pdf response write failed testSeq={}", testSeq, e);
+      writeApiErrorJson(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+          "PDF 응답 전송 실패: " + e.getMessage());
+    }
+  }
+
+  /** [미리보기] PDF 변환 없이 Freemarker HTML 만 반환 — 레이아웃·CSS 확인용 */
+  @ApiOperation(value = "성적서 HTML 미리보기 (템플릿 렌더 결과)",
+      notes = "성공 시 text/html. 실패 시 JSON(BasicResponse)으로 원인 반환 (web.xml error-page 우회).")
+  @GetMapping("/raw/{testSeq}/report/html/preview.do")
+  public void previewReportHtml(
+      @ApiParam(value = "시험 고유번호", required = true) @PathVariable int testSeq,
+      @RequestParam(name = "template", required = false) String template,
+      @ApiParam(value = "드래프트 성적서 — 페이지 중앙 DRAFT 워터마크")
+      @RequestParam(name = "draft", required = false, defaultValue = "false") boolean draft,
+      HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
+
+    ReportDTO report = rawService.report(testSeq);
+    if (report == null) {
+      writeApiErrorJson(response, HttpServletResponse.SC_NOT_FOUND,
+          ResponseMessage.NO_DATA + " (testSeq=" + testSeq + ")");
+      return;
+    }
+
+    ReportDTO detail = getDetail(report);
+    embedSignImagesForPdf(detail);
+    String templateName = ReportHtmlTemplateService.resolveTemplateName(detail, template);
+
+    String templateErr = reportHtmlTemplateService.templateErrorMessage(templateName);
+    if (templateErr != null) {
+      writeApiErrorJson(response, HttpServletResponse.SC_NOT_FOUND,
+          "template error [" + templateName + "]: " + templateErr);
+      return;
+    }
+
+    try {
+      // 미리보기: 브라우저가 열 수 있는 URL (요청 Host). Docker 내부명 erp 는 ERR_NAME_NOT_RESOLVED.
+      // PDF 다운로드는 resolveReportPublicBaseUrl(erp:8080/api) — pdf-svc 컨테이너 DNS 용.
+      String html = reportHtmlTemplateService.render(templateName, detail,
+          resolveBrowserPublicBaseUrl(request));
+      if (draft) {
+        html = ReportHtmlPostProcessor.injectDraftWatermark(html);
+      }
+      response.resetBuffer();
+      response.setStatus(HttpServletResponse.SC_OK);
+      response.setCharacterEncoding("UTF-8");
+      response.setContentType("text/html;charset=UTF-8");
+      response.getWriter().write(html);
+      response.getWriter().flush();
+    } catch (Exception e) {
+      log.error("report html preview failed testSeq={} template={}", testSeq, templateName, e);
+      writeApiErrorJson(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+          "render failed: " + e.getMessage());
+    }
+  }
+
+  /** sendError 대신 JSON 반환 — web.xml 404 error-page 가 메시지를 가리는 문제 방지 */
+  private void writeApiErrorJson(HttpServletResponse response, int status, String message)
+      throws Exception {
+    response.resetBuffer();
+    response.setStatus(status);
+    response.setCharacterEncoding("UTF-8");
+    response.setContentType("application/json;charset=UTF-8");
+    BasicResponse<?> body = BasicResponse.builder().result(false).message(message).build();
+    response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+    response.getWriter().flush();
+  }
+
+  /** pdf-svc 가 반환한 바이트를 브라우저 다운로드 응답으로 변환 */
+  private void writePdfResponse(ReportDTO detail, int testSeq, byte[] pdfBytes,
+      HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+    String downloadName = buildReportPdfDownloadName(detail, testSeq);
+
+    response.reset();
+    response.setStatus(HttpServletResponse.SC_OK);
+    response.setCharacterEncoding(null);
+    response.setContentType("application/pdf");
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    // IE/Chrome 한글 파일명 — HttpContentDispositionUtil
+    response.setHeader("Content-Disposition",
+        HttpContentDispositionUtil.buildAttachmentDisposition(downloadName,
+            request == null ? null : request.getHeader("User-Agent")));
+    response.setHeader("X-Download-Filename",
+        HttpContentDispositionUtil.urlEncodedFileName(downloadName));
+    response.setHeader("Access-Control-Expose-Headers",
+        "Content-Disposition, X-Download-Filename");
+    response.setContentLength(pdfBytes.length);
+    response.getOutputStream().write(pdfBytes);
+    response.getOutputStream().flush();
+  }
+
+  /**
+   * pdf-svc 가 CSS·이미지를 fetch 할 Tomcat URL.
+   * Docker compose: {@code http://erp:8080/api} (컨테이너 DNS). 브라우저에서는 resolve 불가.
+   */
+  private String resolveReportPublicBaseUrl(HttpServletRequest request) {
+    try {
+      String configured = prop.getString("Globals.report.publicBaseUrl");
+      if (!ObjectUtils.isEmpty(configured)) {
+        return trimTrailingSlash(configured.trim());
+      }
+    } catch (Exception ignore) {
+      // fallback to request
+    }
+    return resolveBrowserPublicBaseUrl(request);
+  }
+
+  /**
+   * 브라우저 HTML 미리보기용 — 요청의 scheme/host/context.
+   * {@code GLOBALS_REPORT_PUBLIC_BASE_URL=http://erp:8080/api} 를 쓰면 안 됨 (ERR_NAME_NOT_RESOLVED).
+   */
+  private String resolveBrowserPublicBaseUrl(HttpServletRequest request) {
+    String fromRequest = buildPublicBaseUrlFromRequest(request);
+    if (fromRequest != null) {
+      return fromRequest;
+    }
+    return "http://localhost:8080/api";
+  }
+
+  private static String buildPublicBaseUrlFromRequest(HttpServletRequest request) {
+    if (request == null) {
+      return null;
+    }
+    int port = request.getServerPort();
+    boolean defaultPort = ("http".equalsIgnoreCase(request.getScheme()) && port == 80)
+        || ("https".equalsIgnoreCase(request.getScheme()) && port == 443);
+    String portPart = defaultPort ? "" : (":" + port);
+    String ctx = request.getContextPath();
+    if (ctx == null) {
+      ctx = "";
+    }
+    return request.getScheme() + "://" + request.getServerName() + portPart + ctx;
+  }
+
+  private String trimTrailingSlash(String s) {
+    while (s.endsWith("/")) {
+      s = s.substring(0, s.length() - 1);
+    }
+    return s;
+  }
+
+  /**
+   * PDF 생성 시 서명 이미지는 data URI 로 embed (pdf-svc 가 getImage.do 를 fetch 하지 못함).
+   * 측정·제품·화면·보완내역 사진은 reportImage.do 리사이즈 URL 사용 (원본 base64 embed 시 PDF 용량 급증).
+   */
+  private void embedReportImagesForPdf(ReportDTO detail) throws Exception {
+    if (detail == null) {
+      return;
+    }
+    embedModFilesForPdf(detail);
+    if (ObjectUtils.isEmpty(detail.getImgList())) {
+      return;
+    }
+    for (PicDTO pic : detail.getImgList()) {
+      if (pic == null || pic.getPicYn() != 1 || ObjectUtils.isEmpty(pic.getAtchFileId())) {
+        continue;
+      }
+      FileVO file = resolveReportPhotoFile(pic);
+      if (file == null) {
+        log.warn("PDF photo file not found testSeq={} picId={} atchFileId={}",
+            detail.getTestSeq(), pic.getPicId(), pic.getAtchFileId());
+        continue;
+      }
+      String url = fileMngService.resolveReportImageUrl(file);
+      if (!ObjectUtils.isEmpty(url)) {
+        pic.setImageUrl(url);
+      } else {
+        log.warn("PDF photo URL resolve failed testSeq={} picId={} atchFileId={}",
+            detail.getTestSeq(), pic.getPicId(), pic.getAtchFileId());
+      }
+    }
+  }
+
+  private FileVO resolveReportPhotoFile(PicDTO pic) throws Exception {
+    if (pic == null || ObjectUtils.isEmpty(pic.getAtchFileId())) {
+      return null;
+    }
+    String atchFileId = pic.getAtchFileId().trim();
+    if (!ObjectUtils.isEmpty(pic.getFileSn())) {
+      FileVO q = new FileVO();
+      q.setAtchFileId(atchFileId);
+      q.setFileSn(pic.getFileSn().trim());
+      return fileMngService.selectFileInf(q);
+    }
+    FileVO q = new FileVO();
+    q.setAtchFileId(atchFileId);
+    List<FileVO> files = fileMngService.selectImageFileList(q);
+    if (ObjectUtils.isEmpty(files)) {
+      return null;
+    }
+    return files.get(0);
+  }
+
+  private void embedModFilesForPdf(ReportDTO detail) throws Exception {
+    if (detail == null || ObjectUtils.isEmpty(detail.getModUrl())) {
+      return;
+    }
+    FileVO q = new FileVO();
+    q.setAtchFileId(detail.getModUrl());
+    List<FileVO> files = fileMngService.selectImageFileList(q);
+    if (ObjectUtils.isEmpty(files)) {
+      return;
+    }
+    List<String> urls = new ArrayList<String>();
+    for (FileVO item : files) {
+      String url = fileMngService.resolveReportImageUrl(item);
+      if (!ObjectUtils.isEmpty(url)) {
+        urls.add(url);
+      }
+    }
+    detail.setModFileList(urls);
+  }
+
+  private void embedSignImagesForPdf(ReportDTO detail) throws Exception {
+    if (detail == null) {
+      return;
+    }
+    String testSign = fileMngService.resolveReportSignImageDataUri(detail.getTestAtchFileId());
+    if (!ObjectUtils.isEmpty(testSign)) {
+      detail.setTestSignUrl(testSign);
+    } else {
+      log.warn("PDF sign embed failed (tester) testSeq={} atchFileId={}",
+          detail.getTestSeq(), detail.getTestAtchFileId());
+    }
+    String revSign = fileMngService.resolveReportSignImageDataUri(detail.getRevAtchFileId());
+    if (!ObjectUtils.isEmpty(revSign)) {
+      detail.setRevSignUrl(revSign);
+    } else {
+      log.warn("PDF sign embed failed (rev) testSeq={} atchFileId={}",
+          detail.getTestSeq(), detail.getRevAtchFileId());
+    }
+  }
+
+  /** 다운로드 파일명: 시험번호_성적서_회사명_모델명.pdf */
+  private static String buildReportPdfDownloadName(ReportDTO detail, int testSeq) {
+    String testId = detail != null && detail.getTestId() != null && !detail.getTestId().trim().isEmpty()
+        ? detail.getTestId().trim() : String.valueOf(testSeq);
+    StringBuilder name = new StringBuilder(testId).append("_성적서");
+    appendFileNamePart(name, detail != null ? detail.getAplcn() : null);
+    appendFileNamePart(name, detail != null ? detail.getModel() : null);
+    return name.append(".pdf").toString();
+  }
+
+  private static void appendFileNamePart(StringBuilder name, String value) {
+    String part = sanitizeFileNamePart(value);
+    if (!part.isEmpty()) {
+      name.append("_").append(part);
+    }
+  }
+
+  private static String sanitizeFileNamePart(String value) {
+    if (value == null) {
+      return "";
+    }
+    String trimmed = value.trim();
+    if (trimmed.isEmpty()) {
+      return "";
+    }
+    return trimmed.replaceAll("[\\\\/:*?\"<>|]", "_");
+  }
+
   
   private ReportDTO getDetail(ReportDTO detail) {
     
@@ -166,7 +537,12 @@ public class RepController {
       
         /* 세부데이터 추가로 가지고 오기 */
         int rawSeq = detail.getRawSeq();
-  
+
+        TelDTO tel = rawService.telDetail(rawSeq);
+        if (tel != null) {
+          detail.setTel(tel);
+        }
+
         // 성적서 발급내역 리스트 가져오기
         detail.setReportList(rawService.reportDetail(detail.getTestSeq()));
         if (!ObjectUtils.isEmpty(detail.getReportList())) {
@@ -540,11 +916,13 @@ public class RepController {
           } // -- END for
         } //-- END if methodList
         
-        // TEL 규격은 아래 기본정보 없음
-        if (detail.getTestStndrSeq() == 560) {
-          detail.setTel(rawService.telDetail(rawSeq));
-          
-          if (!ObjectUtils.isEmpty(detail.getTel()) && "0".equals(detail.getTel().getResultCode())) totalResult = false;
+        if (detail.getTestStndrSeq() == 560 && !ObjectUtils.isEmpty(detail.getTel())) {
+          if ("0".equals(detail.getTel().getResultCode())) {
+            totalResult = false;
+          }
+          if ("0".equals(detail.getTel().getResultCloudCode())) {
+            totalResult = false;
+          }
         }
         
 
@@ -555,7 +933,7 @@ public class RepController {
         // 시험장면 사진
         List<PicDTO> resultList = new ArrayList<PicDTO>();
   
-        for (int i = 1; i < 20; i++) {
+        for (int i = 1; i < 22; i++) {
           
           ImgDTO img = new ImgDTO();
           img.setRawSeq(rawSeq);
@@ -573,7 +951,9 @@ public class RepController {
             Collections.sort(fileReulst, new Comparator<FileVO>() {
               @Override
               public int compare(FileVO p1, FileVO p2) {
-                return p1.getFileMemo().compareTo(p2.getFileMemo());
+                String m1 = p1.getFileMemo() == null ? "" : p1.getFileMemo();
+                String m2 = p2.getFileMemo() == null ? "" : p2.getFileMemo();
+                return m1.compareTo(m2);
               }
             });
   
@@ -581,6 +961,8 @@ public class RepController {
               for (FileVO item : fileReulst) {
                 PicDTO pic = new PicDTO();
                 pic.setPicId(Integer.toString(i));
+                pic.setAtchFileId(item.getAtchFileId());
+                pic.setFileSn(item.getFileSn());
                 pic.setImageUrl(fileMngService.resolveReportImageUrl(item));
                 pic.setTitle(item.getFileCn());
                 pic.setMode(item.getFileMemo());
@@ -655,8 +1037,18 @@ public class RepController {
 
         }
         detail.setImgList(resultList);
-  
+
+        String testSign = fileMngService.resolveReportSignImageUrl(detail.getTestAtchFileId());
+        if (!ObjectUtils.isEmpty(testSign)) {
+          detail.setTestSignUrl(testSign);
+        }
+        String revSign = fileMngService.resolveReportSignImageUrl(detail.getRevAtchFileId());
+        if (!ObjectUtils.isEmpty(revSign)) {
+          detail.setRevSignUrl(revSign);
+        }
+
     } catch (Exception e) {
+      log.warn("getDetail partial failure testSeq={}: {}", detail.getTestSeq(), e.getMessage(), e);
     }
    
    return detail;

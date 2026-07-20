@@ -35,6 +35,7 @@ import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.TableType;
 import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
+import egovframework.raw.util.TelResultCodeUtil;
 import egovframework.raw.service.FileRaw;
 import egovframework.raw.service.MethodCsSub;
 import egovframework.raw.service.MethodEftSub;
@@ -1041,6 +1042,7 @@ public class RawServiceImpl implements RawService {
 
     boolean result = true;
 
+    TelResultCodeUtil.normalizeBlankResults(req);
     methodMapper.insertTel(req);
 
     recalcAndUpdateTestDtRange(req.getRawSeq());
@@ -1103,8 +1105,8 @@ public class RawServiceImpl implements RawService {
   public ReportDTO report(int rawSeq) throws Exception {
     ReportDTO report = rawMapper.report(rawSeq);
     if (report != null) {
-      report.setTestSignUrl(fileMngService.resolveImageUrl(report.getTestAtchFileId()));
-      report.setRevSignUrl(fileMngService.resolveImageUrl(report.getRevAtchFileId()));
+      report.setTestSignUrl(fileMngService.resolveReportSignImageUrl(report.getTestAtchFileId()));
+      report.setRevSignUrl(fileMngService.resolveReportSignImageUrl(report.getRevAtchFileId()));
     }
     return report;
   }

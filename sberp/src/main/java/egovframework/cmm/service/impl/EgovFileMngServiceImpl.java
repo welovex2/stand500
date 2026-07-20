@@ -1,6 +1,11 @@
 package egovframework.cmm.service.impl;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URLConnection;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -483,6 +488,200 @@ public class EgovFileMngServiceImpl extends EgovAbstractServiceImpl implements E
     }
     String url = nextcloudDavService.resolveReportImageUrl(fileQuery);
     return url == null ? "" : url;
+  }
+
+  @Override
+  public String resolveReportImageUrl(String atchFileId) throws Exception {
+    FileVO file = selectFirstFile(atchFileId);
+    if (file == null) {
+      return "";
+    }
+    return resolveReportImageUrl(file);
+  }
+
+  @Override
+  public String resolveReportSignImageUrl(String atchFileId) throws Exception {
+    FileVO file = selectFirstFile(atchFileId);
+    if (file == null) {
+      log.debug("resolveReportSignImageUrl: file not found atchFileId={}", atchFileId);
+      return "";
+    }
+    if ("NEXTCLOUD_DAV".equals(file.getFileStreCours())) {
+      String url = nextcloudDavService.resolveReportImageProxyUrl(file);
+      if (url == null || url.isEmpty()) {
+        log.warn("resolveReportSignImageUrl: NC proxy empty atchFileId={} streFileNm={}",
+            atchFileId, file.getStreFileNm());
+      }
+      return url == null ? "" : url;
+    }
+    // 레거시 로컬 — getImage.do (fileSn=0 고정 조회 오류 방지)
+    String url = nextcloudDavService.resolveFileUrl(file);
+    if (url == null || url.isEmpty()) {
+      log.warn("resolveReportSignImageUrl: legacy url empty atchFileId={} fileSn={}",
+          atchFileId, file.getFileSn());
+    }
+    return url == null ? "" : url;
+  }
+
+  @Override
+  public String resolveReportSignImageDataUri(String atchFileId) throws Exception {
+    if (atchFileId == null || atchFileId.trim().isEmpty()) {
+      return "";
+    }
+    FileVO q = new FileVO();
+    q.setAtchFileId(atchFileId.trim());
+    List<FileVO> files = selectFileInfs(q);
+    if (files != null && !files.isEmpty()) {
+      files.sort((a, b) -> Integer.compare(parseFileSn(a.getFileSn()), parseFileSn(b.getFileSn())));
+      for (FileVO file : files) {
+        String dataUri = buildSignImageDataUri(file);
+        if (!dataUri.isEmpty()) {
+          return dataUri;
+        }
+      }
+    }
+    FileVO file = selectFirstFile(atchFileId);
+    if (file == null) {
+      log.warn("resolveReportSignImageDataUri: file not found atchFileId={}", atchFileId);
+      return "";
+    }
+    String dataUri = buildSignImageDataUri(file);
+    if (dataUri.isEmpty()) {
+      log.warn("resolveReportSignImageDataUri: empty bytes atchFileId={} fileSn={} streCours={}",
+          atchFileId, file.getFileSn(), file.getFileStreCours());
+    }
+    return dataUri;
+  }
+
+  @Override
+  public String resolveReportImageDataUri(FileVO file) throws Exception {
+    if (file == null) {
+      return "";
+    }
+    return buildSignImageDataUri(file);
+  }
+
+  @Override
+  public String resolveReportImageDataUri(String atchFileId, String fileSn) throws Exception {
+    if (atchFileId == null || atchFileId.trim().isEmpty()) {
+      return "";
+    }
+    if (fileSn != null && !fileSn.trim().isEmpty()) {
+      FileVO q = new FileVO();
+      q.setAtchFileId(atchFileId.trim());
+      q.setFileSn(fileSn.trim());
+      FileVO file = selectFileInf(q);
+      if (file != null) {
+        String uri = buildSignImageDataUri(file);
+        if (!uri.isEmpty()) {
+          return uri;
+        }
+      }
+    }
+    return resolveReportSignImageDataUri(atchFileId);
+  }
+
+  private String buildSignImageDataUri(FileVO file) throws Exception {
+    byte[] bytes = loadSignFileBytes(file);
+    if (bytes == null || bytes.length == 0) {
+      return "";
+    }
+    String mime = guessSignImageMime(file);
+    return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
+  }
+
+  private byte[] loadSignFileBytes(FileVO file) throws Exception {
+    if ("NEXTCLOUD_DAV".equals(file.getFileStreCours())) {
+      String davPath = file.getStreFileNm();
+      if (davPath == null || davPath.trim().isEmpty()) {
+        return null;
+      }
+      try (InputStream in = nextcloudDavService.downloadStreamByDavPath(davPath.trim())) {
+        return readAllBytes(in);
+      }
+    }
+    String streCours = file.getFileStreCours();
+    String streFileNm = file.getStreFileNm();
+    if (streCours == null || streFileNm == null) {
+      return null;
+    }
+    File local = new File(streCours, streFileNm);
+    if (!local.isFile() || local.length() <= 0) {
+      return null;
+    }
+    try (FileInputStream in = new FileInputStream(local)) {
+      return readAllBytes(in);
+    }
+  }
+
+  private static byte[] readAllBytes(InputStream in) throws java.io.IOException {
+    ByteArrayOutputStream buf = new ByteArrayOutputStream();
+    byte[] chunk = new byte[8192];
+    int n;
+    while ((n = in.read(chunk)) != -1) {
+      buf.write(chunk, 0, n);
+    }
+    return buf.toByteArray();
+  }
+
+  private static String guessSignImageMime(FileVO file) {
+    String ext = file.getFileExtsn();
+    if (ext != null) {
+      String lower = ext.trim().toLowerCase();
+      if ("png".equals(lower)) {
+        return "image/png";
+      }
+      if ("gif".equals(lower)) {
+        return "image/gif";
+      }
+      if ("webp".equals(lower)) {
+        return "image/webp";
+      }
+      if ("jpg".equals(lower) || "jpeg".equals(lower)) {
+        return "image/jpeg";
+      }
+    }
+    String name = file.getStreFileNm();
+    if (name != null) {
+      String lower = name.toLowerCase();
+      if (lower.endsWith(".png")) {
+        return "image/png";
+      }
+      if (lower.endsWith(".gif")) {
+        return "image/gif";
+      }
+    }
+    return "image/png";
+  }
+
+  private FileVO selectFirstFile(String atchFileId) throws Exception {
+    if (atchFileId == null || atchFileId.trim().isEmpty()) {
+      return null;
+    }
+    FileVO q = new FileVO();
+    q.setAtchFileId(atchFileId.trim());
+    List<FileVO> files = selectFileInfs(q);
+    if (files != null && !files.isEmpty()) {
+      files.sort((a, b) -> {
+        int sn1 = parseFileSn(a.getFileSn());
+        int sn2 = parseFileSn(b.getFileSn());
+        return Integer.compare(sn1, sn2);
+      });
+      return files.get(0);
+    }
+    q.setFileSn("0");
+    return selectFileInf(q);
+  }
+
+  private static int parseFileSn(String fileSn) {
+    if (fileSn == null || fileSn.trim().isEmpty()) {
+      return 0;
+    }
+    try {
+      return Integer.parseInt(fileSn.trim());
+    } catch (NumberFormatException e) {
+      return 0;
+    }
   }
 
   /**
