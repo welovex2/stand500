@@ -13,11 +13,44 @@ import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 
 public class AuthInterceptor extends HandlerInterceptorAdapter {
+
+    /**
+     * 성적서·첨부 이미지 — pdf-svc·{@code <img>} 가 세션 쿠키 없이 요청한다.
+     */
+    public static boolean isPublicImageRequest(HttpServletRequest request) {
+        if (Boolean.TRUE.equals(request.getAttribute(PublicImageAccessFilter.ATTR_PUBLIC_IMAGE))) {
+            return true;
+        }
+        String servletPath = request.getServletPath();
+        if (servletPath != null && !servletPath.isEmpty()) {
+            if (isPublicImagePath(servletPath)) {
+                return true;
+            }
+        }
+        String uri = request.getRequestURI();
+        return uri != null && isPublicImagePath(uri);
+    }
+
+    public static boolean isPublicImagePath(String path) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+        if (path.contains("/file/getImage.do") || path.contains("/file/reportImage.do")
+            || path.endsWith("getImage.do") || path.endsWith("reportImage.do")) {
+            return true;
+        }
+        return path.contains("/report/common/");
+    }
+
     /**
      * 세션에 계정정보(LoginVO)가 있는지 여부로 인증 여부를 체크한다. 계정정보(LoginVO)가 없다면, 로그인 페이지로 이동한다.
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        if (isPublicImageRequest(request)) {
+            return true;
+        }
+
         LoginVO loginVO = null;
        
         try {

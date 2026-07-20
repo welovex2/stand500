@@ -18,6 +18,8 @@ public class PicDTO {
 	private String title;
 	private String mode;
 	private String imageUrl;
+	/** PDF embed — FILE_DETAIL_TB 조회용 */
+	private String atchFileId;
 	private String picId;
 	private String fileSn;
 	private int fileOrdr;

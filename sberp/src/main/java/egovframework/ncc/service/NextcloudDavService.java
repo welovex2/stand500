@@ -31,6 +31,12 @@ public interface NextcloudDavService {
    */
   String resolveReportImageUrl(FileVO file);
 
+  /**
+   * 성적서 HTML/PDF embed 용 — Nextcloud 이미지는 항상 {@code reportImage.do} 프록시 URL.
+   * (공개 Nextcloud URL 은 img 요청 시 로그인 페이지가 내려올 수 있음)
+   */
+  String resolveReportImageProxyUrl(FileVO file);
+
   /** 폴더/파일 목록 조회 (Depth: 1=현재폴더+자식, 0=자기 자신) */
   WebDavListResponseDTO list(String davPath, int depth) throws Exception;
 

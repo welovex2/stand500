@@ -38,6 +38,7 @@
 	<!-- default servlet 은 .html .css .js -->
 <!-- 	<mvc:default-servlet-handler /> -->
 	<mvc:resources mapping="/resources/**" location="/resources/"/>
+	<mvc:resources mapping="/report/common/**" location="/report/common/"/>
 	<!-- END swegger -->
 	
 	<mvc:default-servlet-handler />
@@ -61,17 +62,12 @@
         <property name="paramName" value="language" />
     </bean>
 
-    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
-        <property name="defaultErrorView" value="cmmn/egovError"/>
-        <property name="exceptionMappings">
-            <props>
-                <prop key="org.springframework.dao.DataAccessException">cmmn/dataAccessFailure</prop>
-                <prop key="org.springframework.transaction.TransactionException">cmmn/transactionFailure</prop>
-                <prop key="egovframework.rte.fdl.cmmn.exception.EgovBizException">cmmn/egovError</prop>
-                <prop key="org.springframework.security.AccessDeniedException">cmmn/egovError</prop>
-            </props>
-        </property>
-    </bean>
+    <!--
+      JSON API 전용 서비스이므로 예외는 @RestControllerAdvice(GlobalExceptionHandler) 와
+      web.xml error-page(/err/error.do → ErrorController, JSON) 로 처리한다.
+      기존 SimpleMappingExceptionResolver 는 존재하지 않는 JSP(cmmn/egovError 등, 실제 위치는
+      egovframework/example/cmmn/*)를 렌더하려다 'egovError.jsp not found' 500 을 유발하여 제거함.
+    -->
 
 	<!-- 화면처리용 JSP 파일명의  prefix, suffix 처리에 대한 mvc 설정  -->
     <bean class="org.springframework.web.servlet.view.UrlBasedViewResolver" p:order="1"
@@ -97,7 +93,13 @@
 	        <mvc:exclude-mapping path="/user/login/*.do"/> <!-- 예외 경로 지정 -->
 	        <mvc:exclude-mapping path="/user/login.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
 	        <mvc:exclude-mapping path="/cnf/mem/updatePassword.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
-	        <mvc:exclude-mapping path="/file/getImage.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
+	        <!-- 성적서 PDF·img 태그: 세션 없이 이미지 fetch (pdf-svc 포함) -->
+	        <mvc:exclude-mapping path="/file/getImage.do"/>
+	        <mvc:exclude-mapping path="/file/reportImage.do"/>
+	        <mvc:exclude-mapping path="/**/file/getImage.do"/>
+	        <mvc:exclude-mapping path="/**/file/reportImage.do"/>
+	        <mvc:exclude-mapping path="/report/common/**"/>
+	        <mvc:exclude-mapping path="/**/report/common/**"/>
 	        <bean class="egovframework.cmm.filter.AuthInterceptor" />
 	    </mvc:interceptor>
 	</mvc:interceptors>
@@ -105,6 +107,10 @@
 	<mvc:interceptors>
 	    <mvc:interceptor>
 	        <mvc:mapping path="/**/*.do" />
+	        <mvc:exclude-mapping path="/file/getImage.do"/>
+	        <mvc:exclude-mapping path="/file/reportImage.do"/>
+	        <mvc:exclude-mapping path="/**/file/getImage.do"/>
+	        <mvc:exclude-mapping path="/**/file/reportImage.do"/>
 	        <bean class="egovframework.cmm.filter.ApiLogInterceptor" />
 	    </mvc:interceptor>
 	</mvc:interceptors>

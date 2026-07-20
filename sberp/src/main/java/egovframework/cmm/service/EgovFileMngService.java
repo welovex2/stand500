@@ -204,4 +204,20 @@ public interface EgovFileMngService {
    */
   String resolveReportImageUrl(FileVO fileQuery) throws Exception;
 
+  /** atchFileId 기준 — 성적서·서명 등 reportImage 프록시 URL 우선 */
+  String resolveReportImageUrl(String atchFileId) throws Exception;
+
+  /** 서명 등 embed 이미지 — Nextcloud 는 항상 reportImage.do 프록시 */
+  String resolveReportSignImageUrl(String atchFileId) throws Exception;
+
+  /**
+   * PDF embed 용 — 파일 바이트를 data URI 로 반환 (pdf-svc 가 getImage.do fetch 실패 방지).
+   */
+  String resolveReportSignImageDataUri(String atchFileId) throws Exception;
+
+  /** PDF embed 용 — 성적서 사진·보완내역 등 (fileSn 지정 가능) */
+  String resolveReportImageDataUri(FileVO file) throws Exception;
+
+  String resolveReportImageDataUri(String atchFileId, String fileSn) throws Exception;
+
 }

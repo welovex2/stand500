@@ -39,6 +39,14 @@
 	        	<entry key="Globals.ai.baseUrl"   value="${GLOBALS_AI_BASE_URL}" />
 	        	<entry key="Globals.ai.token"     value="${GLOBALS_AI_TOKEN}" />
 	        	<entry key="Globals.ai.timeoutMs" value="${GLOBALS_AI_TIMEOUT_MS}" />
+
+	        	<!-- PDF (성적서 HTML → pdf-svc Playwright) -->
+	        	<entry key="Globals.pdf.baseUrl"   value="${GLOBALS_PDF_BASE_URL:}" />
+	        	<entry key="Globals.pdf.token"     value="${GLOBALS_PDF_TOKEN:}" />
+	        	<entry key="Globals.pdf.timeoutMs" value="${GLOBALS_PDF_TIMEOUT_MS:120000}" />
+
+	        	<!-- 성적서 HTML 템플릿: CSS·이미지 절대 URL (pdf-svc Docker → Tomcat ROOT) -->
+	        	<entry key="Globals.report.publicBaseUrl" value="${GLOBALS_REPORT_PUBLIC_BASE_URL:}" />
 	        </map>
 		</property>
 	</bean>

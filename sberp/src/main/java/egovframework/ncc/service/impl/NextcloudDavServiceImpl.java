@@ -111,8 +111,8 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     if (normalized.endsWith("/"))
       normalized = normalized.substring(0, normalized.length() - 1);
 
-    // 3) traversal 방지
-    if (normalized.indexOf("..") >= 0) {
+    // 3) traversal 방지 (세그먼트 단위 — 파일명 내 ".."는 허용)
+    if (ErpDavPathUtil.hasPathTraversalSegment(normalized)) {
       throw new NcBizException("허용되지 않는 경로입니다: " + relativeFolderPath);
     }
 
@@ -307,8 +307,8 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
     if (normalized.startsWith("/"))
       normalized = normalized.substring(1);
 
-    // 최소 방어
-    if (normalized.indexOf("..") >= 0) {
+    // 최소 방어 (세그먼트 단위 — 파일명 내 ".."는 허용)
+    if (ErpDavPathUtil.hasPathTraversalSegment(normalized)) {
       throw new NcBizException("허용되지 않는 경로입니다: " + relativePath);
     }
 
@@ -460,24 +460,7 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
         if (isReportImageSkipResize(file.getFileMg(), skipBytes)) {
           return resolveFileUrl(file);
         }
-
-        String prefix = propertyService.getString("Globals.report.imageUrl");
-        if (prefix == null || prefix.trim().isEmpty()) {
-          prefix = "/api/file/reportImage.do";
-        }
-        String size = propertyService.getString("Globals.report.imageMaxSize");
-        if (size == null || size.trim().isEmpty()) {
-          size = "1280";
-        }
-        String quality = propertyService.getString("Globals.report.imageQuality");
-        if (quality == null || quality.trim().isEmpty()) {
-          quality = "0.6";
-        }
-        // path는 *.do XSS 필터(HTMLTagFilter)나 URL 디코딩의 영향을 받지 않도록 Base64URL(무패딩)로 전달.
-        // 파일명에 괄호 '(1)'·시험그래프 '(count)' 등이 포함될 수 있어 일반 URL 인코딩만으로는 안전하지 않음.
-        String encodedPath = Base64.getUrlEncoder().withoutPadding()
-            .encodeToString(davPath.trim().getBytes(StandardCharsets.UTF_8));
-        return prefix + "?path=" + encodedPath + "&w=" + size + "&q=" + quality;
+        return buildReportImageDoUrl(davPath.trim());
       }
 
       // 그 외(레거시 등)는 기존 URL 그대로
@@ -487,6 +470,43 @@ public class NextcloudDavServiceImpl implements NextcloudDavService {
       // 실패 시 원본 URL로 폴백
       return resolveFileUrl(file);
     }
+  }
+
+  @Override
+  public String resolveReportImageProxyUrl(FileVO file) {
+    if (file == null) {
+      return "";
+    }
+    try {
+      String streCours = file.getFileStreCours();
+      String davPath = file.getStreFileNm();
+      if ("NEXTCLOUD_DAV".equals(streCours) && davPath != null && !davPath.trim().isEmpty()) {
+        return buildReportImageDoUrl(davPath.trim());
+      }
+      return resolveFileUrl(file);
+    } catch (Exception e) {
+      log.warn("resolveReportImageProxyUrl 실패. streFileNm={}",
+          file.getStreFileNm(), e);
+      return resolveFileUrl(file);
+    }
+  }
+
+  private String buildReportImageDoUrl(String davPath) throws Exception {
+    String prefix = propertyService.getString("Globals.report.imageUrl");
+    if (prefix == null || prefix.trim().isEmpty()) {
+      prefix = "/api/file/reportImage.do";
+    }
+    String size = propertyService.getString("Globals.report.imageMaxSize");
+    if (size == null || size.trim().isEmpty()) {
+      size = "1280";
+    }
+    String quality = propertyService.getString("Globals.report.imageQuality");
+    if (quality == null || quality.trim().isEmpty()) {
+      quality = "0.6";
+    }
+    String encodedPath = Base64.getUrlEncoder().withoutPadding()
+        .encodeToString(davPath.getBytes(StandardCharsets.UTF_8));
+    return prefix + "?path=" + encodedPath + "&w=" + size + "&q=" + quality;
   }
 
   /** 성적서 이미지: 이 바이트 이하는 리사이즈·재압축 생략 (기본 500KB = 512000) */

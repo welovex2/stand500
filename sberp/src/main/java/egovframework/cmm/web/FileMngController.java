@@ -13,6 +13,7 @@ import java.util.Map;
 
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
@@ -72,7 +73,8 @@ public class FileMngController {
      */
     @SuppressWarnings("resource")
 	@RequestMapping("/getImage.do")
-    public void getImageInf(ModelMap model, @RequestParam Map<String, Object> commandMap, HttpServletResponse response) throws Exception {
+    public void getImageInf(ModelMap model, @RequestParam Map<String, Object> commandMap,
+        HttpServletRequest request, HttpServletResponse response) throws Exception {
 
 		String atchFileId = (String)commandMap.get("atchFileId");
 		String fileSn = (String)commandMap.get("fileSn");
@@ -88,8 +90,15 @@ public class FileMngController {
 		}
 
 		if ("NEXTCLOUD_DAV".equals(fvo.getFileStreCours())) {
-			LOGGER.debug("getImage.do is legacy-only. atchFileId={}", atchFileId);
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			String reportUrl = fileService.resolveReportImageUrl(fvo);
+			if (reportUrl == null || reportUrl.isEmpty()) {
+				response.sendError(HttpServletResponse.SC_NOT_FOUND);
+				return;
+			}
+			if (reportUrl.startsWith("/")) {
+				reportUrl = request.getContextPath() + reportUrl;
+			}
+			response.sendRedirect(reportUrl);
 			return;
 		}
 
