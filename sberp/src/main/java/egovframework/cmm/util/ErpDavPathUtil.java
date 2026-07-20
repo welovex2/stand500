@@ -64,10 +64,33 @@ public final class ErpDavPathUtil {
     if (x.endsWith("/") && x.length() > 1)
       x = x.substring(0, x.length() - 1);
 
-    if (x.contains("/../") || x.endsWith("/..") || x.contains("/./") || x.startsWith("../")) {
+    if (hasPathTraversalSegment(x)) {
       throw new IllegalArgumentException("허용되지 않는 경로입니다.");
     }
     return x;
+  }
+
+  /**
+   * 경로 탈출 세그먼트({@code .}, {@code ..}) 포함 여부.
+   *
+   * <p>경로를 {@code /}로 나눈 세그먼트가 정확히 {@code .} 또는 {@code ..}인 경우만 true.
+   * 파일명에 {@code ..}가 포함된 경우(예: {@code Q27G4F.._KC.xlsx})는 false.
+   */
+  public static boolean hasPathTraversalSegment(String path) {
+    if (path == null || path.trim().isEmpty()) {
+      return false;
+    }
+    String normalized = path.trim().replace("\\", "/").replaceAll("/{2,}", "/");
+    String[] parts = normalized.split("/");
+    for (String part : parts) {
+      if (part == null || part.isEmpty()) {
+        continue;
+      }
+      if (".".equals(part) || "..".equals(part)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -107,8 +130,8 @@ public final class ErpDavPathUtil {
       return null;
     }
 
-    // ../ 등 경로 탈출 차단 (normalizePath와 동일 정책)
-    if (p.contains("..")) {
+    // ../ 등 경로 탈출 차단 (세그먼트 단위 — 파일명 내 ".."는 허용)
+    if (hasPathTraversalSegment(p)) {
       throw new IllegalArgumentException("허용되지 않는 relativePath 입니다: " + relativePath);
     }
 

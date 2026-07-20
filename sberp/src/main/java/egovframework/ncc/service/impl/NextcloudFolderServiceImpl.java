@@ -24,6 +24,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import egovframework.cmm.filter.NcBizException;
 import egovframework.cmm.service.HttpPropfind;
+import egovframework.cmm.util.ErpDavPathUtil;
 import egovframework.ncc.dto.NcFileDTO;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.ncc.service.NextcloudFolderService;
@@ -292,7 +293,7 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
     if (normalized.endsWith("/"))
       normalized = normalized.substring(0, normalized.length() - 1);
 
-    if (normalized.indexOf("..") >= 0) {
+    if (ErpDavPathUtil.hasPathTraversalSegment(normalized)) {
       throw new NcBizException("허용되지 않는 경로입니다: " + path);
     }
 
@@ -362,8 +363,8 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
     if (normalized.endsWith("/"))
       normalized = normalized.substring(0, normalized.length() - 1);
 
-    // 3) traversal 방지
-    if (normalized.indexOf("..") >= 0) {
+    // 3) traversal 방지 (세그먼트 단위 — 파일명 내 ".."는 허용)
+    if (ErpDavPathUtil.hasPathTraversalSegment(normalized)) {
       throw new NcBizException("허용되지 않는 경로입니다: " + relativeFolderPath);
     }
 
@@ -498,8 +499,8 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
     if (normalized.startsWith("/"))
       normalized = normalized.substring(1);
 
-    // 최소 방어
-    if (normalized.indexOf("..") >= 0) {
+    // 최소 방어 (세그먼트 단위 — 파일명 내 ".."는 허용)
+    if (ErpDavPathUtil.hasPathTraversalSegment(normalized)) {
       throw new NcBizException("허용되지 않는 경로입니다: " + relativePath);
     }
 

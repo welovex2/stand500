@@ -26,9 +26,57 @@ public final class HttpContentDispositionUtil {
       return type + "; filename=\"" + escapeQuotes(original) + "\"";
     }
 
-    // Tomcat 8: filename= 은 ISO-8859-1(0~255)만 허용. 한글은 RFC5987 filename* 로 전달.
-    String fallback = toAsciiFallbackName(original);
-    return type + "; filename=\"" + escapeQuotes(fallback) + "\"; filename*=UTF-8''" + encoded;
+    /*
+     * 한글 파일명:
+     * 1) filename*=UTF-8'' — 브라우저 저장명 (한글)
+     * 2) filename= ASCII — fetch·구형 클라이언트용 (확장자 .pdf 보장, mojibake 없음)
+     * ISO-8859-1 passthrough 는 사용하지 않음.
+     */
+    String ascii = toAsciiFallbackName(original);
+    return type + "; filename=\"" + escapeQuotes(ascii) + "\"; filename*=UTF-8''" + encoded;
+  }
+
+  /**
+   * Content-Disposition 헤더에서 파일명 추출 (fetch 다운로드용).
+   * filename* (RFC 5987) 우선, 없으면 filename=.
+   */
+  public static String parseFileNameFromDisposition(String contentDisposition) {
+    if (contentDisposition == null || contentDisposition.isEmpty()) {
+      return null;
+    }
+    int starIdx = contentDisposition.indexOf("filename*=UTF-8''");
+    if (starIdx >= 0) {
+      String rest = contentDisposition.substring(starIdx + "filename*=UTF-8''".length());
+      int end = rest.indexOf(';');
+      String encoded = end >= 0 ? rest.substring(0, end) : rest;
+      return urlDecodeUtf8(encoded.trim());
+    }
+    int idx = contentDisposition.toLowerCase().indexOf("filename=");
+    if (idx < 0) {
+      return null;
+    }
+    String rest = contentDisposition.substring(idx + "filename=".length()).trim();
+    if (rest.startsWith("\"")) {
+      int close = rest.indexOf('"', 1);
+      if (close > 0) {
+        return rest.substring(1, close);
+      }
+    }
+    int end = rest.indexOf(';');
+    return (end >= 0 ? rest.substring(0, end) : rest).trim();
+  }
+
+  public static String urlDecodeUtf8(String s) {
+    try {
+      return java.net.URLDecoder.decode(s, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      return s;
+    }
+  }
+
+  /** 프론트 fetch 등에서 읽을 수 있는 URL 인코딩 파일명 */
+  public static String urlEncodedFileName(String fileName) {
+    return urlEncodeUtf8(normalizePdfFileName(fileName));
   }
 
   public static String normalizePdfFileName(String fileName) {
@@ -42,7 +90,7 @@ public final class HttpContentDispositionUtil {
     return name;
   }
 
-  /** ASCII fallback. 한글은 생략하고 남은 영문·숫자만 사용. */
+  /** ASCII fallback — 비한글 파일명용 */
   public static String toAsciiFallbackName(String original) {
     original = normalizePdfFileName(original);
 
@@ -58,7 +106,8 @@ public final class HttpContentDispositionUtil {
       }
     }
 
-    String asciiBase = sb.toString().replaceAll("^[._\\- ]+", "").replaceAll("[._\\- ]+$", "");
+    String asciiBase = sb.toString().replaceAll("_{2,}", "_").replaceAll("^[._\\- ]+", "")
+        .replaceAll("[._\\- ]+$", "");
     if (asciiBase.isEmpty()) {
       return "export" + ext;
     }

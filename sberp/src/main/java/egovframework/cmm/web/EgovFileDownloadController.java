@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
+import egovframework.cmm.util.ErpDavPathUtil;
 import egovframework.ncc.service.NextcloudDavService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import net.coobird.thumbnailator.Thumbnails;
@@ -192,7 +193,7 @@ public class EgovFileDownloadController {
         return;
       }
 
-      // ✅ 5) 그 외: 로컬 파일
+      // 5) legacy local
       File uFile = new File(fvo.getFileStreCours(), fvo.getStreFileNm());
       if (!uFile.exists() || uFile.length() <= 0) {
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -245,8 +246,8 @@ public class EgovFileDownloadController {
       return;
     }
 
-    // 경로 검증 (디렉터리 트래버설 차단)
-    if (davPath.trim().isEmpty() || davPath.contains("..")) {
+    // 경로 검증 (디렉터리 트래버설 차단 — 세그먼트 단위, 파일명 내 ".."는 허용)
+    if (davPath.trim().isEmpty() || ErpDavPathUtil.hasPathTraversalSegment(davPath)) {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       return;
     }
