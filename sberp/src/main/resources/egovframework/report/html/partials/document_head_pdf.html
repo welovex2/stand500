@@ -1,0 +1,36 @@
+<#macro head document>
+
+<#--
+
+  성적서 PDF/HTML 공통 head.
+
+  - report-fonts-pdf.css : @font-face Gulim-subset·draft (HTTP fetch, Noto 미포함)
+
+  - report_tel_base.css: 레이아웃
+
+  - report-pdf.css     : Playwright PDF 전용 (@page, Gulim·드래프트 규칙)
+
+-->
+
+<!DOCTYPE html>
+
+<html lang="ko">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>성적서 ${document.meta.reportNo!''}</title>
+
+  <link rel="stylesheet" type="text/css" href="${document.assetBaseUrl}/css/report-fonts-pdf.css">
+
+  <link rel="stylesheet" type="text/css" href="${document.assetBaseUrl}/css/report_tel_base.css">
+
+  <link rel="stylesheet" type="text/css" href="${document.assetBaseUrl}/css/report-pdf.css">
+
+</head>
+
+</#macro>
+

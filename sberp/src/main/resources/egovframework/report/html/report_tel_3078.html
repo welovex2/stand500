@@ -1,0 +1,119 @@
+<#--
+  TEL 3078 성적서 — 퍼블리셔 report_tel.html + Freemarker 데이터 바인딩
+-->
+<#import "partials/document_head_pdf.html" as docHead>
+<@docHead.head document=document />
+<body style="height: auto;">
+<div class="a4_print" id="a4_print">
+
+<#assign pageNum = 1>
+<#include "partials/tel/page_cover.ftl">
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_history.ftl">
+
+<#list document.tel.modExtraChunks as chunk>
+<#assign pageNum = pageNum + 1>
+<#assign isLast = (chunk?index == document.tel.modExtraChunks?size - 1)>
+<#assign showModNotice = isLast && !document.tel.modNoticeSeparatePage>
+<#include "partials/tel/page_history_mod.ftl">
+</#list>
+<#if document.tel.modNoticeSeparatePage>
+<#assign pageNum = pageNum + 1>
+<#assign chunk = []>
+<#assign showModNotice = true>
+<#include "partials/tel/page_history_mod.ftl">
+</#if>
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_toc.ftl">
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_sec1.ftl">
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_sec2.ftl">
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_sec3.ftl">
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_sec4_direct.ftl">
+
+<#if document.tel.directApplicable>
+<#list document.tel.directScreenPages as chunk>
+<#assign pageNum = pageNum + 1>
+<#assign pics = chunk>
+<#assign screenTitle = "- 측정 화면 (직접 접속 방식)">
+<#assign showScreenTitle = (chunk?index == 0)>
+<#include "partials/tel/page_screen_photos.ftl">
+</#list>
+<#if !document.tel.directScreenPages?has_content>
+<#assign pageNum = pageNum + 1>
+<#assign pics = []>
+<#assign screenTitle = "- 측정 화면 (직접 접속 방식)">
+<#assign showScreenTitle = true>
+<#include "partials/tel/page_screen_photos.ftl">
+</#if>
+</#if>
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_sec4_cloud.ftl">
+
+<#if document.tel.cloudApplicable>
+<#list document.tel.cloudScreenPages as chunk>
+<#assign pageNum = pageNum + 1>
+<#assign pics = chunk>
+<#assign screenTitle = "- 측정 화면 (클라우드 접속 방식)">
+<#assign showScreenTitle = (chunk?index == 0)>
+<#include "partials/tel/page_screen_photos.ftl">
+</#list>
+<#if !document.tel.cloudScreenPages?has_content>
+<#assign pageNum = pageNum + 1>
+<#assign pics = []>
+<#assign screenTitle = "- 측정 화면 (클라우드 접속 방식)">
+<#assign showScreenTitle = true>
+<#include "partials/tel/page_screen_photos.ftl">
+</#if>
+</#if>
+
+<#assign pageNum = pageNum + 1>
+<#include "partials/tel/page_sec5.ftl">
+
+<#if document.tel.measurePhotoPages?has_content>
+  <#list document.tel.measurePhotoPages as chunk>
+  <#assign pageNum = pageNum + 1>
+  <#assign pics = chunk>
+  <#assign showTitle = (chunk?index == 0)>
+  <#include "partials/tel/page_measure_photos.ftl">
+  </#list>
+<#else>
+  <#assign pageNum = pageNum + 1>
+  <#assign pics = []>
+  <#assign showTitle = true>
+  <#include "partials/tel/page_measure_photos.ftl">
+</#if>
+
+<#if document.tel.productPhotoPages?has_content>
+  <#list document.tel.productPhotoPages as chunk>
+  <#assign pageNum = pageNum + 1>
+  <#assign pics = chunk>
+  <#assign showTitle = (chunk?index == 0)>
+  <#assign appendAutoLabel = document.tel.mergeLabelWithLastPhoto && (chunk?index == document.tel.productPhotoPages?size - 1)>
+  <#include "partials/tel/page_product_photos.ftl">
+  </#list>
+<#elseif !document.tel.showProductLabelPage>
+  <#assign pageNum = pageNum + 1>
+  <#assign pics = []>
+  <#assign showTitle = true>
+  <#include "partials/tel/page_product_photos.ftl">
+</#if>
+
+<#if document.tel.showProductLabelPage>
+  <#assign pageNum = pageNum + 1>
+  <#include "partials/tel/page_product_label.ftl">
+</#if>
+
+</div>
+</body>
+</html>
