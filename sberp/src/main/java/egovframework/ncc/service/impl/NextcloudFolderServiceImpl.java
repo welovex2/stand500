@@ -278,6 +278,14 @@ public class NextcloudFolderServiceImpl implements NextcloudFolderService {
     commonSubFolderName2 = "01.제품사진";
     ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
 
+    commonSubFolderName3 = "외관도";
+    ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2 + "/"
+        + commonSubFolderName3);
+
+    commonSubFolderName3 = "부품배치도";
+    ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2 + "/"
+        + commonSubFolderName3);
+
     commonSubFolderName2 = "02.접수(완료자료)";
     ensureFolder(relativePath + "/" + commonSubFolderName1 + "/" + commonSubFolderName2);
   }
