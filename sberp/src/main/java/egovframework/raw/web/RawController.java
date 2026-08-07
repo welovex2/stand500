@@ -393,6 +393,10 @@ public class RawController {
       if (req.getRawSeq() == 0 && !ObjectUtils.isEmpty(detail)) {
         result = false;
         msg = ResponseMessage.DUPLICATE_RAW;
+      } else if (rawService.selectEditYn(req.getTestSeq()) == 0) {
+        // 프로젝트완료 등으로 로데이터 수정 불가
+        result = false;
+        msg = ResponseMessage.CHECK_RAW_EDIT;
       } else {
 
         // TestSeq로 파일서버 루트폴더 찾기

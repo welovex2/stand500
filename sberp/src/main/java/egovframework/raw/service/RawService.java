@@ -47,6 +47,9 @@ public interface RawService {
 
   RawData basicDetail(RawSearchDTO req) throws Exception;
 
+  /** 로데이터 수정여부 (1=수정가능, 0=불가) */
+  int selectEditYn(int testSeq);
+
   RsDTO rsDetail(int rawSeq);
 
   boolean insertRs(RsDTO req);

@@ -50,7 +50,10 @@ public class ResponseMessage {
     public static final String CHECK_RATE_SUM = "참여율 합은 100%가 되어야 합니다.";
     public static final String CHECK_TEST_STATE = "시험취소가 확정되어 상태변경이 불가합니다.";
     public static final String CHECK_TEST_STATE_END = "프로젝트가 완료되어 상태변경이 불가합니다.";
+    public static final String CHECK_RAW_EDIT = "프로젝트가 완료되어 로데이터를 수정할 수 없습니다.";
     public static final String CHECK_MAC = "장비데이터가 없습니다. 1초 뒤 다시 시도하세요.";
     public static final String CHECK_MAC_DATE = "시험 장비의 차기 교정일을 확인해 주세요.";
+    public static final String CHECK_REPORT_DT = "성적서 발급일은 시험시작일·시험종료일 이후로만 입력할 수 있습니다.";
+    public static final String CHECK_MSRMN_DT = "측정일은 성적서 발급일 이전으로만 입력할 수 있습니다.";
     
 }

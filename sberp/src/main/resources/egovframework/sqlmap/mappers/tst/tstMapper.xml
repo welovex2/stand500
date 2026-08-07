@@ -527,6 +527,8 @@
 		SET
 			TEST_STATE_CODE = #{stateCode},
 			TEST_STATE_DT = NOW(),
+			/* 프로젝트완료(18) 시 로데이터 수정 불가 */
+			RAW_EDIT_YN = IF(#{stateCode} = '18', 0, RAW_EDIT_YN),
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE TEST_SEQ = #{testSeq}

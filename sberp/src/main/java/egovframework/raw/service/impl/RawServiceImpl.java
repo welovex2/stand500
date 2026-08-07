@@ -15,6 +15,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.service.HisDTO;
+import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SbkInfoVO;
 import egovframework.raw.dto.CeDTO;
 import egovframework.raw.dto.ClkDTO;
@@ -78,6 +79,8 @@ public class RawServiceImpl implements RawService {
   public boolean insert(RawData req) {
     boolean result = true;
 
+    validateReportDt(req);
+
     req.setSbkId(rawMapper.getSbkId(req.getTestSeq()));
     rawMapper.insert(req);
 
@@ -127,6 +130,8 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean update(RawData req) {
     boolean result = true;
+
+    validateReportDt(req);
 
     rawMapper.update(req);
 
@@ -211,8 +216,8 @@ public class RawServiceImpl implements RawService {
         rawMapper.deleteCable(req.getRawSeq(), cDItems);
     }
 
-    // 시험방법 체크여부에 따라 시험 시작일, 종료일 재설정
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    // 체크된 시험방법 측정일 min/max → 시험시작·종료일 갱신, 해당 시험(testSeq) 성적서발급일 검증
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
   }
@@ -227,6 +232,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertCe(req);
 
     // 측정설비
@@ -255,7 +261,7 @@ public class RawServiceImpl implements RawService {
     }
 
     // 날짜 범위 업데이트
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
   }
@@ -284,6 +290,12 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getHz1MsrmnYear(), req.getHz1MsrmnMon(),
+        req.getHz1MsrmnDay());
+    validateMsrmnDt(req.getTestSeq(), req.getHz2MsrmnYear(), req.getHz2MsrmnMon(),
+        req.getHz2MsrmnDay());
+    validateMsrmnDt(req.getTestSeq(), req.getHz3MsrmnYear(), req.getHz3MsrmnMon(),
+        req.getHz3MsrmnDay());
     methodMapper.insertRe(req);
 
     // 측정설비
@@ -330,7 +342,7 @@ public class RawServiceImpl implements RawService {
 
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
   }
@@ -371,6 +383,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertEsd(req);
 
     // 측정설비
@@ -400,7 +413,7 @@ public class RawServiceImpl implements RawService {
         methodMapper.deleteEsdSub(req.getEsdSeq(), cDItems);
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
   }
@@ -456,6 +469,11 @@ public class RawServiceImpl implements RawService {
     }
 
     return detail;
+  }
+
+  @Override
+  public int selectEditYn(int testSeq) {
+    return rawMapper.selectEditYn(testSeq);
   }
 
   @Override
@@ -544,6 +562,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertRs(req);
 
     // 측정설비
@@ -585,7 +604,7 @@ public class RawServiceImpl implements RawService {
       }
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
   }
@@ -615,6 +634,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertEft(req);
 
     // 측정설비
@@ -653,7 +673,7 @@ public class RawServiceImpl implements RawService {
       }
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
   }
@@ -695,6 +715,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertSurge(req);
 
     // 측정설비
@@ -733,7 +754,7 @@ public class RawServiceImpl implements RawService {
       }
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -764,6 +785,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertCs(req);
 
     // 측정설비
@@ -805,7 +827,7 @@ public class RawServiceImpl implements RawService {
       }
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -836,6 +858,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertMf(req);
 
     // 측정설비
@@ -848,7 +871,7 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -883,6 +906,7 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertVdip(req);
 
     // 측정설비
@@ -895,7 +919,7 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -959,6 +983,7 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.CK, req.getRawSeq());
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertClk(req);
 
     // 측정설비
@@ -971,7 +996,7 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -996,6 +1021,7 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.DP, req.getRawSeq());
 
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertDp(req);
 
     // 측정설비
@@ -1008,7 +1034,7 @@ public class RawServiceImpl implements RawService {
             req.getRawSeq(), req.getMacType());
     }
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -1043,9 +1069,10 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
 
     TelResultCodeUtil.normalizeBlankResults(req);
+    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertTel(req);
 
-    recalcAndUpdateTestDtRange(req.getRawSeq());
+    recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
 
@@ -1253,7 +1280,86 @@ public class RawServiceImpl implements RawService {
     return rawMapper.findByNcFolderPath(testSeq);
   }
 
-  private void recalcAndUpdateTestDtRange(int rawSeq) {
+  /**
+   * 성적서 발급일이 있으면 시험시작일·시험종료일 이후(당일 포함)인지 검증.
+   */
+  private void validateReportDt(RawData req) {
+    LocalDate reportDt = parseLocalDate(req.getReportDt());
+    if (reportDt == null) {
+      return;
+    }
+
+    LocalDate testSDt = parseLocalDate(req.getTestSDt());
+    LocalDate testEDt = parseLocalDate(req.getTestEDt());
+
+    // 요청값과 실제 측정일 범위를 함께 반영 (더 이른 시작·더 늦은 종료 기준)
+    if (req.getRawSeq() > 0) {
+      List<LocalDate> dates = rawMapper.selectAllMsrmnDates(req.getRawSeq());
+      if (!ObjectUtils.isEmpty(dates)) {
+        LocalDate min = dates.stream().min(Comparator.naturalOrder()).orElse(null);
+        LocalDate max = dates.stream().max(Comparator.naturalOrder()).orElse(null);
+        if (min != null && (testSDt == null || min.isBefore(testSDt))) {
+          testSDt = min;
+        }
+        if (max != null && (testEDt == null || max.isAfter(testEDt))) {
+          testEDt = max;
+        }
+      }
+    }
+
+    if ((testSDt != null && reportDt.isBefore(testSDt))
+        || (testEDt != null && reportDt.isBefore(testEDt))) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_REPORT_DT);
+    }
+  }
+
+  /**
+   * 성적서 발급일이 있으면 측정일은 발급일 이전(당일 포함)인지 검증.
+   * testSeq 기준(본시험·재발행 각각 자신의 REPORT_DT).
+   */
+  private void validateMsrmnDt(int testSeq, int year, int mon, int day) {
+    if (testSeq == 0 || year <= 0 || mon <= 0 || day <= 0) {
+      return;
+    }
+
+    LocalDate reportDt = rawMapper.selectReportDt(testSeq);
+    if (reportDt == null) {
+      return;
+    }
+
+    LocalDate msrmnDt;
+    try {
+      msrmnDt = LocalDate.of(year, mon, day);
+    } catch (DateTimeException e) {
+      log.warn("측정일 조합 중 날짜 오류 발생 - year={}, month={}, day={}", year, mon, day);
+      return;
+    }
+
+    if (msrmnDt.isAfter(reportDt)) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_MSRMN_DT);
+    }
+  }
+
+  private LocalDate parseLocalDate(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    String trimmed = value.trim();
+    if (trimmed.length() >= 10) {
+      trimmed = trimmed.substring(0, 10);
+    }
+    try {
+      return LocalDate.parse(trimmed);
+    } catch (DateTimeException e) {
+      return null;
+    }
+  }
+
+  /**
+   * 체크된 시험방법의 측정일 중 최초·최종일로 시험시작일·종료일을 갱신한다.
+   * testSeq(본시험·재발행 공통)의 성적서발급일이 있으면, 그 이후 측정일이 없는지 검증한다.
+   */
+  private void recalcAndUpdateTestDtRange(int rawSeq, int testSeq) {
     if (rawSeq == 0)
       return;
 
@@ -1266,6 +1372,14 @@ public class RawServiceImpl implements RawService {
 
     if (startDt == null || endDt == null)
       return;
+
+    // 시험별(testSeq) 성적서발급일 — 본시험·재발행 모두 동일 로직
+    if (testSeq > 0) {
+      LocalDate reportDt = rawMapper.selectReportDt(testSeq);
+      if (reportDt != null && (startDt.isAfter(reportDt) || endDt.isAfter(reportDt))) {
+        throw new IllegalArgumentException(ResponseMessage.CHECK_MSRMN_DT);
+      }
+    }
 
     rawMapper.updateTestDtRange(rawSeq, startDt, endDt);
   }

@@ -68,6 +68,9 @@ public interface RawMapper {
 
   public RawData detail(RawSearchDTO req);
 
+  /** 로데이터 수정여부 (1=수정가능, 0=불가) */
+  public int selectEditYn(int testSeq);
+
   public List<RawTchn> tchnList(int rawSeq);
 
   public List<RawSpec> specList(int rawSeq);
@@ -103,6 +106,9 @@ public interface RawMapper {
 
   public SbkInfoVO findByNcFolderPath(int testSeq);
   List<LocalDate> selectAllMsrmnDates(@Param("rawSeq") int rawSeq);
+
+  /** 시험(TEST_SEQ)의 성적서 발급일 — 본시험·재발행 각각 */
+  LocalDate selectReportDt(@Param("testSeq") int testSeq);
 
   void updateTestDtRange(@Param("rawSeq") int rawSeq, @Param("startDt") LocalDate startDt,
       @Param("endDt") LocalDate endDt);

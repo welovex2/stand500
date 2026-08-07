@@ -556,6 +556,7 @@
 		    			IF(JOB_TB.SBK_REVISION > 0, CONCAT ('-',JOB_TB.SBK_REVISION), '')) sbkId,
 		    NC_FOLDER_PATH AS ncFolderPath,
 		    TEST_TB.TEST_SEQ,
+		    IFNULL(TEST_TB.RAW_EDIT_YN, 1) EDIT_YN,
 		    /* 고정 > 신청인 */
 		    JOB_TB.CMPY_NAME APLCN,
 		    /* 고정 > 기자재명칭 */
@@ -1193,6 +1194,19 @@
         order by no desc
 	</select>
 	
+	<select id="selectEditYn" parameterType="int" resultType="int">
+		SELECT IFNULL(RAW_EDIT_YN, 1)
+		FROM TEST_TB
+		WHERE TEST_SEQ = #{testSeq}
+	</select>
+
+	<!-- 시험별(TEST_SEQ) 성적서 발급일 — 본시험·재발행 각각 조회 -->
+	<select id="selectReportDt" parameterType="int" resultType="java.time.LocalDate">
+		SELECT REPORT_DT
+		FROM TEST_TB
+		WHERE TEST_SEQ = #{testSeq}
+	</select>
+
 	<update id="updateTestDtRange">
 	    UPDATE RAW_TB
 	    SET
