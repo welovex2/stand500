@@ -402,6 +402,7 @@
 	<select id="selectAllSameName" resultType="int" parameterType="cmpyDTO">
 		SELECT IFNULL (MAX(CMPY_SEQ), 0) FROM CMPY_TB
 		WHERE CMPY_CODE = #{cmpyCode}
+		AND IFNULL(STATE, '') != 'D'
 		AND CMPY_NAME COLLATE utf8_bin = TRIM(#{cmpyName});
 	</select>
 	

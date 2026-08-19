@@ -184,6 +184,10 @@ public class CmyController {
     // 파일 제외 저장
     result = cmyService.insert(req);
 
+    if (!result) {
+      return BasicResponse.builder().result(false).message(ResponseMessage.DUPLICATE_CMPY).build();
+    }
+
     // 파일처리
     List<FileVO> FileResult = null;
     String atchFileId = "";
