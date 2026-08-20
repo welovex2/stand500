@@ -35,4 +35,7 @@ public interface SbkService {
 
   SbkInfoVO findBySbkNoReadonly(String sbkId) throws Exception;
 
+  /** 신청서번호로 회사명(JOB_TB.CMPY_NAME)·모델명(JOB_TB.MODEL_NAME)만 조회. (조회 전용) */
+  SbkInfoVO findNamingBySbkNo(String sbkId) throws Exception;
+
 }

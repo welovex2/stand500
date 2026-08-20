@@ -52,6 +52,8 @@ public interface SbkMapper {
 
   SbkInfoVO selectSbkBySbkNo(String sbkId);
 
+  SbkInfoVO selectSbkNamingBySbkNo(String sbkId);
+
   void updateAtchFileIdBySbkNoIfNull(SbkInfoVO sbk);
 
 }

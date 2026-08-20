@@ -283,6 +283,19 @@ public class SbkServiceImpl implements SbkService {
     return result;
   }
 
+  @Override
+  public SbkInfoVO findNamingBySbkNo(String sbkId) throws Exception {
+    if (StringUtils.isEmpty(sbkId)) {
+      return null;
+    }
+
+    SbkInfoVO result = sbkMapper.selectSbkNamingBySbkNo(sbkId);
+    if (result != null) {
+      result.setSbkId(sbkId);
+    }
+    return result;
+  }
+
 
   private void provisionIfMissing(SbkInfoVO sbk) throws Exception {
 
