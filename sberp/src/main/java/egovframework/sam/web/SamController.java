@@ -31,6 +31,7 @@ import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
+import egovframework.sam.dto.ImSubItemDetailDTO;
 import egovframework.sam.service.SamService;
 import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
@@ -197,6 +198,32 @@ public class SamController {
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
 
     return res;
+  }
+
+  @ApiOperation(value = "시료 라벨 단건 상세 (모바일 QR)",
+      notes = "imSubId 예: SB26-G0030-M01\n"
+          + "노출: imSubId, divName(본품/구성품), memo(시료 모델명), carryInDate, carryInType, qty, rcptName(접수자)\n"
+          + "uploadFolders: 부품도/외관도 업로드 경로 (사진 목록은 GET /nc/list)")
+  @GetMapping(value = "/item/{imSubId}/detail.do")
+  public BasicResponse itemDetail(
+      @ApiParam(value = "시료 라벨 ID", required = true, example = "SB26-G0030-M01")
+      @PathVariable(name = "imSubId") String imSubId) throws Exception {
+
+    boolean result = true;
+    String msg = "";
+    ImSubItemDetailDTO detail = null;
+
+    if (!EgovUserDetailsHelper.isAuthenticated()) {
+      return BasicResponse.builder().result(false).message(ResponseMessage.UNAUTHORIZED).build();
+    }
+
+    detail = samService.itemDetail(imSubId);
+    if (detail == null) {
+      result = false;
+      msg = ResponseMessage.NO_DATA;
+    }
+
+    return BasicResponse.builder().result(result).message(msg).data(detail).build();
   }
 
   @ApiOperation(value = "시료 리스트", notes = "검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n"

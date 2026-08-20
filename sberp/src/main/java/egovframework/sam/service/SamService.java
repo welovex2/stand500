@@ -4,6 +4,7 @@ import java.util.List;
 import egovframework.cmm.service.ComParam;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
+import egovframework.sam.dto.ImSubItemDetailDTO;
 
 public interface SamService {
 
@@ -16,5 +17,7 @@ public interface SamService {
   int selectListCnt(ComParam param);
 
   List<ImSubDTO> selectList(ComParam param);
+
+  ImSubItemDetailDTO itemDetail(String imSubId) throws Exception;
 
 }

@@ -6,14 +6,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.SbkInfoVO;
+import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
+import egovframework.sam.dto.ImSubItemDetailDTO;
+import egovframework.sam.dto.SamUploadFolderDTO;
 import egovframework.sam.service.ImSub;
 import egovframework.sam.service.SamMapper;
 import egovframework.sam.service.SamService;
+import egovframework.sam.util.SamItemIdSupport;
+import egovframework.sam.util.SamItemIdSupport.Parsed;
+import egovframework.sam.util.SamUploadFolderSupport;
+import egovframework.sbk.service.SbkService;
 
 @Service("SamService")
 public class SamServiceImpl implements SamService {
@@ -23,6 +32,12 @@ public class SamServiceImpl implements SamService {
 
   @Autowired
   EgovFileMngService fileMngService;
+
+  @Autowired
+  SbkService sbkService;
+
+  @Autowired
+  NextcloudFolderService nextcloudFolderService;
 
   @Override
   @Transactional
@@ -125,6 +140,34 @@ public class SamServiceImpl implements SamService {
           .setNo(param.getTotalCount() - (((param.getPageIndex() - 1) * param.getPageUnit()) + i));
     }
 
+    return result;
+  }
+
+  @Override
+  public ImSubItemDetailDTO itemDetail(String imSubId) throws Exception {
+    Parsed parsed = SamItemIdSupport.parse(imSubId);
+    if (parsed == null) {
+      return null;
+    }
+
+    ImSubItemDetailDTO result =
+        samMapper.selectSubBySbkIdAndSubSeq(parsed.getSbkId(), parsed.getImSubSeq());
+    if (result == null) {
+      return null;
+    }
+
+    SbkInfoVO sbk = sbkService.findBySbkNoAndProvision(result.getSbkId());
+    if (sbk == null || StringUtils.isEmpty(sbk.getNcFolderPath())) {
+      return result;
+    }
+
+    result.setNcFolderPath(sbk.getNcFolderPath());
+    List<SamUploadFolderDTO> uploadFolders =
+        SamUploadFolderSupport.buildUploadFolders(sbk.getNcFolderPath());
+    for (SamUploadFolderDTO folder : uploadFolders) {
+      nextcloudFolderService.ensureFolder(folder.getRelativePath());
+    }
+    result.setUploadFolders(uploadFolders);
     return result;
   }
 

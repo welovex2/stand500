@@ -279,5 +279,31 @@
 	    #ORDER BY NO DESC
 		LIMIT #{pageUnit} OFFSET #{firstIndex};
 	</select>
+
+	<select id="selectSubBySbkIdAndSubSeq" resultType="imSubItemDetailDTO">
+		SELECT
+		    CONCAT(IM_TB.SBK_ID, '-M', LPAD(IM_SUB_TB.IM_SUB_SEQ, 2, 0)) imSubId,
+		    IM_TB.SBK_ID sbkId,
+		    IM_SUB_TB.IM_SUB_SEQ imSubSeq,
+		    IM_SUB_TB.DIV_CODE divCode,
+		    CASE IM_SUB_TB.DIV_CODE
+		        WHEN '1' THEN '본품'
+		        WHEN '2' THEN '구성품'
+		        ELSE IFNULL(FN_CODE_NAME(IM_SUB_TB.DIV_CODE, 'TI'), '')
+		    END divName,
+		    IM_SUB_TB.MEMO memo,
+		    DATE_FORMAT(IM_SUB_TB.CARRY_IN_DATE, '%Y-%m-%d') carryInDate,
+		    IM_SUB_TB.CARRY_IN_CODE carryInCode,
+		    FN_CODE_NAME(IM_SUB_TB.CARRY_IN_CODE, 'TC') carryInType,
+		    IM_SUB_TB.QTY qty,
+		    FN_MEM_NAME(IM_SUB_TB.CARRY_IN_ID) rcptName
+		FROM IM_TB
+		    INNER JOIN IM_SUB_TB
+		        ON IM_SUB_TB.IM_ID = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
+		        AND IM_SUB_TB.IM_SUB_SEQ = #{imSubSeq}
+		        AND IM_SUB_TB.STATE != 'D'
+		WHERE IM_TB.SBK_ID = #{sbkId}
+		LIMIT 1
+	</select>
 		
 </mapper>

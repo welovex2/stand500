@@ -6,6 +6,7 @@ import egovframework.cmm.service.ComParam;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
+import egovframework.sam.dto.ImSubItemDetailDTO;
 
 @Mapper("SamMapper")
 public interface SamMapper {
@@ -27,5 +28,8 @@ public interface SamMapper {
   public int selectListCnt(ComParam param);
 
   public List<ImSubDTO> selectList(ComParam param);
-  
+
+  ImSubItemDetailDTO selectSubBySbkIdAndSubSeq(@Param("sbkId") String sbkId,
+      @Param("imSubSeq") int imSubSeq);
+
 }

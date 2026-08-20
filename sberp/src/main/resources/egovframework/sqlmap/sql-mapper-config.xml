@@ -55,6 +55,7 @@
     	<typeAlias alias="imDTO"		type="egovframework.sam.dto.ImDTO"/>
     	<typeAlias alias="imSub"			type="egovframework.sam.service.ImSub"/>
     	<typeAlias alias="imSubDTO"		type="egovframework.sam.dto.ImSubDTO"/>
+    	<typeAlias alias="imSubItemDetailDTO"	type="egovframework.sam.dto.ImSubItemDetailDTO"/>
     	<typeAlias alias="hisDTO"		type="egovframework.cmm.service.HisDTO"/>
     	<typeAlias alias="testItemRej"	type="egovframework.tst.service.TestItemRej"/>
     	
