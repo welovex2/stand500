@@ -23,6 +23,15 @@
 		<filter-name>encodingFilter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
+
+	<filter>
+		<filter-name>publicImageAccessFilter</filter-name>
+		<filter-class>egovframework.cmm.filter.PublicImageAccessFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>publicImageAccessFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
     
 	<filter>
 		<filter-name>HTMLTagFilter</filter-name>
