@@ -38,6 +38,40 @@
 			SBK_TB.CRPRT_RGNMB,
 			ADDRESS,
 			SBK_TB.RSDNT_RGNMB,
+			/*
+			CASE
+				WHEN REPLACE(IFNULL(SBK_TB.RSDNT_RGNMB, ''), '-', '') REGEXP '^[0-9]{13}$'
+					AND (
+						IFNULL(SBK_TB.RSDNT_RGNMB, '') NOT LIKE '%-%'
+						OR IFNULL(SBK_TB.RSDNT_RGNMB, '') REGEXP '^[0-9]{6}-[0-9]{7}$'
+					)
+				THEN
+					CASE
+						WHEN SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 3, 2) BETWEEN '01' AND '12'
+							AND SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 5, 2) BETWEEN '01' AND '31'
+							AND SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 7, 1) REGEXP '^[1-8]$'
+							AND STR_TO_DATE(
+									CONCAT(
+										CASE
+											WHEN SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 7, 1) IN ('1','2','5','6') THEN '19'
+											WHEN SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 7, 1) IN ('3','4','7','8') THEN '20'
+											ELSE '19'
+										END,
+										SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 1, 6)
+									),
+									'%Y%m%d'
+								) IS NOT NULL
+						THEN CONCAT(
+								SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 1, 6),
+								'-',
+								SUBSTRING(REPLACE(SBK_TB.RSDNT_RGNMB, '-', ''), 7, 1),
+								'******'
+							)
+						ELSE SBK_TB.RSDNT_RGNMB
+					END
+				ELSE SBK_TB.RSDNT_RGNMB
+			END AS RSDNT_RGNMB,
+			*/
 			INDST_MF_YN,
 			INDST_SL_YN,
 			INDST_IP_YN,
@@ -1358,6 +1392,32 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 	]]>
 	</select>
 	
+	<select id="selectSbkNamingBySbkNo"
+	        parameterType="string"
+	        resultType="egovframework.cmm.service.SbkInfoVO">
+	<![CDATA[
+	    SELECT
+	        JOB_TB.CMPY_NAME  AS cmpyName,
+	        JOB_TB.PRDCT_NAME AS prdctName,
+	        JOB_TB.MODEL_NAME AS modelName,
+	        SBK_TB.MNFCT_CMPNY AS mnfctCmpny,
+	        IFNULL(FN_CODE_NAME(SBK_TB.MNFCT_CNTRY_CODE, 'SN'), '') AS mnfctCntry,
+	        SBK_TB.ATHNT_NMBR AS athntNmbr,
+	        SBK_TB.MDL_IDNTF AS mdlIdntf
+	    FROM SBK_TB
+	    INNER JOIN JOB_TB
+	        ON SBK_TB.SBK_YM   = JOB_TB.SBK_YM
+	       AND SBK_TB.TYPE     = JOB_TB.SBK_TYPE
+	       AND SBK_TB.SBK_SEQ  = JOB_TB.SBK_SEQ
+	       AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
+	    WHERE SBK_TB.SBK_YM = SUBSTRING(#{sbkId},3,2)
+	      AND SBK_TB.TYPE = SUBSTRING(#{sbkId},6,1)
+	      AND SBK_TB.SBK_SEQ = SUBSTRING(#{sbkId},7,4)
+	      AND SBK_TB.REVISION = IF (SUBSTRING(#{sbkId},12,1)='', 0, SUBSTRING(#{sbkId},12,1))
+	    LIMIT 1
+	]]>
+	</select>
+
 	<update id="updateAtchFileIdBySbkNoIfNull" parameterType="egovframework.cmm.service.SbkInfoVO" >
 	
 		UPDATE SBK_TB
