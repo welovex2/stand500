@@ -228,6 +228,8 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.CE, req.getRawSeq());
 
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
+
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -285,6 +287,8 @@ public class RawServiceImpl implements RawService {
   public boolean insertRe(ReDTO req) {
     boolean result = true;
     boolean isNew = isNew(TableType.RE, req.getRawSeq());
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
@@ -378,6 +382,8 @@ public class RawServiceImpl implements RawService {
   public boolean insertEsd(EsdDTO req) {
     boolean result = true;
     boolean isNew = isNew(TableType.ESD, req.getRawSeq());
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
@@ -477,6 +483,14 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  public int selectRawSeqByTestSeq(int testSeq) {
+    if (testSeq == 0) {
+      return 0;
+    }
+    return rawMapper.selectRawSeqByTestSeq(testSeq);
+  }
+
+  @Override
   public RawData labelDetail(RawSearchDTO req) {
     RawData detail = new RawData();
     detail = rawMapper.labelDetail(req);
@@ -558,6 +572,8 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.RS, req.getRawSeq());
 
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
+
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -629,6 +645,8 @@ public class RawServiceImpl implements RawService {
   public boolean insertEft(EftDTO req) {
     boolean result = true;
     boolean isNew = isNew(TableType.EFT, req.getRawSeq());
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
@@ -711,6 +729,8 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.SURGE, req.getRawSeq());
 
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
+
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -780,6 +800,8 @@ public class RawServiceImpl implements RawService {
 
     boolean result = true;
     boolean isNew = isNew(TableType.CS, req.getRawSeq());
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
@@ -854,6 +876,8 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.MF, req.getRawSeq());
 
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
+
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
@@ -901,6 +925,8 @@ public class RawServiceImpl implements RawService {
 
     boolean result = true;
     boolean isNew = isNew(TableType.VDIP, req.getRawSeq());
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
     if (req.getRawSeq() == 0)
@@ -983,6 +1009,8 @@ public class RawServiceImpl implements RawService {
     boolean result = true;
     boolean isNew = isNew(TableType.CK, req.getRawSeq());
 
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
+
     validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertClk(req);
 
@@ -1020,6 +1048,8 @@ public class RawServiceImpl implements RawService {
 
     boolean result = true;
     boolean isNew = isNew(TableType.DP, req.getRawSeq());
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertDp(req);
@@ -1067,6 +1097,8 @@ public class RawServiceImpl implements RawService {
   public boolean insertTel(TelDTO req) {
 
     boolean result = true;
+
+    assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     TelResultCodeUtil.normalizeBlankResults(req);
     validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
@@ -1278,6 +1310,20 @@ public class RawServiceImpl implements RawService {
   public SbkInfoVO findByNcFolderPath(int testSeq) {
 
     return rawMapper.findByNcFolderPath(testSeq);
+  }
+
+  /**
+   * 프로젝트완료 등으로 로데이터 수정 불가인지 확인.
+   * testSeq 우선, 없으면 RAW에 연결된 TEST_SEQ로 조회.
+   */
+  private void assertRawEditable(int testSeq, int rawSeq) {
+    int seq = testSeq;
+    if (seq == 0 && rawSeq > 0) {
+      seq = rawMapper.selectTestSeqByRawSeq(rawSeq);
+    }
+    if (seq > 0 && rawMapper.selectEditYn(seq) == 0) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_RAW_EDIT);
+    }
   }
 
   /**

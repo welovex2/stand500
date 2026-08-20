@@ -71,6 +71,12 @@ public interface RawMapper {
   /** 로데이터 수정여부 (1=수정가능, 0=불가) */
   public int selectEditYn(int testSeq);
 
+  /** RAW_SEQ → 원본 TEST_SEQ (testSeq 미전달 시 editYn 조회용) */
+  int selectTestSeqByRawSeq(@Param("rawSeq") int rawSeq);
+
+  /** TEST_SEQ → 원본 RAW_SEQ (재발행 포함, 기본정보 detail 조인과 동일) */
+  int selectRawSeqByTestSeq(@Param("testSeq") int testSeq);
+
   public List<RawTchn> tchnList(int rawSeq);
 
   public List<RawSpec> specList(int rawSeq);

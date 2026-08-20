@@ -50,6 +50,9 @@ public interface RawService {
   /** 로데이터 수정여부 (1=수정가능, 0=불가) */
   int selectEditYn(int testSeq);
 
+  /** TEST_SEQ → 원본 RAW_SEQ (재발행 포함) */
+  int selectRawSeqByTestSeq(int testSeq);
+
   RsDTO rsDetail(int rawSeq);
 
   boolean insertRs(RsDTO req);

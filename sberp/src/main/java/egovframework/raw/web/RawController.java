@@ -548,18 +548,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 CE 상세보기")
-  @GetMapping(value = "/{rawSeq}/ce/detail.do")
-  public BasicResponse ceDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/ce/detail.do")
+  public BasicResponse ceDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     CeDTO detail = new CeDTO();
 
-    detail = rawService.ceDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.ceDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -657,18 +666,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 RE 상세보기")
-  @GetMapping(value = "/{rawSeq}/re/detail.do")
-  public BasicResponse reDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/re/detail.do")
+  public BasicResponse reDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     ReDTO detail = new ReDTO();
 
-    detail = rawService.reDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.reDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -792,18 +810,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 ESD 상세보기")
-  @GetMapping(value = "/{rawSeq}/esd/detail.do")
-  public BasicResponse esdDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/esd/detail.do")
+  public BasicResponse esdDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     EsdDTO detail = new EsdDTO();
 
-    detail = rawService.esdDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.esdDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -976,18 +1003,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 RS 상세보기")
-  @GetMapping(value = "/{rawSeq}/rs/detail.do")
-  public BasicResponse rsDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/rs/detail.do")
+  public BasicResponse rsDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     RsDTO detail = new RsDTO();
 
-    detail = rawService.rsDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.rsDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1075,18 +1111,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 EFT / B U R S T 상세보기")
-  @GetMapping(value = "/{rawSeq}/eft/detail.do")
-  public BasicResponse eftDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/eft/detail.do")
+  public BasicResponse eftDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     EftDTO detail = new EftDTO();
 
-    detail = rawService.eftDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.eftDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1179,18 +1224,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 S U R G E 상세보기")
-  @GetMapping(value = "/{rawSeq}/surge/detail.do")
-  public BasicResponse surgeDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/surge/detail.do")
+  public BasicResponse surgeDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     SurgeDTO detail = new SurgeDTO();
 
-    detail = rawService.surgeDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.surgeDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1283,18 +1337,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 CS 상세보기")
-  @GetMapping(value = "/{rawSeq}/cs/detail.do")
-  public BasicResponse csDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/cs/detail.do")
+  public BasicResponse csDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     CsDTO detail = new CsDTO();
 
-    detail = rawService.csDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.csDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1386,18 +1449,27 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 M-Field 상세보기")
-  @GetMapping(value = "/{rawSeq}/mfield/detail.do")
-  public BasicResponse mfDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/mfield/detail.do")
+  public BasicResponse mfDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     MfDTO detail = new MfDTO();
 
-    detail = rawService.mfDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.mfDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1490,18 +1562,27 @@ public class RawController {
 
 
   @ApiOperation(value = "로데이터 V-Dip 상세보기")
-  @GetMapping(value = "/{rawSeq}/vdip/detail.do")
-  public BasicResponse vdDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "7") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/vdip/detail.do")
+  public BasicResponse vdDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
     boolean result = true;
     String msg = "";
     VdipDTO detail = new VdipDTO();
 
-    detail = rawService.vdipDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.vdipDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1666,19 +1747,28 @@ public class RawController {
   }
 
   @ApiOperation(value = "로데이터 Click 상세보기")
-  @GetMapping(value = "/{rawSeq}/clk/detail.do")
-  public BasicResponse clkDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "132") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/clk/detail.do")
+  public BasicResponse clkDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
 
     boolean result = true;
     String msg = "";
     ClkDTO detail = new ClkDTO();
 
-    detail = rawService.clkDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.clkDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1766,19 +1856,28 @@ public class RawController {
 
 
   @ApiOperation(value = "로데이터 DP 상세보기")
-  @GetMapping(value = "/{rawSeq}/dp/detail.do")
-  public BasicResponse dpDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "132") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/dp/detail.do")
+  public BasicResponse dpDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
 
     boolean result = true;
     String msg = "";
     DpDTO detail = new DpDTO();
 
-    detail = rawService.dpDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.dpDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();
@@ -1861,19 +1960,28 @@ public class RawController {
 
 
   @ApiOperation(value = "로데이터 TEL 상세보기")
-  @GetMapping(value = "/{rawSeq}/tel/detail.do")
-  public BasicResponse telDetail(@ApiParam(value = "로데이터 고유번호", required = true,
-      example = "132") @PathVariable(name = "rawSeq") int rawSeq) throws Exception {
+  @GetMapping(value = "/{testSeq}/tel/detail.do")
+  public BasicResponse telDetail(
+      @ApiParam(value = "시험 고유번호", required = true,
+          example = "15") @PathVariable(name = "testSeq") int testSeq) throws Exception {
 
     boolean result = true;
     String msg = "";
     TelDTO detail = new TelDTO();
 
-    detail = rawService.telDetail(rawSeq);
-
-    if (detail == null) {
+    int rawSeq = rawService.selectRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+    } else {
+      detail = rawService.telDetail(rawSeq);
+      if (detail == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else {
+        detail.setTestSeq(testSeq);
+        detail.setEditYn(rawService.selectEditYn(testSeq));
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).data(detail).build();

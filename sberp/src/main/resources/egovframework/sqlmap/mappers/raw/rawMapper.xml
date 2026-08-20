@@ -1200,6 +1200,28 @@
 		WHERE TEST_SEQ = #{testSeq}
 	</select>
 
+	<select id="selectTestSeqByRawSeq" parameterType="int" resultType="int">
+		SELECT TEST_SEQ
+		FROM RAW_TB
+		WHERE RAW_SEQ = #{rawSeq}
+	</select>
+
+	<!-- 본시험·재발행 TEST_SEQ → 원본 RAW_SEQ (detail 조인과 동일) -->
+	<select id="selectRawSeqByTestSeq" parameterType="int" resultType="int">
+		SELECT IFNULL(RAW_TB.RAW_SEQ, 0)
+		FROM TEST_TB
+			INNER JOIN TEST_ITEM_TB ON TEST_TB.TEST_ITEM_SEQ = TEST_ITEM_TB.TEST_ITEM_SEQ
+			LEFT JOIN TEST_TB orgTest ON orgTest.TEST_ITEM_SEQ = TEST_ITEM_TB.ORG_TEST_ITEM_SEQ
+			INNER JOIN JOB_TB ON TEST_ITEM_TB.QUO_YM = JOB_TB.QUO_YM
+				AND TEST_ITEM_TB.QUO_SEQ = JOB_TB.QUO_SEQ
+			INNER JOIN SBK_TB ON JOB_TB.SBK_YM = SBK_TB.SBK_YM
+				AND SBK_TB.TYPE = JOB_TB.SBK_TYPE
+				AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ
+				AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+			LEFT JOIN RAW_TB ON RAW_TB.TEST_SEQ = IF(SBK_TB.REVISION = 0, TEST_TB.TEST_SEQ, orgTest.TEST_SEQ)
+		WHERE TEST_TB.TEST_SEQ = #{testSeq}
+	</select>
+
 	<!-- 시험별(TEST_SEQ) 성적서 발급일 — 본시험·재발행 각각 조회 -->
 	<select id="selectReportDt" parameterType="int" resultType="java.time.LocalDate">
 		SELECT REPORT_DT

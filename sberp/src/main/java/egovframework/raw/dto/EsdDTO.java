@@ -21,6 +21,10 @@ public class EsdDTO extends MethodEsd {
   @Column
   int testSeq;
 
+  @ApiModelProperty(value = "로데이터 수정여부 (1=수정가능, 0=불가)", example = "1")
+  @Column
+  private int editYn = 1;
+
   @ApiModelProperty(value = "측정설비 종류(공통코드 : TM)", example = "CE")
   @Column
   String macType;

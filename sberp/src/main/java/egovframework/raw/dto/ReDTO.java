@@ -20,6 +20,10 @@ public class ReDTO extends MethodRe {
   @Column
   int testSeq;
 
+  @ApiModelProperty(value = "로데이터 수정여부 (1=수정가능, 0=불가)", example = "1")
+  @Column
+  private int editYn = 1;
+
   @ApiModelProperty(value = "시험규격번호", example = "10", hidden = true)
   @Column
   int testStndrSeq;
