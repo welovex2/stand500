@@ -33,12 +33,10 @@
 
 	        	<!-- ONLYOFFICE: NC 커넥터 앱 + Document Server URL 은 Nextcloud 관리 화면에서 설정 -->
 
-	        	<!-- AI (견적 AI 초안) : 내부 AI 서비스(ai-svc) 호출 -->
-	        	<!-- 외부 LLM egress·API 키·모델은 ai-svc 컨테이너(.env)에서 관리 -->
-	        	<entry key="Globals.ai.enabled"   value="${GLOBALS_AI_ENABLED}" />
-	        	<entry key="Globals.ai.baseUrl"   value="${GLOBALS_AI_BASE_URL}" />
-	        	<entry key="Globals.ai.token"     value="${GLOBALS_AI_TOKEN}" />
-	        	<entry key="Globals.ai.timeoutMs" value="${GLOBALS_AI_TIMEOUT_MS}" />
+	        	<!-- search-svc (유사 견적 의미 검색) -->
+	        	<entry key="Globals.search.baseUrl"   value="${GLOBALS_SEARCH_BASE_URL:}" />
+	        	<entry key="Globals.search.token"     value="${GLOBALS_SEARCH_TOKEN:}" />
+	        	<entry key="Globals.search.timeoutMs" value="${GLOBALS_SEARCH_TIMEOUT_MS:60000}" />
 
 	        	<!-- PDF (성적서 HTML → pdf-svc Playwright) -->
 	        	<entry key="Globals.pdf.baseUrl"   value="${GLOBALS_PDF_BASE_URL:}" />
@@ -47,6 +45,13 @@
 
 	        	<!-- 성적서 HTML 템플릿: CSS·이미지 절대 URL (pdf-svc Docker → Tomcat ROOT) -->
 	        	<entry key="Globals.report.publicBaseUrl" value="${GLOBALS_REPORT_PUBLIC_BASE_URL:}" />
+
+	        	<!-- 웹푸시(VAPID). 키 생성: egovframework.psh.util.VapidKeyGenerator 실행 -->
+	        	<!-- 공개키는 프론트에 그대로 내려간다. 개인키는 서버에만 두고 Git 에 올리지 않는다. -->
+	        	<!-- 미설정이면 구독·발송이 조용히 비활성화된다(예외를 던지지 않는다). -->
+	        	<entry key="Globals.push.vapid.publicKey"  value="${GLOBALS_PUSH_VAPID_PUBLIC:}" />
+	        	<entry key="Globals.push.vapid.privateKey" value="${GLOBALS_PUSH_VAPID_PRIVATE:}" />
+	        	<entry key="Globals.push.vapid.subject"    value="${GLOBALS_PUSH_VAPID_SUBJECT:mailto:admin@standardbank.co.kr}" />
 	        </map>
 		</property>
 	</bean>

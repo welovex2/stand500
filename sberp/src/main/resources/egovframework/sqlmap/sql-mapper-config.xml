@@ -144,5 +144,8 @@
     	<typeAlias alias="fileOpLogVO"	type="egovframework.ncc.dto.FileOpLogVO"/>
     	<typeAlias alias="fileOpLogListItem"	type="egovframework.ncc.dto.FileOpLogListItemDTO"/>
     	<typeAlias alias="fileOpLogSummary"	type="egovframework.ncc.dto.FileOpLogSummaryDTO"/>
+
+    	<!-- 웹푸시 알림 -->
+    	<typeAlias alias="pushSub"		type="egovframework.psh.service.PushSub"/>
     </typeAliases>
 </configuration>

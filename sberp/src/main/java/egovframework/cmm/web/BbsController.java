@@ -25,6 +25,8 @@ import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.ncc.service.NextcloudDavService;
+import egovframework.psh.service.PushDTO;
+import egovframework.psh.service.PushService;
 import egovframework.rte.fdl.property.EgovPropertyService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -51,6 +53,9 @@ public class BbsController {
 
   @Resource(name = "NextcloudDavService")
   private NextcloudDavService nextcloudDavService;
+
+  @Resource(name = "PushService")
+  private PushService pushService;
 
   /**
    * 게시물을 등록한다.
@@ -130,20 +135,33 @@ public class BbsController {
     }
 
     // 게시글 저장 or 업데이트
+    boolean isNew = req.getNttId() == 0;
+    boolean saved = false;
+
     try {
 
-      if (req.getNttId() == 0)
+      if (isNew)
         result = bbsMngService.insertBoardArticle(req);
       else
         result = bbsMngService.updateBoardArticle(req);
 
+      saved = result;
+
     } catch (Exception e) {
 
+      // 저장에 실패했으므로 프론트에 성공으로 보이면 안 된다.
+      result = false;
       msg = ResponseMessage.RETRY;
       log.warn(user.getId() + " :: " + e.toString());
       log.warn(req.toString());
       log.warn("");
 
+    }
+
+    // 공지 신규 등록 알림. 수정할 때는 보내지 않는다.
+    // 저장이 끝난 뒤에 호출해야 롤백된 글로 알림이 나가지 않는다.
+    if (isNew && saved) {
+      notifyNewNotice(req, user);
     }
 
     // 문의글 작성할 경우 SMS 문자
@@ -152,6 +170,38 @@ public class BbsController {
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
     return res;
+  }
+
+  /**
+   * 공지 등록을 구독 중인 전 사용자에게 알린다. 작성자 본인은 제외한다.
+   *
+   * <p>발송은 별도 스레드에서 이뤄지고 실패해도 예외를 던지지 않는다.
+   * 알림이 안 갔다고 게시글 등록까지 실패로 보여서는 안 되기 때문이다.
+   */
+  private void notifyNewNotice(BoardVO req, LoginVO user) {
+    PushDTO.Message message = new PushDTO.Message();
+    message.setTitle("새 공지사항");
+    message.setBody(noticeSummary(req.getNttSj()));
+    // 모바일 SPA 에 공지 상세 라우트가 생기면 "/mErp/#/notice/" + req.getNttId() 로 바꾼다.
+    // BbsServiceImpl.insertBoardArticle 이 저장 전에 NTT_ID 를 채우므로 여기서 글 번호를 알 수 있다.
+    message.setUrl("/mErp/");
+    // 공지마다 다른 tag 를 줘야 알림이 서로 덮어쓰지 않는다.
+    message.setTag("notice-" + req.getNttId());
+
+    // 작성자 본인은 제외한다.
+    // pushService.sendToAllAsync(message, user.getId());
+    // 작성자도 일단 테스트
+    pushService.sendToAllAsync(message, "");
+    
+  }
+
+  /** 알림 본문에 넣을 제목. 알림 영역에 다 보이지 않으므로 길면 잘라낸다. */
+  private String noticeSummary(String subject) {
+    if (subject == null || subject.trim().isEmpty()) {
+      return "새 공지사항이 등록되었습니다.";
+    }
+    String text = subject.trim();
+    return text.length() <= 60 ? text : text.substring(0, 60) + "…";
   }
 
 
