@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.psh.service.PushMapper">
+
+	<sql id="subColumns">
+		PUSH_SEQ, MEM_ID, ENDPOINT, ENDPOINT_HASH, P256DH, AUTH, USER_AGENT,
+		FAIL_CNT, LAST_ERR,
+		DATE_FORMAT(LAST_SENT_DT, '%Y-%m-%d %H:%i:%s') AS LAST_SENT_DT,
+		DATE_FORMAT(INS_DT, '%Y-%m-%d %H:%i:%s') AS INS_DT,
+		DATE_FORMAT(UDT_DT, '%Y-%m-%d %H:%i:%s') AS UDT_DT,
+		STATE
+	</sql>
+
+	<!--
+		같은 기기가 재구독하면 ENDPOINT_HASH 가 같으므로 UNIQUE 충돌이 난다.
+		이때는 새 행을 만들지 않고 기존 행을 되살린다(STATE='I', FAIL_CNT=0).
+		기기를 물려받아 다른 사람이 로그인한 경우도 있어 MEM_ID 까지 갱신한다.
+	-->
+	<insert id="upsertSub" parameterType="egovframework.psh.service.PushSub">
+		INSERT INTO PUSH_SUB_TB (
+			MEM_ID, ENDPOINT, ENDPOINT_HASH, P256DH, AUTH, USER_AGENT, STATE
+		) VALUES (
+			#{memId}, #{endpoint}, #{endpointHash}, #{p256dh}, #{auth}, #{userAgent}, 'I'
+		)
+		ON DUPLICATE KEY UPDATE
+			MEM_ID     = #{memId},
+			ENDPOINT   = #{endpoint},
+			P256DH     = #{p256dh},
+			AUTH       = #{auth},
+			USER_AGENT = #{userAgent},
+			FAIL_CNT   = 0,
+			LAST_ERR   = NULL,
+			UDT_DT     = NOW(),
+			STATE      = 'I'
+	</insert>
+
+	<update id="deleteSub">
+		UPDATE PUSH_SUB_TB
+		   SET STATE  = 'D',
+		       UDT_DT = NOW()
+		 WHERE ENDPOINT_HASH = #{endpointHash}
+		   AND MEM_ID        = #{memId}
+	</update>
+
+	<update id="expireSub">
+		UPDATE PUSH_SUB_TB
+		   SET STATE    = 'D',
+		       LAST_ERR = #{lastErr},
+		       UDT_DT   = NOW()
+		 WHERE ENDPOINT_HASH = #{endpointHash}
+	</update>
+
+	<select id="selectByMemId" parameterType="string" resultType="pushSub">
+		SELECT <include refid="subColumns" />
+		  FROM PUSH_SUB_TB
+		 WHERE MEM_ID = #{memId}
+		   AND STATE  = 'I'
+		 ORDER BY PUSH_SEQ
+	</select>
+
+	<select id="selectByMemIds" resultType="pushSub">
+		SELECT <include refid="subColumns" />
+		  FROM PUSH_SUB_TB
+		 WHERE STATE = 'I'
+		   AND MEM_ID IN
+		<foreach collection="memIds" item="memId" open="(" separator="," close=")">
+			#{memId}
+		</foreach>
+		 ORDER BY MEM_ID, PUSH_SEQ
+	</select>
+
+	<select id="selectAllActive" resultType="pushSub">
+		SELECT <include refid="subColumns" />
+		  FROM PUSH_SUB_TB
+		 WHERE STATE = 'I'
+		<if test="exceptMemId != null and exceptMemId != ''">
+		   AND MEM_ID != #{exceptMemId}
+		</if>
+		 ORDER BY MEM_ID, PUSH_SEQ
+	</select>
+
+	<select id="countByMemId" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		  FROM PUSH_SUB_TB
+		 WHERE MEM_ID = #{memId}
+		   AND STATE  = 'I'
+	</select>
+
+	<update id="updateSendSuccess" parameterType="long">
+		UPDATE PUSH_SUB_TB
+		   SET FAIL_CNT     = 0,
+		       LAST_ERR     = NULL,
+		       LAST_SENT_DT = NOW()
+		 WHERE PUSH_SEQ = #{pushSeq}
+	</update>
+
+	<!--
+		연속 실패가 쌓이면 자동으로 접는다. 푸시 서비스가 410 대신 5xx 만 계속 주는
+		경우가 있어 무한정 재시도하지 않기 위한 안전장치다.
+	-->
+	<update id="updateSendFail">
+		UPDATE PUSH_SUB_TB
+		   SET FAIL_CNT = FAIL_CNT + 1,
+		       LAST_ERR = #{lastErr},
+		       UDT_DT   = NOW(),
+		       STATE    = IF(FAIL_CNT + 1 >= 10, 'D', STATE)
+		 WHERE PUSH_SEQ = #{pushSeq}
+	</update>
+
+</mapper>
