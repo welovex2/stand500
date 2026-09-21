@@ -73,6 +73,7 @@ import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import springfox.documentation.annotations.ApiIgnore;
 
 @Api(tags = {"파일서버"})
 @RestController
@@ -137,6 +138,7 @@ public class NextcloudFolderController {
   }
 
   /** 1) 좌측 폴더 트리 (폴더만 권장) */
+  @ApiOperation(value = "폴더 트리", notes = "path 기준 하위 트리. depth 조회 깊이, onlyDir=true 이면 폴더만.")
   @GetMapping("/tree")
   public Map<String, Object> tree(
       @RequestParam(name = "path", required = false, defaultValue = "") String path,
@@ -530,6 +532,7 @@ public class NextcloudFolderController {
   // 다운로드/미리보기/폴더 ZIP
   // -----------------------------
 
+  @ApiOperation(value = "파일 다운로드", notes = "path DAV 경로")
   @GetMapping("/download")
   public void downloadFile(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
@@ -574,6 +577,7 @@ public class NextcloudFolderController {
     }
   }
 
+  @ApiOperation(value = "파일 미리보기", notes = "path DAV 경로. Content-Disposition inline.")
   @GetMapping("/preview")
   public void previewFile(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
@@ -734,6 +738,7 @@ public class NextcloudFolderController {
   /**
    * ONLYOFFICE 편집기(브라우저)에서 저장 완료 시 호출. NC 가 실제 파일을 저장한다.
    */
+  @ApiIgnore
   @ApiOperation(value = "ONLYOFFICE 저장 이력", notes = "편집기 iframe 내부에서 ONLYOFFICE_SAVE 로 호출")
   @PostMapping("/onlyoffice-op-log")
   public Map<String, Object> onlyofficeOpLog(@RequestBody OnlyOfficeOpLogRequest body,
@@ -772,6 +777,7 @@ public class NextcloudFolderController {
   }
 
 
+  @ApiOperation(value = "폴더 ZIP 다운로드", notes = "path 폴더 DAV 경로")
   @GetMapping("/download-folder")
   public void downloadFolderAsZip(@RequestParam("path") String path, HttpServletRequest request,
       HttpServletResponse response) throws Exception {
@@ -912,7 +918,7 @@ public class NextcloudFolderController {
     }
   }
 
-  @ApiOperation(value = "복사 COPY함",
+  @ApiOperation(value = "복사",
       notes = "sourceDavPath 원본 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더\n"
           + "destDavPath 목적지 경로 예시 /ERP/2026/02/SB26-G0000/00.공통폴더_복사\n"
           + "overwrite 목적지에 동일 이름이 있을 때 덮어쓰기 여부\n" + "metaMode 메타 반영 방식 TOP_ONLY 또는 FULL(기본)\n")

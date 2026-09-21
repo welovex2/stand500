@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 @Api(tags = {"파일"})
 @RestController
@@ -47,6 +48,7 @@ public class FileMngController {
      * @return
      * @throws Exception
      */
+    @ApiOperation(value = "이미지 첨부 목록", notes = "atchFileId")
     @RequestMapping("/cmm/fms/selectImageFileInfs.do")
     public List<FileVO> selectImageFileInfs(@RequestParam Map<String, Object> commandMap) throws Exception {
     
@@ -72,6 +74,7 @@ public class FileMngController {
      * @throws Exception
      */
     @SuppressWarnings("resource")
+    @ApiOperation(value = "이미지 미리보기", notes = "atchFileId, fileSn. Nextcloud 파일은 reportImage 로 리다이렉트.")
 	@RequestMapping("/getImage.do")
     public void getImageInf(ModelMap model, @RequestParam Map<String, Object> commandMap,
         HttpServletRequest request, HttpServletResponse response) throws Exception {

@@ -24,6 +24,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
@@ -50,6 +52,7 @@ import net.coobird.thumbnailator.Thumbnails;
  * Copyright (C) 2009 by MOPAS  All right reserved.
  *      </pre>
  */
+@Api(tags = {"파일"})
 @Controller
 public class EgovFileDownloadController {
 
@@ -130,6 +133,7 @@ public class EgovFileDownloadController {
     }
   }
 
+  @ApiOperation(value = "파일 다운로드", notes = "atchFileId, fileSn")
   @GetMapping(value = "/file/fileDown.do")
   public void cvplFileDownload(@RequestParam Map<String, Object> commandMap,
       HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -226,6 +230,7 @@ public class EgovFileDownloadController {
    * @param maxSize 긴 변 최대 픽셀 (기본 1280)
    * @param quality JPEG 품질 0~1 (기본 0.6, 낮을수록 용량 작음)
    */
+  @ApiOperation(value = "성적서 이미지", notes = "path 는 DAV 경로의 Base64URL(무패딩). w 긴 변 최대 픽셀, q JPEG 품질.")
   @GetMapping("/file/reportImage.do")
   public void reportImage(@RequestParam("path") String encodedPath,
       @RequestParam(value = "w", required = false, defaultValue = "1280") int maxSize,

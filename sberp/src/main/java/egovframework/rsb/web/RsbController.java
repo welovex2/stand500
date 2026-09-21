@@ -17,7 +17,7 @@ import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Api(tags = {"재발생 신청서"})
+@Api(tags = {"재발행 신청서"})
 @RestController
 @RequestMapping("/rsb")
 public class RsbController {

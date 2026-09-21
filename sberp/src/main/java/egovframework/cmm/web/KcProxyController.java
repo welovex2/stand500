@@ -15,9 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
+@Api(tags = {"KC인증"})
 @RestController
-@RequestMapping("/kc") // ✅ 프런트와 동일 경로로 변경 (/api/kc/cert, /api/kc/detail)
+@RequestMapping("/kc")
 public class KcProxyController {
 
     // ✅ application.properties(yaml)에 설정하세요:
@@ -31,6 +34,7 @@ public class KcProxyController {
     private final ObjectMapper om = new ObjectMapper();
     private final RestTemplate rest = new RestTemplate(); // 필요시 Timeout/Pooling 설정
 
+    @ApiOperation(value = "KC 인증 목록", notes = "safetykorea 인증 목록 프록시. conditionKey/conditionValue 로 검색.")
     @GetMapping(value = "/cert", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> list(
             @RequestParam(defaultValue = "all") String conditionKey,
@@ -67,6 +71,7 @@ public class KcProxyController {
         }
     }
 
+    @ApiOperation(value = "KC 인증 상세", notes = "certNum 인증번호")
     @GetMapping(value = "/detail", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> detail(@RequestParam String certNum) {
         URI uri = UriComponentsBuilder.fromHttpUrl(DETAIL_API)

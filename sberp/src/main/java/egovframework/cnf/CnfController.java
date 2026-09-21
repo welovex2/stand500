@@ -1,10 +1,9 @@
 package egovframework.cnf;
 
 import org.springframework.web.bind.annotation.RestController;
+import springfox.documentation.annotations.ApiIgnore;
 
-import io.swagger.annotations.Api;
-
-@Api(tags = {"환경설정"})
+@ApiIgnore
 @RestController
 public class CnfController {
 

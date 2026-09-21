@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import egovframework.cmm.service.BasicResponse;
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
-import io.swagger.annotations.Api;
+import springfox.documentation.annotations.ApiIgnore;
 
-@Api(tags = {"에러관리"})
+@ApiIgnore
 @RestController
 @RequestMapping("/err")
 public class ErrorController {

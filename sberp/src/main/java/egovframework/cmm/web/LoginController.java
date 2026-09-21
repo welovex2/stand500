@@ -191,6 +191,7 @@ public class LoginController {
    * @return String
    * @exception Exception
    */
+  @ApiOperation(value = "로그아웃")
   @GetMapping(value = "/logout.do")
   public boolean actionLogout(HttpServletRequest request, ModelMap model) throws Exception {
 
