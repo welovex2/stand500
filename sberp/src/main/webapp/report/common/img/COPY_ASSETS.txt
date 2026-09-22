@@ -1,0 +1,48 @@
+고정 이미지 (webapp/report/common/img/)
+
+
+
+  logo.svg      — 헤더 로고 (사용 중)
+
+  stb_sign.png  — 표지 직인 (.stamp_in 배경, 사용 중)
+
+  check_t.png   — 라디오/체크 선택 (사용 중)
+
+  check_f.png   — 라디오/체크 미선택 (사용 중)
+
+  label.jpg     — 제품 라벨 KC 마크 배경 (사용 중)
+
+
+
+CSS (webapp/report/common/css/)
+
+
+
+  report-fonts-browser.css — 브라우저 @font-face (NotoSans·나눔·draft)
+
+  report-fonts-pdf.css     — PDF @font-face (Gulim-subset·draft만)
+
+  report_fonts.css         — 하위 호환 → report-fonts-browser.css
+
+  report_tel.css           — 브라우저 미리보기
+
+  report-pdf.css           — Playwright PDF font-family 규칙
+
+
+
+폰트 (webapp/report/common/css/font/)
+
+
+
+  [PDF]     Gulim-subset.ttf (~1MB, scripts/subset_gulim_font.py 로 재생성)
+
+            Gulim.ttf (원본 5.7MB, 서브셋 입력용)
+
+            RobotoCondensed-VariableFont_wght.ttf
+
+  [Browser] NotoSansKR-*.otf, NanumGothic*.ttf, NanumGothicCoding-*.ttf
+
+
+
+PDF: report-fonts-pdf.css HTTP fetch (Gulim-subset + Roboto, Noto 미포함)
+

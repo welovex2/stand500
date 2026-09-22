@@ -1,0 +1,45 @@
+@charset "UTF-8";
+/* 브라우저 미리보기 @font-face — NotoSans·나눔 등 (PDF 경로에서는 로드하지 않음) */
+
+@font-face {
+  font-family: "900";
+  src: url(./font/NotoSansKR-Black.otf);
+}
+@font-face {
+  font-family: "700";
+  src: url(./font/NotoSansKR-Bold.otf);
+}
+@font-face {
+  font-family: "ex-bold";
+  src: url(./font/NanumGothic-ExtraBold.ttf);
+}
+@font-face {
+  font-family: "500";
+  src: url(./font/NotoSansKR-Medium.otf);
+}
+@font-face {
+  font-family: "400";
+  src: url(./font/NotoSansKR-Regular.otf);
+}
+@font-face {
+  font-family: "300";
+  src: url(./font/NotoSansKR-Light.otf);
+}
+@font-face {
+  font-family: "100";
+  src: url(./font/NotoSansKR-Thin.otf);
+}
+@font-face {
+  font-family: "nanum";
+  src: url(./font/NanumGothic-Regular.ttf);
+}
+@font-face {
+  font-family: "code";
+  src: url(./font/NanumGothicCoding-Regular.ttf);
+}
+@font-face {
+  font-family: "draft";
+  src: url(./font/RobotoCondensed-VariableFont_wght.ttf) format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+}

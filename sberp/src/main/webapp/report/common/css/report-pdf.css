@@ -1,0 +1,253 @@
+/* PDF 전용 — @font-face: report-fonts-pdf.css 또는 head 인라인 embed */
+html, body, .a4_box, .a4_box *, table, th, td, pre, span, p {
+  font-family: "Gulim", "굴림", sans-serif !important;
+}
+/* 표지 고시·대표이사 — Gulim-subset 은 Regular(400)만 있음 → weight 합성 허용 */
+.a4_box .a4_content > h4.cover_legal {
+  font-weight: 700 !important;
+  font-synthesis: weight !important;
+  letter-spacing: 0.1em;
+}
+.a4_box .a4_content > h1.stamp_text {
+  font-weight: 700 !important;
+  font-synthesis: weight !important;
+  letter-spacing: 0;
+}
+/* 표지 직인 — (인) 글자 아래로 정렬 */
+.a4_box .a4_content .stamp_text .stamp_in {
+  right: 102px !important;
+}
+.a4_box .a4_content.a4_content_border .info_list li h4,
+.a4_box .a4_content.a4_content_border .info_list li .info_sub_list li h4 {
+  letter-spacing: 0.05em;
+}
+/* 드래프트 — 본문 가독성 유지, DRAFT 식별은 가능하도록 살짝만 강조 */
+.a4_box .a4_content .draft_text {
+  font-family: "draft" !important;
+  font-weight: 400 !important;
+  opacity: 0.1 !important;
+  rotate: -50deg;
+  transform: none;
+  pointer-events: none;
+}
+
+@page { size: A4; margin: 0; }
+body { margin: 0; padding: 0; height: auto; }
+
+.a4_box {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.a4_box .a4_content {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 1. 시험 결과(table_2_tel) — pre 12px 보다 11pt 통일 (브라우저 PDF와 동일) */
+.a4_box .a4_content .table_2_tel tr th,
+.a4_box .a4_content .table_2_tel tr td,
+.a4_box .a4_content .table_2_tel tr td pre {
+  font-size: 11pt !important;
+  line-height: 25px;
+}
+
+/* 4. 세부 시험내역 — 시험기준 한 줄 */
+.a4_box .a4_content .table_3 td.criteria_oneline {
+  text-align: center;
+  white-space: nowrap;
+}
+/* 한 글자 차이로 줄바꿈될 때 2줄 유지 */
+.a4_box .a4_content .table_3 td .criteria_fit {
+  letter-spacing: -0.03em;
+}
+
+/* 사진·보완내역 — overflow clip 방지 (pdf-svc fetch 실패 시 data URI embed 병행) */
+.a4_box .a4_content .a4_table.product_img,
+.a4_box .a4_content .a4_table.product_img tr,
+.a4_box .a4_content .a4_table.product_img td {
+  overflow: visible !important;
+}
+.a4_box .a4_content pre.box_pre.last_pre {
+  overflow: visible !important;
+}
+.a4_box .a4_content .table_2 tr:nth-child(10) td,
+.a4_box .a4_content .table_2 tr:nth-child(11) td,
+.a4_box .a4_content .table_2 .a4_sign_name {
+  overflow: visible !important;
+}
+.a4_box .a4_content .table_2 .a4_sign_name .a4_sign_img {
+  overflow: visible !important;
+}
+
+.a4_box .a4_footer .a4_footer_top h6.print_page {
+  position: static;
+  width: auto;
+  height: auto;
+  bottom: auto;
+  left: auto;
+  float: none;
+  text-align: center;
+  line-height: normal;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.a4_box.a4_count .a4_content p.toc_line {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  line-height: 18px;
+  font-size: 10pt;
+  margin: 0;
+  padding: 0;
+}
+.a4_box.a4_count .a4_content p.toc_line .list_title {
+  flex: 0 0 auto;
+  float: none !important;
+}
+.a4_box.a4_count .a4_content p.toc_line.toc_indent .list_title {
+  padding-left: 1.5em;
+}
+.a4_box.a4_count .a4_content p.toc_line .toc_leader {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  min-width: 1em;
+  margin: 0 2px;
+}
+.a4_box.a4_count .a4_content p.toc_line .list_number {
+  flex: 0 0 auto;
+  float: none !important;
+  background: none !important;
+  background-color: transparent !important;
+  height: auto;
+  line-height: 18px;
+  padding: 0;
+  margin: 0;
+}
+
+.a4_box .a4_content pre.box_pre.mod_slot {
+  height: 8.5cm;
+  min-height: 8.5cm;
+  max-height: 8.5cm;
+  margin-bottom: 6px !important;
+  padding: 2px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.a4_box .a4_content pre.box_pre.mod_slot img {
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.a4_box .a4_content .a4_table.product_img {
+  page-break-before: auto !important;
+  page-break-after: auto !important;
+  break-before: auto !important;
+  break-after: auto !important;
+  margin-bottom: 0;
+}
+
+/* 사진 페이지 — 상단 정렬, 2장 시 하단 잘림 방지 */
+.a4_box .a4_content.photo_page_pair,
+.a4_box .a4_content.photo_page_single {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.a4_box .a4_content.photo_page_pair > h3.mg_st,
+.a4_box .a4_content.photo_page_pair > h6.photo_section_title {
+  flex: 0 0 auto;
+  margin-bottom: 4mm;
+}
+.a4_box .a4_content.photo_page_pair .photo_pair_stack,
+.a4_box .a4_content.photo_page_single .photo_pair_stack {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 4mm;
+  padding-top: 0;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+.a4_box .a4_content.photo_page_pair .photo_pair_stack .a4_table.product_img,
+.a4_box .a4_content.photo_page_single .photo_pair_stack .a4_table.product_img {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.a4_box .a4_content.photo_page_pair .product_img tr,
+.a4_box .a4_content.photo_page_single .product_img tr {
+  height: auto !important;
+}
+.a4_box .a4_content .a4_table.product_img.photo_pair_table {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+/* 사진 1·2장 공통 슬롯 — 박스 높이 통일, 타이틀 행 잘림 방지 */
+.a4_box .a4_content.photo_page_pair .product_img.photo_pair tr:first-child td,
+.a4_box .a4_content.photo_page_single .product_img.photo_single tr:first-child td {
+  height: 9.2cm;
+  min-height: 9.2cm;
+  box-sizing: border-box;
+  vertical-align: middle;
+  text-align: center;
+}
+.a4_box .a4_content.photo_page_pair .product_img.photo_pair tr:first-child td p,
+.a4_box .a4_content.photo_page_single .product_img.photo_single tr:first-child td p {
+  height: 9.2cm;
+  min-height: 9.2cm;
+  margin: 0;
+}
+.a4_box .a4_content.photo_page_pair .a4_table.product_img.photo_pair td img,
+.a4_box .a4_content.photo_page_single .a4_table.product_img.photo_single td img,
+.a4_box .a4_content.photo_page_pair .a4_table.product_img.photo_pair_table td img {
+  max-height: 8.8cm;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.a4_box .a4_content.photo_page_pair .a4_table.product_img.photo_pair td,
+.a4_box .a4_content.photo_page_single .a4_table.product_img.photo_single td {
+  vertical-align: middle;
+  text-align: center;
+}
+/* 시험기자재 사진 페이지 */
+.a4_box .a4_content.product_photo_page.photo_page_single .photo_pair_stack,
+.a4_box .a4_content.product_photo_page.photo_page_pair .photo_pair_stack {
+  justify-content: flex-start;
+}
+.a4_box .a4_content.product_photo_page.photo_page_single .a4_table.product_img.photo_single td,
+.a4_box .a4_content.product_photo_page.photo_page_pair .a4_table.product_img.photo_pair td {
+  vertical-align: middle;
+}
+/* 사진 제목(파란 칸) 행 높이 — 너무 얇아지지 않도록 (프론트 report_tel_base .product_img tr 기준 27px) */
+.a4_box .a4_content.photo_page_pair .product_img tr th,
+.a4_box .a4_content.photo_page_single .product_img tr th {
+  height: 27px;
+}
+.a4_box .a4_content.photo_page_with_label .a4_table.product_label_table {
+  margin-top: 4mm;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+/*
+ * 제품라벨 — PDF 전역 Gulim(!important) 보다 우선해 미리보기와 동일하게 nanum 사용.
+ * label_text p / label_bottom 모두 (report_tel_base 의 nanum 과 맞춤)
+ */
+.a4_box .a4_content .product_label .label_text p,
+.a4_box .a4_content .product_label .label_bottom {
+  font-family: "nanum", "NanumGothic", sans-serif !important;
+}
+.a4_box .a4_content .product_label .label_bottom {
+  font-weight: bold !important;
+}

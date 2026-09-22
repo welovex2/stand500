@@ -1,0 +1,3 @@
+@charset "UTF-8";
+/* @deprecated — report-fonts-browser.css 사용. 하위 호환용 re-export */
+@import url("report-fonts-browser.css");
