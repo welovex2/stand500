@@ -1,0 +1,14 @@
+# 줄바꿈 — 리눅스 서버에서 도는 파일만 LF 로 고정한다.
+# 전체 정규화(* text=auto)는 장기 브랜치(dev/warehouse)가 master 에 들어간 뒤에 한 번에 한다.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.bat       text eol=crlf
+
+# 바이너리 — 줄바꿈 변환·diff 대상에서 제외
+*.ttf   binary
+*.otf   binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.hwp   binary
+*.xlsx  binary
