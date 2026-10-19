@@ -87,6 +87,17 @@
 			<artifactId>egovframework.rte.psl.dataaccess</artifactId>
 			<version>${egovframework.rte.version}</version>
 		</dependency>
+		<!-- SLF4J + Log4j2: SimpleCORSFilter, @Slf4j, log4jdbc (WEB-INF/lib 배포 보장) -->
+		<dependency>
+			<groupId>egovframework.rte</groupId>
+			<artifactId>egovframework.rte.fdl.logging</artifactId>
+			<version>${egovframework.rte.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.36</version>
+		</dependency>
 		<dependency>
 			<groupId>egovframework.rte</groupId>
 			<artifactId>egovframework.rte.fdl.idgnr</artifactId>

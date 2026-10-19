@@ -2,6 +2,7 @@ package egovframework.cmm.filter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.ModelAndView;
@@ -10,8 +11,9 @@ import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.ResponseMessage;
-import egovframework.cmm.util.EgovUserDetailsHelper;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AuthInterceptor extends HandlerInterceptorAdapter {
 
     /**
@@ -54,13 +56,12 @@ public class AuthInterceptor extends HandlerInterceptorAdapter {
         LoginVO loginVO = null;
        
         try {
-            loginVO = (LoginVO) request.getSession().getAttribute("LoginVO");
-            
-            Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
-            if (isAuthenticated) {
-            	
-            }
-            
+            // getSession(false) : 로그인 안 된 요청이 빈 세션을 만들지 않게 한다.
+            // 인자 없이 호출하면 세션이 새로 생기면서 Set-Cookie 가 나가고,
+            // 이름과 경로가 같아 브라우저의 로그인 쿠키를 덮어쓴다.
+            HttpSession session = request.getSession(false);
+            loginVO = (session == null) ? null : (LoginVO) session.getAttribute("LoginVO");
+
 //            ServletInputStream inputStream = request.getInputStream();
 //            String messageBody = StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
 //            System.out.println(messageBody);
@@ -70,7 +71,8 @@ public class AuthInterceptor extends HandlerInterceptorAdapter {
             if (loginVO != null && loginVO.getId() != null) {
                 return true;
             } else {
-            	System.out.println(ResponseMessage.NO_LOGIN);
+            	log.warn("{} {} - {}", request.getMethod(), request.getRequestURI(),
+            			ResponseMessage.NO_LOGIN);
             	response.setContentType("application/json");
             	response.setCharacterEncoding("UTF-8");
             	response.getWriter().write("{\"result\":false,\"data\":null,\"message\":\"".concat(ResponseMessage.NO_LOGIN).concat("\"}"));
@@ -93,7 +95,8 @@ public class AuthInterceptor extends HandlerInterceptorAdapter {
        
         try {
          if(!"/loginView.do".equals(requestURI)) {
-	          loginVO = (LoginVO) request.getSession().getAttribute("loginVO");
+	          HttpSession session = request.getSession(false);
+	          loginVO = (session == null) ? null : (LoginVO) session.getAttribute("loginVO");
 	          
 //	          if (loginVO != null && loginVO.getUserId() != null) {
 //	           SearchVO searchVO = new SearchVO();

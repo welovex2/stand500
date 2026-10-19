@@ -93,6 +93,10 @@
 	        <mvc:exclude-mapping path="/user/login/*.do"/> <!-- 예외 경로 지정 -->
 	        <mvc:exclude-mapping path="/user/login.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
 	        <mvc:exclude-mapping path="/cnf/mem/updatePassword.do"/> <!-- 예외 경로 지정(여러개일 수 있음으로...) -->
+	        <!-- 에러 페이지: 404·500 등이 forward 되는 공통 응답이라 로그인을 요구하지 않는다.
+	             막아두면 모든 404 가 "로그인정보가 없습니다" 로 응답된다. -->
+	        <mvc:exclude-mapping path="/err/*.do"/>
+	        <mvc:exclude-mapping path="/**/err/*.do"/>
 	        <!-- 성적서 PDF·img 태그: 세션 없이 이미지 fetch (pdf-svc 포함) -->
 	        <mvc:exclude-mapping path="/file/getImage.do"/>
 	        <mvc:exclude-mapping path="/file/reportImage.do"/>

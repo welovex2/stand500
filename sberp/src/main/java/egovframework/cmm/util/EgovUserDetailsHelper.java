@@ -104,7 +104,11 @@ public class EgovUserDetailsHelper {
           log.warn("R 권한없음");
           return Boolean.FALSE;
         }
-        else if (!p.isWYn() && thisUrl.toLowerCase().indexOf("insert") > -1) {
+        else if (!p.isWYn() && (thisUrl.toLowerCase().indexOf("insert") > -1
+                            || thisUrl.toLowerCase().indexOf("update") > -1
+                            || thisUrl.toLowerCase().indexOf("stop") > -1)) {
+          // 등록 · 수정 · 사용중지는 모두 쓰기다.
+          // 예전에는 insert 만 검사해서 update.do 와 stop.do 가 읽기 권한만으로 통과했다.
           log.warn("W 권한없음");
           return Boolean.FALSE;
         }
