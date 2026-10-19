@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,6 +33,9 @@ import egovframework.rte.fdl.property.EgovPropertyService;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
 import egovframework.sam.dto.ImSubItemDetailDTO;
+import egovframework.sam.dto.SamLocScanReq;
+import egovframework.sam.dto.SamLocScanResult;
+import egovframework.sam.service.SamBizException;
 import egovframework.sam.service.SamService;
 import egovframework.sbk.service.SbkService;
 import io.swagger.annotations.Api;
@@ -200,9 +204,9 @@ public class SamController {
     return res;
   }
 
-  @ApiOperation(value = "시료 라벨 단건 상세 (모바일 QR)",
+  @ApiOperation(value = "시료 라벨 단건 상세",
       notes = "imSubId 예: SB26-G0030-M01\n"
-          + "노출: imSubId, divName(본품/구성품), memo(시료 모델명), carryInDate, carryInType, qty, rcptName(접수자)\n"
+          + "위치: strSeq/whName/zoneName/currentZoneSeq, 이력 locHist\n"
           + "uploadFolders: 부품도/외관도 업로드 경로 (사진 목록은 GET /nc/list)")
   @GetMapping(value = "/item/{imSubId}/detail.do")
   public BasicResponse itemDetail(
@@ -224,6 +228,24 @@ public class SamController {
     }
 
     return BasicResponse.builder().result(result).message(msg).data(detail).build();
+  }
+
+  @ApiOperation(value = "위치 스캔 (구역 + 시료 N건)",
+      notes = "zoneSeq 와 시료 라벨 1~N건.\n"
+          + "반출된 시료와 사용 중지된 구역은 거부한다.")
+  @PostMapping(value = "/loc/scan.do")
+  public BasicResponse scanLoc(@RequestBody SamLocScanReq req) throws Exception {
+    if (!EgovUserDetailsHelper.isAuthenticated()) {
+      return BasicResponse.builder().result(false).message(ResponseMessage.UNAUTHORIZED).build();
+    }
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    try {
+      SamLocScanResult data = samService.scanLoc(req, user.getId());
+      return BasicResponse.builder().result(true).data(data).build();
+    } catch (SamBizException e) {
+      log.warn("loc scan: {}", e.getMessage());
+      return BasicResponse.builder().result(false).message(e.getMessage()).build();
+    }
   }
 
   @ApiOperation(value = "시료 리스트", notes = "검색박스는 공통코드 CS, 필요한항목만 노출시켜서 사용\n"

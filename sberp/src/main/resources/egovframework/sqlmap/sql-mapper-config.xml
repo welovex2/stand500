@@ -56,6 +56,10 @@
     	<typeAlias alias="imSub"			type="egovframework.sam.service.ImSub"/>
     	<typeAlias alias="imSubDTO"		type="egovframework.sam.dto.ImSubDTO"/>
     	<typeAlias alias="imSubItemDetailDTO"	type="egovframework.sam.dto.ImSubItemDetailDTO"/>
+    	<typeAlias alias="imSubLoc"		type="egovframework.sam.service.ImSubLoc"/>
+    	<typeAlias alias="warehouse"	type="egovframework.cnf.service.Warehouse"/>
+    	<typeAlias alias="zone"			type="egovframework.cnf.service.Zone"/>
+    	<typeAlias alias="storeDetail"	type="egovframework.cnf.dto.StoreDetailDTO"/>
     	<typeAlias alias="hisDTO"		type="egovframework.cmm.service.HisDTO"/>
     	<typeAlias alias="testItemRej"	type="egovframework.tst.service.TestItemRej"/>
     	

@@ -32,4 +32,11 @@ public interface SamMapper {
   ImSubItemDetailDTO selectSubBySbkIdAndSubSeq(@Param("sbkId") String sbkId,
       @Param("imSubSeq") int imSubSeq);
 
+  int insertLoc(ImSubLoc loc);
+
+  int updateSubLocation(@Param("imId") String imId, @Param("imSubSeq") int imSubSeq,
+      @Param("zoneSeq") int zoneSeq, @Param("udtMemId") String udtMemId);
+
+  List<ImSubLoc> selectLocHist(@Param("imId") String imId, @Param("imSubSeq") int imSubSeq);
+
 }

@@ -5,6 +5,8 @@ import egovframework.cmm.service.ComParam;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
 import egovframework.sam.dto.ImSubItemDetailDTO;
+import egovframework.sam.dto.SamLocScanReq;
+import egovframework.sam.dto.SamLocScanResult;
 
 public interface SamService {
 
@@ -19,5 +21,7 @@ public interface SamService {
   List<ImSubDTO> selectList(ComParam param);
 
   ImSubItemDetailDTO itemDetail(String imSubId) throws Exception;
+
+  SamLocScanResult scanLoc(SamLocScanReq req, String memId);
 
 }

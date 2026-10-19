@@ -109,6 +109,16 @@ public class ImSub {
   private String carryOutMemo;
 
 
+  @ApiModelProperty(value="프로세스 상태 IN/TEST/WAIT/KEEP/OUT", example = "IN")
+  @Column
+  private String procState;
+
+
+  @ApiModelProperty(value="현재 구역 SEQ", example = "1")
+  @Column
+  private Integer currentZoneSeq;
+
+
   @ApiModelProperty(value="등록자 아이디 ", example = "", hidden = true)
   @Column
   private String insMemId;

@@ -219,7 +219,12 @@
 			    JOB_TB.PRDCT_NAME,
 			    JOB_TB.MODEL_NAME,
 			    IFNULL (CMPY_TB.CMPY_NAME, '') CMPY_TITLE,
-			    FN_MEM_NAME(IM_TB.MNG_ID) MNG_NAME
+			    FN_MEM_NAME(IM_TB.MNG_ID) MNG_NAME,
+			    IM_SUB_TB.PROC_STATE procState,
+			    IM_SUB_TB.CURRENT_ZONE_SEQ currentZoneSeq,
+			    STR_TB.STR_SEQ strSeq,
+			    STR_TB.STR_NAME whName,
+			    ZONE_TB.ZONE_NAME zoneName
 			FROM
 			    IM_TB
 			    INNER JOIN IM_SUB_TB ON CONCAT ('IM', IM_YM, '-G', LPAD(IM_SEQ,4,0)) = IM_SUB_TB.IM_ID
@@ -228,6 +233,8 @@
 			    INNER JOIN JOB_TB ON SBK_TB.SBK_YM = JOB_TB.SBK_YM
 			    AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND SBK_TB.SBK_SEQ = JOB_TB.SBK_SEQ AND SBK_TB.REVISION = JOB_TB.SBK_REVISION
 			    LEFT JOIN CMPY_TB ON JOB_TB.CMPY_SEQ = CMPY_TB.CMPY_SEQ
+			    LEFT JOIN ZONE_TB ON ZONE_TB.ZONE_SEQ = IM_SUB_TB.CURRENT_ZONE_SEQ AND ZONE_TB.STATE != 'D'
+			    LEFT JOIN STR_TB ON STR_TB.STR_SEQ = ZONE_TB.STR_SEQ AND STR_TB.STATE != 'D'
 			    #INNER JOIN (SELECT @rownum:=0) r
 			WHERE
 			    1 = 1
@@ -283,6 +290,7 @@
 	<select id="selectSubBySbkIdAndSubSeq" resultType="imSubItemDetailDTO">
 		SELECT
 		    CONCAT(IM_TB.SBK_ID, '-M', LPAD(IM_SUB_TB.IM_SUB_SEQ, 2, 0)) imSubId,
+		    IM_SUB_TB.IM_ID imId,
 		    IM_TB.SBK_ID sbkId,
 		    IM_SUB_TB.IM_SUB_SEQ imSubSeq,
 		    IM_SUB_TB.DIV_CODE divCode,
@@ -296,14 +304,68 @@
 		    IM_SUB_TB.CARRY_IN_CODE carryInCode,
 		    FN_CODE_NAME(IM_SUB_TB.CARRY_IN_CODE, 'TC') carryInType,
 		    IM_SUB_TB.QTY qty,
-		    FN_MEM_NAME(IM_SUB_TB.CARRY_IN_ID) rcptName
+		    FN_MEM_NAME(IM_SUB_TB.CARRY_IN_ID) rcptName,
+		    IFNULL(IM_SUB_TB.CARRY_OUT_CODE, '') carryOutCode,
+		    IM_SUB_TB.PROC_STATE procState,
+		    IM_SUB_TB.CURRENT_ZONE_SEQ currentZoneSeq,
+		    STR_TB.STR_SEQ strSeq,
+		    STR_TB.STR_NAME whName,
+		    ZONE_TB.ZONE_NAME zoneName
 		FROM IM_TB
 		    INNER JOIN IM_SUB_TB
 		        ON IM_SUB_TB.IM_ID = FN_GET_SEQSTRING('IM', IM_TB.IM_YM, 'G', IM_TB.IM_SEQ)
 		        AND IM_SUB_TB.IM_SUB_SEQ = #{imSubSeq}
 		        AND IM_SUB_TB.STATE != 'D'
+		    LEFT JOIN ZONE_TB
+		        ON ZONE_TB.ZONE_SEQ = IM_SUB_TB.CURRENT_ZONE_SEQ
+		        AND ZONE_TB.STATE != 'D'
+		    LEFT JOIN STR_TB
+		        ON STR_TB.STR_SEQ = ZONE_TB.STR_SEQ
+		        AND STR_TB.STATE != 'D'
 		WHERE IM_TB.SBK_ID = #{sbkId}
 		LIMIT 1
+	</select>
+
+	<insert id="insertLoc" parameterType="imSubLoc" useGeneratedKeys="true" keyProperty="imSubLocSeq">
+		INSERT INTO IM_SUB_LOC_TB (
+			IM_ID, IM_SUB_SEQ, ZONE_SEQ, MEMO, INS_MEM_ID, UDT_MEM_ID, STATE
+		) VALUES (
+			#{imId}, #{imSubSeq}, #{zoneSeq}, #{memo}, #{insMemId}, #{udtMemId}, 'I'
+		)
+	</insert>
+
+	<update id="updateSubLocation">
+		UPDATE IM_SUB_TB
+		SET CURRENT_ZONE_SEQ = #{zoneSeq},
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT = NOW()
+		WHERE IM_ID = #{imId}
+		  AND IM_SUB_SEQ = #{imSubSeq}
+		  AND STATE != 'D'
+	</update>
+
+	<select id="selectLocHist" resultType="imSubLoc">
+		SELECT
+			IM_SUB_LOC_SEQ imSubLocSeq,
+			IM_ID imId,
+			IM_SUB_SEQ imSubSeq,
+			ZONE_TB.ZONE_SEQ zoneSeq,
+			ZONE_TB.ZONE_NAME zoneName,
+			STR_TB.STR_SEQ strSeq,
+			STR_TB.STR_NAME whName,
+			IM_SUB_LOC_TB.MEMO memo,
+			IM_SUB_LOC_TB.INS_MEM_ID insMemId,
+			FN_MEM_NAME(IM_SUB_LOC_TB.INS_MEM_ID) insMemName,
+			DATE_FORMAT(IM_SUB_LOC_TB.INS_DT, '%Y-%m-%d') insDt,
+			DATE_FORMAT(IM_SUB_LOC_TB.UDT_DT, '%Y-%m-%d') udtDt
+		FROM IM_SUB_LOC_TB
+			INNER JOIN ZONE_TB ON ZONE_TB.ZONE_SEQ = IM_SUB_LOC_TB.ZONE_SEQ
+			INNER JOIN STR_TB ON STR_TB.STR_SEQ = ZONE_TB.STR_SEQ AND STR_TB.STATE != 'D'
+		WHERE IM_SUB_LOC_TB.IM_ID = #{imId}
+		  AND IM_SUB_LOC_TB.IM_SUB_SEQ = #{imSubSeq}
+		  AND IM_SUB_LOC_TB.STATE != 'D'
+		ORDER BY IM_SUB_LOC_SEQ DESC
+		LIMIT 50
 	</select>
 		
 </mapper>

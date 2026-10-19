@@ -10,17 +10,26 @@ import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
 import egovframework.cmm.service.EgovFileMngService;
 import egovframework.cmm.service.FileVO;
+import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.service.SbkInfoVO;
+import egovframework.cnf.service.StrMapper;
+import egovframework.cnf.service.Warehouse;
+import egovframework.cnf.service.Zone;
 import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.sam.dto.ImDTO;
 import egovframework.sam.dto.ImSubDTO;
 import egovframework.sam.dto.ImSubItemDetailDTO;
+import egovframework.sam.dto.SamLocScanReq;
+import egovframework.sam.dto.SamLocScanResult;
 import egovframework.sam.dto.SamUploadFolderDTO;
 import egovframework.sam.service.ImSub;
+import egovframework.sam.service.ImSubLoc;
+import egovframework.sam.service.SamBizException;
 import egovframework.sam.service.SamMapper;
 import egovframework.sam.service.SamService;
 import egovframework.sam.util.SamItemIdSupport;
 import egovframework.sam.util.SamItemIdSupport.Parsed;
+import egovframework.sam.util.SamProcStateSupport;
 import egovframework.sam.util.SamUploadFolderSupport;
 import egovframework.sbk.service.SbkService;
 
@@ -38,6 +47,9 @@ public class SamServiceImpl implements SamService {
 
   @Autowired
   NextcloudFolderService nextcloudFolderService;
+
+  @Autowired
+  StrMapper strMapper;
 
   @Override
   @Transactional
@@ -136,8 +148,9 @@ public class SamServiceImpl implements SamService {
 
     // 번호 매기기
     for (int i = 0; i < result.size(); i++) {
-      result.get(i)
-          .setNo(param.getTotalCount() - (((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+      ImSubDTO row = result.get(i);
+      row.setNo(param.getTotalCount() - (((param.getPageIndex() - 1) * param.getPageUnit()) + i));
+      row.setProcStateName(SamProcStateSupport.procName(row.getProcState()));
     }
 
     return result;
@@ -156,6 +169,9 @@ public class SamServiceImpl implements SamService {
       return null;
     }
 
+    result.setProcStateName(SamProcStateSupport.procName(result.getProcState()));
+    result.setLocHist(samMapper.selectLocHist(result.getImId(), result.getImSubSeq()));
+
     SbkInfoVO sbk = sbkService.findBySbkNoAndProvision(result.getSbkId());
     if (sbk == null || StringUtils.isEmpty(sbk.getNcFolderPath())) {
       return result;
@@ -171,4 +187,63 @@ public class SamServiceImpl implements SamService {
     return result;
   }
 
+  @Override
+  @Transactional
+  public SamLocScanResult scanLoc(SamLocScanReq req, String memId) {
+    Zone zone = resolveZone(req);
+    if (ObjectUtils.isEmpty(req.getImSubIds())) {
+      throw new SamBizException(ResponseMessage.CHECK_DATA);
+    }
+
+    SamLocScanResult result = new SamLocScanResult();
+    for (String rawId : req.getImSubIds()) {
+      ImSubItemDetailDTO item = loadItem(rawId);
+      if (item == null) {
+        throw new SamBizException(ResponseMessage.NO_DATA + " (" + rawId + ")");
+      }
+      if (StringUtils.hasText(item.getCarryOutCode())) {
+        throw new SamBizException(ResponseMessage.SAMPLE_CARRY_OUT + " (" + rawId + ")");
+      }
+
+      ImSubLoc loc = new ImSubLoc();
+      loc.setImId(item.getImId());
+      loc.setImSubSeq(item.getImSubSeq());
+      loc.setZoneSeq(zone.getZoneSeq());
+      loc.setMemo(req.getMemo());
+      loc.setInsMemId(memId);
+      loc.setUdtMemId(memId);
+      samMapper.insertLoc(loc);
+      samMapper.updateSubLocation(item.getImId(), item.getImSubSeq(), zone.getZoneSeq(), memId);
+      result.setSavedCnt(result.getSavedCnt() + 1);
+    }
+    return result;
+  }
+
+  private ImSubItemDetailDTO loadItem(String imSubId) {
+    Parsed parsed = SamItemIdSupport.parse(imSubId);
+    if (parsed == null) {
+      throw new SamBizException("시료 QR을 확인하세요. (" + imSubId + ")");
+    }
+    return samMapper.selectSubBySbkIdAndSubSeq(parsed.getSbkId(), parsed.getImSubSeq());
+  }
+
+  private Zone resolveZone(SamLocScanReq req) {
+    if (req == null || req.getZoneSeq() <= 0) {
+      throw new SamBizException(ResponseMessage.CHECK_DATA);
+    }
+    Zone zone = strMapper.selectZoneBySeq(req.getZoneSeq());
+    if (zone == null) {
+      throw new SamBizException(ResponseMessage.NO_DATA);
+    }
+    if ("D".equals(zone.getState())) {
+      throw new SamBizException(ResponseMessage.ZONE_LABEL_OFF);
+    }
+    // 창고를 중지해도 구역은 그대로 남는다. 창고 쪽을 보지 않으면
+    // 중지된 창고에 시료를 넣을 수 있다.
+    Warehouse wh = strMapper.selectBySeq(zone.getStrSeq());
+    if (wh == null || "D".equals(wh.getState())) {
+      throw new SamBizException(ResponseMessage.WH_LABEL_OFF);
+    }
+    return zone;
+  }
 }

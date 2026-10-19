@@ -33,4 +33,9 @@ public class ImSubDTO extends ImSub {
   @ApiModelProperty(value = "보안견적서 여부", example = "")
   @Column
   private int secretYn;
+
+  private Integer strSeq;
+  private String whName;
+  private String zoneName;
+  private String procStateName;
 }

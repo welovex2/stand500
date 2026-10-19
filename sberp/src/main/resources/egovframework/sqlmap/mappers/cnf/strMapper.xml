@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.cnf.service.StrMapper">
+
+	<sql id="strCols">
+		STR_TB.STR_SEQ			strSeq,
+		STR_TB.STR_NAME			whName,
+		STR_TB.STR_LOC			whLoc,
+		STR_TB.TYPE_CODE			typeCode,
+		FN_CODE_NAME(STR_TB.TYPE_CODE, 'WH')	typeName,
+		STR_TB.MNG_ID			mngId,
+		FN_MEM_NAME(STR_TB.MNG_ID)	mngName,
+		FN_DEPT_NAME(STR_TB.MNG_ID)	mngDeptName,
+		STR_TB.DEPT_SEQ			deptSeq,
+		(SELECT d.NAME FROM DEPT_TB d WHERE d.DEPT_SEQ = STR_TB.DEPT_SEQ AND d.STATE != 'D') deptName,
+		STR_TB.INS_MEM_ID		insMemId,
+		DATE_FORMAT(STR_TB.INS_DT, '%Y-%m-%d') insDt,
+		STR_TB.UDT_MEM_ID		udtMemId,
+		FN_MEM_NAME(STR_TB.UDT_MEM_ID)	udtMemName,
+		DATE_FORMAT(STR_TB.UDT_DT, '%Y-%m-%d') udtDt,
+		STR_TB.STATE				state
+	</sql>
+
+	<sql id="whItemCnt">
+		(SELECT COUNT(1)
+		   FROM IM_SUB_TB s
+		        INNER JOIN ZONE_TB z ON z.ZONE_SEQ = s.CURRENT_ZONE_SEQ AND z.STATE != 'D'
+		  WHERE z.STR_SEQ = STR_TB.STR_SEQ
+		    AND s.STATE != 'D'
+		    AND IFNULL(s.CARRY_OUT_CODE, '') = '') itemCnt
+	</sql>
+
+	<sql id="whZoneCnt">
+		(SELECT COUNT(1)
+		   FROM ZONE_TB z
+		  WHERE z.STR_SEQ = STR_TB.STR_SEQ
+		    AND z.STATE != 'D') zoneCnt
+	</sql>
+
+	<sql id="whStopZoneCnt">
+		(SELECT COUNT(1)
+		   FROM ZONE_TB z
+		  WHERE z.STR_SEQ = STR_TB.STR_SEQ
+		    AND z.STATE = 'D') stopZoneCnt
+	</sql>
+
+	<select id="selectList" resultType="warehouse">
+		SELECT
+			<include refid="strCols"/>,
+			<include refid="whZoneCnt"/>,
+			<include refid="whStopZoneCnt"/>,
+			<include refid="whItemCnt"/>
+		FROM STR_TB
+		WHERE 1 = 1
+		<if test='includeStopped == null or !"Y".equals(includeStopped)'>
+			AND STR_TB.STATE != 'D'
+		</if>
+		<if test="searchWord != null">
+			AND (
+				STR_TB.STR_NAME LIKE CONCAT('%', #{searchWord}, '%')
+				OR IFNULL(FN_MEM_NAME(STR_TB.MNG_ID), '') LIKE CONCAT('%', #{searchWord}, '%')
+				OR IFNULL(STR_TB.STR_LOC, '') LIKE CONCAT('%', #{searchWord}, '%')
+			)
+		</if>
+		ORDER BY STR_TB.STR_SEQ
+	</select>
+
+	<!-- 상세. selectBySeq 와 같은 결과를 StoreDetailDTO 로 바로 담는다.
+	     서비스에서 손으로 필드를 옮기면 Warehouse 에 필드가 늘 때마다 누락이 난다. -->
+	<select id="selectDetailBySeq" resultType="storeDetail">
+		SELECT
+			<include refid="strCols"/>,
+			<include refid="whZoneCnt"/>,
+			<include refid="whStopZoneCnt"/>,
+			<include refid="whItemCnt"/>
+		FROM STR_TB
+		WHERE STR_TB.STR_SEQ = #{strSeq}
+		LIMIT 1
+	</select>
+
+	<select id="selectBySeq" resultType="warehouse">
+		SELECT
+			<include refid="strCols"/>,
+			<include refid="whZoneCnt"/>,
+			<include refid="whStopZoneCnt"/>,
+			<include refid="whItemCnt"/>
+		FROM STR_TB
+		WHERE STR_TB.STR_SEQ = #{strSeq}
+		LIMIT 1
+	</select>
+
+	<insert id="insert" parameterType="warehouse" useGeneratedKeys="true" keyProperty="strSeq" keyColumn="STR_SEQ">
+		INSERT INTO STR_TB (
+			STR_NAME, STR_LOC, TYPE_CODE, MNG_ID, DEPT_SEQ, INS_MEM_ID, UDT_MEM_ID, STATE
+		) VALUES (
+			#{whName}, #{whLoc, jdbcType=VARCHAR}, #{typeCode}, #{mngId, jdbcType=VARCHAR},
+			#{deptSeq, jdbcType=INTEGER}, #{insMemId}, #{udtMemId}, 'I'
+		)
+	</insert>
+
+	<update id="update" parameterType="warehouse">
+		UPDATE STR_TB
+		SET STR_NAME   = #{whName},
+		    STR_LOC    = #{whLoc, jdbcType=VARCHAR},
+		    TYPE_CODE  = #{typeCode},
+		    MNG_ID     = #{mngId, jdbcType=VARCHAR},
+		    DEPT_SEQ   = #{deptSeq, jdbcType=INTEGER},
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT     = NOW(),
+		    STATE      = 'U'
+		WHERE STR_SEQ = #{strSeq}
+		  AND STATE != 'D'
+	</update>
+
+	<select id="countWhName" resultType="int">
+		SELECT COUNT(1)
+		FROM STR_TB
+		WHERE STR_NAME = #{whName}
+		  AND STATE != 'D'
+		<if test="strSeq != null and strSeq &gt; 0">
+			AND STR_SEQ != #{strSeq}
+		</if>
+	</select>
+
+	<update id="stop" parameterType="warehouse">
+		UPDATE STR_TB
+		SET STATE      = 'D',
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT     = NOW()
+		WHERE STR_SEQ = #{strSeq}
+		  AND STATE != 'D'
+	</update>
+
+	<select id="countTypeCode" resultType="int">
+		SELECT COUNT(1)
+		FROM COMCODE_TB
+		WHERE TOP_CD = 'WH'
+		  AND TYPE_CD = #{typeCode}
+		  AND USE_YN = 1
+		  AND STATE != 'D'
+	</select>
+
+	<!-- ===================== 구역 ===================== -->
+
+	<sql id="zoneCols">
+		ZONE_TB.ZONE_SEQ		zoneSeq,
+		ZONE_TB.STR_SEQ			strSeq,
+		ZONE_TB.ZONE_NAME		zoneName,
+		ZONE_TB.ZONE_DESC		zoneDesc,
+		ZONE_TB.USE_CODE		useCode,
+		ZONE_TB.INS_MEM_ID		insMemId,
+		DATE_FORMAT(ZONE_TB.INS_DT, '%Y-%m-%d') insDt,
+		ZONE_TB.UDT_MEM_ID		udtMemId,
+		DATE_FORMAT(ZONE_TB.UDT_DT, '%Y-%m-%d') udtDt,
+		ZONE_TB.STATE			state
+	</sql>
+
+	<sql id="zoneItemCnt">
+		(SELECT COUNT(1)
+		   FROM IM_SUB_TB s
+		  WHERE s.CURRENT_ZONE_SEQ = ZONE_TB.ZONE_SEQ
+		    AND s.STATE != 'D'
+		    AND IFNULL(s.CARRY_OUT_CODE, '') = '') itemCnt
+	</sql>
+
+	<select id="selectZoneList" resultType="zone">
+		SELECT
+			<include refid="zoneCols"/>,
+			<include refid="zoneItemCnt"/>
+		FROM ZONE_TB
+		WHERE ZONE_TB.STR_SEQ = #{strSeq}
+		ORDER BY ZONE_TB.ZONE_SEQ
+	</select>
+
+	<select id="selectZoneBySeq" resultType="zone">
+		SELECT
+			<include refid="zoneCols"/>,
+			<include refid="zoneItemCnt"/>
+		FROM ZONE_TB
+		WHERE ZONE_TB.ZONE_SEQ = #{zoneSeq}
+		LIMIT 1
+	</select>
+
+	<select id="countZoneName" resultType="int">
+		SELECT COUNT(1)
+		FROM ZONE_TB
+		WHERE STR_SEQ = #{strSeq}
+		  AND ZONE_NAME = #{zoneName}
+		  AND STATE != 'D'
+		<if test="zoneSeq != null">
+			AND ZONE_SEQ != #{zoneSeq}
+		</if>
+	</select>
+
+	<insert id="insertZone" parameterType="zone" useGeneratedKeys="true" keyProperty="zoneSeq" keyColumn="ZONE_SEQ">
+		INSERT INTO ZONE_TB (
+			STR_SEQ, ZONE_NAME, ZONE_DESC, USE_CODE, INS_MEM_ID, UDT_MEM_ID, STATE
+		) VALUES (
+			#{strSeq}, #{zoneName}, #{zoneDesc, jdbcType=VARCHAR}, #{useCode}, #{insMemId}, #{udtMemId}, 'I'
+		)
+	</insert>
+
+	<update id="updateZoneLabel" parameterType="zone">
+		UPDATE ZONE_TB
+		SET ZONE_NAME  = #{zoneName},
+		    ZONE_DESC  = #{zoneDesc, jdbcType=VARCHAR},
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT     = NOW(),
+		    STATE      = 'U'
+		WHERE ZONE_SEQ = #{zoneSeq}
+		  AND STATE != 'D'
+	</update>
+
+	<update id="updateZoneUse" parameterType="zone">
+		UPDATE ZONE_TB
+		SET USE_CODE   = #{useCode},
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT     = NOW(),
+		    STATE      = 'U'
+		WHERE ZONE_SEQ = #{zoneSeq}
+		  AND STATE != 'D'
+	</update>
+
+	<update id="stopZone" parameterType="zone">
+		UPDATE ZONE_TB
+		SET STATE      = 'D',
+		    UDT_MEM_ID = #{udtMemId},
+		    UDT_DT     = NOW()
+		WHERE ZONE_SEQ = #{zoneSeq}
+		  AND STATE != 'D'
+	</update>
+
+	<select id="countItemsByWh" resultType="int">
+		SELECT COUNT(1)
+		FROM IM_SUB_TB s
+		     INNER JOIN ZONE_TB z ON z.ZONE_SEQ = s.CURRENT_ZONE_SEQ AND z.STATE != 'D'
+		WHERE z.STR_SEQ = #{strSeq}
+		  AND s.STATE != 'D'
+		  AND IFNULL(s.CARRY_OUT_CODE, '') = ''
+	</select>
+
+	<select id="countActiveZones" resultType="int">
+		SELECT COUNT(1)
+		FROM ZONE_TB
+		WHERE STR_SEQ = #{strSeq}
+		  AND STATE != 'D'
+	</select>
+
+	<select id="countItemsByZone" resultType="int">
+		SELECT COUNT(1)
+		FROM IM_SUB_TB s
+		WHERE s.CURRENT_ZONE_SEQ = #{zoneSeq}
+		  AND s.STATE != 'D'
+		  AND IFNULL(s.CARRY_OUT_CODE, '') = ''
+	</select>
+
+</mapper>

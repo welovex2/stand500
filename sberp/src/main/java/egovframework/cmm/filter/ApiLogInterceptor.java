@@ -26,8 +26,8 @@ public class ApiLogInterceptor extends HandlerInterceptorAdapter {
       
       // 2. 사용자 ID 추출
       String userId = "GUEST";
-      if (EgovUserDetailsHelper.isAuthenticated()) {
-          LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+      LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+      if (user != null && user.getId() != null) {
           userId = user.getId();
       }
 
