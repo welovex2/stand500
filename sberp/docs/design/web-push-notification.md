@@ -587,14 +587,162 @@ API 호출만 실패해 **흰 화면**이 될 수 있다. 서버 로그에 아�
 5. 프론트 빌드에 4-1 반영 후 `/mErp/` 배포 (push-sw.js 포함)
 6. 실기기에서 홈 화면에 추가 → 알림 켜기 → `POST /api/push/test.do`
 
+### ⚠️ 값을 어디서 읽는지 — 우선순위
+
+`context-bean-env.xml` 의 `PropertyPlaceholderConfigurer` 가 아래 순서로 찾는다.
+먼저 찾으면 거기서 끝난다.
+
+```
+① JVM 시스템 프로퍼티  -DGLOBALS_PUSH_VAPID_PUBLIC=...
+② OS 환경변수          ← docker-compose 의 env_file: .env 가 여기로 들어간다
+③ /usr/local/tomcat/conf/erp.properties   (현재 볼륨 마운트 주석 처리됨)
+④ classpath:egovframework/env/erp-local.properties
+⑤ ${...:기본값} 의 기본값
+```
+
+`Globals.push.vapid.publicKey` 는 자바 코드가 읽는 이름이고,
+`GLOBALS_PUSH_VAPID_PUBLIC` 은 위에서 값을 찾는 이름이다. `context-properties.xml`
+의 `<entry>` 한 줄이 둘을 이어준다.
+
+**④ 는 `src/main/resources/` 라서 빌드하면 WAR 안
+(`WEB-INF/classes/egovframework/env/`)에 그대로 들어간다.** 파일명에 `local` 이 붙고
+`.gitignore` 대상이라 내 PC 전용처럼 보이지만 **서버까지 따라간다.**
+
+- 개발서버는 지금 `.env` 가 아니라 **④(WAR 안 파일)** 에서 키를 읽고 있다.
+- 운영은 `.env`(②)가 ④ 를 이기므로 동작은 정상이지만, **WAR 안에 개발 VAPID
+  개인키·개발 DB 비밀번호가 실려 간다.** 웹푸시 때문에 생긴 문제는 아니고
+  DB·Nextcloud 비밀번호가 원래 같은 방식으로 들어가고 있었다.
+
+운영 배포 시에는 `.env` 에 **운영 전용 키**를 반드시 넣어 ④ 를 덮어쓸 것.
+
 ### 키를 바꿀 때
 
 VAPID 키를 교체하면 **기존 구독이 전부 무효**가 된다(푸시 서비스가 401 을 준다).
-`PUSH_SUB_TB` 를 비우고 사용자에게 재구독을 받아야 한다.
+`PUSH_SUB_TB` 를 비우고 사용자에게 재구독을 받아야 한다(6-4 의 쿼리).
 
 ---
 
-## 6. 아직 안 한 것
+## 6. DB 운영 관리
+
+### 6-1. 테이블은 `PUSH_SUB_TB` 하나뿐
+
+푸시가 건드리는 테이블은 이것 하나다. 공통코드도 로그 테이블도 쓰지 않는다.
+**한 행 = 사용자의 기기 한 대.** 한 사람이 폰·PC 를 쓰면 행이 2개다.
+
+| 컬럼 | 관리 관점 |
+|--|--|
+| `MEM_ID` | 구독자. `MEMBER_TB.ID` (FK 제약은 없다) |
+| `ENDPOINT` | 푸시 서비스가 발급한 URL |
+| `ENDPOINT_HASH` | 위 URL 의 SHA-256. **UNIQUE** — 중복 구독 방지 |
+| `P256DH` / `AUTH` | 암호화용 키. **수정하면 그 기기로 발송이 깨진다** |
+| `USER_AGENT` | 어느 기기인지 구분하는 유일한 단서 |
+| `FAIL_CNT` | 연속 실패 횟수. 10 이 되면 자동으로 접힌다 |
+| `LAST_ERR` | 마지막 실패 사유. **문제 진단의 핵심** |
+| `LAST_SENT_DT` | 마지막 발송 성공 시각 |
+| `STATE` | `I`=사용, `D`=만료·해지 (소프트 삭제) |
+
+`ENDPOINT` 가 `varchar(1000)` 이라 utf8 인덱스 한도(767바이트)를 넘는다.
+그래서 URL 에 직접 UNIQUE 를 걸지 못하고 해시 컬럼을 따로 뒀다.
+
+### 6-2. 자동으로 처리되는 것 — 손댈 필요 없다
+
+| 상황 | 처리 |
+|--|--|
+| 같은 기기 재구독 | 새 행을 만들지 않고 기존 행을 되살림 (`ON DUPLICATE KEY UPDATE`) |
+| 앱 삭제·브라우저 데이터 삭제 (404/410) | 즉시 `STATE='D'` |
+| 연속 10회 실패 | 자동으로 `STATE='D'` |
+| 발송 성공 | `FAIL_CNT=0`, `LAST_SENT_DT` 갱신 |
+
+구독을 수동으로 지울 일은 거의 없다.
+
+### 6-3. 조회 쿼리
+
+**구독 현황**
+
+```sql
+SELECT MEM_ID, COUNT(*) AS 기기수, MAX(LAST_SENT_DT) AS 마지막수신
+FROM PUSH_SUB_TB WHERE STATE='I'
+GROUP BY MEM_ID ORDER BY 기기수 DESC;
+```
+
+**기기별 상세** — 어느 기기가 등록됐는지 확인
+
+```sql
+SELECT PUSH_SEQ, MEM_ID,
+       CASE WHEN USER_AGENT LIKE '%Android%' THEN '안드로이드'
+            WHEN USER_AGENT LIKE '%iPhone%'  THEN '아이폰'
+            WHEN USER_AGENT LIKE '%Windows%' THEN 'PC'
+            ELSE '기타' END AS 기기,
+       LAST_SENT_DT, FAIL_CNT, LEFT(LAST_ERR, 60) AS 오류
+FROM PUSH_SUB_TB WHERE STATE='I' ORDER BY MEM_ID, PUSH_SEQ;
+```
+
+**문제 있는 구독** — "알림이 안 와요" 신고가 들어오면 여기부터 본다
+
+```sql
+SELECT MEM_ID, FAIL_CNT, LAST_ERR, LAST_SENT_DT, STATE
+FROM PUSH_SUB_TB
+WHERE FAIL_CNT > 0 OR STATE='D'
+ORDER BY UDT_DT DESC;
+```
+
+`LAST_ERR` 읽는 법:
+
+| 내용 | 의미 | 조치 |
+|--|--|--|
+| `HTTP 410` / `HTTP 404` | 정상적인 소멸 | 사용자가 다시 켜면 됨 |
+| `HTTP 401` / `403` | **VAPID 키 문제** | 서버 설정 확인 (6-4) |
+| 그 외 5xx | 푸시 서비스 일시 장애 | 대기 |
+
+**오래 방치된 구독**
+
+```sql
+SELECT MEM_ID, USER_AGENT, INS_DT, LAST_SENT_DT
+FROM PUSH_SUB_TB
+WHERE STATE='I'
+  AND (LAST_SENT_DT IS NULL OR LAST_SENT_DT < DATE_SUB(NOW(), INTERVAL 6 MONTH));
+```
+
+### 6-4. 가끔 해줘야 하는 것
+
+**VAPID 키를 교체했을 때 — 필수**
+
+키를 바꾸면 기존 구독이 전부 무효가 된다(푸시 서비스가 401 을 준다).
+비우고 재구독을 받아야 한다.
+
+```sql
+UPDATE PUSH_SUB_TB SET STATE='D', LAST_ERR='VAPID 키 교체' WHERE STATE='I';
+```
+
+이걸 빠뜨리면 죽은 구독에 계속 401 을 맞으면서 ERROR 로그만 쌓인다.
+**401 일 때 코드가 구독을 자동으로 접지 않기 때문이다** — 서버 설정 실수일 수도 있는데
+사용자 구독을 지워 버리면 복구가 안 되므로 일부러 그렇게 뒀다(3-5).
+
+**퇴사자 정리** — `MEM_ID` 에 FK 가 없어 회원을 지워도 구독은 남는다
+
+```sql
+UPDATE PUSH_SUB_TB SET STATE='D' WHERE MEM_ID = '퇴사자ID';
+```
+
+**소프트 삭제 행 정리** — `STATE='D'` 는 자동으로 지워지지 않고 계속 쌓인다.
+성능 문제가 될 규모는 아니지만 1년에 한 번쯤 정리한다.
+
+```sql
+DELETE FROM PUSH_SUB_TB
+WHERE STATE='D' AND UDT_DT < DATE_SUB(NOW(), INTERVAL 1 YEAR);
+```
+
+### 6-5. 없는 것
+
+- **알림 히스토리** — 발송 내용을 남기지 않는다. "지난 알림 보기" 가 필요하면
+  `PUSH_LOG_TB` 같은 테이블과 목록 API 를 따로 만들어야 한다.
+- **알림 종류별 수신 설정** — 전부 받거나 전부 안 받거나다. 항목별 on/off 가 필요하면
+  구독 테이블에 종류 컬럼을 붙이는 방향.
+- **FK 제약** — `MEM_ID` 는 `MEMBER_TB.ID` 를 가리키지만 제약을 걸지 않았다.
+
+---
+
+## 7. 아직 안 한 것
 
 - **알림함(인앱 히스토리)** — 지금은 발송만 하고 내용을 남기지 않는다. "지난 알림 보기"가
   필요하면 `PUSH_LOG_TB` 같은 테이블과 목록 API 가 따로 있어야 한다.
