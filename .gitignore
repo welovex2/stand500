@@ -20,3 +20,18 @@ sberp/docs/docker/**/*.pem
 #   docs/docker/pro/erp/docker-compose.yml   MYSQL_ROOT_PASSWORD
 #   docs/docker/pro/file/docker-compose.yml  MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, MINIO_ROOT_PASSWORD
 # 커밋 전에 ${VAR} 로 바꾸고 값은 .env 로 옮길 것.
+
+# 로그·빌드 부산물
+sberp/logs/
+*.log
+__pycache__/
+*.pyc
+
+# Eclipse 개인 설정 (새로 생기는 것만 — 기존 .settings 파일은 계속 추적)
+sberp/.factorypath
+sberp/.pydevproject
+sberp/.settings/org.eclipse.jdt.apt.core.prefs
+sberp/.settings/org.eclipse.m2e.core.prefs
+
+# OS
+Thumbs.db
