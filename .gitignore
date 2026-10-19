@@ -7,3 +7,16 @@ Servers/
 sberp/.env
 sberp/config/erp.properties
 sberp/src/main/resources/egovframework/env/erp-local.properties
+
+# docs/docker 자료 — 문서·설정 예시만 Git 에 올리고 비밀 값은 제외
+# (dev/.env, pro/erp/.env 에 DB·Nextcloud 실제 비밀번호가 들어 있다)
+sberp/docs/docker/**/.env
+sberp/docs/docker/**/erp.properties
+sberp/docs/docker/**/*.key
+sberp/docs/docker/**/*.crt
+sberp/docs/docker/**/*.pem
+#
+# 주의: 아래 두 파일은 무시 대상이 아니지만 비밀번호가 하드코딩돼 있다.
+#   docs/docker/pro/erp/docker-compose.yml   MYSQL_ROOT_PASSWORD
+#   docs/docker/pro/file/docker-compose.yml  MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, MINIO_ROOT_PASSWORD
+# 커밋 전에 ${VAR} 로 바꾸고 값은 .env 로 옮길 것.
