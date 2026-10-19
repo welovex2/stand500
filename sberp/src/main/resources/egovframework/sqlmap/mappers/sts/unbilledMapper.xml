@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.UnbilledMapper">
+
+	<!--
+		완료 후 미청구 상세.
+
+		영업 주간 화면(salesBriefMapper.selectUnbilled)과 판정 기준이 두 군데 다르다.
+
+		1) 올해 완료분만 보지 않는다.
+		   기존 화면은 YEAR(TEST_STATE_DT) = YEAR(CURDATE()) 로 잘라서
+		   작년 이전에 끝났는데 아직 청구가 안 된 건이 화면에 아예 안 나온다.
+		   실제로 그쪽이 금액이 더 크다.
+
+		2) 견적에 딸린 시험이 전부 끝난 것만 센다.
+		   청구는 견적(또는 취합견적) 단위로 나가므로, 같은 견적에 아직 진행 중인 시험이
+		   남아 있으면 청구를 못 하는 것이 정상이다. 기존 화면은 시험 한 건만 끝나도
+		   미청구로 세어서 아직 청구할 수 없는 건이 섞여 들어온다.
+
+		한 줄은 시험 한 건이다. 견적으로 묶는 일과 구간·부서·담당 집계는
+		UnbilledServiceImpl 에서 한다. 줄 수가 1천 건 아래라 메모리에서 접는 편이
+		같은 무거운 조인을 여섯 번 도는 것보다 낫다.
+	-->
+	<select id="selectUnbilled" resultType="egovframework.sts.dto.UnbilledDTO$ItemRow">
+		SELECT
+			q.QUO_YM AS quoYm,
+			q.QUO_SEQ AS quoSeq,
+			FN_GET_SEQSTRING('Q', q.QUO_YM, q.TYPE, q.QUO_SEQ) AS quoId,
+			IFNULL(q.CHQ_SEQ, 0) AS chqSeq,
+			DATE_FORMAT(q.ISSUE_DT, '%Y-%m-%d') AS issueDt,
+			IFNULL(q.TOTAL_VAT, 0) AS quoTotalVat,
+			j.CMPY_SEQ AS cmpySeq,
+			IFNULL(j.CMPY_NAME, '') AS cmpyName,
+			IFNULL(FN_MEM_NAME(j.MNG_ID), '-') AS mngName,
+			IFNULL(mem.WORK_STATE, '') AS mngWorkState,
+			IFNULL(j.PRDCT_NAME, '') AS prdctName,
+			CONCAT(
+				'SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
+				'-', IF(t.TEST_TYPE_CODE = 'NS', 'SF', t.TEST_TYPE_CODE), LPAD(t.TEST_NO, 4, 0)
+			) AS testId,
+			t.TEST_TYPE_CODE AS deptCode,
+			IFNULL(cc.TYPE_NAME, t.TEST_TYPE_CODE) AS deptName,
+			IFNULL(ti.NET_SALES, 0) AS netSales,
+			DATE_FORMAT(t.TEST_STATE_DT, '%Y-%m-%d') AS doneDt,
+			IFNULL(qs.doneCnt, 0) AS quoDoneCnt,
+			IFNULL(qs.cancelCnt, 0) AS quoCancelCnt,
+			IFNULL(qs.skipCnt, 0) AS quoSkipCnt,
+			IFNULL(qs.noReportCnt, 0) AS quoNoReportCnt,
+			IFNULL(sls.hasSls, 0) AS hasSls
+		FROM TEST_TB t
+		INNER JOIN TEST_ITEM_TB ti
+			ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ AND ti.STATE &lt;&gt; 'D'
+		INNER JOIN JOB_TB j
+			ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ AND j.STATE &lt;&gt; 'D'
+		INNER JOIN QUO_TB q
+			ON q.QUO_YM = j.QUO_YM AND q.QUO_SEQ = j.QUO_SEQ
+		LEFT JOIN COMCODE_TB cc
+			ON cc.TOP_CD = 'TT' AND cc.TYPE_CD = t.TEST_TYPE_CODE
+		<!-- 담당자가 이미 퇴사했으면 그 건은 챙길 사람이 없다는 뜻이라 따로 표시한다. -->
+		LEFT JOIN MEMBER_TB mem ON mem.ID = j.MNG_ID
+		<!--
+			견적에 딸린 시험이 하나도 안 남았을 때만(openCnt = 0) 대상으로 본다.
+			같은 김에 그 견적의 시험 상태 구성을 세어 둔다. 목록에 실리는 줄은 완료(18)뿐이라
+			줄만 봐서는 그 견적이 정말 다 끝난 것인지, 형제 시험이 취소돼서 끝난 것처럼 보이는지 알 수 없다.
+			noReportCnt 는 완료라고 돼 있는데 성적서 발급일도 발급번호도 없는 건이다.
+		-->
+		INNER JOIN (
+			SELECT ti2.QUO_YM, ti2.QUO_SEQ,
+				SUM(t2.TEST_STATE_CODE NOT IN (18, 19, 20)) AS openCnt,
+				SUM(t2.TEST_STATE_CODE = 18) AS doneCnt,
+				SUM(t2.TEST_STATE_CODE = 19) AS cancelCnt,
+				SUM(t2.TEST_STATE_CODE = 20) AS skipCnt,
+				SUM(t2.TEST_STATE_CODE = 18
+					AND t2.REPORT_DT IS NULL
+					AND IFNULL(t2.REPORT_NO, '') = '') AS noReportCnt
+			FROM TEST_ITEM_TB ti2
+			INNER JOIN TEST_TB t2
+				ON t2.TEST_ITEM_SEQ = ti2.TEST_ITEM_SEQ AND t2.STATE &lt;&gt; 'D'
+			WHERE ti2.STATE &lt;&gt; 'D'
+			GROUP BY ti2.QUO_YM, ti2.QUO_SEQ
+		) qs ON qs.QUO_YM = q.QUO_YM AND qs.QUO_SEQ = q.QUO_SEQ AND qs.openCnt = 0
+		<!-- 매출확정(SLS_TB)까지는 됐는지. 됐으면 계산서만 발행하면 되고, 안 됐으면 확정부터 해야 한다. -->
+		LEFT JOIN (
+			SELECT qq.QUO_YM, qq.QUO_SEQ, MAX(1) AS hasSls
+			FROM QUO_TB qq
+			INNER JOIN SLS_TB s ON s.STATE &lt;&gt; 'D' AND (
+				(s.QUO_YM = qq.QUO_YM AND s.QUO_SEQ = qq.QUO_SEQ)
+				OR (IFNULL(qq.CHQ_SEQ, 0) &lt;&gt; 0
+					AND s.CHQ_YM = qq.CHQ_YM AND s.CHQ_SEQ = qq.CHQ_SEQ)
+			)
+			GROUP BY qq.QUO_YM, qq.QUO_SEQ
+		) sls ON sls.QUO_YM = q.QUO_YM AND sls.QUO_SEQ = q.QUO_SEQ
+		WHERE t.TEST_STATE_CODE = 18
+			AND t.STATE &lt;&gt; 'D'
+			AND IFNULL(q.TOTAL_VAT, 0) &gt; 0
+			AND NOT EXISTS (
+				SELECT 1
+				FROM QUO_TB qb
+				INNER JOIN SLS_TB s2 ON s2.STATE &lt;&gt; 'D' AND (
+					(s2.QUO_YM = qb.QUO_YM AND s2.QUO_SEQ = qb.QUO_SEQ)
+					OR (IFNULL(qb.CHQ_SEQ, 0) &lt;&gt; 0
+						AND s2.CHQ_YM = qb.CHQ_YM AND s2.CHQ_SEQ = qb.CHQ_SEQ)
+				)
+				INNER JOIN BILL_TB b ON b.SLS_YM = s2.SLS_YM AND b.SLS_SEQ = s2.SLS_SEQ
+					AND b.BILL_YN = 1 AND b.STATE NOT IN (4, 6)
+				WHERE qb.QUO_YM = j.QUO_YM AND qb.QUO_SEQ = j.QUO_SEQ
+			)
+			AND q.QUO_YM not like '23%'
+		ORDER BY t.TEST_STATE_DT
+	</select>
+
+</mapper>

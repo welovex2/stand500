@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.SalesBriefMapper">
+
+	<sql id="slsNetFrom">
+		FROM SLS_TB s
+		LEFT JOIN (
+			SELECT QUO_YM, QUO_SEQ, SUM(NET_SALES) NET_SALES
+			FROM TEST_ITEM_TB
+			WHERE STATE &lt;&gt; 'D'
+			GROUP BY QUO_YM, QUO_SEQ
+		) items ON s.QUO_YM = items.QUO_YM AND s.QUO_SEQ = items.QUO_SEQ
+		LEFT JOIN QUO_TB qchq
+			ON IFNULL(s.QUO_SEQ, 0) = 0
+			AND s.CHQ_YM = qchq.CHQ_YM AND s.CHQ_SEQ = qchq.CHQ_SEQ
+		LEFT JOIN (
+			SELECT QUO_YM, QUO_SEQ, SUM(NET_SALES) NET_SALES
+			FROM TEST_ITEM_TB
+			WHERE STATE &lt;&gt; 'D'
+			GROUP BY QUO_YM, QUO_SEQ
+		) items2 ON qchq.QUO_YM = items2.QUO_YM AND qchq.QUO_SEQ = items2.QUO_SEQ
+	</sql>
+
+	<sql id="slsNetExpr">
+		COALESCE(items.NET_SALES, items2.NET_SALES, 0)
+	</sql>
+
+	<sql id="arAgeExpr">
+		DATEDIFF(CURDATE(), COALESCE(
+			(SELECT MIN(IFNULL(b.OTHER_BILL_DT, b.BILL_DT))
+			 FROM BILL_TB b
+			 WHERE b.SLS_YM = s.SLS_YM AND b.SLS_SEQ = s.SLS_SEQ
+			   AND b.BILL_YN = 1 AND b.STATE NOT IN (4, 6)),
+			s.CNFRM_DT, s.INS_DT
+		))
+	</sql>
+
+	<select id="selectTarget" resultType="egovframework.sts.dto.SalesBriefDTO$TargetRow">
+		SELECT
+			IFNULL(TRUNCATE(SUM(JAN+FEB+MAR+APR+MAY+JUN+JUL+AUG+SEP+OCT+NOV+`DEC`), 0), 0) AS yearTargetMan,
+			IFNULL(TRUNCATE(SUM(CASE MONTH(CURDATE())
+				WHEN 1 THEN JAN WHEN 2 THEN FEB WHEN 3 THEN MAR WHEN 4 THEN APR
+				WHEN 5 THEN MAY WHEN 6 THEN JUN WHEN 7 THEN JUL WHEN 8 THEN AUG
+				WHEN 9 THEN SEP WHEN 10 THEN OCT WHEN 11 THEN NOV WHEN 12 THEN `DEC`
+			END), 0), 0) AS monthTargetMan,
+			IFNULL(TRUNCATE(SUM(JAN),0),0) AS m1,
+			IFNULL(TRUNCATE(SUM(FEB),0),0) AS m2,
+			IFNULL(TRUNCATE(SUM(MAR),0),0) AS m3,
+			IFNULL(TRUNCATE(SUM(APR),0),0) AS m4,
+			IFNULL(TRUNCATE(SUM(MAY),0),0) AS m5,
+			IFNULL(TRUNCATE(SUM(JUN),0),0) AS m6,
+			IFNULL(TRUNCATE(SUM(JUL),0),0) AS m7,
+			IFNULL(TRUNCATE(SUM(AUG),0),0) AS m8,
+			IFNULL(TRUNCATE(SUM(SEP),0),0) AS m9,
+			IFNULL(TRUNCATE(SUM(OCT),0),0) AS m10,
+			IFNULL(TRUNCATE(SUM(NOV),0),0) AS m11,
+			IFNULL(TRUNCATE(SUM(`DEC`),0),0) AS m12
+		FROM TARGET_TB t
+		INNER JOIN MEMBER_TB m ON m.ID = t.MEM_ID AND m.MNG_YN = 1
+		WHERE t.YEAR = YEAR(CURDATE())
+	</select>
+
+	<select id="selectNet" resultType="egovframework.sts.dto.SalesBriefDTO$NetRow">
+		SELECT
+			IFNULL(TRUNCATE(SUM(IF(YEAR(s.END_DT)=YEAR(CURDATE()) AND MONTH(s.END_DT)=MONTH(CURDATE()), <include refid="slsNetExpr"/>, 0)) / 10000, 0), 0) AS monthActualMan,
+			IFNULL(TRUNCATE(SUM(IF(YEAR(s.END_DT)=YEAR(CURDATE()), <include refid="slsNetExpr"/>, 0)) / 10000, 0), 0) AS yearActualMan
+		<include refid="slsNetFrom"/>
+		WHERE s.STATE &lt;&gt; 'D' AND s.ARREARS = 0
+	</select>
+
+	<select id="selectAging" resultType="egovframework.sts.dto.SalesBriefDTO$AgingRow">
+		SELECT
+			IFNULL(TRUNCATE(SUM(x.ARREARS)/10000, 0), 0) AS arrearsMan,
+			COUNT(*) AS arrearsCnt,
+			IFNULL(TRUNCATE(SUM(IF(x.d &lt; 30, x.ARREARS, 0))/10000, 0), 0) AS d30Man,
+			IFNULL(SUM(IF(x.d &lt; 30, 1, 0)), 0) AS d30Cnt,
+			IFNULL(TRUNCATE(SUM(IF(x.d &gt;= 30 AND x.d &lt; 60, x.ARREARS, 0))/10000, 0), 0) AS d60Man,
+			IFNULL(SUM(IF(x.d &gt;= 30 AND x.d &lt; 60, 1, 0)), 0) AS d60Cnt,
+			IFNULL(TRUNCATE(SUM(IF(x.d &gt;= 60 AND x.d &lt; 90, x.ARREARS, 0))/10000, 0), 0) AS d90Man,
+			IFNULL(SUM(IF(x.d &gt;= 60 AND x.d &lt; 90, 1, 0)), 0) AS d90Cnt,
+			IFNULL(TRUNCATE(SUM(IF(x.d &gt;= 90, x.ARREARS, 0))/10000, 0), 0) AS d90pMan,
+			IFNULL(SUM(IF(x.d &gt;= 90, 1, 0)), 0) AS d90pCnt
+		FROM (
+			SELECT s.ARREARS, <include refid="arAgeExpr"/> AS d
+			FROM SLS_TB s
+			WHERE s.STATE &lt;&gt; 'D' AND s.ARREARS &gt; 0
+				AND <include refid="slsChargeGt0"/>
+		) x
+	</select>
+
+	<!-- 매출의 청구액(일반견적 TOTAL_VAT / 취합 SLS_TOTAL)이 0원이면 제외 -->
+	<sql id="slsChargeGt0">
+		IFNULL(COALESCE(
+			NULLIF(s.SLS_TOTAL, 0),
+			(SELECT q.TOTAL_VAT FROM QUO_TB q
+			 WHERE q.QUO_YM = s.QUO_YM AND q.QUO_SEQ = s.QUO_SEQ AND q.STATE &lt;&gt; 'D'
+			 LIMIT 1),
+			0
+		), 0) &gt; 0
+	</sql>
+
+	<!-- 일반견적(QUO) 또는 취합견적(CHQ) 매출에 발행 계산서가 있으면 청구된 것으로 본다. -->
+	<sql id="hasIssuedBill">
+		EXISTS (
+			SELECT 1
+			FROM QUO_TB qbill
+			INNER JOIN SLS_TB s ON s.STATE &lt;&gt; 'D' AND (
+				(s.QUO_YM = qbill.QUO_YM AND s.QUO_SEQ = qbill.QUO_SEQ)
+				OR (
+					IFNULL(qbill.CHQ_SEQ, 0) &lt;&gt; 0
+					AND s.CHQ_YM = qbill.CHQ_YM AND s.CHQ_SEQ = qbill.CHQ_SEQ
+				)
+			)
+			INNER JOIN BILL_TB b ON b.SLS_YM = s.SLS_YM AND b.SLS_SEQ = s.SLS_SEQ
+				AND b.BILL_YN = 1 AND b.STATE NOT IN (4, 6)
+			WHERE qbill.QUO_YM = j.QUO_YM AND qbill.QUO_SEQ = j.QUO_SEQ
+		)
+	</sql>
+
+	<select id="selectUnbilled" resultType="egovframework.sts.dto.SalesBriefDTO$CountAmt">
+		SELECT
+			COUNT(*) AS cnt,
+			IFNULL(TRUNCATE(SUM(ti.NET_SALES)/10000, 0), 0) AS amtMan
+		FROM TEST_TB t
+		INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ AND ti.STATE &lt;&gt; 'D'
+		INNER JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ AND j.STATE &lt;&gt; 'D'
+		INNER JOIN QUO_TB q ON q.QUO_YM = j.QUO_YM AND q.QUO_SEQ = j.QUO_SEQ
+		WHERE t.TEST_STATE_CODE = 18
+			AND YEAR(t.TEST_STATE_DT) = YEAR(CURDATE())
+			AND IFNULL(q.TOTAL_VAT, 0) &gt; 0
+			AND NOT <include refid="hasIssuedBill"/>
+	</select>
+
+	<select id="selectWeekPayMan" resultType="long">
+		SELECT IFNULL(TRUNCATE(SUM(BILL)/10000, 0), 0)
+		FROM BILL_TB
+		WHERE PAY_CODE IS NOT NULL
+			AND STATE NOT IN (4, 6)
+			AND YEARWEEK(PAY_DT, 1) = YEARWEEK(CURDATE(), 1)
+	</select>
+
+	<select id="selectStuck" resultType="egovframework.sts.dto.SalesBriefDTO$CountAmt">
+		SELECT
+			COUNT(*) AS cnt,
+			IFNULL(TRUNCATE(SUM(ti.NET_SALES)/10000, 0), 0) AS amtMan
+		FROM TEST_TB t
+		INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ AND ti.STATE &lt;&gt; 'D'
+		WHERE t.TEST_STATE_CODE IN (3, 4, 5)
+			AND t.INS_DT BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND NOW()
+	</select>
+
+	<select id="selectArList" resultType="egovframework.sts.dto.SalesBriefDTO$ArRow">
+		SELECT
+			FN_GET_SEQSTRING('M', s.SLS_YM, '', s.SLS_SEQ) AS slsId,
+			IFNULL(COALESCE(j.CMPY_NAME, jchq.CMPY_NAME), '') AS cmpyName,
+			IFNULL(FN_MEM_NAME(COALESCE(j.MNG_ID, jchq.MNG_ID)), '-') AS mngName,
+			IFNULL(TRUNCATE(s.ARREARS/10000, 0), 0) AS arrearsMan,
+			<include refid="arAgeExpr"/> AS days
+		FROM SLS_TB s
+		LEFT JOIN JOB_TB j ON j.QUO_YM = s.QUO_YM AND j.QUO_SEQ = s.QUO_SEQ AND j.STATE &lt;&gt; 'D'
+		LEFT JOIN (
+			SELECT q.CHQ_YM, q.CHQ_SEQ,
+				MAX(j2.CMPY_NAME) AS CMPY_NAME,
+				MAX(j2.MNG_ID) AS MNG_ID
+			FROM QUO_TB q
+			INNER JOIN JOB_TB j2 ON j2.QUO_YM = q.QUO_YM AND j2.QUO_SEQ = q.QUO_SEQ AND j2.STATE &lt;&gt; 'D'
+			WHERE IFNULL(q.CHQ_SEQ, 0) &lt;&gt; 0
+			GROUP BY q.CHQ_YM, q.CHQ_SEQ
+		) jchq ON IFNULL(s.QUO_SEQ, 0) = 0
+			AND jchq.CHQ_YM = s.CHQ_YM AND jchq.CHQ_SEQ = s.CHQ_SEQ
+		WHERE s.STATE &lt;&gt; 'D' AND s.ARREARS &gt; 0
+			AND <include refid="slsChargeGt0"/>
+		ORDER BY days DESC, s.ARREARS DESC
+		LIMIT 15
+	</select>
+
+	<select id="selectUnbilledList" resultType="egovframework.sts.dto.SalesBriefDTO$UnbilledRow">
+		SELECT
+			CONCAT(
+				'SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
+				'-', IF(t.TEST_TYPE_CODE = 'NS', 'SF', t.TEST_TYPE_CODE), LPAD(t.TEST_NO, 4, 0)
+			) AS testId,
+			FN_GET_SEQSTRING('Q', q.QUO_YM, q.TYPE, q.QUO_SEQ) AS quoId,
+			IFNULL(j.CMPY_NAME, '') AS cmpyName,
+			IFNULL(FN_MEM_NAME(j.MNG_ID), '-') AS mngName,
+			IFNULL(TRUNCATE(ti.NET_SALES/10000, 0), 0) AS netMan,
+			DATEDIFF(CURDATE(), t.TEST_STATE_DT) AS days,
+			DATE_FORMAT(t.TEST_STATE_DT, '%Y-%m-%d') AS endDt
+		FROM TEST_TB t
+		INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ AND ti.STATE &lt;&gt; 'D'
+		INNER JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ AND j.STATE &lt;&gt; 'D'
+		INNER JOIN QUO_TB q ON q.QUO_YM = j.QUO_YM AND q.QUO_SEQ = j.QUO_SEQ
+		WHERE t.TEST_STATE_CODE = 18
+			AND YEAR(t.TEST_STATE_DT) = YEAR(CURDATE())
+			AND IFNULL(q.TOTAL_VAT, 0) &gt; 0
+			AND NOT <include refid="hasIssuedBill"/>
+		ORDER BY t.TEST_STATE_DT
+		LIMIT 30
+	</select>
+
+	<select id="selectMemberProgress" resultType="egovframework.sts.dto.SalesBriefDTO$MemberProgress">
+		SELECT
+			m.ID AS memId,
+			m.MEM_NAME AS memName,
+			IFNULL(t.JAN,0) AS m1, IFNULL(t.FEB,0) AS m2, IFNULL(t.MAR,0) AS m3, IFNULL(t.APR,0) AS m4,
+			IFNULL(t.MAY,0) AS m5, IFNULL(t.JUN,0) AS m6, IFNULL(t.JUL,0) AS m7, IFNULL(t.AUG,0) AS m8,
+			IFNULL(t.SEP,0) AS m9, IFNULL(t.OCT,0) AS m10, IFNULL(t.NOV,0) AS m11, IFNULL(t.`DEC`,0) AS m12,
+			IFNULL(act.yearActualMan, 0) AS yearActualMan
+		FROM TARGET_TB t
+		INNER JOIN MEMBER_TB m ON m.ID = t.MEM_ID AND m.MNG_YN = 1
+		LEFT JOIN (
+			SELECT j.MNG_ID,
+				IFNULL(TRUNCATE(SUM(<include refid="slsNetExpr"/>)/10000, 0), 0) AS yearActualMan
+			<include refid="slsNetFrom"/>
+			INNER JOIN JOB_TB j ON j.QUO_YM = s.QUO_YM AND j.QUO_SEQ = s.QUO_SEQ AND j.STATE &lt;&gt; 'D'
+			WHERE s.STATE &lt;&gt; 'D' AND s.ARREARS = 0 AND YEAR(s.END_DT) = YEAR(CURDATE())
+			GROUP BY j.MNG_ID
+		) act ON act.MNG_ID = m.ID
+		WHERE t.YEAR = YEAR(CURDATE())
+			AND (t.JAN+t.FEB+t.MAR+t.APR+t.MAY+t.JUN+t.JUL+t.AUG+t.SEP+t.OCT+t.NOV+t.`DEC`) &gt; 0
+	</select>
+
+</mapper>

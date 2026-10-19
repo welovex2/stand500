@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.CustLadderMapper">
+
+	<!--
+		고객 성장 단계.
+
+		무거운 집계는 여기서 한 번만 한다. 업체(CMPY_SEQ) 한 줄씩 뽑아 놓고,
+		같은 회사를 하나로 합치는 일과 목록을 고르는 일은 CustLadderServiceImpl 에서 한다.
+		합치는 규칙을 SQL 로 쓰면 이 무거운 조인을 화면 한 번에 여섯 번 돌려야 하고,
+		한글 상호 정리(주식회사·(주) 떼기)를 REPLACE 중첩으로 써야 해서 읽기도 어렵다.
+
+		담당자는 GROUP_CONCAT 으로 뽑지 않는다.
+		의뢰가 1,000건 넘는 고객이 있어서 ID 를 이어 붙이면 group_concat_max_len(기본 1024)을 넘고,
+		그러면 MySQL 이 "Row N was cut by GROUP_CONCAT()" 경고를 내는데
+		JDBC 드라이버가 이걸 SQLException 으로 올려서 화면이 죽는다.
+		그래서 날짜를 앞에 붙여 MAX() 로 가장 최근 값을 고르고 앞 8자리(yyyyMMdd)를 잘라낸다.
+		시험부 코드 쪽 GROUP_CONCAT 은 코드가 일곱 개뿐이라 길이 문제가 없다.
+
+		왜 합쳐야 하나:
+		같은 회사가 CMPY_TB 에 여러 줄로 등록된 경우가 있다.
+		예를 들어 아이벡스메디칼시스템즈는 CMPY_SEQ 2013·2200·3053 으로 나뉘어 있고,
+		전파시험인증센터는 65(166건)·2511(182건) 로 갈려 있다.
+		합치지 않으면 의뢰 횟수와 이용 시험부 수가 실제보다 낮게 잡혀
+		단계가 틀리고, 다른 줄로 계속 거래 중인 고객이 이탈로 올라온다.
+	-->
+	<select id="selectCustBase" resultType="egovframework.sts.dto.CustLadderDTO$BaseRow">
+		SELECT
+			j.CMPY_SEQ AS cmpySeq,
+			IFNULL(c.CMPY_NAME, '') AS cmpyName,
+			IFNULL(c.BSNS_RGNMB, '') AS bsnsRgnmb,
+			IFNULL(FN_MEM_NAME(SUBSTRING(
+				MAX(CONCAT(DATE_FORMAT(q.ISSUE_DT, '%Y%m%d'), IFNULL(j.MNG_ID, ''))), 9)), '-') AS lastMngName,
+			COUNT(DISTINCT CONCAT(q.QUO_YM, '-', q.QUO_SEQ)) AS orders,
+			GROUP_CONCAT(DISTINCT ti.TEST_TYPE_CODE ORDER BY ti.TEST_TYPE_CODE SEPARATOR ',') AS deptCodes,
+			IFNULL(SUM(ti.NET_SALES), 0) AS netAll,
+			IFNULL(SUM(IF(YEAR(q.ISSUE_DT) = YEAR(CURDATE()), ti.NET_SALES, 0)), 0) AS netCur,
+			MIN(q.ISSUE_DT) AS firstDt,
+			MAX(q.ISSUE_DT) AS lastDt
+		FROM JOB_TB j
+		INNER JOIN QUO_TB q
+			ON q.QUO_YM = j.QUO_YM AND q.QUO_SEQ = j.QUO_SEQ AND q.STATE &lt;&gt; 'D'
+		INNER JOIN TEST_ITEM_TB ti
+			ON ti.QUO_YM = j.QUO_YM AND ti.QUO_SEQ = j.QUO_SEQ AND ti.STATE &lt;&gt; 'D'
+		LEFT JOIN CMPY_TB c ON c.CMPY_SEQ = j.CMPY_SEQ
+		WHERE j.STATE &lt;&gt; 'D'
+			AND j.CMPY_SEQ &gt; 0
+			AND q.ISSUE_DT IS NOT NULL
+		GROUP BY j.CMPY_SEQ, cmpyName, bsnsRgnmb
+	</select>
+
+	<!-- 시험부 코드 → 이름. 아직 안 쓴 시험부를 화면에서 계산하려면 전체 목록이 필요하다. -->
+	<select id="selectDeptCodes" resultType="egovframework.sts.dto.CustLadderDTO$DeptCode">
+		SELECT TYPE_CD AS code, TYPE_NAME AS name
+		FROM COMCODE_TB
+		WHERE TOP_CD = 'TT'
+		ORDER BY TYPE_CD
+	</select>
+
+</mapper>

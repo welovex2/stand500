@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.DeptPnlMapper">
+
+	<!--
+		시험부별 손익 한 장.
+		기간 정의는 세 쿼리가 같다.
+		  올해   : 1월 1일 ~ 오늘
+		  전년동기 : 전년 1월 1일 ~ 오늘에서 1년 뺀 날
+		달력을 맞춰 자르므로 윤년에도 비교 구간의 길이가 어긋나지 않는다.
+	-->
+	<sql id="curFrom">MAKEDATE(YEAR(CURDATE()), 1)</sql>
+	<sql id="prevFrom">MAKEDATE(YEAR(CURDATE()) - 1, 1)</sql>
+	<sql id="prevTo">DATE_SUB(CURDATE(), INTERVAL 1 YEAR)</sql>
+
+	<!--
+		수주(견적 발행월) 기준 시험부별 건수·순매출·청구액.
+		매출확정(SLS_TB)이 아니라 견적 발행 시점으로 잡는다.
+		이 회사는 견적 → 신청 전환율이 90%대여서 견적이 곧 수주에 가깝고,
+		매출확정 기준으로 보면 리드타임만큼 늦게 보여 믹스 변화를 놓친다.
+		TEST_ITEM_TB 1건 = 시험 1건이라 COUNT(*)가 곧 건수다.
+	-->
+	<select id="selectBooking" resultType="egovframework.sts.dto.DeptPnlDTO$BookingRow">
+		SELECT
+			ti.TEST_TYPE_CODE AS deptCode,
+			IFNULL(c.TYPE_NAME, ti.TEST_TYPE_CODE) AS deptName,
+			IFNULL(SUM(q.ISSUE_DT &gt;= <include refid="curFrom"/>), 0) AS curCnt,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &gt;= <include refid="curFrom"/>, ti.NET_SALES, 0)) / 10000, 0), 0) AS curNetMan,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &gt;= <include refid="curFrom"/>, ti.CHRGS, 0)) / 10000, 0), 0) AS curChrgsMan,
+			IFNULL(SUM(q.ISSUE_DT &lt; <include refid="curFrom"/>), 0) AS prevCnt,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &lt; <include refid="curFrom"/>, ti.NET_SALES, 0)) / 10000, 0), 0) AS prevNetMan
+		FROM TEST_ITEM_TB ti
+		INNER JOIN QUO_TB q
+			ON q.QUO_YM = ti.QUO_YM AND q.QUO_SEQ = ti.QUO_SEQ AND q.STATE &lt;&gt; 'D'
+		LEFT JOIN COMCODE_TB c
+			ON c.TOP_CD = 'TT' AND c.TYPE_CD = ti.TEST_TYPE_CODE
+		WHERE ti.STATE &lt;&gt; 'D'
+			AND (
+				q.ISSUE_DT BETWEEN <include refid="curFrom"/> AND CURDATE()
+				OR q.ISSUE_DT BETWEEN <include refid="prevFrom"/> AND <include refid="prevTo"/>
+			)
+		GROUP BY ti.TEST_TYPE_CODE, deptName
+	</select>
+
+	<!--
+		처리량과 리드타임. 완료(프로젝트완료 18) 도달일 기준.
+		리드타임 = 시험 등록일 → 완료일. 음수(자료 오류)는 평균에서 뺀다.
+		평균만 보면 꼬리가 안 보여서 60일 초과 완료 건수를 같이 낸다.
+	-->
+	<select id="selectThroughput" resultType="egovframework.sts.dto.DeptPnlDTO$ThroughputRow">
+		SELECT
+			x.deptCode AS deptCode,
+			IFNULL(SUM(x.cur), 0) AS curDoneCnt,
+			IFNULL(ROUND(AVG(IF(x.cur, x.days, NULL)), 1), 0) AS curLeadDays,
+			IFNULL(SUM(x.cur AND x.days &gt;= 60), 0) AS curOver60Cnt,
+			IFNULL(SUM(x.prev), 0) AS prevDoneCnt,
+			IFNULL(ROUND(AVG(IF(x.prev, x.days, NULL)), 1), 0) AS prevLeadDays
+		FROM (
+			SELECT
+				t.TEST_TYPE_CODE AS deptCode,
+				DATEDIFF(t.TEST_STATE_DT, t.INS_DT) AS days,
+				(t.TEST_STATE_DT &gt;= <include refid="curFrom"/>) AS cur,
+				(t.TEST_STATE_DT &lt; <include refid="curFrom"/>) AS prev
+			FROM TEST_TB t
+			WHERE t.STATE &lt;&gt; 'D'
+				AND t.TEST_STATE_CODE = 18
+				AND t.INS_DT IS NOT NULL
+				AND t.TEST_STATE_DT IS NOT NULL
+				AND DATEDIFF(t.TEST_STATE_DT, t.INS_DT) &gt;= 0
+				AND (
+					t.TEST_STATE_DT BETWEEN <include refid="curFrom"/> AND CURDATE()
+					OR t.TEST_STATE_DT BETWEEN <include refid="prevFrom"/> AND <include refid="prevTo"/>
+				)
+		) x
+		GROUP BY x.deptCode
+	</select>
+
+	<!--
+		미완료로 묶여 있는 물량(WIP). 완료 18 / 시험취소 19 / 시험미필요 20 은 뺀다.
+		막힌 것 = 디버깅 3, 홀딩 4, RD지연 5 (영업 주간 화면의 stuck 과 같은 정의).
+		TEST_TB : TEST_ITEM_TB 는 1:1 이라 순매출이 중복 합산되지 않는다.
+	-->
+	<select id="selectWip" resultType="egovframework.sts.dto.DeptPnlDTO$WipRow">
+		SELECT
+			t.TEST_TYPE_CODE AS deptCode,
+			COUNT(*) AS wipCnt,
+			IFNULL(TRUNCATE(SUM(ti.NET_SALES) / 10000, 0), 0) AS wipMan,
+			IFNULL(ROUND(AVG(DATEDIFF(CURDATE(), t.INS_DT)), 0), 0) AS wipAvgAge,
+			IFNULL(SUM(t.TEST_STATE_CODE IN (3, 4, 5)), 0) AS stuckCnt,
+			IFNULL(TRUNCATE(SUM(IF(t.TEST_STATE_CODE IN (3, 4, 5), ti.NET_SALES, 0)) / 10000, 0), 0) AS stuckMan,
+			IFNULL(SUM(DATEDIFF(CURDATE(), t.INS_DT) &gt;= 90), 0) AS aged90Cnt
+		FROM TEST_TB t
+		INNER JOIN TEST_ITEM_TB ti
+			ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ AND ti.STATE &lt;&gt; 'D'
+		WHERE t.STATE &lt;&gt; 'D'
+			AND t.TEST_STATE_CODE NOT IN (18, 19, 20)
+		GROUP BY t.TEST_TYPE_CODE
+	</select>
+
+</mapper>

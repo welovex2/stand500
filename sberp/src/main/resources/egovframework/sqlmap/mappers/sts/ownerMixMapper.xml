@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="egovframework.sts.service.OwnerMixMapper">
+
+	<!--
+		담당자별 포트폴리오.
+
+		같은 회사 안에서 담당자별 건당 단가가 몇 배씩 벌어진다. 그 차이가 어디서 오는지를
+		시험부 구성과 고객 종류로 갈라 보여주는 것이 이 화면의 목적이다.
+
+		주의: 단가 차이를 곧 실력 차이로 읽으면 안 된다.
+		컨설팅사 물량을 대량으로 받는 담당과 직접고객 소량을 받는 담당은 애초에 단가가 다르다.
+		그래서 직고객 매출 비중을 같은 표에 둔다.
+
+		기간은 시험부 손익 화면과 같다. 올해 1월 1일 ~ 오늘, 전년 같은 기간.
+	-->
+	<sql id="curFrom">MAKEDATE(YEAR(CURDATE()), 1)</sql>
+	<sql id="prevFrom">MAKEDATE(YEAR(CURDATE()) - 1, 1)</sql>
+	<sql id="prevTo">DATE_SUB(CURDATE(), INTERVAL 1 YEAR)</sql>
+
+	<sql id="ownerFrom">
+		FROM JOB_TB j
+		INNER JOIN QUO_TB q
+			ON q.QUO_YM = j.QUO_YM AND q.QUO_SEQ = j.QUO_SEQ AND q.STATE &lt;&gt; 'D'
+		INNER JOIN TEST_ITEM_TB ti
+			ON ti.QUO_YM = j.QUO_YM AND ti.QUO_SEQ = j.QUO_SEQ AND ti.STATE &lt;&gt; 'D'
+		LEFT JOIN CMPY_TB c ON c.CMPY_SEQ = j.CMPY_SEQ
+		WHERE j.STATE &lt;&gt; 'D'
+			AND IFNULL(j.MNG_ID, '') &lt;&gt; ''
+	</sql>
+
+	<!--
+		담당자 한 줄. 올해와 전년동기를 같은 줄에 담는다.
+		curDirectMan : 직접고객(CMPY_CODE 1000) 에서 나온 올해 매출.
+		curHiMan     : MEDICAL·SAR·RF 에서 나온 올해 매출. 건당 단가가 높은 세 시험부다.
+	-->
+	<select id="selectOwner" resultType="egovframework.sts.dto.OwnerMixDTO$OwnerRow">
+		SELECT
+			j.MNG_ID AS mngId,
+			IFNULL(FN_MEM_NAME(j.MNG_ID), j.MNG_ID) AS mngName,
+			IFNULL(SUM(q.ISSUE_DT &gt;= <include refid="curFrom"/>), 0) AS curCnt,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &gt;= <include refid="curFrom"/>, ti.NET_SALES, 0)) / 10000, 0), 0) AS curNetMan,
+			COUNT(DISTINCT IF(q.ISSUE_DT &gt;= <include refid="curFrom"/>, j.CMPY_SEQ, NULL)) AS curCustCnt,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &gt;= <include refid="curFrom"/> AND c.CMPY_CODE = '1000', ti.NET_SALES, 0)) / 10000, 0), 0) AS curDirectMan,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &gt;= <include refid="curFrom"/> AND ti.TEST_TYPE_CODE IN ('MD', 'SR', 'RF'), ti.NET_SALES, 0)) / 10000, 0), 0) AS curHiMan,
+			IFNULL(SUM(q.ISSUE_DT &lt; <include refid="curFrom"/>), 0) AS prevCnt,
+			IFNULL(TRUNCATE(SUM(IF(q.ISSUE_DT &lt; <include refid="curFrom"/>, ti.NET_SALES, 0)) / 10000, 0), 0) AS prevNetMan
+		<include refid="ownerFrom"/>
+			AND (
+				q.ISSUE_DT BETWEEN <include refid="curFrom"/> AND CURDATE()
+				OR q.ISSUE_DT BETWEEN <include refid="prevFrom"/> AND <include refid="prevTo"/>
+			)
+		GROUP BY j.MNG_ID, mngName
+		HAVING curNetMan &gt; 0 OR prevNetMan &gt; 0
+	</select>
+
+	<!-- 담당자 × 시험부 올해 매출. 표의 가로줄을 채운다. -->
+	<select id="selectOwnerDept" resultType="egovframework.sts.dto.OwnerMixDTO$OwnerDeptRow">
+		SELECT
+			j.MNG_ID AS mngId,
+			ti.TEST_TYPE_CODE AS deptCode,
+			COUNT(*) AS cnt,
+			IFNULL(TRUNCATE(SUM(ti.NET_SALES) / 10000, 0), 0) AS netMan
+		<include refid="ownerFrom"/>
+			AND q.ISSUE_DT BETWEEN <include refid="curFrom"/> AND CURDATE()
+		GROUP BY j.MNG_ID, ti.TEST_TYPE_CODE
+	</select>
+
+	<!-- 표의 세로줄 순서를 정하려면 시험부 목록이 필요하다. -->
+	<select id="selectDeptCodes" resultType="egovframework.sts.dto.OwnerMixDTO$DeptCol">
+		SELECT TYPE_CD AS code, TYPE_NAME AS name
+		FROM COMCODE_TB
+		WHERE TOP_CD = 'TT'
+		ORDER BY TYPE_CD
+	</select>
+
+</mapper>

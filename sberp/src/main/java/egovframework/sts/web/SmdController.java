@@ -20,8 +20,10 @@ import egovframework.cmm.service.LoginVO;
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.sts.dto.SalesBriefDTO;
 import egovframework.sts.dto.SmdDTO;
 import egovframework.sts.dto.Target;
+import egovframework.sts.service.SalesBriefService;
 import egovframework.sts.service.SmdService;
 import egovframework.sys.service.Power;
 import io.swagger.annotations.Api;
@@ -37,6 +39,9 @@ public class SmdController {
 
   @Resource(name = "SmdService")
   private SmdService smdService;
+
+  @Resource(name = "SalesBriefService")
+  private SalesBriefService salesBriefService;
 
   @Resource(name = "propertiesService")
   protected EgovPropertyService propertyService;
@@ -72,6 +77,17 @@ public class SmdController {
     BasicResponse res =
         BasicResponse.builder().result(result).message(msg).data(list).build();
     return res;
+  }
+
+  @ApiOperation(value = "경영진 영업 주간 한 장", notes = "착지·미수 고령화·미청구·적체. 상세 통계표와 별도.")
+  @GetMapping(value = "/brief.do")
+  public BasicResponse brief() {
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      return BasicResponse.builder().result(false).message(ResponseMessage.UNAUTHORIZED).build();
+    }
+    SalesBriefDTO data = salesBriefService.getBrief();
+    return BasicResponse.builder().result(true).data(data).build();
   }
 
   @ApiOperation(value = "목표금액 저장", notes = "")
