@@ -100,8 +100,9 @@ public class NextcloudOnlyofficeConnectorServiceImpl implements NextcloudOnlyoff
     URIBuilder ub = new URIBuilder(ncBase + "/ocs/v2.php/apps/onlyoffice/api/v1/config/" + fileId);
     ub.addParameter("filePath", ncFilePath);
     ub.addParameter("inframe", "true");
+    URI requestUri = ub.build();
 
-    HttpGet get = new HttpGet(ub.build());
+    HttpGet get = new HttpGet(requestUri);
     get.setHeader("Authorization", authHeader);
     get.setHeader("OCS-APIRequest", "true");
     get.setHeader("Accept", "application/json");
@@ -111,7 +112,7 @@ public class NextcloudOnlyofficeConnectorServiceImpl implements NextcloudOnlyoff
       String body = res.getEntity() != null ? EntityUtils.toString(res.getEntity(), "UTF-8") : "";
       int code = res.getStatusLine().getStatusCode();
       if (code != 200) {
-        throw new RuntimeException("ONLYOFFICE OCS config HTTP " + code + " body=" + body);
+        throw new RuntimeException(buildOcsHttpError(code, body, requestUri.toString()));
       }
 
       JsonNode root = JSON.readTree(body);
@@ -141,6 +142,17 @@ public class NextcloudOnlyofficeConnectorServiceImpl implements NextcloudOnlyoff
       EntityUtils.consumeQuietly(res.getEntity());
       get.releaseConnection();
     }
+  }
+
+  /**
+   * OCS 998은 Nextcloud가 해당 앱 라우트를 모를 때 난다. onlyoffice 앱 미설치/비활성과 동일.
+   */
+  private static String buildOcsHttpError(int code, String body, String url) {
+    if (code == 404 && body != null && body.contains("\"statuscode\":998")) {
+      return "ONLYOFFICE OCS config HTTP 404 OCS 998 (Nextcloud onlyoffice 앱 미설치/비활성). url="
+          + url + " body=" + body;
+    }
+    return "ONLYOFFICE OCS config HTTP " + code + " url=" + url + " body=" + body;
   }
 
   private static void assertOcsSuccess(JsonNode root, String rawBody) {
