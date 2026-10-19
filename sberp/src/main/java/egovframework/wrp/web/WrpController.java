@@ -32,6 +32,7 @@ import egovframework.cmm.service.SearchVO;
 import egovframework.cmm.util.EgovUserDetailsHelper;
 import egovframework.cmm.util.MinIoFileMngUtil;
 import egovframework.rte.fdl.property.EgovPropertyService;
+import egovframework.wrp.dto.StuckGroupDTO;
 import egovframework.wrp.dto.WeekRepDTO;
 import egovframework.wrp.dto.WeekResultDTO;
 import egovframework.wrp.service.WeekRep;
@@ -372,6 +373,34 @@ public class WrpController {
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();
 
+    return res;
+  }
+
+  @ApiOperation(value = "막힘·적체 대시보드",
+      notes = "시험부서코드(공통코드:WT) EM/RS/SF/MD. EM·MD 는 부서+출장, RS·SF 는 하위부서+합계.")
+  @GetMapping(value = "/stuck/dashboard.do")
+  public BasicResponse stuckDashboard(
+      @ApiParam(value = "시험부서코드(공통코드:WT)", required = true)
+      @RequestParam(value = "testTypeCode", defaultValue = "EM") String testTypeCode)
+      throws Exception {
+
+    boolean result = true;
+    String msg = "";
+    List<StuckGroupDTO> data = new ArrayList<StuckGroupDTO>();
+
+    Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
+    if (!isAuthenticated) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    } else {
+      data = wrpService.getStuckDashboard(testTypeCode);
+      if (data == null || data.isEmpty()) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      }
+    }
+
+    BasicResponse res = BasicResponse.builder().result(result).message(msg).data(data).build();
     return res;
   }
 

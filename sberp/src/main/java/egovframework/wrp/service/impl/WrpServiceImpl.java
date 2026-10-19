@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import egovframework.cmm.service.ComParam;
+import egovframework.wrp.dto.StuckGroupDTO;
+import egovframework.wrp.dto.StuckItem;
+import egovframework.wrp.dto.StuckSummary;
 import egovframework.wrp.dto.WeekResultDTO;
 import egovframework.wrp.dto.WeekResultDTO.Req;
 import egovframework.wrp.service.WeekRep;
@@ -18,6 +21,8 @@ import egovframework.wrp.service.WeekRepSub;
 import egovframework.wrp.service.WeekResult;
 import egovframework.wrp.service.WrpMapper;
 import egovframework.wrp.service.WrpService;
+import egovframework.wrp.util.HoldingCauseSupport;
+import egovframework.wrp.util.WrpDeptCodes;
 
 @Service("WrpService")
 public class WrpServiceImpl implements WrpService {
@@ -38,6 +43,7 @@ public class WrpServiceImpl implements WrpService {
     WeekResult detail = new WeekResult(); // 최근 1년 데이터
     List<WeekRepSub> allData = new ArrayList<>(); // 합산할 데이터
     WeekRepSub total = new WeekRepSub();    // 합산 데이터
+    String deptCode = testTypeCode;
     
     switch (testTypeCode) {
       
@@ -173,9 +179,8 @@ public class WrpServiceImpl implements WrpService {
         
         break;
     }
-    
-    
-    
+
+    fillStuckSummaries(result, deptCode);
     return result ;
   }
   
@@ -462,6 +467,88 @@ public class WrpServiceImpl implements WrpService {
   @Override
   public boolean delete(Req req) {
     return wrpMapper.delete(req);
+  }
+
+  @Override
+  public List<StuckGroupDTO> getStuckDashboard(String testTypeCode) {
+    List<StuckGroupDTO> result = new ArrayList<StuckGroupDTO>();
+    List<String> codes = WrpDeptCodes.expand(testTypeCode);
+    for (String code : codes) {
+      result.add(buildStuckGroup(code));
+    }
+    if (WrpDeptCodes.needsTotal(testTypeCode) && !result.isEmpty()) {
+      result.add(sumStuckGroups(result));
+    }
+    return result;
+  }
+
+  private void fillStuckSummaries(List<WeekResultDTO> result, String deptCode) {
+    if (result == null || result.isEmpty()) {
+      return;
+    }
+    List<String> codes = WrpDeptCodes.expand(deptCode);
+    for (int i = 0; i < codes.size() && i < result.size(); i++) {
+      result.get(i).setStuckSummary(wrpMapper.getStuckSummary(codes.get(i)));
+    }
+    if (WrpDeptCodes.needsTotal(deptCode) && result.size() > codes.size()) {
+      List<StuckGroupDTO> parts = new ArrayList<StuckGroupDTO>();
+      for (int i = 0; i < codes.size(); i++) {
+        StuckGroupDTO part = new StuckGroupDTO();
+        part.setSummary(result.get(i).getStuckSummary());
+        parts.add(part);
+      }
+      result.get(result.size() - 1).setStuckSummary(sumStuckGroups(parts).getSummary());
+    }
+  }
+
+  private StuckGroupDTO buildStuckGroup(String testTypeCode) {
+    StuckGroupDTO group = new StuckGroupDTO();
+    StuckSummary summary = wrpMapper.getStuckSummary(testTypeCode);
+    if (summary == null) {
+      summary = new StuckSummary();
+      summary.setTestTypeCode(testTypeCode);
+    }
+    group.setSummary(summary);
+    List<StuckItem> holding = wrpMapper.getStuckList(testTypeCode, 4, 7, 5);
+    List<StuckItem> rdDelay = wrpMapper.getStuckList(testTypeCode, 5, 7, 5);
+    group.setHoldingList(holding == null ? new ArrayList<StuckItem>() : holding);
+    group.setRdDelayList(rdDelay == null ? new ArrayList<StuckItem>() : rdDelay);
+    fillHoldingCause(group.getHoldingList());
+    fillHoldingCause(group.getRdDelayList());
+    return group;
+  }
+
+  private void fillHoldingCause(List<StuckItem> items) {
+    if (items == null) {
+      return;
+    }
+    for (StuckItem item : items) {
+      item.setCauseType(HoldingCauseSupport.classify(item.getTestState(), item.getStateMemo()));
+      item.setCauseMemo(HoldingCauseSupport.shortMemo(item.getStateMemo()));
+    }
+  }
+
+  private StuckGroupDTO sumStuckGroups(List<StuckGroupDTO> groups) {
+    StuckSummary total = new StuckSummary();
+    total.setTestTypeCode("TT");
+    total.setTestType("합계");
+    for (StuckGroupDTO group : groups) {
+      StuckSummary s = group.getSummary();
+      if (s == null) {
+        continue;
+      }
+      total.setStuckCnt(total.getStuckCnt() + s.getStuckCnt());
+      total.setDebugCnt(total.getDebugCnt() + s.getDebugCnt());
+      total.setHoldingCnt(total.getHoldingCnt() + s.getHoldingCnt());
+      total.setRdDelayCnt(total.getRdDelayCnt() + s.getRdDelayCnt());
+      total.setStuck14dCnt(total.getStuck14dCnt() + s.getStuck14dCnt());
+      total.setLastWeekInCnt(total.getLastWeekInCnt() + s.getLastWeekInCnt());
+      total.setLastWeekEndCnt(total.getLastWeekEndCnt() + s.getLastWeekEndCnt());
+      total.setLastWeekNet(total.getLastWeekNet() + s.getLastWeekNet());
+    }
+    StuckGroupDTO item = new StuckGroupDTO();
+    item.setSummary(total);
+    return item;
   }
 
 }

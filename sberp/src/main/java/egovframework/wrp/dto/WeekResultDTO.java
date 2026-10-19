@@ -24,6 +24,9 @@ public class WeekResultDTO {
   @ApiModelProperty(value = "시험부 최근4주 결과리스트")
   private List<WeekRepSub> weekRepSubList;
 
+  @ApiModelProperty(value = "막힘·적체 3숫자 (실시간)")
+  private StuckSummary stuckSummary;
+
   @Getter
   @Setter
   @ToString(callSuper = true)

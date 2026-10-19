@@ -2,6 +2,7 @@ package egovframework.wrp.service;
 
 import java.util.List;
 import egovframework.cmm.service.ComParam;
+import egovframework.wrp.dto.StuckGroupDTO;
 import egovframework.wrp.dto.WeekResultDTO;
 import egovframework.wrp.dto.WeekResultDTO.Req;
 
@@ -28,5 +29,7 @@ public interface WrpService {
   List<WeekRep> selectList(ComParam param);
 
   boolean delete(Req req);
+
+  List<StuckGroupDTO> getStuckDashboard(String testTypeCode);
 
 }

@@ -4,6 +4,8 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import egovframework.cmm.service.ComParam;
 import egovframework.rte.psl.dataaccess.mapper.Mapper;
+import egovframework.wrp.dto.StuckItem;
+import egovframework.wrp.dto.StuckSummary;
 import egovframework.wrp.dto.WeekResultDTO;
 import egovframework.wrp.dto.WeekResultDTO.Req;
 
@@ -25,4 +27,10 @@ public interface WrpMapper {
   int selectListCnt(ComParam param);
   List<WeekRep> selectList(ComParam param);
   boolean delete(Req req);
+
+  StuckSummary getStuckSummary(@Param("testTypeCode") String testTypeCode);
+
+  List<StuckItem> getStuckList(@Param("testTypeCode") String testTypeCode,
+      @Param("stateCode") int stateCode, @Param("minDays") int minDays,
+      @Param("limit") int limit);
 }

@@ -386,6 +386,104 @@
 		CROSS JOIN (SELECT @rownum := 0) r
 	</select>
 	
+	<sql id="stuckDeptFilter">
+		<choose>
+			<when test="testTypeCode == 'EMC'">AND t.TEST_TYPE_CODE = 'EM' AND mngr1.TEST_MNG_ID = 'fa815'</when>
+			<when test="testTypeCode == 'MDC'">AND t.TEST_TYPE_CODE = 'MD' AND mngr1.TEST_MNG_ID = 'leeyp'</when>
+			<otherwise>AND t.TEST_TYPE_CODE = #{testTypeCode}</otherwise>
+		</choose>
+	</sql>
+
+	<select id="getStuckSummary" parameterType="String" resultType="stuckSummary">
+		SELECT
+			#{testTypeCode} AS testTypeCode,
+			<choose>
+				<when test="testTypeCode == 'EMC' or testTypeCode == 'MDC'">'출장'</when>
+				<otherwise>FN_CODE_NAME(#{testTypeCode}, 'TT')</otherwise>
+			</choose> AS testType,
+			IFNULL(SUM(CASE WHEN t.TEST_STATE_CODE IN (3, 4, 5) THEN 1 ELSE 0 END), 0) AS stuckCnt,
+			IFNULL(SUM(CASE WHEN t.TEST_STATE_CODE = 3 THEN 1 ELSE 0 END), 0) AS debugCnt,
+			IFNULL(SUM(CASE WHEN t.TEST_STATE_CODE = 4 THEN 1 ELSE 0 END), 0) AS holdingCnt,
+			IFNULL(SUM(CASE WHEN t.TEST_STATE_CODE = 5 THEN 1 ELSE 0 END), 0) AS rdDelayCnt,
+			IFNULL(SUM(CASE
+				WHEN t.TEST_STATE_CODE IN (3, 4, 5)
+				 AND DATEDIFF(CURDATE(), IFNULL(t.TEST_STATE_DT, t.INS_DT)) &gt;= 14
+				THEN 1 ELSE 0 END), 0) AS stuck14dCnt,
+			IFNULL(SUM(IFNULL(flow.in_cnt, 0)), 0) AS lastWeekInCnt,
+			IFNULL(SUM(IFNULL(flow.end_cnt, 0)), 0) AS lastWeekEndCnt,
+			IFNULL(SUM(IFNULL(flow.in_cnt, 0)), 0)
+				- IFNULL(SUM(IFNULL(flow.end_cnt, 0)), 0) AS lastWeekNet
+		FROM TEST_TB t
+		LEFT JOIN TEST_MNGR_TB mngr1
+			ON mngr1.TEST_SEQ = t.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+		LEFT JOIN (
+			SELECT
+				s.TEST_SEQ,
+				SUM(CASE WHEN s.STATE_CODE = 1 THEN 1 ELSE 0 END) AS in_cnt,
+				SUM(CASE WHEN s.STATE_CODE = 18 THEN 1 ELSE 0 END) AS end_cnt
+			FROM TEST_STATE_TB s
+			WHERE YEARWEEK(s.INS_DT, 0) = YEARWEEK(DATE_SUB(CURDATE(), INTERVAL 1 WEEK), 0)
+			GROUP BY s.TEST_SEQ
+		) flow ON flow.TEST_SEQ = t.TEST_SEQ
+		WHERE t.INS_DT BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND NOW()
+		<include refid="stuckDeptFilter"/>
+	</select>
+
+	<select id="getStuckList" resultType="stuckItem">
+		SELECT
+			#{testTypeCode} AS testTypeCode,
+			<choose>
+				<when test="testTypeCode == 'EMC' or testTypeCode == 'MDC'">'출장'</when>
+				<otherwise>FN_CODE_NAME(#{testTypeCode}, 'TT')</otherwise>
+			</choose> AS testType,
+			CONCAT(
+				'SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
+				'-', IF(t.TEST_TYPE_CODE = 'NS', 'SF', t.TEST_TYPE_CODE), LPAD(t.TEST_NO, 4, 0),
+				IF(j.SBK_REVISION &gt; 0, CONCAT('-', j.SBK_REVISION), '')
+			) AS testId,
+			t.TEST_SEQ AS testSeq,
+			IFNULL(j.CMPY_NAME, '') AS cmpyName,
+			IFNULL(ti.MODEL, '') AS model,
+			IFNULL(FN_CODE_NAME(t.TEST_STATE_CODE, 'TS'), '-') AS testState,
+			IFNULL(FN_MEM_NAME(mngr1.TEST_MNG_ID), '-') AS mngName,
+			DATEDIFF(CURDATE(), IFNULL(t.TEST_STATE_DT, t.INS_DT)) AS stuckDays,
+			DATE_FORMAT(IFNULL(t.TEST_STATE_DT, t.INS_DT), '%Y-%m-%d') AS stateDt,
+			IFNULL(board.MEMO, '') AS stateMemo,
+			CASE
+				WHEN board.MEMO IS NULL THEN ''
+				ELSE CONCAT(
+					IFNULL(FN_DEPT_NAME(board.INS_MEM_ID), ''),
+					'_',
+					IFNULL(FN_MEM_NAME(board.INS_MEM_ID), ''),
+					' ',
+					IFNULL(DATE_FORMAT(board.INS_DT, '%Y-%m-%d %H:%i:%s'), '')
+				)
+			END AS boardHead
+		FROM TEST_TB t
+		INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		INNER JOIN JOB_TB j
+			ON j.QUO_YM = ti.QUO_YM
+			AND j.QUO_SEQ = ti.QUO_SEQ
+		LEFT JOIN TEST_MNGR_TB mngr1
+			ON mngr1.TEST_SEQ = t.TEST_SEQ AND mngr1.TEST_MNGR_SEQ = 1
+		LEFT JOIN (
+			SELECT m.TEST_SEQ, m.MEMO, m.INS_MEM_ID, m.INS_DT
+			FROM TEST_MEMO_TB m
+			INNER JOIN (
+				SELECT TEST_SEQ, MAX(TEST_MEMO_SEQ) AS max_seq
+				FROM TEST_MEMO_TB
+				GROUP BY TEST_SEQ
+			) last_board ON last_board.TEST_SEQ = m.TEST_SEQ
+				AND last_board.max_seq = m.TEST_MEMO_SEQ
+		) board ON board.TEST_SEQ = t.TEST_SEQ
+		WHERE t.TEST_STATE_CODE = #{stateCode}
+			AND DATEDIFF(CURDATE(), IFNULL(t.TEST_STATE_DT, t.INS_DT)) &gt;= #{minDays}
+			AND t.INS_DT BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND NOW()
+			<include refid="stuckDeptFilter"/>
+		ORDER BY stuckDays DESC, t.TEST_SEQ
+		LIMIT #{limit}
+	</select>
+
 	<update id="delete" parameterType="weekRepReq">
 		UPDATE WEEKREP_TB
 		SET 
