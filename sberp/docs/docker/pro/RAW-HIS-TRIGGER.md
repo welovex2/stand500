@@ -14,7 +14,9 @@
 | `RAW_MET_HIS_UDT_TG` | `RAW_MET_TB` AFTER UPDATE | 있음 | 없음 | 신규 |
 | `TEST_HIS_TG` | `TEST_TB` AFTER UPDATE | 있음 | 없음 | 신규 |
 
-개발 DB 의 트리거 3개는 스크립트와 내용이 같다(주석·공백 제외 비교, 2026-10-29).
+개발 DB 의 트리거 3개는 2026-10-29 기준 스크립트와 내용이 같았다(주석·공백 제외 비교).
+2026-10-30 `RAW_MET_HIS_UDT_TG` 의 시험방법명을 로데이터 화면 메뉴 이름(CE Main Power, ESD, V-Dip 등)으로 바꿨다.
+개발 DB 에도 이 트리거를 다시 만들어야 같아진다. 이미 쌓인 이력 행의 COL 값(예전 한글 이름)은 그대로 남는다.
 
 ## 사전 점검 결과 (2026-10-29 운영 실측)
 
@@ -72,10 +74,10 @@
 "/c/Program Files/MariaDB 10.6/bin/mysql.exe" -h 172.22.0.44 -u erp_user -p --default-character-set=utf8 erp -e "SELECT TRIGGER_NAME, EVENT_OBJECT_TABLE, DEFINER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME IN ('RAW_HIS_TG','RAW_MET_HIS_UDT_TG','TEST_HIS_TG')"
 ```
 
-한글이 깨지지 않았는지 확인한다(`정전기 방전` 이 보여야 한다).
+한글이 깨지지 않았는지 확인한다(`ok` 가 1 이어야 한다).
 
 ```bash
-"/c/Program Files/MariaDB 10.6/bin/mysql.exe" -h 172.22.0.44 -u erp_user -p --default-character-set=utf8 erp -e "SELECT INSTR(ACTION_STATEMENT, '정전기 방전') > 0 AS ok FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = 'RAW_MET_HIS_UDT_TG'"
+"/c/Program Files/MariaDB 10.6/bin/mysql.exe" -h 172.22.0.44 -u erp_user -p --default-character-set=utf8 erp -e "SELECT INSTR(ACTION_STATEMENT, 'B급/방송수신기/튜너') > 0 AS ok FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = 'RAW_MET_HIS_UDT_TG'"
 ```
 
 다음 업무일에 실제 수정이 일어난 뒤 이력이 쌓였는지 본다.

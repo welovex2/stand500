@@ -8,7 +8,7 @@
 --   TB=''           : 기존 저장 시점 행 (기존 동작 그대로)
 --   TB='RAW_TB'     : COL = TEST_S_DT / TEST_E_DT
 --   TB='RAW_MET_TB' : COL = CHECK_YN:{MET_SEQ} {시험방법명} / TYPE:{MET_SEQ} {시험방법명}
---                     예) CHECK_YN:6 정전기 방전
+--                     예) CHECK_YN:6 ESD
 --   TB='TEST_TB'    : COL = REPORT_DT:{TEST_SEQ} / TEST_REPORT_DT:{TEST_SEQ}
 --                     RAW_ID 는 그 시험의 로데이터 RAW_SEQ (재발행 시험은 원본 시험의 로데이터, 앱 selectRawSeqByTestSeq 와 동일).
 --                     재발행 시험은 원본과 RAW_ID 를 공유하므로 COL 에 TEST_SEQ 를 붙여 구분한다.
@@ -27,8 +27,9 @@
 --      변경자가 직전 로데이터 기본정보 저장자로 기록된다.
 --   3) RAW_TB·RAW_MET_TB 최초 등록(INSERT) 시 값은 기록하지 않는다. 이후 수정부터 변경 전/후가 남는다.
 --
--- 시험방법명 출처 : RepController.java 성적서 출력 switch(met.getMetSeq()) 주석
---   (COMCODE_TB 'RP' 그룹은 시험장면사진용 영문 코드라 사용하지 않음)
+-- 시험방법명 출처 : 로데이터 수정 화면 메뉴(CE·RE 탭은 도움말의 세부 항목)와 같은 이름
+--   MET_SEQ 대응은 RepController.java 성적서 출력 switch(met.getMetSeq()) 기준
+--   메뉴에 없는 11·13·14·15 는 PicType·RepController 의 이름(M-Field, Click, DP, RE 9kHz~30MHz)
 -- =====================================================================
 
 
@@ -82,24 +83,24 @@ BEGIN
 
     IF NOT (NEW.CHECK_YN <=> OLD.CHECK_YN) OR NOT (NEW.TYPE <=> OLD.TYPE) THEN
 
-        -- MET_SEQ + 시험방법명 (예: '6 정전기 방전')
+        -- MET_SEQ + 시험방법명 (예: '6 ESD')
         SET v_met = CONCAT(NEW.MET_SEQ, ' ', CASE NEW.MET_SEQ
-            WHEN 0  THEN '교류 주전원 포트 전도성 방해'
-            WHEN 1  THEN '비대칭모드 전도성 방해'
-            WHEN 2  THEN '방송수신기 튜너포트 차동전압 전도성 방해'
-            WHEN 3  THEN 'RF변조기 출력포트 차동전압 전도성 방해'
-            WHEN 4  THEN '방사성 방해(1GHz 이하)'
-            WHEN 5  THEN '방사성 방해(1GHz 초과)'
-            WHEN 6  THEN '정전기 방전'
-            WHEN 7  THEN '방사성 RF 전자기장'
-            WHEN 8  THEN '전기적 빠른 과도현상'
-            WHEN 9  THEN '서지'
-            WHEN 10 THEN '전도성 RF 전자기장'
-            WHEN 11 THEN '전원 주파수 자기장'
-            WHEN 12 THEN '전압 강하 및 순간 정전'
+            WHEN 0  THEN 'CE Main Power'
+            WHEN 1  THEN 'CE ISN'
+            WHEN 2  THEN 'CE B급/방송수신기/튜너'
+            WHEN 3  THEN 'CE B급/RF변조기/출력'
+            WHEN 4  THEN 'RE Below 1Ghz'
+            WHEN 5  THEN 'RE Above 1Ghz'
+            WHEN 6  THEN 'ESD'
+            WHEN 7  THEN 'RS'
+            WHEN 8  THEN 'EFT/BURST'
+            WHEN 9  THEN 'SURGE'
+            WHEN 10 THEN 'CS'
+            WHEN 11 THEN 'M-Field'
+            WHEN 12 THEN 'V-Dip'
             WHEN 13 THEN 'Click'
             WHEN 14 THEN 'DP'
-            WHEN 15 THEN '방사성 방해(9kHz~30MHz)'
+            WHEN 15 THEN 'RE 9kHz~30MHz'
             ELSE '' END);
 
         SET v_mem = (SELECT UDT_MEM_ID FROM RAW_TB WHERE RAW_SEQ = NEW.RAW_SEQ LIMIT 1);
