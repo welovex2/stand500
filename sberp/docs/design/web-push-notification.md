@@ -567,7 +567,7 @@ API 호출만 실패해 **흰 화면**이 될 수 있다. 서버 로그에 아�
 개발서버(`dev.stand500.com`)는 아래가 모두 끝나 동작 확인까지 마쳤다.
 
 1. ✅ `PUSH_SUB_TB.sql` 적용
-2. ✅ VAPID 키 설정 (`erp-local.properties`. `.gitignore` 대상)
+2. ✅ VAPID 키 설정 (처음엔 WAR 안 `erp-local.properties` → 2026-10-29 개발서버 `.env` 로 옮김)
 3. ✅ 정식 인증서 전환 — `docs/docker/dev/SSL-NGINX-DEV.md`
 4. ✅ 프론트 4개 파일 배포 (4장)
 5. ✅ 구독 등록 → 테스트 발송 → 공지 등록 알림 전 구간 검증
@@ -596,7 +596,7 @@ API 호출만 실패해 **흰 화면**이 될 수 있다. 서버 로그에 아�
 ① JVM 시스템 프로퍼티  -DGLOBALS_PUSH_VAPID_PUBLIC=...
 ② OS 환경변수          ← docker-compose 의 env_file: .env 가 여기로 들어간다
 ③ /usr/local/tomcat/conf/erp.properties   (현재 볼륨 마운트 주석 처리됨)
-④ classpath:egovframework/env/erp-local.properties
+④ file:${user.home}/.sberp/erp-local.properties   (내 PC 전용)
 ⑤ ${...:기본값} 의 기본값
 ```
 
@@ -604,16 +604,14 @@ API 호출만 실패해 **흰 화면**이 될 수 있다. 서버 로그에 아�
 `GLOBALS_PUSH_VAPID_PUBLIC` 은 위에서 값을 찾는 이름이다. `context-properties.xml`
 의 `<entry>` 한 줄이 둘을 이어준다.
 
-**④ 는 `src/main/resources/` 라서 빌드하면 WAR 안
-(`WEB-INF/classes/egovframework/env/`)에 그대로 들어간다.** 파일명에 `local` 이 붙고
-`.gitignore` 대상이라 내 PC 전용처럼 보이지만 **서버까지 따라간다.**
+④ 는 예전에 `src/main/resources/egovframework/env/` 에 있어서 `api.war` 안에
+개발 DB 비밀번호·개발 VAPID 개인키가 같이 들어갔고, 서버 `.env` 에 빠진 키를
+조용히 개발 값으로 채웠다. 2026-10-29 부터 WAR 밖(Windows 는
+`C:\Users\<사용자>\.sberp\erp-local.properties`)으로 옮겼다.
 
-- 개발서버는 지금 `.env` 가 아니라 **④(WAR 안 파일)** 에서 키를 읽고 있다.
-- 운영은 `.env`(②)가 ④ 를 이기므로 동작은 정상이지만, **WAR 안에 개발 VAPID
-  개인키·개발 DB 비밀번호가 실려 간다.** 웹푸시 때문에 생긴 문제는 아니고
-  DB·Nextcloud 비밀번호가 원래 같은 방식으로 들어가고 있었다.
-
-운영 배포 시에는 `.env` 에 **운영 전용 키**를 반드시 넣어 ④ 를 덮어쓸 것.
+- 서버는 ② `.env` 만 본다. **`.env` 에 빠진 키가 있으면 기동 실패**(기본값 없는 키)
+  하거나 기본값으로 동작(푸시는 꺼짐)한다.
+- 개발서버 `.env` 에는 기존 개발 키를, 운영 `.env` 에는 운영 전용 키를 넣는다.
 
 ### 키를 바꿀 때
 
