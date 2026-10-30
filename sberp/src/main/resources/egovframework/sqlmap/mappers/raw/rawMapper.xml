@@ -1194,8 +1194,10 @@
         order by no desc
 	</select>
 	
+	<!-- 프로젝트완료 후에도 로데이터 수정 허용 로그인 ID -->
 	<select id="selectEditYn" parameterType="int" resultType="int">
-		SELECT IFNULL(RAW_EDIT_YN, 1)
+		<bind name="rawEditUser" value="@org.springframework.web.context.request.RequestContextHolder@getRequestAttributes() == null ? null : (@egovframework.cmm.util.EgovUserDetailsHelper@getAuthenticatedUser() == null ? null : @egovframework.cmm.util.EgovUserDetailsHelper@getAuthenticatedUser().id)"/>
+		SELECT /* RAW_EDIT_USER_HOTFIX */ IF(#{rawEditUser} IN ('justin', 'pgm', 'htpark', 'phj', 'jcbae', 'jcba', 'sgh', 'red100y', 'dw.lee', 'sangjun', 'jyh', 'jjh'), 1, IFNULL(RAW_EDIT_YN, 1))
 		FROM TEST_TB
 		WHERE TEST_SEQ = #{testSeq}
 	</select>
