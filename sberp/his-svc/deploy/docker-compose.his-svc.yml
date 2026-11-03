@@ -1,0 +1,21 @@
+# 운영 compose(/mnt/tc/... 의 docker-compose.yml) 의 services: 아래에 붙여 넣는다.
+# nginx-ssl 과 같은 compose 네트워크여야 nginx 가 http://his-svc:8000 으로 찾는다.
+# ports 는 열지 않는다 — 호스트 포트를 열면 nginx Basic 인증을 거치지 않고 들어올 수 있다.
+
+  # 로데이터 변경 이력 조회 (읽기 전용). nginx /his/ 로만 접근.
+  his-svc:
+    build:
+      context: /mnt/tc/project/his-svc
+    container_name: his-svc
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - DB_HOST=${HIS_DB_HOST:-mariadb}
+      - DB_PORT=${HIS_DB_PORT:-3306}
+      - DB_NAME=${HIS_DB_NAME:-erp}
+      - DB_USER=${HIS_DB_USER:-his_ro}
+      - DB_PASSWORD=${HIS_DB_PASSWORD:-}
+    expose:
+      - "8000"
+    restart: unless-stopped

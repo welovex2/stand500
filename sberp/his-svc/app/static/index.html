@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>로데이터 변경 이력</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --text: #1f2328; --muted: #6b7280; --line: #e5e7eb;
+    --accent: #2563eb; --warn-bg: #fff4e5; --warn-text: #9a3412; --done-bg: #fef2f2; --done-text: #b91c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --panel: #1a1e24; --text: #e6e8eb; --muted: #9aa3ad; --line: #2c323a;
+      --accent: #60a5fa; --warn-bg: #3a2a14; --warn-text: #fdba74; --done-bg: #3a1c1c; --done-text: #fca5a5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; }
+  main { max-width: 1400px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end;
+         background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  label.check { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: 14px; padding-bottom: 6px; }
+  input, select, button { font: inherit; color: var(--text); background: var(--panel);
+                          border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  input[type=text] { width: 160px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .notice { margin: 12px 0 0; padding: 8px 12px; border-radius: 6px; background: var(--warn-bg); color: var(--warn-text); }
+  .error { background: var(--done-bg); color: var(--done-text); }
+  .bar { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px; color: var(--muted); }
+  .wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; background: var(--panel); position: sticky; top: 0; }
+  td.nowrap { white-space: nowrap; }
+  td.val { max-width: 260px; word-break: break-all; }
+  tr.done td { background: var(--done-bg); }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px;
+         border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .tag.done { border-color: var(--done-text); color: var(--done-text); }
+  .muted { color: var(--muted); font-size: 12px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  .pager { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>로데이터 변경 이력</h1>
+  <p class="sub">시험기간·시험방법·성적서 발급일 변경 전/후와 프로젝트완료 후 저장 기록</p>
+
+  <form id="f">
+    <label>시작일<input type="date" name="from"></label>
+    <label>종료일<input type="date" name="to"></label>
+    <label>종류
+      <select name="kind">
+        <option value="">전체</option>
+        <option value="period">시험기간</option>
+        <option value="method">시험방법</option>
+        <option value="report">성적서 발급일</option>
+        <option value="done">완료 후 저장</option>
+      </select>
+    </label>
+    <label>변경자 (이름·아이디)<input type="text" name="mem" placeholder="예: 홍길동"></label>
+    <label>시험번호<input type="text" name="testNo" placeholder="예: SB2610-"></label>
+    <label class="check"><input type="checkbox" name="afterDoneOnly" value="true">프로젝트완료 이후만</label>
+    <button class="primary" type="submit">조회</button>
+    <button type="button" id="csv">CSV 받기</button>
+  </form>
+
+  <div id="msg"></div>
+
+  <div class="bar"><span id="range"></span><span id="pageInfo"></span></div>
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>일시</th><th>변경자</th><th>시험번호</th><th>종류</th><th>항목</th>
+          <th>변경 전</th><th>변경 후</th><th>완료 후</th>
+        </tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="8" class="empty">조회 중…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <button type="button" id="prev">이전</button>
+    <button type="button" id="next">다음</button>
+  </div>
+</main>
+
+<script>
+(function () {
+  var form = document.getElementById('f');
+  var rowsEl = document.getElementById('rows');
+  var msgEl = document.getElementById('msg');
+  var page = 1;
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var today = new Date();
+  var monthAgo = new Date(today.getTime() - 30 * 24 * 3600 * 1000);
+  form.to.value = ymd(today);
+  form.from.value = ymd(monthAgo);
+
+  function params() {
+    var p = new URLSearchParams();
+    ['from', 'to', 'kind', 'mem', 'testNo'].forEach(function (k) {
+      if (form[k].value) p.set(k, form[k].value.trim());
+    });
+    if (form.afterDoneOnly.checked) p.set('afterDoneOnly', 'true');
+    return p;
+  }
+
+  function showMsg(text, isError) {
+    msgEl.innerHTML = text ? '<p class="notice' + (isError ? ' error' : '') + '">' + esc(text) + '</p>' : '';
+  }
+
+  function render(data) {
+    document.getElementById('range').textContent = data.from + ' ~ ' + data.to;
+    document.getElementById('pageInfo').textContent = data.page + '페이지';
+    document.getElementById('prev').disabled = data.page <= 1;
+    document.getElementById('next').disabled = !data.hasNext;
+    showMsg(data.doneTableReady ? '' :
+      '완료 후 저장 기록 테이블(RAW_DONE_EDIT_TB)이 아직 DB에 없습니다. 트리거 반영 후부터 보입니다.');
+
+    if (!data.rows.length) {
+      rowsEl.innerHTML = '<tr><td colspan="8" class="empty">조회 결과가 없습니다.</td></tr>';
+      return;
+    }
+    rowsEl.innerHTML = data.rows.map(function (r) {
+      var who = esc(r.memName || r.memId) + (r.memName ? '<div class="muted">' + esc(r.memId) + '</div>' : '');
+      var test = esc(r.testId || (r.testSeq ? 'TEST_SEQ ' + r.testSeq : '')) +
+                 (r.prdctName ? '<div class="muted">' + esc(r.prdctName) + '</div>' : '');
+      var kind = '<span class="tag' + (r.src === 'DONE' ? ' done' : '') + '">' + esc(r.kind) + '</span>';
+      var done = r.afterDone ? '<span class="tag done" title="프로젝트완료 ' + esc(r.doneDt) + '">완료 후</span>' : '';
+      return '<tr' + (r.src === 'DONE' ? ' class="done"' : '') + '>' +
+        '<td class="nowrap">' + esc(r.insDt) + '</td>' +
+        '<td class="nowrap">' + who + '</td>' +
+        '<td class="nowrap">' + test + '</td>' +
+        '<td>' + kind + '</td>' +
+        '<td>' + esc(r.item) + '</td>' +
+        '<td class="val">' + esc(r.before) + '</td>' +
+        '<td class="val">' + esc(r.after) + '</td>' +
+        '<td>' + done + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function load() {
+    var p = params();
+    p.set('page', page);
+    rowsEl.innerHTML = '<tr><td colspan="8" class="empty">조회 중…</td></tr>';
+    fetch('api/logs?' + p.toString(), { credentials: 'same-origin' })
+      .then(function (res) {
+        return res.json().then(function (body) {
+          if (!res.ok) throw new Error(body.detail || ('조회 실패 (' + res.status + ')'));
+          return body;
+        });
+      })
+      .then(render)
+      .catch(function (e) {
+        rowsEl.innerHTML = '<tr><td colspan="8" class="empty">조회하지 못했습니다.</td></tr>';
+        showMsg(e.message, true);
+      });
+  }
+
+  form.addEventListener('submit', function (e) { e.preventDefault(); page = 1; load(); });
+  document.getElementById('prev').addEventListener('click', function () { if (page > 1) { page--; load(); } });
+  document.getElementById('next').addEventListener('click', function () { page++; load(); });
+  document.getElementById('csv').addEventListener('click', function () {
+    location.href = 'api/logs.csv?' + params().toString();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
