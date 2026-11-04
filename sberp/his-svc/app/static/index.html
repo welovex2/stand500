@@ -31,6 +31,8 @@
   button { cursor: pointer; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button:disabled { opacity: .5; cursor: default; }
+  .hint { margin: 6px 2px 0; min-height: 18px; font-size: 12px; color: var(--muted); }
+  select:disabled { opacity: .7; cursor: not-allowed; }
   .notice { margin: 12px 0 0; padding: 8px 12px; border-radius: 6px; background: var(--warn-bg); color: var(--warn-text); }
   .error { background: var(--done-bg); color: var(--done-text); }
   .bar { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px; color: var(--muted); }
@@ -83,6 +85,7 @@
     <label>시험번호<input type="text" name="testNo" placeholder="예: SB2610-"></label>
     <button class="primary" type="submit">조회</button>
   </form>
+  <p class="hint" id="hint"></p>
 
   <div id="msg"></div>
 
@@ -187,6 +190,43 @@
       });
   }
 
+  // 필터 연동 — 저장 기록은 프로젝트완료 후에만 남으므로 결과가 항상 0건인 조합은 고를 수 없게 한다
+  //   종류·대상에서 저장을 고르면 → 시점은 완료 후로 고정
+  //   시점이 완료 전이면       → 종류 '저장'과 저장 대상은 막음
+  //   종류와 대상의 그룹이 다르면 → 고를 수 없음 (값 변경 ↔ 저장 대상)
+  var typeEl = form.elements.type;
+  var targetEl = form.elements.target;
+  var timingEl = form.elements.timing;
+  var saveTypeOpt = typeEl.querySelector('option[value="save"]');
+  var optSave = document.getElementById('optSave');
+  var optChange = document.getElementById('optChange');
+  var hintEl = document.getElementById('hint');
+
+  function syncFilters(changed) {
+    // 종류를 바꿨는데 대상이 다른 그룹이면 대상을 전체로
+    if (changed === typeEl && typeEl.value && targetEl.value &&
+        targetEl.value.indexOf(typeEl.value + ':') !== 0) {
+      targetEl.value = '';
+    }
+
+    var savePicked = typeEl.value === 'save' || targetEl.value.indexOf('save:') === 0;
+    if (savePicked) timingEl.value = 'after';
+    timingEl.disabled = savePicked;
+
+    var before = timingEl.value === 'before';
+    saveTypeOpt.disabled = before;
+    optSave.disabled = before || typeEl.value === 'change';
+    optChange.disabled = typeEl.value === 'save';
+
+    hintEl.textContent = savePicked
+      ? '저장 기록은 프로젝트완료 후에만 남아 시점이 완료 후로 고정됩니다.'
+      : before ? '완료 전에는 저장 기록이 없어 값 변경만 고를 수 있습니다.' : '';
+  }
+
+  [typeEl, targetEl, timingEl].forEach(function (el) {
+    el.addEventListener('change', function () { syncFilters(el); });
+  });
+
   form.addEventListener('submit', function (e) { e.preventDefault(); page = 1; load(); });
   document.getElementById('prev').addEventListener('click', function () { if (page > 1) { page--; load(); } });
   document.getElementById('next').addEventListener('click', function () { page++; load(); });
@@ -200,6 +240,7 @@
           return '<option value="' + esc(t.value) + '">' + esc(t.label) + '</option>';
         }).join('');
       });
+      syncFilters();
     })
     .catch(function () {});
 
