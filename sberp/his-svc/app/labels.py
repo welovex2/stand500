@@ -36,14 +36,11 @@ SAVE_ACT = {"INSERT": "첫 저장", "UPDATE": "재저장"}
 CHANGE_TARGET = {
     "period": ("RAW_TB", "시험기간 (시작일·완료일)"),
     "method": ("RAW_MET_TB", "시험방법 (체크·규격)"),
-    "report": ("TEST_TB", "성적서 발급일"),
 }
 
 HIS_COL = {
     "TEST_S_DT": "시험시작일",
     "TEST_E_DT": "시험완료일",
-    "REPORT_DT": "성적서 발급일",
-    "TEST_REPORT_DT": "첨부 로데이터 발급일",
 }
 
 # RAW_MET_TB COL 예) 'CHECK_YN:6 ESD', 'TYPE:6 ESD'
@@ -61,8 +58,7 @@ def target(src: str, tb: str, col: str, act: str) -> str:
     m = _MET_COL.match(col)
     if m:
         return "%s %s" % (m.group(2), "체크" if m.group(1) == "CHECK_YN" else "규격")
-    # TEST_TB 는 'REPORT_DT:{TEST_SEQ}'
-    return HIS_COL.get(col.split(":")[0], col)
+    return HIS_COL.get(col, col)
 
 
 def timing(after_done: bool) -> str:

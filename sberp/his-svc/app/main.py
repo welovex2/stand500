@@ -1,12 +1,10 @@
-import csv
-import io
 import logging
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 
 from . import db, labels
 from .config import settings
@@ -101,32 +99,3 @@ def logs(
         "rows": [_row(r) for r in rows[:size]],
     }
 
-
-@app.get("/api/logs.csv")
-def logs_csv(
-    date_from: Optional[date] = Query(None, alias="from"),
-    date_to: Optional[date] = Query(None, alias="to"),
-    row_type: str = Query("", alias="type"),
-    target: str = "",
-    timing: str = "",
-    mem: str = "",
-    test_no: str = Query("", alias="testNo"),
-):
-    f = _filters(date_from, date_to, row_type, target, timing, mem, test_no)
-    rows, _ = db.fetch_logs(settings.csv_max_rows, 0, **f)
-
-    buf = io.StringIO()
-    buf.write("\ufeff")  # 엑셀에서 한글이 깨지지 않게 BOM
-    w = csv.writer(buf)
-    w.writerow(["일시", "변경자", "아이디", "시험번호", "제품명", "종류", "대상", "변경 전", "변경 후",
-                "시점", "프로젝트완료 시각"])
-    for r in map(_row, rows):
-        w.writerow([r["insDt"], r["memName"], r["memId"], r["testId"], r["prdctName"], r["type"],
-                    r["target"], r["before"], r["after"], r["timing"], r["doneDt"] if r["afterDone"] else ""])
-
-    name = "raw-history_%s_%s.csv" % (f["date_from"].strftime("%Y%m%d"), f["date_to"].strftime("%Y%m%d"))
-    return StreamingResponse(
-        iter([buf.getvalue()]),
-        media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": 'attachment; filename="%s"' % name},
-    )

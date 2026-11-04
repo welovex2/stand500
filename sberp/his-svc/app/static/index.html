@@ -52,7 +52,7 @@
 <body>
 <main>
   <h1>로데이터 변경 이력</h1>
-  <p class="sub">종류 — <b>저장</b>: 누가 어느 화면을 저장했는지 (프로젝트완료 후 저장만 기록) · <b>값 변경</b>: 시험기간·시험방법·성적서 발급일의 변경 전/후<br>
+  <p class="sub">종류 — <b>저장</b>: 누가 어느 화면을 저장했는지 (프로젝트완료 후 저장만 기록) · <b>값 변경</b>: 시험기간·시험방법의 변경 전/후<br>
   시점 — 프로젝트완료 처리 시각 기준 <b>완료 전</b> / <b>완료 후</b></p>
 
   <form id="f">
@@ -74,15 +74,14 @@
     </label>
     <label>시점
       <select name="timing">
-        <option value="">전체</option>
-        <option value="after">완료 후</option>
+        <option value="after" selected>완료 후</option>
         <option value="before">완료 전</option>
+        <option value="">전체</option>
       </select>
     </label>
     <label>변경자 (이름·아이디)<input type="text" name="mem" placeholder="예: 홍길동"></label>
     <label>시험번호<input type="text" name="testNo" placeholder="예: SB2610-"></label>
     <button class="primary" type="submit">조회</button>
-    <button type="button" id="csv">CSV 받기</button>
   </form>
 
   <div id="msg"></div>
@@ -191,9 +190,6 @@
   form.addEventListener('submit', function (e) { e.preventDefault(); page = 1; load(); });
   document.getElementById('prev').addEventListener('click', function () { if (page > 1) { page--; load(); } });
   document.getElementById('next').addEventListener('click', function () { page++; load(); });
-  document.getElementById('csv').addEventListener('click', function () {
-    location.href = 'api/logs.csv?' + params().toString();
-  });
 
   // 대상 목록은 서버(labels)와 같은 값을 쓴다
   fetch('api/options', { credentials: 'same-origin' })

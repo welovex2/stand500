@@ -1,10 +1,11 @@
 """
 트리거가 쌓는 이력 두 곳을 합쳐 읽는다. (MariaDB 10.1 — CTE 없음, 파생 테이블로 묶는다)
 
-  RAW_HIS_TB (TB <> '')  : 시험기간·시험방법·성적서 발급일 변경 전/후  → SRC='HIS'
-  RAW_DONE_EDIT_TB       : 프로젝트완료 후 로데이터 저장                → SRC='DONE'
+  RAW_HIS_TB (TB = RAW_TB / RAW_MET_TB) : 시험기간·시험방법 변경 전/후  → SRC='HIS'
+  RAW_DONE_EDIT_TB                      : 프로젝트완료 후 로데이터 저장  → SRC='DONE'
 
-RAW_HIS_TB 의 TB='' 행(기존 저장 시점 기록)은 ERP 이력 화면용이라 여기서는 뺀다.
+RAW_HIS_TB 의 TB='' 행(기존 저장 시점 기록)은 ERP 이력 화면용이라 뺀다.
+TB='TEST_TB'(성적서 발급일)는 원래 완료 후에 정하는 값이라 뺀다. 트리거는 계속 남긴다.
 """
 import time
 from datetime import date, timedelta
@@ -33,13 +34,11 @@ PRDCT_SQL = """(
      LIMIT 1)"""
 
 HIS_BRANCH = """
-    SELECT 'HIS' AS SRC, h.INS_DT, h.MEM_ID, h.RAW_ID AS RAW_SEQ,
-           CASE WHEN h.TB = 'TEST_TB' THEN CAST(SUBSTRING_INDEX(h.COL, ':', -1) AS UNSIGNED)
-                ELSE r.TEST_SEQ END AS TEST_SEQ,
+    SELECT 'HIS' AS SRC, h.INS_DT, h.MEM_ID, h.RAW_ID AS RAW_SEQ, r.TEST_SEQ,
            h.TB, h.COL, h.`BEFORE` AS BEFORE_VAL, h.`AFTER` AS AFTER_VAL, NULL AS ACT
       FROM RAW_HIS_TB h
            LEFT JOIN RAW_TB r ON r.RAW_SEQ = h.RAW_ID
-     WHERE h.TB <> ''
+     WHERE h.TB IN ('RAW_TB', 'RAW_MET_TB')
        AND h.INS_DT >= %s AND h.INS_DT < %s
        {tb_cond}"""
 
@@ -103,7 +102,7 @@ def build_query(
     """조회 SQL(정렬 포함, LIMIT 제외)과 파라미터. 세 번째 값은 저장 기록 테이블 존재 여부.
 
     row_type : '' / 'save'(저장) / 'change'(값 변경)
-    target   : '' / 'save:{RAW_DONE_EDIT_TB.TB}' / 'change:{period|method|report}'
+    target   : '' / 'save:{RAW_DONE_EDIT_TB.TB}' / 'change:{period|method}'
     timing   : '' / 'after'(완료 후) / 'before'(완료 전)
     """
     dt_from = date_from.strftime("%Y-%m-%d")

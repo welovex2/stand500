@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     db_password: str = ""
 
     page_size: int = 50
-    csv_max_rows: int = 10000
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
