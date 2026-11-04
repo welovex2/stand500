@@ -25,7 +25,6 @@
   form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end;
          background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
-  label.check { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: 14px; padding-bottom: 6px; }
   input, select, button { font: inherit; color: var(--text); background: var(--panel);
                           border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
   input[type=text] { width: 160px; }
@@ -53,23 +52,35 @@
 <body>
 <main>
   <h1>로데이터 변경 이력</h1>
-  <p class="sub">시험기간·시험방법·성적서 발급일 변경 전/후와 프로젝트완료 후 저장 기록</p>
+  <p class="sub">종류 — <b>저장</b>: 누가 어느 화면을 저장했는지 (프로젝트완료 후 저장만 기록) · <b>값 변경</b>: 시험기간·시험방법·성적서 발급일의 변경 전/후<br>
+  시점 — 프로젝트완료 처리 시각 기준 <b>완료 전</b> / <b>완료 후</b></p>
 
   <form id="f">
     <label>시작일<input type="date" name="from"></label>
     <label>종료일<input type="date" name="to"></label>
     <label>종류
-      <select name="kind">
+      <select name="type">
         <option value="">전체</option>
-        <option value="period">시험기간</option>
-        <option value="method">시험방법</option>
-        <option value="report">성적서 발급일</option>
-        <option value="done">완료 후 저장</option>
+        <option value="save">저장</option>
+        <option value="change">값 변경</option>
+      </select>
+    </label>
+    <label>대상
+      <select name="target">
+        <option value="">전체</option>
+        <optgroup label="저장" id="optSave"></optgroup>
+        <optgroup label="값 변경" id="optChange"></optgroup>
+      </select>
+    </label>
+    <label>시점
+      <select name="timing">
+        <option value="">전체</option>
+        <option value="after">완료 후</option>
+        <option value="before">완료 전</option>
       </select>
     </label>
     <label>변경자 (이름·아이디)<input type="text" name="mem" placeholder="예: 홍길동"></label>
     <label>시험번호<input type="text" name="testNo" placeholder="예: SB2610-"></label>
-    <label class="check"><input type="checkbox" name="afterDoneOnly" value="true">프로젝트완료 이후만</label>
     <button class="primary" type="submit">조회</button>
     <button type="button" id="csv">CSV 받기</button>
   </form>
@@ -81,8 +92,8 @@
     <table>
       <thead>
         <tr>
-          <th>일시</th><th>변경자</th><th>시험번호</th><th>종류</th><th>항목</th>
-          <th>변경 전</th><th>변경 후</th><th>완료 후</th>
+          <th>일시</th><th>변경자</th><th>시험번호</th><th>종류</th><th>대상</th>
+          <th>변경 전</th><th>변경 후</th><th>시점</th>
         </tr>
       </thead>
       <tbody id="rows"><tr><td colspan="8" class="empty">조회 중…</td></tr></tbody>
@@ -111,15 +122,15 @@
 
   var today = new Date();
   var monthAgo = new Date(today.getTime() - 30 * 24 * 3600 * 1000);
-  form.to.value = ymd(today);
-  form.from.value = ymd(monthAgo);
+  form.elements.to.value = ymd(today);
+  form.elements.from.value = ymd(monthAgo);
 
   function params() {
     var p = new URLSearchParams();
-    ['from', 'to', 'kind', 'mem', 'testNo'].forEach(function (k) {
-      if (form[k].value) p.set(k, form[k].value.trim());
+    ['from', 'to', 'type', 'target', 'timing', 'mem', 'testNo'].forEach(function (k) {
+      var el = form.elements[k];
+      if (el.value) p.set(k, el.value.trim());
     });
-    if (form.afterDoneOnly.checked) p.set('afterDoneOnly', 'true');
     return p;
   }
 
@@ -133,7 +144,7 @@
     document.getElementById('prev').disabled = data.page <= 1;
     document.getElementById('next').disabled = !data.hasNext;
     showMsg(data.doneTableReady ? '' :
-      '완료 후 저장 기록 테이블(RAW_DONE_EDIT_TB)이 아직 DB에 없습니다. 트리거 반영 후부터 보입니다.');
+      '저장 기록 테이블(RAW_DONE_EDIT_TB)이 아직 DB에 없어 값 변경만 보입니다. 트리거 반영 후부터 저장 기록이 쌓입니다.');
 
     if (!data.rows.length) {
       rowsEl.innerHTML = '<tr><td colspan="8" class="empty">조회 결과가 없습니다.</td></tr>';
@@ -143,17 +154,18 @@
       var who = esc(r.memName || r.memId) + (r.memName ? '<div class="muted">' + esc(r.memId) + '</div>' : '');
       var test = esc(r.testId || (r.testSeq ? 'TEST_SEQ ' + r.testSeq : '')) +
                  (r.prdctName ? '<div class="muted">' + esc(r.prdctName) + '</div>' : '');
-      var kind = '<span class="tag' + (r.src === 'DONE' ? ' done' : '') + '">' + esc(r.kind) + '</span>';
-      var done = r.afterDone ? '<span class="tag done" title="프로젝트완료 ' + esc(r.doneDt) + '">완료 후</span>' : '';
-      return '<tr' + (r.src === 'DONE' ? ' class="done"' : '') + '>' +
+      var type = '<span class="tag">' + esc(r.type) + '</span>';
+      var timing = '<span class="tag' + (r.afterDone ? ' done' : '') + '"' +
+                   (r.afterDone ? ' title="프로젝트완료 ' + esc(r.doneDt) + '"' : '') + '>' + esc(r.timing) + '</span>';
+      return '<tr' + (r.afterDone ? ' class="done"' : '') + '>' +
         '<td class="nowrap">' + esc(r.insDt) + '</td>' +
         '<td class="nowrap">' + who + '</td>' +
         '<td class="nowrap">' + test + '</td>' +
-        '<td>' + kind + '</td>' +
-        '<td>' + esc(r.item) + '</td>' +
+        '<td>' + type + '</td>' +
+        '<td>' + esc(r.target) + '</td>' +
         '<td class="val">' + esc(r.before) + '</td>' +
         '<td class="val">' + esc(r.after) + '</td>' +
-        '<td>' + done + '</td>' +
+        '<td>' + timing + '</td>' +
         '</tr>';
     }).join('');
   }
@@ -182,6 +194,18 @@
   document.getElementById('csv').addEventListener('click', function () {
     location.href = 'api/logs.csv?' + params().toString();
   });
+
+  // 대상 목록은 서버(labels)와 같은 값을 쓴다
+  fetch('api/options', { credentials: 'same-origin' })
+    .then(function (res) { return res.json(); })
+    .then(function (o) {
+      [['optSave', o.save], ['optChange', o.change]].forEach(function (g) {
+        document.getElementById(g[0]).innerHTML = g[1].map(function (t) {
+          return '<option value="' + esc(t.value) + '">' + esc(t.label) + '</option>';
+        }).join('');
+      });
+    })
+    .catch(function () {});
 
   load();
 })();

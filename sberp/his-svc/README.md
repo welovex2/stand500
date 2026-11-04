@@ -2,25 +2,28 @@
 
 트리거가 쌓는 이력을 한 화면에서 본다. Tomcat·ERP 와 별개인 읽기 전용 FastAPI 서비스이고, nginx `/his/` 로만 접근한다.
 
-| 출처 | 화면 종류 | 내용 |
-|---|---|---|
-| `RAW_HIS_TB` `TB='RAW_TB'` | 시험기간 | 시험시작일·완료일 변경 전/후 |
-| `RAW_HIS_TB` `TB='RAW_MET_TB'` | 시험방법 | 시험방법 체크·규격 변경 전/후 |
-| `RAW_HIS_TB` `TB='TEST_TB'` | 성적서 발급일 | 발급일 변경 전/후 |
-| `RAW_DONE_EDIT_TB` | 완료 후 저장 | 프로젝트완료 후 로데이터 저장 (누가·언제·어느 탭) |
+화면 열마다 기준이 하나다.
 
+| 열 | 기준 | 값 |
+|---|---|---|
+| 종류 | 무엇이 남았나 | `저장` (`RAW_DONE_EDIT_TB`) / `값 변경` (`RAW_HIS_TB` `TB<>''`) |
+| 대상 | 어디를 | 저장: 기본정보, CE…TEL, 사진, 첨부 로데이터 (첫 저장/재저장)<br>값 변경: 시험시작일·완료일, 시험방법 체크·규격, 성적서 발급일 |
+| 시점 | 언제 | `완료 후` / `완료 전` — 프로젝트완료 처리 시각(`TEST_STATE_DT`) 기준 |
+
+- 시점 계산: 저장 행은 트리거가 완료(18) 시험만 남기므로 항상 완료 후. 값 변경 행은 시험이 완료 상태이고 완료 시각 이후에 바뀌었으면 완료 후, 아니면 완료 전.
+- 그래서 완료 전 행은 모두 값 변경이다(완료 전 저장은 기록하지 않는다).
+- 완료 후 저장된 것만 보려면 시점=완료 후. 저장 기록과 그때 바뀐 값이 함께 나온다.
 - `RAW_HIS_TB` 의 `TB=''` 행(기존 저장 시점 기록)은 보여주지 않는다. ERP 로데이터 이력 화면용이라 트리거는 계속 남긴다.
-- "완료 후" 표시: 완료 후 저장 행, 또는 시험이 프로젝트완료(18)이고 그 완료 시각(`TEST_STATE_DT`) 이후의 변경.
-- `RAW_DONE_EDIT_TB` 가 아직 없으면(트리거 미반영) 화면에 안내만 띄우고 나머지 이력은 그대로 보인다.
+- `RAW_DONE_EDIT_TB` 가 아직 없으면(트리거 미반영) 안내만 띄우고 값 변경은 그대로 보인다.
 - 트리거: `src/main/resources/db/RAW_TEST_HIS_TG.sql`, 반영 절차: `docs/docker/pro/RAW-HIS-TRIGGER.md`
 
 ## 구성
 
 ```
 his-svc/
-  app/main.py          화면(/), API(/api/logs, /api/logs.csv), /health
+  app/main.py          화면(/), API(/api/logs, /api/logs.csv, /api/options), /health
   app/db.py            조회 SQL (MariaDB 10.1, 파생 테이블 UNION)
-  app/labels.py        코드값 → 표시 이름
+  app/labels.py        코드값 → 표시 이름, 종류·대상·시점 정의
   app/static/index.html
   sql/his_ro_user.sql  읽기 전용 DB 계정
   deploy/docker-compose.his-svc.yml  compose 서비스 블록
@@ -31,8 +34,9 @@ API (`/his/` 아래):
 
 | 경로 | 파라미터 |
 |---|---|
-| `GET api/logs` | `from`, `to`(yyyy-mm-dd, 기본 최근 30일, 최대 1년), `kind`(`period`/`method`/`report`/`done`), `mem`(아이디 또는 이름 일부), `testNo`(SB번호 일부), `afterDoneOnly=true`, `page` (50건씩) |
+| `GET api/logs` | `from`, `to`(yyyy-mm-dd, 기본 최근 30일, 최대 1년), `type`(`save`/`change`), `target`(`api/options` 의 값, 예: `save:METHOD_CE_TB`, `change:period`), `timing`(`after`/`before`), `mem`(아이디 또는 이름 일부), `testNo`(SB번호 일부), `page` (50건씩) |
 | `GET api/logs.csv` | 위와 같음 (페이지 없음, 최대 10,000건, 엑셀용 BOM) |
+| `GET api/options` | 대상 선택 목록 (저장·값 변경) |
 | `GET health` | DB 연결 확인 |
 
 ## 운영 반영
@@ -120,6 +124,6 @@ DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=his_ro DB_PASSWORD=<비밀번호> python 
 
 ## 확인한 범위 (2026-11-04)
 
-- 임시 로컬 MariaDB 10.6 에 트리거 스크립트·`his_ro` 계정을 만들고, 트리거로 쌓인 이력을 API·화면으로 조회했다(필터·완료 후 표시·CSV·기간 오류).
+- 임시 로컬 MariaDB 10.6 에 트리거 스크립트·`his_ro` 계정을 만들고, 트리거로 쌓인 이력을 API·화면으로 조회했다(종류·대상·시점 필터와 조합, CSV, 잘못된 조건·기간 오류).
 - `RAW_DONE_EDIT_TB` 권한이 없을 때 안내만 뜨고 나머지가 조회되는 것을 확인했다.
 - Docker 이미지 빌드와 nginx 설정(`nginx -t`·Basic 인증)은 로컬에서 실행해 보지 못했다. 운영 반영 3·5번에서 확인한다.

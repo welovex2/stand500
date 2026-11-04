@@ -17,22 +17,24 @@ log = logging.getLogger("his-svc")
 app = FastAPI(title="sberp his-svc", version="0.1.0", docs_url=None, redoc_url=None)
 
 STATIC = Path(__file__).parent / "static"
-KINDS = ("", "period", "method", "report", "done")
+TYPES = ("", "save", "change")
+TIMINGS = ("", "after", "before")
+TARGETS = {""} | {"save:" + k for k in labels.SAVE_TARGET} | {"change:" + k for k in labels.CHANGE_TARGET}
 MAX_DAYS = 366
 
 
-def _filters(date_from: Optional[date], date_to: Optional[date], kind: str, mem: str,
-             test_no: str, after_done_only: bool) -> dict:
+def _filters(date_from: Optional[date], date_to: Optional[date], row_type: str, target: str,
+             timing: str, mem: str, test_no: str) -> dict:
     date_to = date_to or date.today()
     date_from = date_from or (date_to - timedelta(days=30))
     if date_from > date_to:
         raise HTTPException(400, "시작일이 종료일보다 늦습니다.")
     if (date_to - date_from).days > MAX_DAYS:
         raise HTTPException(400, "조회 기간은 최대 1년입니다.")
-    if kind not in KINDS:
-        raise HTTPException(400, "알 수 없는 종류입니다.")
-    return dict(date_from=date_from, date_to=date_to, kind=kind, mem=mem.strip(),
-                test_no=test_no.strip(), after_done_only=after_done_only)
+    if row_type not in TYPES or target not in TARGETS or timing not in TIMINGS:
+        raise HTTPException(400, "알 수 없는 조건입니다.")
+    return dict(date_from=date_from, date_to=date_to, row_type=row_type, target=target,
+                timing=timing, mem=mem.strip(), test_no=test_no.strip())
 
 
 def _row(r: dict) -> dict:
@@ -45,11 +47,12 @@ def _row(r: dict) -> dict:
         "rawSeq": r["RAW_SEQ"],
         "prdctName": r["PRDCT_NAME"] or "",
         "src": r["SRC"],
-        "kind": labels.kind(r["SRC"], r["TB"]),
-        "item": labels.item(r["SRC"], r["TB"], r["COL"], r["ACT"]),
+        "type": labels.row_type(r["SRC"]),
+        "target": labels.target(r["SRC"], r["TB"], r["COL"], r["ACT"]),
         "before": labels.value(r["TB"], r["COL"], r["BEFORE_VAL"]),
         "after": labels.value(r["TB"], r["COL"], r["AFTER_VAL"]),
         "afterDone": bool(r["AFTER_DONE"]),
+        "timing": labels.timing(bool(r["AFTER_DONE"])),
         "doneDt": r["DONE_DT"].strftime("%Y-%m-%d %H:%M") if r["DONE_DT"] else "",
     }
 
@@ -57,6 +60,15 @@ def _row(r: dict) -> dict:
 @app.get("/")
 def index():
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/api/options")
+def options() -> dict:
+    """화면 대상 선택 목록. labels 와 같은 값을 쓰도록 서버에서 내려준다."""
+    return {
+        "save": [{"value": "save:" + k, "label": v} for k, v in labels.SAVE_TARGET.items()],
+        "change": [{"value": "change:" + k, "label": v[1]} for k, v in labels.CHANGE_TARGET.items()],
+    }
 
 
 @app.get("/health")
@@ -69,13 +81,14 @@ def health() -> dict:
 def logs(
     date_from: Optional[date] = Query(None, alias="from"),
     date_to: Optional[date] = Query(None, alias="to"),
-    kind: str = "",
+    row_type: str = Query("", alias="type"),
+    target: str = "",
+    timing: str = "",
     mem: str = "",
     test_no: str = Query("", alias="testNo"),
-    after_done_only: bool = Query(False, alias="afterDoneOnly"),
     page: int = Query(1, ge=1),
 ) -> dict:
-    f = _filters(date_from, date_to, kind, mem, test_no, after_done_only)
+    f = _filters(date_from, date_to, row_type, target, timing, mem, test_no)
     size = settings.page_size
     # 한 건 더 읽어 다음 페이지가 있는지 본다
     rows, has_done = db.fetch_logs(size + 1, (page - 1) * size, **f)
@@ -93,22 +106,23 @@ def logs(
 def logs_csv(
     date_from: Optional[date] = Query(None, alias="from"),
     date_to: Optional[date] = Query(None, alias="to"),
-    kind: str = "",
+    row_type: str = Query("", alias="type"),
+    target: str = "",
+    timing: str = "",
     mem: str = "",
     test_no: str = Query("", alias="testNo"),
-    after_done_only: bool = Query(False, alias="afterDoneOnly"),
 ):
-    f = _filters(date_from, date_to, kind, mem, test_no, after_done_only)
+    f = _filters(date_from, date_to, row_type, target, timing, mem, test_no)
     rows, _ = db.fetch_logs(settings.csv_max_rows, 0, **f)
 
     buf = io.StringIO()
-    buf.write("﻿")  # 엑셀에서 한글이 깨지지 않게 BOM
+    buf.write("\ufeff")  # 엑셀에서 한글이 깨지지 않게 BOM
     w = csv.writer(buf)
-    w.writerow(["일시", "변경자", "아이디", "시험번호", "제품명", "종류", "항목", "변경 전", "변경 후",
-                "완료 후", "프로젝트완료 시각"])
+    w.writerow(["일시", "변경자", "아이디", "시험번호", "제품명", "종류", "대상", "변경 전", "변경 후",
+                "시점", "프로젝트완료 시각"])
     for r in map(_row, rows):
-        w.writerow([r["insDt"], r["memName"], r["memId"], r["testId"], r["prdctName"], r["kind"],
-                    r["item"], r["before"], r["after"], "Y" if r["afterDone"] else "", r["doneDt"]])
+        w.writerow([r["insDt"], r["memName"], r["memId"], r["testId"], r["prdctName"], r["type"],
+                    r["target"], r["before"], r["after"], r["timing"], r["doneDt"] if r["afterDone"] else ""])
 
     name = "raw-history_%s_%s.csv" % (f["date_from"].strftime("%Y%m%d"), f["date_to"].strftime("%Y%m%d"))
     return StreamingResponse(

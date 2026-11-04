@@ -12,6 +12,7 @@ from typing import List, Optional, Tuple
 
 import pymysql
 
+from . import labels
 from .config import settings
 
 # SB 시험번호 — rawMapper.detail 의 rawId 와 같은 식
@@ -46,15 +47,17 @@ DONE_BRANCH = """
     SELECT 'DONE' AS SRC, d.INS_DT, d.MEM_ID, d.RAW_SEQ, d.TEST_SEQ,
            d.TB, NULL AS COL, NULL AS BEFORE_VAL, NULL AS AFTER_VAL, d.ACT
       FROM RAW_DONE_EDIT_TB d
-     WHERE d.INS_DT >= %s AND d.INS_DT < %s"""
+     WHERE d.INS_DT >= %s AND d.INS_DT < %s
+       {tb_cond}"""
 
 EMPTY_BRANCH = """
     SELECT 'DONE' AS SRC, NULL AS INS_DT, NULL AS MEM_ID, NULL AS RAW_SEQ, NULL AS TEST_SEQ,
            NULL AS TB, NULL AS COL, NULL AS BEFORE_VAL, NULL AS AFTER_VAL, NULL AS ACT
       FROM DUAL WHERE 1 = 0"""
 
-# 화면 종류 필터 → RAW_HIS_TB.TB
-KIND_TB = {"period": "RAW_TB", "method": "RAW_MET_TB", "report": "TEST_TB"}
+# 프로젝트완료 후인가: 저장 기록은 트리거가 완료(18) 시험만 남기므로 항상 완료 후,
+# 값 변경은 시험이 완료 상태이고 완료 시각(TEST_STATE_DT) 이후에 바뀐 것
+AFTER_DONE_SQL = "(u.SRC = 'DONE' OR (t.TEST_STATE_CODE = '18' AND u.INS_DT >= t.TEST_STATE_DT))"
 
 _done_table_cache: Tuple[float, bool] = (0.0, False)
 
@@ -91,29 +94,40 @@ def build_query(
     cur,
     date_from: date,
     date_to: date,
-    kind: str = "",
+    row_type: str = "",
+    target: str = "",
+    timing: str = "",
     mem: str = "",
     test_no: str = "",
-    after_done_only: bool = False,
 ) -> Tuple[str, list, bool]:
-    """조회 SQL(정렬 포함, LIMIT 제외)과 파라미터. 세 번째 값은 완료 후 수정 기록 테이블 존재 여부."""
+    """조회 SQL(정렬 포함, LIMIT 제외)과 파라미터. 세 번째 값은 저장 기록 테이블 존재 여부.
+
+    row_type : '' / 'save'(저장) / 'change'(값 변경)
+    target   : '' / 'save:{RAW_DONE_EDIT_TB.TB}' / 'change:{period|method|report}'
+    timing   : '' / 'after'(완료 후) / 'before'(완료 전)
+    """
     dt_from = date_from.strftime("%Y-%m-%d")
     dt_to = (date_to + timedelta(days=1)).strftime("%Y-%m-%d")
     has_done = done_table_exists(cur)
 
+    target_kind, _, target_key = target.partition(":")
+    want_change = row_type in ("", "change") and target_kind in ("", "change")
+    want_save = row_type in ("", "save") and target_kind in ("", "save") and has_done
+
     branches: List[str] = []
     params: list = []
 
-    if kind in ("", "period", "method", "report"):
-        tb_cond = "AND h.TB = %s" if kind else ""
-        branches.append(HIS_BRANCH.format(tb_cond=tb_cond))
-        params += [dt_from, dt_to] + ([KIND_TB[kind]] if kind else [])
-    if kind in ("", "done") and has_done:
-        branches.append(DONE_BRANCH)
-        params += [dt_from, dt_to]
+    if want_change:
+        his_tb = labels.CHANGE_TARGET[target_key][0] if target_kind == "change" else None
+        branches.append(HIS_BRANCH.format(tb_cond="AND h.TB = %s" if his_tb else ""))
+        params += [dt_from, dt_to] + ([his_tb] if his_tb else [])
+    if want_save:
+        save_tb = target_key if target_kind == "save" else None
+        branches.append(DONE_BRANCH.format(tb_cond="AND d.TB = %s" if save_tb else ""))
+        params += [dt_from, dt_to] + ([save_tb] if save_tb else [])
 
     if not branches:
-        # 종류=완료 후 저장인데 테이블이 아직 없음 → 빈 결과
+        # 저장만 골랐는데 기록 테이블이 아직 없는 경우 등 → 빈 결과
         branches.append(EMPTY_BRANCH)
 
     where: List[str] = []
@@ -123,8 +137,10 @@ def build_query(
     if test_no:
         where.append(TEST_ID_SQL + " LIKE %s")
         params.append("%" + test_no + "%")
-    if after_done_only:
-        where.append("(u.SRC = 'DONE' OR (t.TEST_STATE_CODE = '18' AND u.INS_DT >= t.TEST_STATE_DT))")
+    if timing == "after":
+        where.append(AFTER_DONE_SQL)
+    elif timing == "before":
+        where.append("NOT " + AFTER_DONE_SQL)
 
     sql = f"""
 SELECT u.SRC, u.INS_DT, u.MEM_ID, m.MEM_NAME, u.RAW_SEQ, u.TEST_SEQ, u.TB, u.COL,
@@ -132,7 +148,7 @@ SELECT u.SRC, u.INS_DT, u.MEM_ID, m.MEM_NAME, u.RAW_SEQ, u.TEST_SEQ, u.TB, u.COL
        {TEST_ID_SQL} AS TEST_ID,
        {PRDCT_SQL} AS PRDCT_NAME,
        t.TEST_STATE_DT AS DONE_DT,
-       (u.SRC = 'DONE' OR (t.TEST_STATE_CODE = '18' AND u.INS_DT >= t.TEST_STATE_DT)) AS AFTER_DONE
+       {AFTER_DONE_SQL} AS AFTER_DONE
   FROM ({" UNION ALL ".join(branches)}
        ) u
        LEFT JOIN MEMBER_TB m ON m.ID = u.MEM_ID
