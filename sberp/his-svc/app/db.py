@@ -17,10 +17,10 @@ import pymysql
 from . import labels
 from .config import settings
 
-# SB 시험번호 — rawMapper.detail 의 rawId 와 같은 식
+# SB 시험번호 — tstMapper 등 ERP 목록의 testId 와 같은 식 (NS 시험은 SF 번호를 함께 쓴다)
 TEST_ID_SQL = """(
     SELECT CONCAT('SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
-                  '-', t.TEST_TYPE_CODE, LPAD(t.TEST_NO, 4, 0),
+                  '-', IF(t.TEST_TYPE_CODE = 'NS', 'SF', t.TEST_TYPE_CODE), LPAD(t.TEST_NO, 4, 0),
                   IF(j.SBK_REVISION > 0, CONCAT('-', j.SBK_REVISION), ''))
       FROM TEST_ITEM_TB ti
            INNER JOIN JOB_TB j ON ti.QUO_YM = j.QUO_YM AND ti.QUO_SEQ = j.QUO_SEQ
