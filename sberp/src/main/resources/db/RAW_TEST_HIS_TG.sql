@@ -27,6 +27,8 @@
 --   2) 측정일 저장으로 시험기간이 재계산(updateTestDtRange)될 때는 앱이 UDT_MEM_ID 를 갱신하지 않아
 --      변경자가 직전 로데이터 기본정보 저장자로 기록된다.
 --   3) RAW_TB·RAW_MET_TB 최초 등록(INSERT) 시 값은 기록하지 않는다. 이후 수정부터 변경 전/후가 남는다.
+--      수정이라도 변경 전 값이 없는 최초 입력(시험시작·완료일 NULL → 값, 시험규격 빈 값 → 값,
+--      체크 NULL → 값)은 기록하지 않는다. 성적서 발급일(TEST_TB)은 최초 발급도 기록한다.
 --
 -- 시험방법명 출처 : 로데이터 수정 화면 메뉴(CE·RE 탭은 도움말의 세부 항목)와 같은 이름
 --   MET_SEQ 대응은 RepController.java 성적서 출력 switch(met.getMetSeq()) 기준
@@ -155,12 +157,13 @@ BEGIN
 		CALL RAW_DONE_EDIT_LOG(NEW.RAW_SEQ, NEW.TEST_SEQ, 'RAW_TB', 'UPDATE', NEW.UDT_MEM_ID);
 	END IF;
 
-    IF NOT (NEW.TEST_S_DT <=> OLD.TEST_S_DT) THEN
+    -- 변경 전 값이 없는 최초 입력(NULL → 값)은 기록하지 않는다
+    IF NOT (NEW.TEST_S_DT <=> OLD.TEST_S_DT) AND OLD.TEST_S_DT IS NOT NULL THEN
         INSERT INTO RAW_HIS_TB (RAW_ID, TB, COL, `BEFORE`, `AFTER`, MEM_ID, INS_DT)
             VALUES (NEW.RAW_SEQ, 'RAW_TB', 'TEST_S_DT', OLD.TEST_S_DT, NEW.TEST_S_DT, NEW.UDT_MEM_ID, NOW());
     END IF;
 
-    IF NOT (NEW.TEST_E_DT <=> OLD.TEST_E_DT) THEN
+    IF NOT (NEW.TEST_E_DT <=> OLD.TEST_E_DT) AND OLD.TEST_E_DT IS NOT NULL THEN
         INSERT INTO RAW_HIS_TB (RAW_ID, TB, COL, `BEFORE`, `AFTER`, MEM_ID, INS_DT)
             VALUES (NEW.RAW_SEQ, 'RAW_TB', 'TEST_E_DT', OLD.TEST_E_DT, NEW.TEST_E_DT, NEW.UDT_MEM_ID, NOW());
     END IF;
@@ -169,12 +172,18 @@ END;;
 
 -- RAW_MET_TB 수정: 시험방법 체크 여부·시험규격 변경 전/후
 -- (insertMethod 는 매 저장마다 ON DUPLICATE KEY UPDATE 로 전체를 덮어쓰지만, 값이 같으면 기록하지 않는다)
+-- 변경 전 값이 없는 최초 입력(NULL·빈 값 → 값)은 기록하지 않는다
 CREATE TRIGGER RAW_MET_HIS_UDT_TG AFTER UPDATE ON RAW_MET_TB FOR EACH ROW
 BEGIN
     DECLARE v_met VARCHAR(40);
     DECLARE v_mem VARCHAR(10);
+    DECLARE v_check_chg TINYINT;
+    DECLARE v_type_chg TINYINT;
 
-    IF NOT (NEW.CHECK_YN <=> OLD.CHECK_YN) OR NOT (NEW.TYPE <=> OLD.TYPE) THEN
+    SET v_check_chg = NOT (NEW.CHECK_YN <=> OLD.CHECK_YN) AND OLD.CHECK_YN IS NOT NULL;
+    SET v_type_chg  = NOT (NEW.TYPE <=> OLD.TYPE) AND IFNULL(OLD.TYPE, '') <> '';
+
+    IF v_check_chg OR v_type_chg THEN
 
         -- MET_SEQ + 시험방법명 (예: '6 ESD')
         SET v_met = CONCAT(NEW.MET_SEQ, ' ', CASE NEW.MET_SEQ
@@ -198,12 +207,12 @@ BEGIN
 
         SET v_mem = (SELECT UDT_MEM_ID FROM RAW_TB WHERE RAW_SEQ = NEW.RAW_SEQ LIMIT 1);
 
-        IF NOT (NEW.CHECK_YN <=> OLD.CHECK_YN) THEN
+        IF v_check_chg THEN
             INSERT INTO RAW_HIS_TB (RAW_ID, TB, COL, `BEFORE`, `AFTER`, MEM_ID, INS_DT)
                 VALUES (NEW.RAW_SEQ, 'RAW_MET_TB', LEFT(CONCAT('CHECK_YN:', v_met), 45), OLD.CHECK_YN, NEW.CHECK_YN, v_mem, NOW());
         END IF;
 
-        IF NOT (NEW.TYPE <=> OLD.TYPE) THEN
+        IF v_type_chg THEN
             INSERT INTO RAW_HIS_TB (RAW_ID, TB, COL, `BEFORE`, `AFTER`, MEM_ID, INS_DT)
                 VALUES (NEW.RAW_SEQ, 'RAW_MET_TB', LEFT(CONCAT('TYPE:', v_met), 45), OLD.TYPE, NEW.TYPE, v_mem, NOW());
         END IF;

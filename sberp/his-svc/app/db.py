@@ -6,6 +6,7 @@
 
 RAW_HIS_TB 의 TB='' 행(기존 저장 시점 기록)은 ERP 이력 화면용이라 뺀다.
 TB='TEST_TB'(성적서 발급일)는 원래 완료 후에 정하는 값이라 뺀다. 트리거는 계속 남긴다.
+변경 전 값이 없는 행(최초 입력)도 뺀다. 트리거도 지금은 남기지 않지만, 그 전에 쌓인 행이 있을 수 있다.
 """
 import time
 from datetime import date, timedelta
@@ -39,6 +40,7 @@ HIS_BRANCH = """
       FROM RAW_HIS_TB h
            LEFT JOIN RAW_TB r ON r.RAW_SEQ = h.RAW_ID
      WHERE h.TB IN ('RAW_TB', 'RAW_MET_TB')
+       AND IFNULL(h.`BEFORE`, '') <> ''
        AND h.INS_DT >= %s AND h.INS_DT < %s
        {tb_cond}"""
 
