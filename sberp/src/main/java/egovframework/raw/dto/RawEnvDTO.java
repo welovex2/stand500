@@ -29,13 +29,10 @@ public class RawEnvDTO {
   @ApiModel(value = "RawEnvRowReq", description = "방법 저장 시 함께 저장할 진행 중 측정 행 값")
   @Getter
   @Setter
-  @ToString(exclude = "sign")
+  @ToString
   public static class RowReq {
     @ApiModelProperty(value = "행 고유번호. [시작]으로 새로 만들 행은 0", example = "0")
     private int envSeq;
-
-    @ApiModelProperty(value = "시험방법 키 (envSeq 가 0 일 때 새 행 구분, RE 는 RE1/RE2/RE3)", example = "ESD")
-    private String metKey;
 
     @ApiModelProperty(value = "온도", example = "23.1")
     private String temp;
@@ -52,16 +49,14 @@ public class RawEnvDTO {
 
     @ApiModelProperty(value = "시험자명", example = "김시험")
     private String memName;
-    @ApiModelProperty(value = "서명 (빈 값이면 서명 취소)", example = "")
-    private String sign;
-    @ApiModelProperty(value = "서명 첨부파일 ID", example = "")
-    private String signUrl;
+    @ApiModelProperty(value = "서명 첨부파일 ID (빈 값이면 서명 취소)", example = "FILE_000000000000862")
+    private String atchFileId;
   }
 
   @ApiModel(value = "RawEnvUpdateReq", description = "측정일·환경조건 > 종료된 행 수정 (기술책임자)")
   @Getter
   @Setter
-  @ToString(exclude = "sign")
+  @ToString
   public static class UpdateReq {
     @ApiModelProperty(value = "시험 고유번호 (성적서 발급일 등 시험 기준 검증용, 없으면 로데이터의 시험)", example = "15")
     private int testSeq;
@@ -87,10 +82,8 @@ public class RawEnvDTO {
 
     @ApiModelProperty(value = "시험자명", example = "김시험")
     private String memName;
-    @ApiModelProperty(value = "서명 (빈 값이면 서명 취소)", example = "")
-    private String sign;
-    @ApiModelProperty(value = "서명 첨부파일 ID", example = "")
-    private String signUrl;
+    @ApiModelProperty(value = "서명 첨부파일 ID (빈 값이면 서명 취소)", example = "FILE_000000000000862")
+    private String atchFileId;
   }
 
   @ApiModel(value = "RawEnvReasonReq", description = "측정일·환경조건 > 중단·삭제 사유")
@@ -108,7 +101,7 @@ public class RawEnvDTO {
   @ApiModel(value = "RawEnvRow", description = "측정일·환경조건 행")
   @Getter
   @Setter
-  @ToString(exclude = "sign")
+  @ToString
   public static class Row {
     private int envSeq;
     private int rawSeq;
@@ -132,10 +125,9 @@ public class RawEnvDTO {
     @ApiModelProperty(value = "시험원 아이디 ([시작] 누른 사용자)")
     private String memId;
     private String memName;
-    private String sign;
-    @ApiModelProperty(value = "서명 첨부파일 ID")
+    @ApiModelProperty(value = "서명 첨부파일 ID ([저장]·수정 때 그대로 돌려보냄)")
     private String atchFileId;
-    @ApiModelProperty(value = "서명 이미지 URL")
+    @ApiModelProperty(value = "서명 이미지 URL (표시용)")
     private String signUrl;
 
     @ApiModelProperty(value = "이관 행 여부")
@@ -159,10 +151,6 @@ public class RawEnvDTO {
   @ToString
   public static class Table {
     private String metKey;
-    @ApiModelProperty(value = "표시 이름", example = "EFT/BURST")
-    private String label;
-    @ApiModelProperty(value = "TH = 온도/습도, THP = 온도/습도/기압")
-    private String envFormat;
     @ApiModelProperty(value = "[시작] 가능 : 살아있는 행 10개 미만 + 종료 안 된 행 없음 + 로데이터 수정 가능")
     private boolean canAdd;
     private List<Row> rows = new ArrayList<Row>();

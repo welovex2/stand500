@@ -64,7 +64,7 @@ public class RawEnvController {
 
   @ApiOperation(value = "측정일·환경조건 조회",
       notes = "rawSeq 가 0 이면 빈 목록(로데이터 미작성). metKey 를 주면 그 시험방법 표만 (행이 없어도 빈 표)\n"
-          + "표: canAdd([추가] 가능), envFormat(TH 온습도 / THP 온습도·기압)\n"
+          + "표: canAdd([시작] 가능)\n"
           + "행: canEdit(진행 중 입력), canEnd, canStop, canRevEdit(기술책임자 수정), canDelete, elapsedMin(분)\n"
           + "[시작]·[종료]·[저장]은 방법별 insert.do 의 envAction·envMetKey·envRows 로 처리")
   @GetMapping(value = "/{rawSeq}/env/list.do")
@@ -101,7 +101,7 @@ public class RawEnvController {
   @ApiOperation(value = "측정일·환경조건 종료된 행 수정 (기술책임자)",
       notes = "기술책임자만, 종료된 행만. 진행 중 행은 방법별 insert.do 의 envRows([저장]·[종료])로 저장\n"
           + "일시: testSDt·testEDt 둘 다 주면 수정(종료 ≥ 시작, 미래 불가), 둘 다 비우면 그대로\n"
-          + "기압은 ESD·RS·EFT·SURGE·CS·MF·VDIP 만 저장 (그 외는 무시). 서명 취소는 sign 빈 값")
+          + "기압은 ESD·RS·EFT·SURGE·CS·MF·VDIP 만 저장 (그 외는 무시). 서명 취소는 atchFileId 빈 값")
   @PostMapping(value = "/env/{envSeq}/update.do")
   public BasicResponse update(
       @ApiParam(value = "행 고유번호", required = true, example = "1") @PathVariable(

@@ -19,7 +19,7 @@ public class TelDTO extends MethodTel {
   @ApiModelProperty(value = "측정일 버튼 : START=[시작], END=[종료], 비우면 [저장]. 방법 데이터와 함께 처리", example = "")
   private String envAction;
 
-  @ApiModelProperty(value = "[시작]·[종료] 대상 표 (TEL)", example = "")
+  @ApiModelProperty(value = "[시작]·[종료] 대상 표 (TEL, 생략 가능)", example = "")
   private String envMetKey;
 
   @ApiModelProperty(value = "진행 중 측정 행 값 (종료된 행은 무시). [시작]할 새 행 값은 envSeq=0")

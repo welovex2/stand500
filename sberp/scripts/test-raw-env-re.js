@@ -55,14 +55,14 @@ async function re(action, metKey, rows) {
 
 /** [시작]할 새 행 값 (envSeq 0) */
 function newRow(metKey) {
-  return { envSeq: 0, metKey: metKey, temp: '23.1', tempPlus: '0.5', hmdt: '45.2', hmdtPlus: '0.5',
-           memName: '김시험', sign: '', signUrl: '' };
+  return { envSeq: 0, temp: '23.1', tempPlus: '0.5', hmdt: '45.2', hmdtPlus: '0.5',
+           memName: '김시험', atchFileId: '' };
 }
 
 /** 진행 중 행 값. override 로 일부만 바꿔 보낼 수 있다 */
 function row(envSeq, override) {
   var r = { envSeq: envSeq, temp: '23.1', tempPlus: '0.5', hmdt: '45.2', hmdtPlus: '0.5',
-            memName: '김시험', sign: '', signUrl: '' };
+            memName: '김시험', atchFileId: '' };
   return Object.assign(r, override || {});
 }
 

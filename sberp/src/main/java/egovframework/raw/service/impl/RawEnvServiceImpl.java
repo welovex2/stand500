@@ -161,7 +161,9 @@ public class RawEnvServiceImpl implements RawEnvService {
     List<String> allowed = Arrays.asList(allowedKeys);
     EnvMetKey target = null;
     if (act != null) {
-      target = requireKey(metKey);
+      // 표가 하나뿐인 화면은 envMetKey 생략 가능. RE(표 3개)만 필수
+      target = !StringUtils.hasText(metKey) && allowedKeys.length == 1
+          ? requireKey(allowedKeys[0]) : requireKey(metKey);
       if (!allowed.contains(target.name())) {
         throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_MET_KEY);
       }
@@ -177,8 +179,8 @@ public class RawEnvServiceImpl implements RawEnvService {
           continue;
         }
         if (r.getEnvSeq() == 0) {
-          if (target != null && RawEnvDTO.ACTION_START.equals(act)
-              && (!StringUtils.hasText(r.getMetKey()) || target == EnvMetKey.of(r.getMetKey()))) {
+          // 새 행 값은 [시작]일 때만 envMetKey 표의 새 행에 저장
+          if (RawEnvDTO.ACTION_START.equals(act)) {
             newRowValues = r;
           }
           continue;
@@ -192,7 +194,7 @@ public class RawEnvServiceImpl implements RawEnvService {
           continue;
         }
         saveValues(env, r.getTemp(), r.getTempPlus(), r.getHmdt(), r.getHmdtPlus(), r.getBrmt(),
-            r.getBrmtPlus(), r.getMemName(), r.getSign(), r.getSignUrl(), loginId);
+            r.getBrmtPlus(), r.getMemName(), r.getAtchFileId(), loginId);
       }
     }
 
@@ -202,8 +204,8 @@ public class RawEnvServiceImpl implements RawEnvService {
       if (newRowValues != null) {
         saveValues(started, newRowValues.getTemp(), newRowValues.getTempPlus(),
             newRowValues.getHmdt(), newRowValues.getHmdtPlus(), newRowValues.getBrmt(),
-            newRowValues.getBrmtPlus(), newRowValues.getMemName(), newRowValues.getSign(),
-            newRowValues.getSignUrl(), loginId);
+            newRowValues.getBrmtPlus(), newRowValues.getMemName(), newRowValues.getAtchFileId(),
+            loginId);
       }
     } else if (RawEnvDTO.ACTION_END.equals(act)) {
       endRow(rawSeq, testSeq, target, loginId);
@@ -249,8 +251,7 @@ public class RawEnvServiceImpl implements RawEnvService {
     lockRaw(env.getRawSeq());
 
     saveValues(env, req.getTemp(), req.getTempPlus(), req.getHmdt(), req.getHmdtPlus(),
-        req.getBrmt(), req.getBrmtPlus(), req.getMemName(), req.getSign(), req.getSignUrl(),
-        loginId);
+        req.getBrmt(), req.getBrmtPlus(), req.getMemName(), req.getAtchFileId(), loginId);
 
     // 일시: 둘 다 비우면 그대로, 하나만 주면 오류
     boolean hasS = StringUtils.hasText(req.getTestSDt());
@@ -354,9 +355,12 @@ public class RawEnvServiceImpl implements RawEnvService {
     afterDateChange(saved, rawSupport.resolveTestSeq(testSeq, rawSeq));
   }
 
-  /** 온습도·기압·이름·서명 저장. 기압은 THP 방법만. 저장한 값으로 env 도 갱신 */
+  /**
+   * 온습도·기압·이름·서명 저장. 기압은 THP 방법만. 저장한 값으로 env 도 갱신.
+   * 서명은 첨부파일 ID(SIGN_URL)만 받는다. SIGN(서명자 이름)은 이관 데이터용이라 건드리지 않는다.
+   */
   private void saveValues(RawEnv env, String temp, String tempPlus, String hmdt, String hmdtPlus,
-      String brmt, String brmtPlus, String memName, String sign, String signUrl, String loginId) {
+      String brmt, String brmtPlus, String memName, String atchFileId, String loginId) {
     EnvMetKey key = requireKey(env.getMetKey());
 
     env.setTemp(value(temp));
@@ -366,8 +370,7 @@ public class RawEnvServiceImpl implements RawEnvService {
     env.setBrmt(key.hasBrmt() ? value(brmt) : null);
     env.setBrmtPlus(key.hasBrmt() ? value(brmtPlus) : null);
     env.setMemName(value(memName));
-    env.setSign(StringUtils.hasText(sign) ? sign : null);
-    env.setSignUrl(StringUtils.hasText(signUrl) ? signUrl.trim() : null);
+    env.setSignUrl(StringUtils.hasText(atchFileId) ? atchFileId.trim() : null);
     env.setUdtMemId(loginId);
 
     if (rawEnvMapper.updateValues(env) == 0) {
@@ -414,8 +417,6 @@ public class RawEnvServiceImpl implements RawEnvService {
   private RawEnvDTO.Table newTable(EnvMetKey key) {
     RawEnvDTO.Table table = new RawEnvDTO.Table();
     table.setMetKey(key.name());
-    table.setLabel(key.getLabel());
-    table.setEnvFormat(key.getFormat());
     return table;
   }
 
@@ -438,7 +439,6 @@ public class RawEnvServiceImpl implements RawEnvService {
     row.setBrmtPlus(env.getBrmtPlus());
     row.setMemId(env.getMemId());
     row.setMemName(env.getMemName());
-    row.setSign(env.getSign());
     row.setAtchFileId(env.getSignUrl());
     row.setSignUrl(resolveImageUrlSafe(env.getSignUrl()));
     row.setMigYn(env.getMigYn());

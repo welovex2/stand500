@@ -107,7 +107,6 @@
 		       BRMT = #{brmt},
 		       BRMT_PLUS = #{brmtPlus},
 		       MEM_NAME = #{memName},
-		       SIGN = #{sign},
 		       SIGN_URL = #{signUrl},
 		       UDT_MEM_ID = #{udtMemId},
 		       UDT_DT = NOW()

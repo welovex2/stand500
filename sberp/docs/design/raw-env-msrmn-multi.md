@@ -137,15 +137,15 @@ CREATE TABLE RAW_ENV_TB (
 | 필드 | 값 | 설명 |
 |---|---|---|
 | `envAction` | `START` / `END` / 빈 값 | 빈 값이면 [저장] |
-| `envMetKey` | CE, RE1~RE3, ESD … | [시작]·[종료] 대상 표. RE는 대역별 필수 |
+| `envMetKey` | RE1~RE3 | [시작]·[종료] 대상 표. **RE만 필수**, 표가 하나인 화면은 생략 가능 (2026-11-05) |
 | `envRows` | `RowReq` 목록 | 화면의 **진행 중 행** 값. [시작]으로 새로 만들 행은 `envSeq: 0` |
 
 ```json
 "envAction": "START",
-"envMetKey": "ESD",
+"envMetKey": "",
 "envRows": [
-  { "envSeq": 0, "metKey": "ESD", "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5",
-    "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "sign": "", "signUrl": "" }
+  { "envSeq": 0, "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5",
+    "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "atchFileId": "" }
 ]
 ```
 
@@ -157,14 +157,16 @@ CREATE TABLE RAW_ENV_TB (
 
 - 로데이터가 없으면(`rawSeq=0`) 방법 저장이 로데이터를 먼저 만든다 (CLK·DP·TEL도 이번에 같은 처리 추가). 응답 `data` = rawSeq — **화면은 이 값으로 수정 모드로 바뀌어야** 같은 시험에 로데이터가 또 생기지 않는다.
 - 방법 저장의 기존 환경·측정일·서명 필드(`temp`, `msrmnYear`, `sign` …)는 무시된다 (§6).
+- 서명은 첨부파일 ID(`atchFileId` → `SIGN_URL`)만 받는다. `SIGN`(서명자 이름, 예전 직접 업로드 때 쓰던 필드)은 이관 행에만 남고 API로는 쓰거나 돌려주지 않는다 (2026-11-05).
+- 응답의 표 `label`·`envFormat`은 뺐다. 화면이 자기 제목과 기압 칸 유무를 이미 알고, 기압 저장 여부는 서버가 `EnvMetKey`로 판단한다 (2026-11-05).
 
 `update.do` 요청 (기술책임자, 종료된 행)
 ```json
 { "testSeq": 123, "testSDt": "2026-11-04 09:10:00", "testEDt": "2026-11-04 11:40:00",
   "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5",
-  "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "sign": "...", "signUrl": "" }
+  "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "atchFileId": "FILE_000000000000862" }
 ```
-- 값은 보낸 그대로 덮어쓴다 (빈 값 = 지움). 서명 [취소하기]는 `sign` 빈 값.
+- 값은 보낸 그대로 덮어쓴다 (빈 값 = 지움). 서명 [취소하기]는 `atchFileId` 빈 값.
 - 일시는 둘 다 주면 수정, 둘 다 비우면 그대로. 하나만 주면 오류. 초까지 같으면 변경 없음으로 본다 → 화면은 조회 값(`yyyy-MM-dd HH:mm:ss`)을 그대로 돌려보낸다.
 
 `stop.do` / `delete.do` 요청
@@ -178,11 +180,11 @@ CREATE TABLE RAW_ENV_TB (
   "envSeq": 501, "metKey": "ESD", "rowNo": 2,
   "testSDt": "2026-11-04 09:10:00", "testEDt": "2026-11-04 11:40:00", "elapsedMin": 150,
   "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5", "brmt": "99.8", "brmtPlus": "0.1",
-  "memId": "kim", "memName": "김시험", "sign": "...", "atchFileId": "...", "signUrl": "...", "migYn": 0,
+  "memId": "kim", "memName": "김시험", "atchFileId": "...", "signUrl": "...", "migYn": 0,
   "canEdit": false, "canEnd": false, "canStop": false, "canRevEdit": true, "canDelete": true
 }
 ```
-- 표 단위: `metKey`, `label`, `envFormat`(TH/THP), `canAdd`([시작] 가능 = 살아있는 행 < 10 + 진행 중 행 없음 + 로데이터 수정 가능), `rows`.
+- 표 단위: `metKey`, `canAdd`([시작] 가능 = 살아있는 행 < 10 + 진행 중 행 없음 + 로데이터 수정 가능), `rows`.
 - `elapsedMin`: 서버 계산. 이관 행(`MIG_YN=1`)과 종료 전 행은 null.
 - `canEdit`: 진행 중 행 입력칸 활성 (값은 [저장]·[종료] 때 `envRows`로). `canRevEdit`: 기술책임자 + 종료된 행 → `update.do`.
 
@@ -265,7 +267,7 @@ CREATE TABLE RAW_ENV_TB (
 - `update.do`의 일시는 조회 값(`yyyy-MM-dd HH:mm:ss`)을 그대로 보내거나 둘 다 비운다 (분까지만 보내면 초가 바뀐 것으로 본다).
 - 소요시간은 `elapsedMin`이 null이면 빈칸.
 - 중단·삭제 사유 입력은 최대 200자, 공란 저장 불가.
-- 대상 방법: CE, RE(대역별 3표), ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL. 기압 칸은 ESD·RS·EFT·SURGE·CS·MF·VDIP만 (`envFormat`=THP).
+- 대상 방법: CE, RE(대역별 3표), ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL. 기압 칸은 ESD·RS·EFT·SURGE·CS·MF·VDIP만 (`EnvMetKey` 형식 THP, 서버가 판단).
 - 출력 화면(`raw_total_print*.js`, `report*.js`)의 온습도·측정일 표시를 `envList` 기반 표로 교체.
 
 ---
