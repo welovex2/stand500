@@ -29,6 +29,7 @@ SAVE_TARGET = {
     "METHOD_TEL_TB": "TEL",
     "METHOD_IMG_TB": "사진",
     "FILE_RAW_TB": "첨부 로데이터",
+    "RAW_ENV_TB": "측정일·환경조건",
 }
 SAVE_ACT = {"INSERT": "첫 저장", "UPDATE": "재저장"}
 
@@ -36,6 +37,7 @@ SAVE_ACT = {"INSERT": "첫 저장", "UPDATE": "재저장"}
 CHANGE_TARGET = {
     "period": ("RAW_TB", "시험기간 (시작일·완료일)"),
     "method": ("RAW_MET_TB", "시험방법 (체크·규격)"),
+    "env": ("RAW_ENV_TB", "측정일·환경조건"),
 }
 
 HIS_COL = {
@@ -43,8 +45,23 @@ HIS_COL = {
     "TEST_E_DT": "시험완료일",
 }
 
+# RAW_ENV_TB 컬럼 → 표시 이름
+ENV_COL = {
+    "TEST_S_DT": "시작일시",
+    "TEST_E_DT": "종료일시",
+    "TEMP": "온도",
+    "TEMP_PLUS": "온도 ±",
+    "HMDT": "습도",
+    "HMDT_PLUS": "습도 ±",
+    "BRMT": "기압",
+    "BRMT_PLUS": "기압 ±",
+    "DEL_YN": "행 삭제",
+}
+
 # RAW_MET_TB COL 예) 'CHECK_YN:6 ESD', 'TYPE:6 ESD'
 _MET_COL = re.compile(r"^(CHECK_YN|TYPE):\d+\s*(.*)$")
+# RAW_ENV_TB COL 예) 'TEST_S_DT:501 ESD-2' → (컬럼, ENV_SEQ, 시험방법, 행번호)
+_ENV_COL = re.compile(r"^([A-Z_]+):(\d+)\s+(\S+)-(\d+)$")
 
 
 def row_type(src: str) -> str:
@@ -55,6 +72,11 @@ def target(src: str, tb: str, col: str, act: str) -> str:
     if src == "DONE":
         return "%s (%s)" % (SAVE_TARGET.get(tb, tb or ""), SAVE_ACT.get(act, act or ""))
     col = col or ""
+    if tb == "RAW_ENV_TB":
+        e = _ENV_COL.match(col)
+        if e:
+            return "%s %s행 %s" % (e.group(3), e.group(4), ENV_COL.get(e.group(1), e.group(1)))
+        return col
     m = _MET_COL.match(col)
     if m:
         return "%s %s" % (m.group(2), "체크" if m.group(1) == "CHECK_YN" else "규격")
@@ -71,4 +93,6 @@ def value(tb: str, col: str, v):
     v = str(v)
     if tb == "RAW_MET_TB" and (col or "").startswith("CHECK_YN:"):
         return {"1": "체크", "0": "해제"}.get(v, v)
+    if tb == "RAW_ENV_TB" and (col or "").startswith("DEL_YN:"):
+        return {"1": "삭제", "0": "정상"}.get(v, v)
     return v

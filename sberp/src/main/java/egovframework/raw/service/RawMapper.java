@@ -111,7 +111,6 @@ public interface RawMapper {
   public RawData labelDetail(RawSearchDTO req);
 
   public SbkInfoVO findByNcFolderPath(int testSeq);
-  List<LocalDate> selectAllMsrmnDates(@Param("rawSeq") int rawSeq);
 
   /** 시험(TEST_SEQ)의 성적서 발급일 — 본시험·재발행 각각 */
   LocalDate selectReportDt(@Param("testSeq") int testSeq);

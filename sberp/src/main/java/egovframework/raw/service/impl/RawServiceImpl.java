@@ -47,6 +47,8 @@ import egovframework.raw.service.MethodSurgeSub;
 import egovframework.raw.service.RawAsstn;
 import egovframework.raw.service.RawCable;
 import egovframework.raw.service.RawData;
+import egovframework.raw.service.RawEnvDtRange;
+import egovframework.raw.service.RawEnvService;
 import egovframework.raw.service.RawMac;
 import egovframework.raw.service.RawMapper;
 import egovframework.raw.service.RawMet;
@@ -73,6 +75,12 @@ public class RawServiceImpl implements RawService {
 
   @Autowired
   EgovPropertyService propertyService;
+
+  @Autowired
+  RawSupport rawSupport;
+
+  @Autowired
+  RawEnvService rawEnvService;
 
   @Override
   @Transactional
@@ -234,7 +242,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertCe(req);
 
     // 측정설비
@@ -255,14 +262,16 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew) {
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), "CA");
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), "CB");
+        valMacReformDate(req.getMacList(), req.getRawSeq(), "CA");
+        valMacReformDate(req.getMacList(), req.getRawSeq(), "CB");
       }
     }
 
     // 날짜 범위 업데이트
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "CE");
+
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
@@ -294,12 +303,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getHz1MsrmnYear(), req.getHz1MsrmnMon(),
-        req.getHz1MsrmnDay());
-    validateMsrmnDt(req.getTestSeq(), req.getHz2MsrmnYear(), req.getHz2MsrmnMon(),
-        req.getHz2MsrmnDay());
-    validateMsrmnDt(req.getTestSeq(), req.getHz3MsrmnYear(), req.getHz3MsrmnMon(),
-        req.getHz3MsrmnDay());
     methodMapper.insertRe(req);
 
     // 측정설비
@@ -324,10 +327,8 @@ public class RawServiceImpl implements RawService {
 
         // 교정일 체크 (신규저장시에만 체크)
         if (isNew) {
-          valMacReformDate(req.getHz1MsrmnYear(), req.getHz1MsrmnMon(), req.getHz1MsrmnDay(),
-              req.getMacList(), req.getRawSeq(), "RA");
-          valMacReformDate(req.getHz2MsrmnYear(), req.getHz2MsrmnMon(), req.getHz2MsrmnDay(),
-              req.getMacList(), req.getRawSeq(), "RB");
+          valMacReformDate(req.getMacList(), req.getRawSeq(), "RA");
+          valMacReformDate(req.getMacList(), req.getRawSeq(), "RB");
         }
 
       } else {
@@ -336,15 +337,15 @@ public class RawServiceImpl implements RawService {
 
         // 교정일 체크 (신규저장시에만 체크)
         if (isNew) {
-
-          int[] date = extractMeasurementDate(req);
-          int year = date[0], mon = date[1], day = date[2];
-
-          valMacReformDate(year, mon, day, req.getMacList(), req.getRawSeq(), req.getMacType());
+          valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
         }
       }
 
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "RE1", "RE2", "RE3");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -389,7 +390,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertEsd(req);
 
     // 측정설비
@@ -398,8 +398,7 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
     // 시험결과 > 직접인가
     if (req.getSubList() != null) {
@@ -418,6 +417,10 @@ public class RawServiceImpl implements RawService {
       if (!ObjectUtils.isEmpty(cDItems))
         methodMapper.deleteEsdSub(req.getEsdSeq(), cDItems);
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "ESD");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -578,7 +581,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertRs(req);
 
     // 측정설비
@@ -587,8 +589,7 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 인가부위
@@ -619,6 +620,10 @@ public class RawServiceImpl implements RawService {
         }
       }
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "RS");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -652,7 +657,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertEft(req);
 
     // 측정설비
@@ -661,8 +665,7 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 포트
@@ -691,6 +694,10 @@ public class RawServiceImpl implements RawService {
       }
     }
 
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "EFT");
+
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
     return result;
@@ -711,15 +718,7 @@ public class RawServiceImpl implements RawService {
   }
 
   public int beforeRawInsert(int testSeq, String insMemId) {
-
-    RawData req = new RawData();
-    req.setTestSeq(testSeq);
-    req.setInsMemId(insMemId);
-    req.setUdtMemId(insMemId);
-    req.setSbkId(rawMapper.getSbkId(testSeq));
-    rawMapper.insert(req);
-
-    return req.getRawSeq();
+    return rawSupport.beforeRawInsert(testSeq, insMemId);
   }
 
   @Override
@@ -735,7 +734,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertSurge(req);
 
     // 측정설비
@@ -744,8 +742,7 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 포트
@@ -773,6 +770,10 @@ public class RawServiceImpl implements RawService {
         methodMapper.deleteSurgeSub(req.getSurgeSeq(), nodata);
       }
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "SURGE");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -807,7 +808,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertCs(req);
 
     // 측정설비
@@ -816,8 +816,7 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 인가부위
@@ -848,6 +847,10 @@ public class RawServiceImpl implements RawService {
         }
       }
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "CS");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -882,7 +885,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertMf(req);
 
     // 측정설비
@@ -891,9 +893,12 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "MF");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -932,7 +937,6 @@ public class RawServiceImpl implements RawService {
     if (req.getRawSeq() == 0)
       req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertVdip(req);
 
     // 측정설비
@@ -941,9 +945,12 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "VDIP");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -1011,7 +1018,10 @@ public class RawServiceImpl implements RawService {
 
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
+    // 기본로데이터가 없을때 로데이터 먼저 등록
+    if (req.getRawSeq() == 0)
+      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
+
     methodMapper.insertClk(req);
 
     // 측정설비
@@ -1020,9 +1030,12 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "CLK");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -1051,7 +1064,10 @@ public class RawServiceImpl implements RawService {
 
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
+    // 기본로데이터가 없을때 로데이터 먼저 등록
+    if (req.getRawSeq() == 0)
+      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
+
     methodMapper.insertDp(req);
 
     // 측정설비
@@ -1060,9 +1076,12 @@ public class RawServiceImpl implements RawService {
 
       // 교정일 체크 (신규저장시에만 체크)
       if (isNew)
-        valMacReformDate(req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay(), req.getMacList(),
-            req.getRawSeq(), req.getMacType());
+        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "DP");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -1094,15 +1113,23 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  @Transactional
   public boolean insertTel(TelDTO req) {
 
     boolean result = true;
 
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
+    // 기본로데이터가 없을때 로데이터 먼저 등록
+    if (req.getRawSeq() == 0)
+      req.setRawSeq(beforeRawInsert(req.getTestSeq(), req.getInsMemId()));
+
     TelResultCodeUtil.normalizeBlankResults(req);
-    validateMsrmnDt(req.getTestSeq(), req.getMsrmnYear(), req.getMsrmnMon(), req.getMsrmnDay());
     methodMapper.insertTel(req);
+
+    // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
+    rawEnvService.applyFromMethod(req.getRawSeq(), req.getTestSeq(), req.getInsMemId(),
+        req.getEnvAction(), req.getEnvMetKey(), req.getEnvRows(), "TEL");
 
     recalcAndUpdateTestDtRange(req.getRawSeq(), req.getTestSeq());
 
@@ -1256,54 +1283,14 @@ public class RawServiceImpl implements RawService {
     return !methodMapper.existsByRawSeq(type.getTableName(), rawSeq);
   }
 
-  private void valMacReformDate(int year, int mon, int day, List<RawMac> macList, int rawSeq,
-      String macType) {
+  /**
+   * 측정설비 교정일 체크. 측정일은 RAW_ENV_TB 의 해당 시험방법 표(측정설비 구분 기준) 종료된 행 중 가장 늦은 종료일 (#26-8).
+   */
+  private void valMacReformDate(List<RawMac> macList, int rawSeq, String macType) {
     if (ObjectUtils.isEmpty(macList))
       return;
 
-    // 날짜 조합 오류는 별도로 먼저 처리
-    LocalDate measurementDate;
-
-    try {
-
-      // 측정일 조합
-
-      measurementDate = LocalDate.of(year, mon, day);
-
-    } catch (DateTimeException e) {
-      log.warn("장비 측정일 조합 중 날짜 오류 발생 - year={}, month={}, day={}", year, mon, day);
-      return; // 날짜 자체가 잘못된 경우만 여기서 처리
-    }
-
-    List<RawMac> insertedMacList = methodMapper.selectReformDate(rawSeq, macType);
-
-    for (RawMac mac : insertedMacList) {
-
-      if (mac.getReformDt() != null) {
-        LocalDate reformDate = LocalDate.parse(mac.getReformDt());
-        if (reformDate.isBefore(measurementDate)) {
-          String msg = String.format("장비 %d는 개조일(%s)이 측정일(%s)보다 빠릅니다. 저장 중단.", mac.getMachineSeq(),
-              reformDate, measurementDate);
-          System.out.println(msg);
-          throw new IllegalArgumentException("시험 장비의 차기 교정일을 확인해 주세요.");
-        }
-      }
-
-    }
-
-  }
-
-  private int[] extractMeasurementDate(ReDTO req) {
-    switch (req.getMacType()) {
-      case "RE1":
-        return new int[] {req.getHz1MsrmnYear(), req.getHz1MsrmnMon(), req.getHz1MsrmnDay()};
-      case "RE2":
-        return new int[] {req.getHz2MsrmnYear(), req.getHz2MsrmnMon(), req.getHz2MsrmnDay()};
-      case "RE3":
-        return new int[] {req.getHz3MsrmnYear(), req.getHz3MsrmnMon(), req.getHz3MsrmnDay()};
-      default:
-        return new int[] {0, 0, 0};
-    }
+    rawSupport.checkMacReformDateByEnv(rawSeq, macType);
   }
 
   @Override
@@ -1317,13 +1304,7 @@ public class RawServiceImpl implements RawService {
    * testSeq 우선, 없으면 RAW에 연결된 TEST_SEQ로 조회.
    */
   private void assertRawEditable(int testSeq, int rawSeq) {
-    int seq = testSeq;
-    if (seq == 0 && rawSeq > 0) {
-      seq = rawMapper.selectTestSeqByRawSeq(rawSeq);
-    }
-    if (seq > 0 && rawMapper.selectEditYn(seq) == 0) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_RAW_EDIT);
-    }
+    rawSupport.assertRawEditable(testSeq, rawSeq);
   }
 
   /**
@@ -1338,51 +1319,22 @@ public class RawServiceImpl implements RawService {
     LocalDate testSDt = parseLocalDate(req.getTestSDt());
     LocalDate testEDt = parseLocalDate(req.getTestEDt());
 
-    // 요청값과 실제 측정일 범위를 함께 반영 (더 이른 시작·더 늦은 종료 기준)
-    if (req.getRawSeq() > 0) {
-      List<LocalDate> dates = rawMapper.selectAllMsrmnDates(req.getRawSeq());
-      if (!ObjectUtils.isEmpty(dates)) {
-        LocalDate min = dates.stream().min(Comparator.naturalOrder()).orElse(null);
-        LocalDate max = dates.stream().max(Comparator.naturalOrder()).orElse(null);
-        if (min != null && (testSDt == null || min.isBefore(testSDt))) {
-          testSDt = min;
-        }
-        if (max != null && (testEDt == null || max.isAfter(testEDt))) {
-          testEDt = max;
-        }
+    // 요청값과 실제 측정 기간(RAW_ENV_TB)을 함께 반영 (더 이른 시작·더 늦은 종료 기준)
+    RawEnvDtRange range = rawSupport.selectDtRange(req.getRawSeq());
+    if (range != null) {
+      LocalDate min = range.getStartDt();
+      LocalDate max = range.getEndDt();
+      if (testSDt == null || min.isBefore(testSDt)) {
+        testSDt = min;
+      }
+      if (testEDt == null || max.isAfter(testEDt)) {
+        testEDt = max;
       }
     }
 
     if ((testSDt != null && reportDt.isBefore(testSDt))
         || (testEDt != null && reportDt.isBefore(testEDt))) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_REPORT_DT);
-    }
-  }
-
-  /**
-   * 성적서 발급일이 있으면 측정일은 발급일 이전(당일 포함)인지 검증.
-   * testSeq 기준(본시험·재발행 각각 자신의 REPORT_DT).
-   */
-  private void validateMsrmnDt(int testSeq, int year, int mon, int day) {
-    if (testSeq == 0 || year <= 0 || mon <= 0 || day <= 0) {
-      return;
-    }
-
-    LocalDate reportDt = rawMapper.selectReportDt(testSeq);
-    if (reportDt == null) {
-      return;
-    }
-
-    LocalDate msrmnDt;
-    try {
-      msrmnDt = LocalDate.of(year, mon, day);
-    } catch (DateTimeException e) {
-      log.warn("측정일 조합 중 날짜 오류 발생 - year={}, month={}, day={}", year, mon, day);
-      return;
-    }
-
-    if (msrmnDt.isAfter(reportDt)) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_MSRMN_DT);
     }
   }
 
@@ -1406,28 +1358,7 @@ public class RawServiceImpl implements RawService {
    * testSeq(본시험·재발행 공통)의 성적서발급일이 있으면, 그 이후 측정일이 없는지 검증한다.
    */
   private void recalcAndUpdateTestDtRange(int rawSeq, int testSeq) {
-    if (rawSeq == 0)
-      return;
-
-    List<LocalDate> dates = rawMapper.selectAllMsrmnDates(rawSeq);
-    if (ObjectUtils.isEmpty(dates))
-      return;
-
-    LocalDate startDt = dates.stream().min(Comparator.naturalOrder()).orElse(null);
-    LocalDate endDt = dates.stream().max(Comparator.naturalOrder()).orElse(null);
-
-    if (startDt == null || endDt == null)
-      return;
-
-    // 시험별(testSeq) 성적서발급일 — 본시험·재발행 모두 동일 로직
-    if (testSeq > 0) {
-      LocalDate reportDt = rawMapper.selectReportDt(testSeq);
-      if (reportDt != null && (startDt.isAfter(reportDt) || endDt.isAfter(reportDt))) {
-        throw new IllegalArgumentException(ResponseMessage.CHECK_MSRMN_DT);
-      }
-    }
-
-    rawMapper.updateTestDtRange(rawSeq, startDt, endDt);
+    rawSupport.recalcAndUpdateTestDtRange(rawSeq, testSeq);
   }
 
   private String resolveImageUrlSafe(String atchFileId) {

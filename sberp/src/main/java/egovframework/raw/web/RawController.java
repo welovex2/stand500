@@ -50,6 +50,7 @@ import egovframework.raw.dto.MfDTO;
 import egovframework.raw.dto.PicDTO;
 import egovframework.raw.dto.PicVO;
 import egovframework.raw.dto.RawDTO;
+import egovframework.raw.dto.RawEnvDTO;
 import egovframework.raw.dto.RawSearchDTO;
 import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.RegStateDTO;
@@ -59,6 +60,7 @@ import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.service.FileRaw;
 import egovframework.raw.service.RawData;
+import egovframework.raw.service.RawEnvService;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -95,6 +97,9 @@ public class RawController {
 
   @Resource(name = "SbkService")
   private SbkService sbkService;
+
+  @Resource(name = "RawEnvService")
+  private RawEnvService rawEnvService;
 
   private static final Marker RD_MARKER = MarkerFactory.getMarker("RD_MARKER");
 
@@ -565,9 +570,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new CeDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "CE"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "CE"));
       }
     }
 
@@ -683,9 +692,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new ReDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "RE1", "RE2", "RE3"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "RE1", "RE2", "RE3"));
       }
     }
 
@@ -827,9 +840,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new EsdDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "ESD"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "ESD"));
       }
     }
 
@@ -1020,9 +1037,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new RsDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "RS"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "RS"));
       }
     }
 
@@ -1128,9 +1149,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new EftDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "EFT"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "EFT"));
       }
     }
 
@@ -1241,9 +1266,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new SurgeDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "SURGE"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "SURGE"));
       }
     }
 
@@ -1354,9 +1383,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new CsDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "CS"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "CS"));
       }
     }
 
@@ -1466,9 +1499,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new MfDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "MF"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "MF"));
       }
     }
 
@@ -1579,9 +1616,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new VdipDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "VDIP"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "VDIP"));
       }
     }
 
@@ -1765,9 +1806,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new ClkDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "CLK"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "CLK"));
       }
     }
 
@@ -1874,9 +1919,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new DpDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "DP"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "DP"));
       }
     }
 
@@ -1978,9 +2027,13 @@ public class RawController {
       if (detail == null) {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
+        detail = new TelDTO();
+        detail.setEnvList(envTables(rawSeq, testSeq, "TEL"));
       } else {
         detail.setTestSeq(testSeq);
         detail.setEditYn(rawService.selectEditYn(testSeq));
+        detail.setEnvList(envTables(rawSeq, testSeq, "TEL"));
       }
     }
 
@@ -2397,4 +2450,9 @@ public class RawController {
     return res;
   }
 
+  /** 방법별 detail 응답용 측정일·환경조건 표 (#26-8). 권한 표시(canEdit 등)는 로그인 사용자 기준 */
+  private List<RawEnvDTO.Table> envTables(int rawSeq, int testSeq, String... metKeys) {
+    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
+    return rawEnvService.tables(rawSeq, testSeq, user == null ? null : user.getId(), metKeys);
+  }
 }

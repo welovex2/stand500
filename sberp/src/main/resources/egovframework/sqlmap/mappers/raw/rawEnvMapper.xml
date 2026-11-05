@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!-- 로데이터 측정일·환경조건 (RAW_ENV_TB) — docs/design/raw-env-msrmn-multi.md -->
+<mapper namespace="egovframework.raw.service.RawEnvMapper">
+
+	<sql id="envColumns">
+		ENV_SEQ,
+		RAW_SEQ,
+		MET_KEY,
+		ROW_NO,
+		TEST_S_DT,
+		TEST_E_DT,
+		TEMP,
+		TEMP_PLUS,
+		HMDT,
+		HMDT_PLUS,
+		BRMT,
+		BRMT_PLUS,
+		MEM_ID,
+		MEM_NAME,
+		SIGN,
+		SIGN_URL,
+		MIG_YN,
+		DEL_YN,
+		DEL_REASON,
+		DEL_MEM_ID,
+		INS_MEM_ID,
+		UDT_MEM_ID
+	</sql>
+
+	<select id="lockRaw" resultType="java.lang.Integer">
+		SELECT RAW_SEQ
+		  FROM RAW_TB
+		 WHERE RAW_SEQ = #{rawSeq}
+		   FOR UPDATE
+	</select>
+
+	<select id="selectList" resultType="egovframework.raw.service.RawEnv">
+		SELECT <include refid="envColumns" />
+		  FROM RAW_ENV_TB
+		 WHERE RAW_SEQ = #{rawSeq}
+		   AND DEL_YN = 0
+		<if test="metKey != null and metKey != ''">
+		   AND MET_KEY = #{metKey}
+		</if>
+		 ORDER BY MET_KEY, ROW_NO
+	</select>
+
+	<select id="selectOne" resultType="egovframework.raw.service.RawEnv">
+		SELECT <include refid="envColumns" />
+		  FROM RAW_ENV_TB
+		 WHERE ENV_SEQ = #{envSeq}
+	</select>
+
+	<select id="selectNextRowNo" resultType="int">
+		SELECT IFNULL(MAX(ROW_NO), 0) + 1
+		  FROM RAW_ENV_TB
+		 WHERE RAW_SEQ = #{rawSeq}
+		   AND MET_KEY = #{metKey}
+	</select>
+
+	<insert id="insertStart" parameterType="egovframework.raw.service.RawEnv"
+		useGeneratedKeys="true" keyProperty="envSeq" keyColumn="ENV_SEQ">
+		INSERT INTO RAW_ENV_TB
+		(
+			RAW_SEQ,
+			MET_KEY,
+			ROW_NO,
+			TEST_S_DT,
+			MEM_ID,
+			MIG_YN,
+			DEL_YN,
+			INS_MEM_ID,
+			INS_DT
+		)
+		VALUES
+		(
+			#{rawSeq},
+			#{metKey},
+			#{rowNo},
+			NOW(),
+			#{memId},
+			0,
+			0,
+			#{insMemId},
+			NOW()
+		)
+	</insert>
+
+	<update id="updateEnd">
+		UPDATE RAW_ENV_TB
+		   SET TEST_E_DT = NOW(),
+		       UDT_MEM_ID = #{udtMemId},
+		       UDT_DT = NOW()
+		 WHERE ENV_SEQ = #{envSeq}
+		   AND DEL_YN = 0
+		   AND TEST_S_DT IS NOT NULL
+		   AND TEST_E_DT IS NULL
+	</update>
+
+	<update id="updateValues" parameterType="egovframework.raw.service.RawEnv">
+		UPDATE RAW_ENV_TB
+		   SET TEMP = #{temp},
+		       TEMP_PLUS = #{tempPlus},
+		       HMDT = #{hmdt},
+		       HMDT_PLUS = #{hmdtPlus},
+		       BRMT = #{brmt},
+		       BRMT_PLUS = #{brmtPlus},
+		       MEM_NAME = #{memName},
+		       SIGN = #{sign},
+		       SIGN_URL = #{signUrl},
+		       UDT_MEM_ID = #{udtMemId},
+		       UDT_DT = NOW()
+		 WHERE ENV_SEQ = #{envSeq}
+		   AND DEL_YN = 0
+	</update>
+
+	<update id="updateDates">
+		UPDATE RAW_ENV_TB
+		   SET TEST_S_DT = #{testSDt},
+		       TEST_E_DT = #{testEDt},
+		       UDT_MEM_ID = #{udtMemId},
+		       UDT_DT = NOW()
+		 WHERE ENV_SEQ = #{envSeq}
+		   AND DEL_YN = 0
+		   AND TEST_E_DT IS NOT NULL
+	</update>
+
+	<update id="softDelete">
+		UPDATE RAW_ENV_TB
+		   SET DEL_YN = 1,
+		       DEL_REASON = #{reason},
+		       DEL_MEM_ID = #{memId},
+		       DEL_DT = NOW(),
+		       UDT_MEM_ID = #{memId},
+		       UDT_DT = NOW()
+		 WHERE ENV_SEQ = #{envSeq}
+		   AND DEL_YN = 0
+	</update>
+
+	<select id="selectRevYn" resultType="java.lang.Integer">
+		SELECT REV_YN
+		  FROM MEMBER_TB
+		 WHERE ID = #{memId}
+	</select>
+
+	<!--
+		측정 기간 (시험기간 재계산·성적서 발급일 검증용). 기존 rawMapper.selectAllMsrmnDates 대체.
+		  - 종료된 행만 (TEST_E_DT 있음), 삭제·중단 행 제외
+		  - RAW_MET_TB 에 체크된(CHECK_YN=1) 시험방법만. MET_KEY ↔ MET_SEQ 는 기존 쿼리와 동일
+		      CE 0·1 / ESD 6 / RS 7 / EFT 8 / SURGE 9 / CS 10 / MF 11 / VDIP 12 / CLK 13 / DP 14 / TEL 체크 없음
+		      RE : 규격 7·686·774·775 이면 RE1=15, RE2=4, RE3=5 / 그 외 규격은 RE1=4, RE2=5, RE3 없음
+	-->
+	<select id="selectDtRange" resultType="egovframework.raw.service.RawEnvDtRange">
+		SELECT MIN(DATE(e.TEST_S_DT)) AS startDt,
+		       MAX(DATE(e.TEST_E_DT)) AS endDt
+		  FROM RAW_ENV_TB e
+		  JOIN (
+		        SELECT EXISTS (
+		                 SELECT 1
+		                   FROM RAW_TB r
+		                  INNER JOIN TEST_TB tt ON r.TEST_SEQ = tt.TEST_SEQ
+		                  INNER JOIN TEST_ITEM_TB tit ON tt.TEST_ITEM_SEQ = tit.TEST_ITEM_SEQ
+		                  WHERE r.RAW_SEQ = #{rawSeq}
+		                    AND tit.TEST_STNDR_SEQ IN (7, 686, 774, 775)
+		               ) AS RE_SP
+		       ) s
+		 WHERE e.RAW_SEQ = #{rawSeq}
+		   AND e.DEL_YN = 0
+		   AND e.TEST_S_DT IS NOT NULL
+		   AND e.TEST_E_DT IS NOT NULL
+		   AND (
+		         e.MET_KEY = 'TEL'
+		         OR EXISTS (
+		              SELECT 1
+		                FROM RAW_MET_TB rmt
+		               WHERE rmt.RAW_SEQ = e.RAW_SEQ
+		                 AND rmt.CHECK_YN = 1
+		                 AND (
+		                          (e.MET_KEY = 'CE'    AND rmt.MET_SEQ IN (0, 1))
+		                       OR (e.MET_KEY = 'RE1'   AND rmt.MET_SEQ = IF(s.RE_SP = 1, 15, 4))
+		                       OR (e.MET_KEY = 'RE2'   AND rmt.MET_SEQ = IF(s.RE_SP = 1, 4, 5))
+		                       OR (e.MET_KEY = 'RE3'   AND s.RE_SP = 1 AND rmt.MET_SEQ = 5)
+		                       OR (e.MET_KEY = 'ESD'   AND rmt.MET_SEQ = 6)
+		                       OR (e.MET_KEY = 'RS'    AND rmt.MET_SEQ = 7)
+		                       OR (e.MET_KEY = 'EFT'   AND rmt.MET_SEQ = 8)
+		                       OR (e.MET_KEY = 'SURGE' AND rmt.MET_SEQ = 9)
+		                       OR (e.MET_KEY = 'CS'    AND rmt.MET_SEQ = 10)
+		                       OR (e.MET_KEY = 'MF'    AND rmt.MET_SEQ = 11)
+		                       OR (e.MET_KEY = 'VDIP'  AND rmt.MET_SEQ = 12)
+		                       OR (e.MET_KEY = 'CLK'   AND rmt.MET_SEQ = 13)
+		                       OR (e.MET_KEY = 'DP'    AND rmt.MET_SEQ = 14)
+		                 )
+		            )
+		       )
+	</select>
+
+	<insert id="insertTestMemo">
+		INSERT INTO TEST_MEMO_TB
+		(
+			TEST_SEQ,
+			MEMO,
+			INS_MEM_ID,
+			UDT_MEM_ID
+		)
+		VALUES
+		(
+			#{testSeq},
+			#{memo},
+			#{memId},
+			#{memId}
+		)
+	</insert>
+
+</mapper>

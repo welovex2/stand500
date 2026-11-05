@@ -1,7 +1,7 @@
 """
 트리거가 쌓는 이력 두 곳을 합쳐 읽는다. (MariaDB 10.1 — CTE 없음, 파생 테이블로 묶는다)
 
-  RAW_HIS_TB (TB = RAW_TB / RAW_MET_TB) : 시험기간·시험방법 변경 전/후  → SRC='HIS'
+  RAW_HIS_TB (TB = RAW_TB / RAW_MET_TB / RAW_ENV_TB) : 시험기간·시험방법·측정일/환경조건 변경 전/후  → SRC='HIS'
   RAW_DONE_EDIT_TB                      : 프로젝트완료 후 로데이터 저장  → SRC='DONE'
 
 RAW_HIS_TB 의 TB='' 행(기존 저장 시점 기록)은 ERP 이력 화면용이라 뺀다.
@@ -39,7 +39,7 @@ HIS_BRANCH = """
            h.TB, h.COL, h.`BEFORE` AS BEFORE_VAL, h.`AFTER` AS AFTER_VAL, NULL AS ACT
       FROM RAW_HIS_TB h
            LEFT JOIN RAW_TB r ON r.RAW_SEQ = h.RAW_ID
-     WHERE h.TB IN ('RAW_TB', 'RAW_MET_TB')
+     WHERE h.TB IN ('RAW_TB', 'RAW_MET_TB', 'RAW_ENV_TB')
        AND IFNULL(h.`BEFORE`, '') <> ''
        AND h.INS_DT >= %s AND h.INS_DT < %s
        {tb_cond}"""
