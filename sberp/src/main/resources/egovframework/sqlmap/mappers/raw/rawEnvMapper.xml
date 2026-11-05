@@ -194,6 +194,41 @@
 		       )
 	</select>
 
+	<!--
+		같은 시험원의 시간 겹침 ([종료]·기술책임자 수정). 서명 파일 → MEMBER_SIGN_TB 로 회원 단위 비교
+		(서명을 다시 등록해 파일 ID 가 바뀐 경우 포함). 회원과 연결 안 되는 파일은 같은 파일 ID 만 같은 사람.
+		경계(10:00 종료 · 10:00 시작)는 겹침 아님. 이관 행(MIG_YN=1)은 시작=종료 순간값이라 제외.
+	-->
+	<select id="selectOverlap" resultType="egovframework.raw.service.RawEnvOverlap">
+		SELECT e.ENV_SEQ,
+		       CONCAT('SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
+		              '-', t.TEST_TYPE_CODE, LPAD(t.TEST_NO, 4, 0),
+		              IF(j.SBK_REVISION > 0, CONCAT('-', j.SBK_REVISION), '')) AS RAW_ID,
+		       e.MET_KEY,
+		       e.TEST_S_DT,
+		       e.TEST_E_DT
+		  FROM RAW_ENV_TB e
+		  LEFT JOIN RAW_TB r ON r.RAW_SEQ = e.RAW_SEQ
+		  LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+		  LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		  LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+		 WHERE e.SIGN_URL IN (
+		         SELECT #{signUrl}
+		          UNION
+		         SELECT ms2.ATCH_FILE_ID
+		           FROM MEMBER_SIGN_TB ms1
+		          INNER JOIN MEMBER_SIGN_TB ms2 ON ms2.MEMBER_SEQ = ms1.MEMBER_SEQ
+		          WHERE ms1.ATCH_FILE_ID = #{signUrl}
+		       )
+		   AND e.ENV_SEQ != #{envSeq}
+		   AND e.DEL_YN = 0
+		   AND e.MIG_YN = 0
+		   AND e.TEST_S_DT &lt; #{testEDt}
+		   AND (e.TEST_E_DT IS NULL OR e.TEST_E_DT &gt; #{testSDt})
+		 ORDER BY e.TEST_S_DT
+		 LIMIT 1
+	</select>
+
 	<insert id="insertTestMemo">
 		INSERT INTO TEST_MEMO_TB
 		(

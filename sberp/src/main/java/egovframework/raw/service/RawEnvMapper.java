@@ -51,6 +51,15 @@ public interface RawEnvMapper {
    */
   RawEnvDtRange selectDtRange(@Param("rawSeq") int rawSeq);
 
+  /**
+   * 같은 시험원의 시간이 겹치는 측정 행 1건 (없으면 null).
+   * 같은 시험원 = 서명 파일(SIGN_URL)이 같거나, MEMBER_SIGN_TB 에서 같은 회원의 서명 파일.
+   * 겹침 = 상대 시작 &lt; 이 행 종료 AND (상대 진행 중 OR 상대 종료 &gt; 이 행 시작). 경계 시각은 겹침 아님.
+   * 자기 자신·삭제·중단·이관(MIG_YN=1) 행 제외.
+   */
+  RawEnvOverlap selectOverlap(@Param("envSeq") int envSeq, @Param("signUrl") String signUrl,
+      @Param("testSDt") LocalDateTime testSDt, @Param("testEDt") LocalDateTime testEDt);
+
   /** 시험 작성내역 (TEST_MEMO_TB, 시험리스트 View 모달) */
   void insertTestMemo(@Param("testSeq") int testSeq, @Param("memo") String memo,
       @Param("memId") String memId);

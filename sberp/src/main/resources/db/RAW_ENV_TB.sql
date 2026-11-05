@@ -82,7 +82,8 @@ CREATE TABLE RAW_ENV_TB (
 
     PRIMARY KEY (ENV_SEQ),
     KEY IDX_RAW_ENV_RAW (RAW_SEQ, MET_KEY, DEL_YN, ROW_NO),
-    KEY IDX_RAW_ENV_MEM (MEM_ID, TEST_S_DT)   -- 시험원 동시간 중복 확인·일정 달력용 (추후)
+    KEY IDX_RAW_ENV_MEM (MEM_ID, TEST_S_DT),  -- 시험원 일정 달력용 (추후)
+    KEY IDX_RAW_ENV_SIGN (SIGN_URL, TEST_S_DT) -- [종료] 시 같은 시험원(서명) 시간 겹침 확인
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='로데이터 측정일·환경조건 (시험방법별 다건)';
 
 

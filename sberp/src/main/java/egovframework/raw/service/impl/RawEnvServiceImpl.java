@@ -23,6 +23,7 @@ import egovframework.raw.dto.EnvMetKey;
 import egovframework.raw.dto.RawEnvDTO;
 import egovframework.raw.service.RawEnv;
 import egovframework.raw.service.RawEnvMapper;
+import egovframework.raw.service.RawEnvOverlap;
 import egovframework.raw.service.RawEnvService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -271,7 +272,10 @@ public class RawEnvServiceImpl implements RawEnvService {
       }
     }
 
-    return toRow(rawEnvMapper.selectOne(envSeq), true, true);
+    // 일시나 서명(시험원)이 바뀌었을 수 있으니 최종 값으로 겹침 확인
+    RawEnv result = rawEnvMapper.selectOne(envSeq);
+    checkOverlap(result);
+    return toRow(result, true, true);
   }
 
   @Override
@@ -341,8 +345,9 @@ public class RawEnvServiceImpl implements RawEnvService {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
     }
 
+    // 서명은 같은 시험원 시간 겹침 확인에 쓰므로 필수
     if (!StringUtils.hasText(open.getTemp()) || !StringUtils.hasText(open.getHmdt())
-        || !StringUtils.hasText(open.getMemName())
+        || !StringUtils.hasText(open.getMemName()) || !StringUtils.hasText(open.getSignUrl())
         || (key.hasBrmt() && !StringUtils.hasText(open.getBrmt()))) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_REQUIRED);
     }
@@ -352,6 +357,7 @@ public class RawEnvServiceImpl implements RawEnvService {
     }
 
     RawEnv saved = rawEnvMapper.selectOne(open.getEnvSeq());
+    checkOverlap(saved);
     afterDateChange(saved, rawSupport.resolveTestSeq(testSeq, rawSeq));
   }
 
@@ -398,6 +404,29 @@ public class RawEnvServiceImpl implements RawEnvService {
     }
 
     rawSupport.recalcAndUpdateTestDtRange(env.getRawSeq(), testSeq);
+  }
+
+  /**
+   * 같은 시험원(서명)의 다른 측정과 시간이 겹치면 거부 (예외 → 방법 저장까지 롤백).
+   * 서명이 없거나 시작·종료가 비어 있으면 비교할 수 없어 넘어간다. 이관 행끼리는 비교하지 않는다.
+   */
+  private void checkOverlap(RawEnv env) {
+    if (env == null || env.getMigYn() != 0 || !StringUtils.hasText(env.getSignUrl())
+        || env.getTestSDt() == null || env.getTestEDt() == null) {
+      return;
+    }
+    RawEnvOverlap hit = rawEnvMapper.selectOverlap(env.getEnvSeq(), env.getSignUrl().trim(),
+        env.getTestSDt(), env.getTestEDt());
+    if (hit == null) {
+      return;
+    }
+    EnvMetKey key = EnvMetKey.of(hit.getMetKey());
+    String period = hit.getTestSDt().format(MEMO_DT) + " ~ "
+        + (hit.getTestEDt() == null ? "진행 중" : hit.getTestEDt().format(MEMO_DT));
+    log.info("측정 시간 겹침 - envSeq={}, 상대 envSeq={}", env.getEnvSeq(), hit.getEnvSeq());
+    throw new IllegalArgumentException(String.format(ResponseMessage.CHECK_ENV_OVERLAP,
+        hit.getRawId() == null ? "-" : hit.getRawId(),
+        key == null ? hit.getMetKey() : key.getLabel(), period));
   }
 
   private void writeMemo(int testSeq, String title, RawEnv env, String reason, String loginId) {
