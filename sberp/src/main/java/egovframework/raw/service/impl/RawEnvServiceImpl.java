@@ -304,7 +304,10 @@ public class RawEnvServiceImpl implements RawEnvService {
 
   // ------------------------------------------------------------------ 내부
 
-  /** [시작] : 살아있는 행 최대 개수(기본 10, TEL 1) 미만 + 진행 중 행 없음 → 새 행, TEST_S_DT = NOW() */
+  /**
+   * [시작] : 살아있는 행 최대 개수(기본 10, TEL 1) 미만 + 진행 중 행 없음 → 새 행, TEST_S_DT = NOW().
+   * 시작일 기준으로 성적서 발급일·측정설비 교정일 체크.
+   */
   private RawEnv startRow(int rawSeq, int testSeq, EnvMetKey key, String loginId) {
     List<RawEnv> alive = rawEnvMapper.selectList(rawSeq, key.name());
     if (alive.size() >= key.getMaxRows()) {
@@ -326,9 +329,15 @@ public class RawEnvServiceImpl implements RawEnvService {
 
     RawEnv saved = rawEnvMapper.selectOne(env.getEnvSeq());
 
+    LocalDate startDt = saved.getTestSDt().toLocalDate();
+
     // 시작일도 성적서 발급일 이후면 안 된다 (예외 시 방법 저장까지 롤백)
-    rawSupport.validateMsrmnDt(rawSupport.resolveTestSeq(testSeq, rawSeq),
-        saved.getTestSDt().toLocalDate());
+    rawSupport.validateMsrmnDt(rawSupport.resolveTestSeq(testSeq, rawSeq), startDt);
+
+    // 시작 시점에 측정설비 교정일이 지나 있으면 안 된다 (같은 요청에서 저장한 장비 포함)
+    for (String macType : key.getMacTypes()) {
+      rawSupport.checkMacReformDate(rawSeq, macType, startDt);
+    }
     return saved;
   }
 

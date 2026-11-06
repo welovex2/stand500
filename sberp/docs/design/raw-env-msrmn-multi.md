@@ -204,6 +204,7 @@ CREATE TABLE RAW_ENV_TB (
 | 사유 공란(공백만 포함) 불가, 최대 200자 | stop, delete | `CHECK_ENV_REASON` |
 | 일시: 둘 다 입력, 시작 ≤ 종료, 미래 불가 | update | `CHECK_ENV_DATE` |
 | 시작일·종료일 ≤ 성적서 발급일 | START, END, update | 기존 `CHECK_MSRMN_DT` |
+| 측정설비 교정일 (그 표의 측정설비, 시작일 기준) | START | 기존 `CHECK_MAC_DATE` |
 | 측정설비 교정일 (그 표의 측정설비, 종료일 기준) | END, update | 기존 `CHECK_MAC_DATE` |
 | 기술책임자 권한 | update, delete | `CHECK_ENV_AUTH` |
 

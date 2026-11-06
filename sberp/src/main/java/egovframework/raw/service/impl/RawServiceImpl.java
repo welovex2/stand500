@@ -33,7 +33,6 @@ import egovframework.raw.dto.ReDTO;
 import egovframework.raw.dto.ReportDTO;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
-import egovframework.raw.dto.TableType;
 import egovframework.raw.dto.TelDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.util.TelResultCodeUtil;
@@ -234,8 +233,6 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertCe(CeDTO req) {
     boolean result = true;
-    boolean isNew = isNew(TableType.CE, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -260,11 +257,6 @@ public class RawServiceImpl implements RawService {
         methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
 
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew) {
-        valMacReformDate(req.getMacList(), req.getRawSeq(), "CA");
-        valMacReformDate(req.getMacList(), req.getRawSeq(), "CB");
-      }
     }
 
     // 날짜 범위 업데이트
@@ -295,8 +287,6 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertRe(ReDTO req) {
     boolean result = true;
-    boolean isNew = isNew(TableType.RE, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -325,20 +315,11 @@ public class RawServiceImpl implements RawService {
         else
           methodMapper.updateTwoMac(req.getRawSeq(), req.getMacList());
 
-        // 교정일 체크 (신규저장시에만 체크)
-        if (isNew) {
-          valMacReformDate(req.getMacList(), req.getRawSeq(), "RA");
-          valMacReformDate(req.getMacList(), req.getRawSeq(), "RB");
-        }
 
       } else {
 
         insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-        // 교정일 체크 (신규저장시에만 체크)
-        if (isNew) {
-          valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
-        }
       }
 
     }
@@ -382,8 +363,6 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertEsd(EsdDTO req) {
     boolean result = true;
-    boolean isNew = isNew(TableType.ESD, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -396,9 +375,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
     // 시험결과 > 직접인가
     if (req.getSubList() != null) {
@@ -573,8 +549,6 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertRs(RsDTO req) {
     boolean result = true;
-    boolean isNew = isNew(TableType.RS, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -587,9 +561,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 인가부위
@@ -649,8 +620,6 @@ public class RawServiceImpl implements RawService {
   @Transactional
   public boolean insertEft(EftDTO req) {
     boolean result = true;
-    boolean isNew = isNew(TableType.EFT, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -663,9 +632,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 포트
@@ -726,8 +692,6 @@ public class RawServiceImpl implements RawService {
   public boolean insertSurge(SurgeDTO req) {
 
     boolean result = true;
-    boolean isNew = isNew(TableType.SURGE, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -740,9 +704,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 포트
@@ -800,8 +761,6 @@ public class RawServiceImpl implements RawService {
   public boolean insertCs(CsDTO req) {
 
     boolean result = true;
-    boolean isNew = isNew(TableType.CS, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -814,9 +773,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 시험결과 > 인가부위
@@ -877,8 +833,6 @@ public class RawServiceImpl implements RawService {
   public boolean insertMf(MfDTO req) {
 
     boolean result = true;
-    boolean isNew = isNew(TableType.MF, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -891,9 +845,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
@@ -929,8 +880,6 @@ public class RawServiceImpl implements RawService {
   public boolean insertVdip(VdipDTO req) {
 
     boolean result = true;
-    boolean isNew = isNew(TableType.VDIP, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -943,9 +892,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
@@ -1014,8 +960,6 @@ public class RawServiceImpl implements RawService {
   public boolean insertClk(ClkDTO req) {
 
     boolean result = true;
-    boolean isNew = isNew(TableType.CK, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -1028,9 +972,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
@@ -1060,8 +1001,6 @@ public class RawServiceImpl implements RawService {
   public boolean insertDp(DpDTO req) {
 
     boolean result = true;
-    boolean isNew = isNew(TableType.DP, req.getRawSeq());
-
     assertRawEditable(req.getTestSeq(), req.getRawSeq());
 
     // 기본로데이터가 없을때 로데이터 먼저 등록
@@ -1074,9 +1013,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(req.getMacList())) {
       insertMac(req.getMacList(), req.getRawSeq(), req.getMacType(), req.getMacResetYn());
 
-      // 교정일 체크 (신규저장시에만 체크)
-      if (isNew)
-        valMacReformDate(req.getMacList(), req.getRawSeq(), req.getMacType());
     }
 
     // 측정일·환경조건 : [시작]·[종료]·[저장] (#26-8)
@@ -1277,20 +1213,6 @@ public class RawServiceImpl implements RawService {
     if (!ObjectUtils.isEmpty(macList))
       methodMapper.insertMac(rawSeq, macType, macList);
 
-  }
-
-  private boolean isNew(TableType type, int rawSeq) {
-    return !methodMapper.existsByRawSeq(type.getTableName(), rawSeq);
-  }
-
-  /**
-   * 측정설비 교정일 체크. 측정일은 RAW_ENV_TB 의 해당 시험방법 표(측정설비 구분 기준) 종료된 행 중 가장 늦은 종료일 (#26-8).
-   */
-  private void valMacReformDate(List<RawMac> macList, int rawSeq, String macType) {
-    if (ObjectUtils.isEmpty(macList))
-      return;
-
-    rawSupport.checkMacReformDateByEnv(rawSeq, macType);
   }
 
   @Override

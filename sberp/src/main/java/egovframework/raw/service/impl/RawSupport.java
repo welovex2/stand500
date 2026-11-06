@@ -7,10 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import egovframework.cmm.service.ResponseMessage;
-import egovframework.raw.dto.EnvMetKey;
 import egovframework.raw.service.MethodMapper;
 import egovframework.raw.service.RawData;
-import egovframework.raw.service.RawEnv;
 import egovframework.raw.service.RawEnvDtRange;
 import egovframework.raw.service.RawEnvMapper;
 import egovframework.raw.service.RawMac;
@@ -146,29 +144,5 @@ public class RawSupport {
     }
 
     rawMapper.updateTestDtRange(rawSeq, startDt, endDt);
-  }
-
-  /**
-   * 측정설비 교정일 체크 — 해당 측정설비 구분(macType)을 쓰는 시험방법 표의 종료된 행 중 가장 늦은 종료일 기준.
-   * 측정 행이 없으면 체크하지 않는다 (행 종료·일시 수정 때 다시 체크됨).
-   */
-  public void checkMacReformDateByEnv(int rawSeq, String macType) {
-    if (rawSeq == 0 || macType == null)
-      return;
-
-    EnvMetKey key = EnvMetKey.ofMacType(macType);
-    if (key == null)
-      return;
-
-    LocalDate last = null;
-    for (RawEnv env : rawEnvMapper.selectList(rawSeq, key.name())) {
-      if (env.getTestEDt() == null)
-        continue;
-      LocalDate d = env.getTestEDt().toLocalDate();
-      if (last == null || d.isAfter(last))
-        last = d;
-    }
-
-    checkMacReformDate(rawSeq, macType, last);
   }
 }
