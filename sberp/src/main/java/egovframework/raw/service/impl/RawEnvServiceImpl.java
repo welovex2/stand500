@@ -110,7 +110,7 @@ public class RawEnvServiceImpl implements RawEnvService {
           break;
         }
       }
-      table.setCanAdd(editable && table.getRows().size() < EnvMetKey.MAX_ROWS && !anyOpen);
+      table.setCanAdd(editable && table.getRows().size() < key.getMaxRows() && !anyOpen);
       res.getTables().add(table);
     }
 
@@ -304,11 +304,11 @@ public class RawEnvServiceImpl implements RawEnvService {
 
   // ------------------------------------------------------------------ 내부
 
-  /** [시작] : 살아있는 행 10개 미만 + 진행 중 행 없음 → 새 행, TEST_S_DT = NOW() */
+  /** [시작] : 살아있는 행 최대 개수(기본 10, TEL 1) 미만 + 진행 중 행 없음 → 새 행, TEST_S_DT = NOW() */
   private RawEnv startRow(int rawSeq, int testSeq, EnvMetKey key, String loginId) {
     List<RawEnv> alive = rawEnvMapper.selectList(rawSeq, key.name());
-    if (alive.size() >= EnvMetKey.MAX_ROWS) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_MAX);
+    if (alive.size() >= key.getMaxRows()) {
+      throw new IllegalArgumentException(String.format(ResponseMessage.CHECK_ENV_MAX, key.getMaxRows()));
     }
     for (RawEnv env : alive) {
       if (!env.isEnded()) {

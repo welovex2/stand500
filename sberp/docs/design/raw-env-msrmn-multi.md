@@ -11,7 +11,7 @@
 | 구분 | 내용 |
 |---|---|
 | 표 구성 | 시험방법마다 표 하나. 행 = `측정일시(시작/종료) · 소요시간 · 온도 · 습도 · (기압) · 이름/서명 · 동작` |
-| 행 개수 | 1 ~ 10행. 우측 상단 [추가] 버튼, 10행이면 비활성 |
+| 행 개수 | 1 ~ 10행 (TEL·KS X 3078 은 1행). 우측 상단 [추가] 버튼, 최대면 비활성 |
 | 시험시작 | [시작] 버튼 → 서버시각 자동 기록. 시험원이 일시 직접 입력 불가 |
 | 시험종료 | [종료] 버튼 → 서버시각 자동 기록. **종료 전에는 다음 행 추가 불가** |
 | 중단 | 시작 일시 옆 [중단] → 사유 입력 모달(필수) → 저장 시 해당 행 제거(첫 행이면 리셋). 사유는 시험리스트 View 모달의 ‘작성내역’에 남김 |
@@ -195,7 +195,7 @@ CREATE TABLE RAW_ENV_TB (
 | `envAction`은 START / END / 빈 값 | insert | `CHECK_ENV_ACTION` |
 | `envMetKey`가 그 방법 화면의 표가 아님 | insert START·END | `CHECK_ENV_MET_KEY` |
 | `envRows`에 다른 로데이터·다른 방법 행 | insert | `CHECK_ENV_STATE` |
-| 살아있는 행 10개 이상이면 추가 불가 | START | `CHECK_ENV_MAX` |
+| 살아있는 행이 최대(기본 10, TEL 1) 이상이면 추가 불가 | START | `CHECK_ENV_MAX` |
 | 종료 안 된 행이 있으면 추가 불가 | START | `CHECK_ENV_NOT_ENDED` |
 | 진행 중 행이 없으면 종료 불가 | END | `CHECK_ENV_STATE` |
 | 온도·습도·시험자명·서명(·기압) 없으면 종료 불가 | END | `CHECK_ENV_REQUIRED` |
@@ -262,7 +262,7 @@ CREATE TABLE RAW_ENV_TB (
 - `insert.do` 응답 `data`(rawSeq)로 화면을 수정 모드로 바꿀 것. 신규 화면에서 [시작]을 누르면 로데이터가 이때 생긴다. 바꾸지 않으면 다음 저장 때 로데이터가 또 생긴다.
 - 표는 `detail.do`의 `envList`로 그린다 (방법 데이터가 없어 NO_DATA여도 빈 표가 온다). RE는 `RE1/RE2/RE3` 3표. 따로 필요하면 `list.do`.
 - 방법 저장의 기존 환경·측정일·서명 필드(`temp`, `msrmnYear` … `sign`)는 서버가 무시한다. 보내지 않아도 된다.
-- [시작] 버튼 활성 = 표의 `canAdd` (10행이거나 진행 중 행이 있으면 비활성). 0행이면 빈 행 하나를 그려 입력칸 + [시작].
+- [시작] 버튼 활성 = 표의 `canAdd` (최대 행(기본 10, TEL 1)이거나 진행 중 행이 있으면 비활성). 0행이면 빈 행 하나를 그려 입력칸 + [시작].
 - [종료] 전에 온도·습도·시험자명·서명(기압 표는 기압도) 필수. 서버도 막는다 (`CHECK_ENV_REQUIRED`).
 - 행 버튼: [종료] `canEnd`, [중단] `canStop`(사유 모달 → `stop.do`), 입력칸 `canEdit`(진행 중 행), 기술책임자 [수정] `canRevEdit`(수정 모달 → `update.do`, 일시 포함), [삭제] `canDelete`(사유 모달 → `delete.do`).
 - `update.do`의 일시는 조회 값(`yyyy-MM-dd HH:mm:ss`)을 그대로 보내거나 둘 다 비운다 (분까지만 보내면 초가 바뀐 것으로 본다).
@@ -303,7 +303,25 @@ CREATE TABLE RAW_ENV_TB (
 3. 기존 로직 교체: `selectAllMsrmnDates`, `recalcAndUpdateTestDtRange`, 방법별 insert에서 환경 컬럼 제거, detail에 `envList` (구현 완료, 11-05 로컬 테스트 완료)
 4. 성적서 데이터 (`ReportDTO`, `RepController`) + 템플릿 담당 전달
 5. 프론트 전달 (§8) → 연동 테스트
-6. 운영 반영: DDL → 이관 → 배포 순. 기존 컬럼 DROP은 안정화 후 별도
+6. 운영 반영: DDL → 이관 → 배포 순. 기존 컬럼 DROP은 안정화 후 별도 (아래 10.1)
+
+### 10.1 운영 반영 체크 (2026-11-06)
+
+반영 전 선행
+1. 성적서(4단계) 완료. 성적서가 아직 METHOD_*_TB 기존 컬럼(온습도·측정일·서명)을 읽음. 서버는 그 컬럼에 더 이상 쓰지 않으므로 이대로 반영하면 새 측정값이 성적서에 빈 값 (예: TelReportTemplateHelper 의 getTemp())
+2. 프론트와 같이 배포. 백엔드만 먼저 올리면 기존 화면의 측정일·온습도·서명 입력이 저장 안 됨. [종료] 시 서명(atchFileId) 필수라 새 화면도 서명을 보내야 함
+3. 운영 DB 계정에 트리거 생성 권한 있는지 확인
+
+반영 순서
+1. DDL : RAW_ENV_TB.sql (테이블·이력 트리거·IDX_RAW_ENV_SIGN 포함). 운영은 RAW_ENV_TB_overlap_idx.sql 실행 불필요
+2. 이관 : RAW_ENV_TB_migration.sql 실행 후 0번(이관 제외 행)·2번(건수 대조) 쿼리로 확인
+3. 이관 후 배포 전까지 기존 화면으로 입력한 값은 빠짐. 이관 SQL은 재실행 안전하므로 배포 직전 또는 직후 한 번 더 실행
+4. 배포 : sberp + his-svc(labels.py, db.py) 함께
+
+배포 후 확인
+1. 시험 1건 [시작] → [저장] → [종료] : 측정 행·시험기간·교정일 체크
+2. his-svc 이력 화면에 '측정일·환경조건' 대상 표시
+3. METHOD_*_TB 기존 컬럼 DROP 은 안정화 후 별도 작업
 
 ---
 

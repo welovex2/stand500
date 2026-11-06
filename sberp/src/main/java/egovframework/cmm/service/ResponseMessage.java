@@ -59,7 +59,7 @@ public class ResponseMessage {
 
     // 로데이터 측정일·환경조건 (RAW_ENV_TB)
     public static final String CHECK_ENV_MET_KEY = "시험방법 구분값이 올바르지 않습니다.";
-    public static final String CHECK_ENV_MAX = "측정일은 시험방법별 최대 10개까지 추가할 수 있습니다.";
+    public static final String CHECK_ENV_MAX = "측정일은 이 시험방법에서 최대 %d개까지 추가할 수 있습니다.";
     public static final String CHECK_ENV_NOT_ENDED = "시험종료가 기록되지 않은 측정일이 있어 추가할 수 없습니다.";
     public static final String CHECK_ENV_STATE = "이미 처리되었거나 현재 상태에서 할 수 없는 작업입니다. 새로고침 후 다시 시도하세요.";
     public static final String CHECK_ENV_REASON = "사유를 200자 이내로 입력하세요.";

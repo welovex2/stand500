@@ -27,19 +27,31 @@ public enum EnvMetKey {
   VDIP("V-Dip", "THP", "VD"),
   CLK("Click", "TH", "CK"),
   DP("DP", "TH", "DP"),
-  TEL("TEL", "TH");
+  /** TEL(KS X 3078) 은 측정 1회만 입력 */
+  TEL(1, "TEL", "TH");
 
-  /** 표 하나에 살아있는 행 최대 개수 */
+  /** 표 하나에 살아있는 행 기본 최대 개수 */
   public static final int MAX_ROWS = 10;
 
+  private final int maxRows;
   private final String label;
   private final String format;
   private final List<String> macTypes;
 
   EnvMetKey(String label, String format, String... macTypes) {
+    this(MAX_ROWS, label, format, macTypes);
+  }
+
+  EnvMetKey(int maxRows, String label, String format, String... macTypes) {
+    this.maxRows = maxRows;
     this.label = label;
     this.format = format;
     this.macTypes = Collections.unmodifiableList(Arrays.asList(macTypes));
+  }
+
+  /** 표 하나에 살아있는 행 최대 개수 */
+  public int getMaxRows() {
+    return maxRows;
   }
 
   public String getLabel() {
