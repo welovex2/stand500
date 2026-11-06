@@ -11,9 +11,6 @@ import egovframework.raw.dto.RawEnvDTO;
  */
 public interface RawEnvService {
 
-  /** 표 조회. metKey 가 비면 행이 있는 표 전체 */
-  RawEnvDTO.ListRes list(int rawSeq, int testSeq, String metKey, String loginId);
-
   /**
    * 지정한 시험방법 표들 (행이 없어도 빈 표). 방법별 detail 응답의 envList 용. 예) RE → RE1, RE2, RE3
    */

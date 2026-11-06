@@ -79,11 +79,11 @@ POST /raw/{방법}/insert.do. 화면 저장 데이터에 아래 값 추가
 POST /raw/env/{envSeq}/update.do
 ```json
 { "testSeq": 21697,
-  "testSDt": "2026-11-04 09:10:00", "testEDt": "2026-11-04 11:40:00",
+  "testSDt": "2026-11-04 09:10", "testEDt": "2026-11-04 11:40",
   "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5",
   "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "atchFileId": "FILE_000000000000862" }
 ```
-1. 일시는 여기서만 수정. 조회 형식(yyyy-MM-dd HH:mm:ss) 그대로 보냄
+1. 일시는 여기서만 수정. 분 단위(yyyy-MM-dd HH:mm)로 보냄, 현재 일시까지만 입력 가능
 2. 보낸 값으로 덮어씀. 빈 값은 지움, atchFileId 빈 값은 서명 취소
 3. 일시를 바꾸면 시간 겹침 오류 날 수 있음
 

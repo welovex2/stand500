@@ -58,10 +58,6 @@ public enum EnvMetKey {
     return label;
   }
 
-  public String getFormat() {
-    return format;
-  }
-
   /** 기압 입력 여부 */
   public boolean hasBrmt() {
     return "THP".equals(format);

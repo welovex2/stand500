@@ -5,12 +5,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,80 +61,28 @@ public class RawEnvServiceImpl implements RawEnvService {
   // ------------------------------------------------------------------ 조회
 
   @Override
-  public RawEnvDTO.ListRes list(int rawSeq, int testSeq, String metKey, String loginId) {
-    EnvMetKey only = null;
-    if (StringUtils.hasText(metKey)) {
-      only = requireKey(metKey);
-    }
-
-    RawEnvDTO.ListRes res = new RawEnvDTO.ListRes();
-    res.setRawSeq(rawSeq);
-
+  public List<RawEnvDTO.Table> tables(int rawSeq, int testSeq, String loginId, String... metKeys) {
     boolean rev = isRev(loginId);
     boolean editable = rawSupport.isRawEditable(testSeq, rawSeq);
-    res.setRevYn(rev);
-    res.setEditable(editable);
-
     List<RawEnv> rows = rawSeq == 0 ? Collections.<RawEnv>emptyList()
-        : rawEnvMapper.selectList(rawSeq, only == null ? null : only.name());
-
-    // 표 순서는 enum 순서. 특정 시험방법을 물으면 행이 없어도 빈 표를 준다
-    Map<EnvMetKey, RawEnvDTO.Table> tables = new LinkedHashMap<EnvMetKey, RawEnvDTO.Table>();
-    if (only != null) {
-      tables.put(only, newTable(only));
-    }
-    for (RawEnv env : rows) {
-      EnvMetKey key = EnvMetKey.of(env.getMetKey());
-      if (key == null) {
-        log.warn("알 수 없는 MET_KEY - envSeq={}, metKey={}", env.getEnvSeq(), env.getMetKey());
-        continue;
-      }
-      RawEnvDTO.Table table = tables.get(key);
-      if (table == null) {
-        table = newTable(key);
-        tables.put(key, table);
-      }
-      table.getRows().add(toRow(env, rev, editable));
-    }
-
-    for (EnvMetKey key : EnvMetKey.values()) {
-      RawEnvDTO.Table table = tables.get(key);
-      if (table == null) {
-        continue;
-      }
-      boolean anyOpen = false;
-      for (RawEnvDTO.Row row : table.getRows()) {
-        if (row.getTestEDt() == null) {
-          anyOpen = true;
-          break;
-        }
-      }
-      table.setCanAdd(editable && table.getRows().size() < key.getMaxRows() && !anyOpen);
-      res.getTables().add(table);
-    }
-
-    return res;
-  }
-
-  @Override
-  public List<RawEnvDTO.Table> tables(int rawSeq, int testSeq, String loginId, String... metKeys) {
-    RawEnvDTO.ListRes all = list(rawSeq, testSeq, null, loginId);
+        : rawEnvMapper.selectList(rawSeq, null);
 
     List<RawEnvDTO.Table> out = new ArrayList<RawEnvDTO.Table>();
     for (String metKey : metKeys) {
       EnvMetKey key = requireKey(metKey);
-      RawEnvDTO.Table found = null;
-      for (RawEnvDTO.Table t : all.getTables()) {
-        if (key.name().equals(t.getMetKey())) {
-          found = t;
-          break;
+      RawEnvDTO.Table table = newTable(key);
+      boolean anyOpen = false;
+      for (RawEnv env : rows) {
+        if (EnvMetKey.of(env.getMetKey()) != key) {
+          continue;
+        }
+        table.getRows().add(toRow(env, rev, editable));
+        if (env.getTestEDt() == null) {
+          anyOpen = true;
         }
       }
-      if (found == null) {
-        found = newTable(key);
-        found.setCanAdd(all.isEditable());
-      }
-      out.add(found);
+      table.setCanAdd(editable && table.getRows().size() < key.getMaxRows() && !anyOpen);
+      out.add(table);
     }
     return out;
   }
@@ -254,12 +201,12 @@ public class RawEnvServiceImpl implements RawEnvService {
     saveValues(env, req.getTemp(), req.getTempPlus(), req.getHmdt(), req.getHmdtPlus(),
         req.getBrmt(), req.getBrmtPlus(), req.getMemName(), req.getAtchFileId(), loginId);
 
-    // 일시: 둘 다 비우면 그대로, 하나만 주면 오류
+    // 일시: 둘 다 비우면 그대로, 하나만 주면 오류. 화면은 분 단위로 보낸다 → 같은 분이면 저장된 값(초) 유지
     boolean hasS = StringUtils.hasText(req.getTestSDt());
     boolean hasE = StringUtils.hasText(req.getTestEDt());
     if (hasS || hasE) {
-      LocalDateTime s = parseDateTime(req.getTestSDt());
-      LocalDateTime e = parseDateTime(req.getTestEDt());
+      LocalDateTime s = sameMinuteOrNew(parseDateTime(req.getTestSDt()), env.getTestSDt());
+      LocalDateTime e = sameMinuteOrNew(parseDateTime(req.getTestEDt()), env.getTestEDt());
       if (s == null || e == null || e.isBefore(s) || e.isAfter(LocalDateTime.now())) {
         throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
       }
@@ -538,6 +485,15 @@ public class RawEnvServiceImpl implements RawEnvService {
       throw new IllegalArgumentException(ResponseMessage.CHECK_DATA);
     }
     return t;
+  }
+
+  /** 입력이 분 단위로 저장값과 같으면 저장값(초 포함)을, 아니면 입력값을 쓴다 */
+  private LocalDateTime sameMinuteOrNew(LocalDateTime input, LocalDateTime saved) {
+    if (input != null && saved != null && input.getSecond() == 0 && input.getNano() == 0
+        && input.equals(saved.truncatedTo(ChronoUnit.MINUTES))) {
+      return saved;
+    }
+    return input;
   }
 
   private LocalDateTime parseDateTime(String value) {

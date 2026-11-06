@@ -2,12 +2,10 @@ package egovframework.raw.web;
 
 import javax.annotation.Resource;
 
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import egovframework.cmm.service.BasicResponse;
@@ -24,9 +22,10 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 로데이터 측정일·환경조건 (RAW_ENV_TB). 설계: docs/design/raw-env-msrmn-multi.md §4
  *
- * [시작]·[종료]·[저장]은 방법별 insert.do(RawController)가 방법 데이터와 함께 처리한다. 여기는 조회와 행 단위 작업만.
+ * 조회는 방법별 detail.do 의 envList, [시작]·[종료]·[저장]은 방법별 insert.do(RawController)가 방법 데이터와 함께 처리한다.
+ * 여기는 행 단위 작업([중단]·수정·삭제)만.
  *
- * 응답: result=false 이면 message 에 사유. 성공 시 data 에 행(Row) 또는 표 목록(ListRes).
+ * 응답: result=false 이면 message 에 사유.
  */
 @Api(tags = {"로데이터 측정일·환경조건"})
 @RestController
@@ -60,27 +59,6 @@ public class RawEnvController {
       return BasicResponse.builder().result(false).message(ResponseMessage.INTERNAL_SERVER_ERROR)
           .build();
     }
-  }
-
-  @ApiOperation(value = "측정일·환경조건 조회",
-      notes = "rawSeq 가 0 이면 빈 목록(로데이터 미작성). metKey 를 주면 그 시험방법 표만 (행이 없어도 빈 표)\n"
-          + "표: canAdd([시작] 가능)\n"
-          + "행: canEdit(진행 중 입력), canEnd, canStop, canRevEdit(기술책임자 수정), canDelete, elapsedMin(분)\n"
-          + "[시작]·[종료]·[저장]은 방법별 insert.do 의 envAction·envMetKey·envRows 로 처리")
-  @GetMapping(value = "/{rawSeq}/env/list.do")
-  public BasicResponse list(
-      @ApiParam(value = "로데이터 고유번호", required = true, example = "9") @PathVariable(
-          name = "rawSeq") final int rawSeq,
-      @ApiParam(value = "시험 고유번호 (수정 가능 여부 판단용)", example = "15") @RequestParam(
-          name = "testSeq", required = false, defaultValue = "0") final int testSeq,
-      @ApiParam(value = "시험방법 키 (CE, RE1, RE2, RE3, ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL)",
-          example = "ESD") @RequestParam(name = "metKey", required = false) final String metKey) {
-    return respond("측정일 조회", rawSeq + "/" + metKey, new Call() {
-      @Override
-      public Object run(String loginId) {
-        return rawEnvService.list(rawSeq, testSeq, metKey, loginId);
-      }
-    });
   }
 
   @ApiOperation(value = "측정일·환경조건 [중단]",

@@ -125,7 +125,7 @@ CREATE TABLE RAW_ENV_TB (
 | # | 메서드·URL | 설명 | 권한 |
 |---|---|---|---|
 | 1 | `POST /raw/{방법}/insert.do` + `envAction` | [시작]·[종료]·[저장] (아래 4.1) | 로그인 |
-| 2 | `GET /raw/{rawSeq}/env/list.do?metKey=CE` | 표 조회. `metKey` 생략 시 행이 있는 표 전체. 방법별 `detail.do`의 `envList`도 같은 형식 | 로그인 |
+| 2 | `GET /raw/{testSeq}/{방법}/detail.do` → `envList` | 표 조회 (행이 없어도 빈 표). 별도 조회 API(`list.do`)는 쓰는 곳이 없어 삭제 (2026-11-06) | 로그인 |
 | 3 | `POST /raw/env/{envSeq}/stop.do` | [중단]: 사유 필수, 소프트 삭제 + 작성내역 기록 | 누구나 (진행 중 행) |
 | 4 | `POST /raw/env/{envSeq}/update.do` | 종료된 행 수정: 일시·온습도·기압·이름·서명 | 기술책임자 (종료된 행) |
 | 5 | `POST /raw/env/{envSeq}/delete.do` | 행 삭제 (사유 필수) | 기술책임자 |
@@ -162,19 +162,19 @@ CREATE TABLE RAW_ENV_TB (
 
 `update.do` 요청 (기술책임자, 종료된 행)
 ```json
-{ "testSeq": 123, "testSDt": "2026-11-04 09:10:00", "testEDt": "2026-11-04 11:40:00",
+{ "testSeq": 123, "testSDt": "2026-11-04 09:10", "testEDt": "2026-11-04 11:40",
   "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5",
   "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "atchFileId": "FILE_000000000000862" }
 ```
 - 값은 보낸 그대로 덮어쓴다 (빈 값 = 지움). 서명 [취소하기]는 `atchFileId` 빈 값.
-- 일시는 둘 다 주면 수정, 둘 다 비우면 그대로. 하나만 주면 오류. 초까지 같으면 변경 없음으로 본다 → 화면은 조회 값(`yyyy-MM-dd HH:mm:ss`)을 그대로 돌려보낸다.
+- 일시는 둘 다 주면 수정, 둘 다 비우면 그대로. 하나만 주면 오류. 화면은 분 단위(`yyyy-MM-dd HH:mm`)로 보내고, 현재 일시까지 입력 가능 (미래 불가). 저장값과 같은 분이면 변경 없음으로 보고 저장된 초를 유지한다 (초 단위 입력도 받지만 화면은 쓰지 않음, 2026-11-06).
 
 `stop.do` / `delete.do` 요청
 ```json
 { "testSeq": 123, "reason": "장비 이상으로 재시험" }
 ```
 
-`list.do` 응답 (행)
+`detail.do`의 `envList` 응답 (행)
 ```json
 {
   "envSeq": 501, "metKey": "ESD", "rowNo": 2,
@@ -231,7 +231,7 @@ CREATE TABLE RAW_ENV_TB (
 |---|---|
 | 방법별 `insertXx` (12개, `RawServiceImpl`) | `validateMsrmnDt` 호출 제거 (반영). `methodMapper.xml` insert 12개: VALUES의 `TEMP*, HMDT*, BRMT*, SIGN, SIGN_URL`은 `NULL`, `MSRMN_*`은 `0` (미입력과 같은 값, 컬럼 위치 유지), `ON DUPLICATE KEY UPDATE`에서 해당 대입 삭제 → 기존 행의 값은 그대로 남는다. RE HZ3 `<if>` 환경 컬럼 삭제. DTO 필드는 남겨 두고 무시 |
 | `RawController` RE `macType` 판정 | `HZn_RESULT_CODE` 기준 그대로 유지 (측정일 무관) |
-| 방법별 `detail` 조회 | `RawController`의 12개 `detail.do` 응답에 `envList` 추가 (반영). 형식은 `list.do`의 표(`RawEnvDTO.Table`) 목록, 행이 없어도 빈 표 포함. RE는 `RE1/RE2/RE3` 3표, 나머지는 1표. 기존 환경 필드는 이관 기간 동안 그대로 내려간다(사용 중단). `RepController` 등 서비스 detail 호출에는 붙이지 않는다 |
+| 방법별 `detail` 조회 | `RawController`의 12개 `detail.do` 응답에 `envList` 추가 (반영). 형식은 표(`RawEnvDTO.Table`) 목록, 행이 없어도 빈 표 포함. RE는 `RE1/RE2/RE3` 3표, 나머지는 1표. 기존 환경 필드는 이관 기간 동안 그대로 내려간다(사용 중단). `RepController` 등 서비스 detail 호출에는 붙이지 않는다 |
 | `rawMapper.selectAllMsrmnDates` | 삭제 → `rawEnvMapper.selectDtRange` (반영). 종료된 행만, `RAW_MET_TB.CHECK_YN=1` 방법만 (MET_KEY↔MET_SEQ는 SQL 안에 기존 값 그대로: CE 0·1, ESD 6, RS 7, EFT 8, SURGE 9, CS 10, MF 11, VDIP 12, CLK 13, DP 14, RE 규격 분기, TEL 체크 없음. MET_SEQ 2(CTI)는 제외) |
 | `recalcAndUpdateTestDtRange` (`RawSupport`) | `RAW_TB.TEST_S_DT = MIN(DATE(TEST_S_DT))`, `TEST_E_DT = MAX(DATE(TEST_E_DT))` (종료된 행). 종료된 행이 없으면 둘 다 NULL (반영, §9-12) |
 | `validateReportDt` | `selectDtRange` 결과 사용. 로직 동일 (반영) |
@@ -261,12 +261,12 @@ CREATE TABLE RAW_ENV_TB (
 - 화면: `raw_create_*/raw_update_*` 각 방법의 환경조건·측정일·서명 영역을 표 컴포넌트로 교체. 노션 RD 작성 화면 이미지 기준.
 - **[시작]·[종료]·[저장] 모두 방법별 `insert.do` 한 번 호출** (§4.1). 화면 전체 데이터 + `envAction`(START/END/빈 값) + `envMetKey` + `envRows`(진행 중 행 값, [시작]할 새 행은 `envSeq: 0`). 성공 후 `detail.do` 재조회.
 - `insert.do` 응답 `data`(rawSeq)로 화면을 수정 모드로 바꿀 것. 신규 화면에서 [시작]을 누르면 로데이터가 이때 생긴다. 바꾸지 않으면 다음 저장 때 로데이터가 또 생긴다.
-- 표는 `detail.do`의 `envList`로 그린다 (방법 데이터가 없어 NO_DATA여도 빈 표가 온다). RE는 `RE1/RE2/RE3` 3표. 따로 필요하면 `list.do`.
+- 표는 `detail.do`의 `envList`로 그린다 (방법 데이터가 없어 NO_DATA여도 빈 표가 온다). RE는 `RE1/RE2/RE3` 3표.
 - 방법 저장의 기존 환경·측정일·서명 필드(`temp`, `msrmnYear` … `sign`)는 서버가 무시한다. 보내지 않아도 된다.
 - [시작] 버튼 활성 = 표의 `canAdd` (최대 행(기본 10, TEL 1)이거나 진행 중 행이 있으면 비활성). 0행이면 빈 행 하나를 그려 입력칸 + [시작].
 - [종료] 전에 온도·습도·시험자명·서명(기압 표는 기압도) 필수. 서버도 막는다 (`CHECK_ENV_REQUIRED`).
 - 행 버튼: [종료] `canEnd`, [중단] `canStop`(사유 모달 → `stop.do`), 입력칸 `canEdit`(진행 중 행), 기술책임자 [수정] `canRevEdit`(수정 모달 → `update.do`, 일시 포함), [삭제] `canDelete`(사유 모달 → `delete.do`).
-- `update.do`의 일시는 조회 값(`yyyy-MM-dd HH:mm:ss`)을 그대로 보내거나 둘 다 비운다 (분까지만 보내면 초가 바뀐 것으로 본다).
+- `update.do`의 일시는 분 단위(`yyyy-MM-dd HH:mm`)로 보내거나 둘 다 비운다. 현재 일시까지만 입력 가능. 저장값과 같은 분이면 서버가 초를 그대로 둔다.
 - 소요시간은 `elapsedMin`이 null이면 빈칸.
 - 중단·삭제 사유 입력은 최대 200자, 공란 저장 불가.
 - 대상 방법: CE, RE(대역별 3표), ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL. 기압 칸은 ESD·RS·EFT·SURGE·CS·MF·VDIP만 (`EnvMetKey` 형식 THP, 서버가 판단).

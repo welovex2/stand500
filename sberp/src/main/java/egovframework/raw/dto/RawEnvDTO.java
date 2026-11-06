@@ -155,17 +155,4 @@ public class RawEnvDTO {
     private boolean canAdd;
     private List<Row> rows = new ArrayList<Row>();
   }
-
-  @ApiModel(value = "RawEnvList", description = "측정일·환경조건 조회 결과")
-  @Getter
-  @Setter
-  @ToString
-  public static class ListRes {
-    private int rawSeq;
-    @ApiModelProperty(value = "로그인 사용자가 기술책임자인지")
-    private boolean revYn;
-    @ApiModelProperty(value = "로데이터 수정 가능 (프로젝트완료면 false)")
-    private boolean editable;
-    private List<Table> tables = new ArrayList<Table>();
-  }
 }

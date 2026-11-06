@@ -11,7 +11,7 @@ import lombok.ToString;
  */
 @Getter
 @Setter
-@ToString(exclude = "sign")
+@ToString
 public class RawEnv {
 
   private int envSeq;
@@ -32,7 +32,6 @@ public class RawEnv {
   /** [시작] 누른 로그인 사용자 (자동 저장) */
   private String memId;
   private String memName;
-  private String sign;
   /** 서명 첨부파일 ID (기존 METHOD_*.SIGN_URL 과 같은 의미) */
   private String signUrl;
 
