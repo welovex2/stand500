@@ -52,6 +52,9 @@ import egovframework.raw.report.ReportHtmlTemplateService;
 import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.VdipDTO;
+import egovframework.raw.dto.EnvMetKey;
+import egovframework.raw.service.RawEnv;
+import egovframework.raw.service.RawEnvMapper;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -70,6 +73,9 @@ public class RepController {
 
   @Resource(name = "EgovFileMngService")
   private EgovFileMngService fileMngService;
+
+  @Resource(name = "RawEnvMapper")
+  private RawEnvMapper rawEnvMapper;
 
   // -------------------------------------------------------------------------
   // PDF / HTML 미리보기 (서버 Freemarker → pdf-svc)
@@ -528,7 +534,26 @@ public class RepController {
     return trimmed.replaceAll("[\\\\/:*?\"<>|]", "_");
   }
 
-  
+  /**
+   * TEL 시험환경(온도·습도)은 측정 행(RAW_ENV_TB, TEL 1행)의 종료된 값으로 출력한다 (#26-8).
+   * 종료된 행이 없으면 METHOD_TEL_TB 기존 값을 그대로 둔다 (이관 전 데이터).
+   */
+  private void applyTelEnv(TelDTO tel, int rawSeq) {
+    RawEnv ended = null;
+    for (RawEnv env : rawEnvMapper.selectList(rawSeq, EnvMetKey.TEL.name())) {
+      if (env.isEnded()) {
+        ended = env;
+      }
+    }
+    if (ended == null) {
+      return;
+    }
+    tel.setTemp(ended.getTemp());
+    tel.setTempPlus(ended.getTempPlus());
+    tel.setHmdt(ended.getHmdt());
+    tel.setHmdtPlus(ended.getHmdtPlus());
+  }
+
   private ReportDTO getDetail(ReportDTO detail) {
     
     FileVO fileVO = new FileVO();
@@ -540,6 +565,7 @@ public class RepController {
 
         TelDTO tel = rawService.telDetail(rawSeq);
         if (tel != null) {
+          applyTelEnv(tel, rawSeq);
           detail.setTel(tel);
         }
 

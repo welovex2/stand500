@@ -251,7 +251,7 @@ CREATE TABLE RAW_ENV_TB (
 | `ReportDTO` | 방법별 `List<ReportEnvRow> xxEnvList` 추가 (`dateStr`, `temp`, `hmdt`, `brmt` 포맷 문자열). 방법별 `xxTestDays` (중복 제거·정렬 후 `yyyy년 MM월 dd일 , …`) 추가 |
 | `RepController.getDetail` | 방법 루프에서 `RAW_ENV_TB` 조회해 위 필드 채움. 같은 날짜 여러 행은 표에서 모두 출력, 시험일 문자열에서는 한 번만 |
 | DOCX `9832_report.docx` (report-service, 저장소 밖) | ‘환경조건 및 측정일자’ 표를 반복 행으로 변경, 목차 수정. **템플릿 담당 쪽 작업** |
-| TEL HTML (`partials/tel/page_sec1.ftl`, `TelReportTemplateHelper.telEnvTemp/telEnvHmdt`) | ‘6. 시험환경’ 온도/습도 1줄 → `[일자/온도/습도]` 반복 표로 변경. 표지(`page_cover.ftl`) 시험기간은 기존 `RAW_TB.TEST_S_DT~TEST_E_DT` 그대로 |
+| TEL HTML (`RepController.applyTelEnv` → `partials/tel/page_sec1.ftl`) | TEL은 1행이라 ‘6. 시험환경’ 온도/습도 1줄 그대로. 값만 RAW_ENV_TB TEL 종료 행에서 읽음 (종료 행 없으면 METHOD_TEL_TB 기존 값). 표지 시험기간은 기존 `RAW_TB.TEST_S_DT~TEST_E_DT` 그대로 (반영) |
 | 시험일 길이 | 줄바꿈은 템플릿에서 처리 (데이터는 한 문자열) |
 
 ---
@@ -309,7 +309,7 @@ CREATE TABLE RAW_ENV_TB (
 ### 10.1 운영 반영 체크 (2026-11-06)
 
 반영 전 선행
-1. 성적서(4단계) 완료. 성적서가 아직 METHOD_*_TB 기존 컬럼(온습도·측정일·서명)을 읽음. 서버는 그 컬럼에 더 이상 쓰지 않으므로 이대로 반영하면 새 측정값이 성적서에 빈 값 (예: TelReportTemplateHelper 의 getTemp())
+1. 성적서(4단계) 완료. 성적서가 아직 METHOD_*_TB 기존 컬럼(온습도·측정일·서명)을 읽음. 서버는 그 컬럼에 더 이상 쓰지 않으므로 이대로 반영하면 새 측정값이 성적서에 빈 값 (TEL HTML 은 반영됨)
 2. 프론트와 같이 배포. 백엔드만 먼저 올리면 기존 화면의 측정일·온습도·서명 입력이 저장 안 됨. [종료] 시 서명(atchFileId) 필수라 새 화면도 서명을 보내야 함
 3. 운영 DB 계정에 트리거 생성 권한 있는지 확인
 
