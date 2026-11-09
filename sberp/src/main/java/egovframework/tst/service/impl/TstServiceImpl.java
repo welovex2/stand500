@@ -1,5 +1,6 @@
 package egovframework.tst.service.impl;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -7,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import egovframework.cmm.service.ComParam;
+import egovframework.cmm.service.ResponseMessage;
+import egovframework.raw.service.impl.RawSupport;
 import egovframework.ncc.service.NextcloudFolderService;
 import egovframework.ncc.service.NextcloudShareService;
 import egovframework.sbk.service.SbkDTO;
@@ -43,6 +46,9 @@ public class TstServiceImpl implements TstService {
 
   @Autowired
   NextcloudFolderService nextcloudFolderService;
+
+  @Autowired
+  RawSupport rawSupport;
 
   @Override
   public List<TestCate> selectCrtfList(int topCode) {
@@ -429,8 +435,23 @@ public class TstServiceImpl implements TstService {
     return tstMapper.testBoardAppDetail(sbkId);
   }
 
+  /**
+   * 성적서 발급정보 저장 (/tst/insertReportDt.do) — 로데이터 유무와 관계없이 모든 시험 공통.
+   * 로데이터가 있는 시험은 수정 잠금·시험기간 검증을 통과해야 한다 (위반 시 IllegalArgumentException).
+   */
   @Override
+  @Transactional
   public boolean update(Req req) {
+    LocalDate reportDt = null;
+    if (StringUtils.hasText(req.getReportDt())) {
+      reportDt = RawSupport.parseLocalDate(req.getReportDt());
+      if (reportDt == null) {
+        throw new IllegalArgumentException(ResponseMessage.CHECK_REPORT_DT_FORMAT);
+      }
+    }
+
+    rawSupport.checkReportDtSave(req.getTestSeq(), reportDt);
+
     return tstMapper.update(req);
   }
 

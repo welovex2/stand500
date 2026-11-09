@@ -637,48 +637,50 @@ public class TstController {
     return res;
   }
 
-  @ApiOperation(value = "성적서발급일 추가")
+  @ApiOperation(value = "성적서 발급정보 저장 (로데이터 유무와 관계없이 모든 시험 공통)")
   @PostMapping(value = "/insertReportDt.do")
-  public BasicResponse insertReportDt(
-      @ApiParam(value = "testSeq:시험고유항목, reportDt:성적서발급일 값 전송") @RequestBody TestDTO.Req req)
+  public BasicResponse insertReportDt(@ApiParam(
+      value = "testSeq:시험고유번호(재발행은 그 재발행 시험), reportDt:성적서발급일(yyyy-MM-dd, 빈 값이면 삭제), "
+          + "reportNo:발급번호(보내지 않으면 기존 값 유지), reportMemo:메모(보내지 않으면 기존 값 유지)") @RequestBody TestDTO.Req req)
       throws Exception {
 
-    LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
-    boolean result = true;
+    boolean result = false;
     String msg = "";
-
-    // 로그인정보
-    req.setInsMemId(user.getId());
-    req.setUdtMemId(user.getId());
-
-    System.out.println("=-===========");
-    System.out.println(req.toString());
-    System.out.println("=-===========");
 
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
-    if (isAuthenticated) {
-      // 이미 연결된 시험이 있는지 확인
-      if (tstService.selectDetail(req) != null) {
-        result = false;
-        msg = ResponseMessage.DUPLICATE_TEST;
-      } else {
+    if (!isAuthenticated) {
+      msg = ResponseMessage.UNAUTHORIZED;
+    } else if (req.getTestSeq() == 0) {
+      msg = ResponseMessage.CHECK_DATA;
+    } else {
+      LoginVO user = (LoginVO) EgovUserDetailsHelper.getAuthenticatedUser();
 
-        try {
+      // 로그인정보
+      req.setInsMemId(user.getId());
+      req.setUdtMemId(user.getId());
 
-          // 성적서 발급일 추가
-          result = tstService.update(req);
+      try {
 
-        } catch (Exception e) {
-
-          msg = ResponseMessage.RETRY;
-          log.warn(user.getId() + " :: " + e.toString());
-          log.warn(req.toString());
-          log.warn("");
-
+        // 성적서 발급정보 저장 (로데이터가 있는 시험은 수정 잠금·시험기간 검증 포함)
+        result = tstService.update(req);
+        if (!result) {
+          msg = ResponseMessage.NO_DATA;
         }
-      }
 
+      } catch (IllegalArgumentException e) {
+
+        result = false;
+        msg = e.getMessage();
+
+      } catch (Exception e) {
+
+        result = false;
+        msg = ResponseMessage.RETRY;
+        log.warn(user.getId() + " :: " + e.toString());
+        log.warn(req.toString());
+
+      }
     }
 
     BasicResponse res = BasicResponse.builder().result(result).message(msg).build();

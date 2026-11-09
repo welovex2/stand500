@@ -74,8 +74,11 @@ public interface RawMapper {
   /** RAW_SEQ → 원본 TEST_SEQ (testSeq 미전달 시 editYn 조회용) */
   int selectTestSeqByRawSeq(@Param("rawSeq") int rawSeq);
 
-  /** TEST_SEQ → 원본 RAW_SEQ (재발행 포함, 기본정보 detail 조인과 동일) */
-  int selectRawSeqByTestSeq(@Param("testSeq") int testSeq);
+  /** TEST_SEQ → 원본 RAW_SEQ (재발행 포함, 기본정보 detail 조인과 동일). 로데이터 없으면 0, 시험이 없으면 null */
+  Integer selectRawSeqByTestSeq(@Param("testSeq") int testSeq);
+
+  /** RAW_TB 시험시작일(startDt)·시험종료일(endDt) */
+  RawEnvDtRange selectTestDtByRawSeq(@Param("rawSeq") int rawSeq);
 
   public List<RawTchn> tchnList(int rawSeq);
 

@@ -1,10 +1,12 @@
 package egovframework.raw.service.impl;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import egovframework.cmm.service.ResponseMessage;
 import egovframework.raw.service.MethodMapper;
@@ -50,6 +52,82 @@ public class RawSupport {
       return rawMapper.selectTestSeqByRawSeq(rawSeq);
     }
     return testSeq;
+  }
+
+  /** 시험(TEST_SEQ)의 로데이터 RAW_SEQ (재발행은 원본 시험의 로데이터). 시험·로데이터가 없으면 0 */
+  public int resolveRawSeqByTestSeq(int testSeq) {
+    if (testSeq == 0) {
+      return 0;
+    }
+    Integer rawSeq = rawMapper.selectRawSeqByTestSeq(testSeq);
+    return rawSeq == null ? 0 : rawSeq;
+  }
+
+  /**
+   * 성적서 발급일이 시험기간·측정기간(RAW_ENV_TB) 중 가장 늦은 날짜보다 앞서면 저장 중단(당일은 허용).
+   * testSDt·testEDt 는 호출하는 쪽의 시험기간(요청값 또는 RAW_TB 값), null 이면 측정기간만 본다.
+   */
+  public void checkReportDtAfterTest(LocalDate reportDt, int rawSeq, LocalDate testSDt,
+      LocalDate testEDt) {
+    if (reportDt == null) {
+      return;
+    }
+
+    // 요청값과 실제 측정 기간(RAW_ENV_TB)을 함께 반영 (더 이른 시작·더 늦은 종료 기준)
+    RawEnvDtRange range = selectDtRange(rawSeq);
+    if (range != null) {
+      LocalDate min = range.getStartDt();
+      LocalDate max = range.getEndDt();
+      if (testSDt == null || min.isBefore(testSDt)) {
+        testSDt = min;
+      }
+      if (testEDt == null || max.isAfter(testEDt)) {
+        testEDt = max;
+      }
+    }
+
+    if ((testSDt != null && reportDt.isBefore(testSDt))
+        || (testEDt != null && reportDt.isBefore(testEDt))) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_REPORT_DT);
+    }
+  }
+
+  /**
+   * 시험(TEST_SEQ)의 성적서 발급일 저장 전 검증 — 로데이터가 있는 시험만 (없으면 통과).
+   * <ul>
+   * <li>프로젝트완료 등으로 로데이터 수정 불가면 저장 불가</li>
+   * <li>발급일이 RAW_TB 시험기간·RAW_ENV 측정기간보다 앞서면 저장 불가</li>
+   * </ul>
+   */
+  public void checkReportDtSave(int testSeq, LocalDate reportDt) {
+    int rawSeq = resolveRawSeqByTestSeq(testSeq);
+    if (rawSeq == 0) {
+      return;
+    }
+
+    if (rawMapper.selectEditYn(testSeq) == 0) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_RAW_EDIT);
+    }
+
+    RawEnvDtRange testDt = rawMapper.selectTestDtByRawSeq(rawSeq);
+    checkReportDtAfterTest(reportDt, rawSeq, testDt == null ? null : testDt.getStartDt(),
+        testDt == null ? null : testDt.getEndDt());
+  }
+
+  /** 'yyyy-MM-dd'(뒤에 시각이 붙어도 앞 10자리) → LocalDate. 비었거나 형식이 틀리면 null */
+  public static LocalDate parseLocalDate(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    String trimmed = value.trim();
+    if (trimmed.length() >= 10) {
+      trimmed = trimmed.substring(0, 10);
+    }
+    try {
+      return LocalDate.parse(trimmed);
+    } catch (DateTimeException e) {
+      return null;
+    }
   }
 
   /** 로데이터 수정 가능 여부 (프로젝트완료면 불가) */

@@ -1224,6 +1224,14 @@
 		WHERE TEST_TB.TEST_SEQ = #{testSeq}
 	</select>
 
+	<!-- 로데이터 시험시작일·시험종료일 (성적서 발급일 검증용) -->
+	<select id="selectTestDtByRawSeq" parameterType="int" resultType="egovframework.raw.service.RawEnvDtRange">
+		SELECT DATE(TEST_S_DT) AS startDt,
+		       DATE(TEST_E_DT) AS endDt
+		FROM RAW_TB
+		WHERE RAW_SEQ = #{rawSeq}
+	</select>
+
 	<!-- 시험별(TEST_SEQ) 성적서 발급일 — 본시험·재발행 각각 조회 -->
 	<select id="selectReportDt" parameterType="int" resultType="java.time.LocalDate">
 		SELECT REPORT_DT

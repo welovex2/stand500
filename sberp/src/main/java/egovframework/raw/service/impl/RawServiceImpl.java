@@ -1,7 +1,5 @@
 package egovframework.raw.service.impl;
 
-import java.time.DateTimeException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -46,7 +44,6 @@ import egovframework.raw.service.MethodSurgeSub;
 import egovframework.raw.service.RawAsstn;
 import egovframework.raw.service.RawCable;
 import egovframework.raw.service.RawData;
-import egovframework.raw.service.RawEnvDtRange;
 import egovframework.raw.service.RawEnvService;
 import egovframework.raw.service.RawMac;
 import egovframework.raw.service.RawMapper;
@@ -91,8 +88,7 @@ public class RawServiceImpl implements RawService {
     req.setSbkId(rawMapper.getSbkId(req.getTestSeq()));
     rawMapper.insert(req);
 
-    // 성적서 발급정보 TEST_TB에 저장
-    rawMapper.updateReport(req);
+    // 성적서 발급정보(TEST_TB.REPORT_NO/DT/MEMO)는 /tst/insertReportDt.do 에서만 저장한다
 
     // 4-2. method (시험방법), 고정리스트
     if (!ObjectUtils.isEmpty(req.getMethodList()))
@@ -142,8 +138,7 @@ public class RawServiceImpl implements RawService {
 
     rawMapper.update(req);
 
-    // 성적서 발급정보 TEST_TB에 저장
-    rawMapper.updateReport(req);
+    // 성적서 발급정보(TEST_TB.REPORT_NO/DT/MEMO)는 /tst/insertReportDt.do 에서만 저장한다
 
     // 4-2. method (시험방법), 고정리스트
     if (!ObjectUtils.isEmpty(req.getMethodList()))
@@ -466,7 +461,7 @@ public class RawServiceImpl implements RawService {
     if (testSeq == 0) {
       return 0;
     }
-    return rawMapper.selectRawSeqByTestSeq(testSeq);
+    return rawSupport.resolveRawSeqByTestSeq(testSeq);
   }
 
   @Override
@@ -1230,49 +1225,17 @@ public class RawServiceImpl implements RawService {
   }
 
   /**
-   * 성적서 발급일이 있으면 시험시작일·시험종료일 이후(당일 포함)인지 검증.
+   * 이미 저장된 그 시험의 성적서 발급일(TEST_TB.REPORT_DT)이 있으면, 요청한 시험시작일·시험종료일과 측정기간이 발급일 이전(당일 포함)인지
+   * 검증. 발급일은 요청값이 아니라 DB 값 기준 (발급정보는 /tst/insertReportDt.do 에서만 저장).
    */
   private void validateReportDt(RawData req) {
-    LocalDate reportDt = parseLocalDate(req.getReportDt());
-    if (reportDt == null) {
+    int testSeq = rawSupport.resolveTestSeq(req.getTestSeq(), req.getRawSeq());
+    if (testSeq == 0) {
       return;
     }
 
-    LocalDate testSDt = parseLocalDate(req.getTestSDt());
-    LocalDate testEDt = parseLocalDate(req.getTestEDt());
-
-    // 요청값과 실제 측정 기간(RAW_ENV_TB)을 함께 반영 (더 이른 시작·더 늦은 종료 기준)
-    RawEnvDtRange range = rawSupport.selectDtRange(req.getRawSeq());
-    if (range != null) {
-      LocalDate min = range.getStartDt();
-      LocalDate max = range.getEndDt();
-      if (testSDt == null || min.isBefore(testSDt)) {
-        testSDt = min;
-      }
-      if (testEDt == null || max.isAfter(testEDt)) {
-        testEDt = max;
-      }
-    }
-
-    if ((testSDt != null && reportDt.isBefore(testSDt))
-        || (testEDt != null && reportDt.isBefore(testEDt))) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_REPORT_DT);
-    }
-  }
-
-  private LocalDate parseLocalDate(String value) {
-    if (!StringUtils.hasText(value)) {
-      return null;
-    }
-    String trimmed = value.trim();
-    if (trimmed.length() >= 10) {
-      trimmed = trimmed.substring(0, 10);
-    }
-    try {
-      return LocalDate.parse(trimmed);
-    } catch (DateTimeException e) {
-      return null;
-    }
+    rawSupport.checkReportDtAfterTest(rawMapper.selectReportDt(testSeq), req.getRawSeq(),
+        RawSupport.parseLocalDate(req.getTestSDt()), RawSupport.parseLocalDate(req.getTestEDt()));
   }
 
   /**

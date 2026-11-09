@@ -19,7 +19,9 @@
 --   RAW_TB     : NEW.UDT_MEM_ID
 --   RAW_MET_TB : 수정자 컬럼이 없어 RAW_TB.UDT_MEM_ID (로데이터 저장 시 RAW_TB 가 먼저 갱신됨)
 --   TEST_TB    : 앱이 UDT_DT 를 갱신한 수정(/tst/insertReportDt.do)이면 NEW.UDT_MEM_ID,
---                갱신하지 않은 수정(로데이터 기본정보 저장 → updateReport)이면 RAW_TB.UDT_MEM_ID
+--                갱신하지 않은 수정이면 RAW_TB.UDT_MEM_ID
+--                (로데이터 기본정보 저장의 updateReport 는 제거됨 — 발급정보는 /tst/insertReportDt.do 에서만 저장.
+--                 남은 분기는 그 외 UDT_DT 를 건드리지 않는 TEST_TB 수정 대비용)
 --
 -- 알려진 한계 (프로그램 수정 없이 반영하므로)
 --   1) 기존 로데이터 이력 화면(hisList)은 RAW_HIS_TB 를 TB 구분 없이 조회한다.

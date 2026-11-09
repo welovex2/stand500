@@ -55,6 +55,7 @@ public class ResponseMessage {
     public static final String CHECK_MAC = "장비데이터가 없습니다. 1초 뒤 다시 시도하세요.";
     public static final String CHECK_MAC_DATE = "시험 장비의 차기 교정일을 확인해 주세요.";
     public static final String CHECK_REPORT_DT = "성적서 발급일은 시험종료일 이후로만 입력할 수 있습니다.";
+    public static final String CHECK_REPORT_DT_FORMAT = "성적서 발급일 형식을 확인하세요. (yyyy-MM-dd)";
     public static final String CHECK_MSRMN_DT = "측정일은 성적서 발급일 이전으로만 입력할 수 있습니다.";
 
     // 로데이터 측정일·환경조건 (RAW_ENV_TB)

@@ -627,10 +627,13 @@
 		AND SBK_TB.REVISION = SUBSTRING(#{sbkId},12,1)
 	</select>
 	
+	<!-- 성적서 발급정보 (/tst/insertReportDt.do). 발급번호·메모는 요청에 있을 때만 갱신 (null 이면 기존 값 유지) -->
 	<update id="update" parameterType="testReq">
 		UPDATE TEST_TB
 		SET
 			REPORT_DT = IF (#{reportDt} = '', NULL, #{reportDt}),
+			<if test="reportNo != null">REPORT_NO = #{reportNo},</if>
+			<if test="reportMemo != null">REPORT_MEMO = #{reportMemo},</if>
 			UDT_MEM_ID = #{udtMemId},
 			UDT_DT = NOW()
 		WHERE TEST_SEQ = #{testSeq}
