@@ -225,6 +225,11 @@ public class SbkServiceImpl implements SbkService {
   }
 
   @Override
+  public Integer selectSignRequestSampleCheck(int testItemSeq) {
+    return sbkMapper.selectSignRequestSampleCheck(testItemSeq);
+  }
+
+  @Override
   public List<TestItemRej> signRejectList(String testItemSeq) {
     return sbkMapper.signRejectList(testItemSeq);
   }

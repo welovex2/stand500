@@ -40,6 +40,8 @@ public interface SbkMapper {
 
   boolean updateTestItemSign(TestItemDTO req);
 
+  Integer selectSignRequestSampleCheck(int testItemSeq);
+
   List<TestItemRej> signRejectList(String testItemSeq);
 
   boolean signRejectInsert(TestItemRej req);

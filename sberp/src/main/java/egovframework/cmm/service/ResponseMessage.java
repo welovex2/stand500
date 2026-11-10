@@ -28,6 +28,7 @@ public class ResponseMessage {
     public static final String ERROR_WHY = "사유를 입력하세요";
     public static final String ERROR_PAYER = "입금자명을 입력해주세요.";
     public static final String ERROR_PRTN = "컨설팅선택은 필수입니다.";
+    public static final String NO_SAMPLE = "반입된 시료가 없어 시험신청을 할 수 없습니다.";
     
     public static final String CHECK_DATA = "필수입력값을 확인하세요";
     public static final String DUPLICATE_SLS = "이미등록된 매출데이터가 있습니다";

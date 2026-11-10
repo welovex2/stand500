@@ -1263,7 +1263,41 @@ LEFT JOIN COMCODE_TB CODE_TS ON CODE_TS.TYPE_CD = TEST_TB.TEST_STATE_CODE AND CO
 		<include refid="whereList"/>
 			
 	</select>
-	
+
+	<!-- 서명요청(시험신청) 가능 여부: 1 가능, 0 시료 없음, null 시험항목 없음
+	     현장시험·재발행은 시료 확인 생략, 그 외에는 반출되지 않은 시료(DIV_CODE=1)가 있어야 함 -->
+	<select id="selectSignRequestSampleCheck" parameterType="int" resultType="java.lang.Integer">
+		SELECT
+			CASE
+				WHEN IFNULL(SBK_TB.TEST_PLACE_OUT_YN, 0) = 1 THEN 1
+				WHEN JOB_TB.SBK_REVISION > 0 THEN 1
+				WHEN IFNULL(im.remainQty, 0) > 0 THEN 1
+				ELSE 0
+			END
+		FROM TEST_ITEM_TB
+			INNER JOIN JOB_TB
+			ON JOB_TB.QUO_YM = TEST_ITEM_TB.QUO_YM
+			AND JOB_TB.QUO_SEQ = TEST_ITEM_TB.QUO_SEQ
+			INNER JOIN SBK_TB
+			ON JOB_TB.SBK_YM = SBK_TB.SBK_YM
+			AND JOB_TB.SBK_TYPE = SBK_TB.TYPE
+			AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ
+			AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
+			LEFT JOIN (
+				SELECT IM_TB.SBK_ID, SUM(IF(IM_SUB_TB.CARRY_OUT_CODE IS NULL, IM_SUB_TB.QTY, 0)) remainQty
+				FROM IM_TB
+					INNER JOIN IM_SUB_TB
+					ON IM_SUB_TB.IM_ID = CONCAT('IM', IM_TB.IM_YM, '-', 'G', LPAD(IM_TB.IM_SEQ, 4, 0))
+				WHERE IM_SUB_TB.DIV_CODE = 1
+				AND IM_SUB_TB.STATE != 'D'
+				GROUP BY IM_TB.SBK_ID
+			) im
+			ON im.SBK_ID = CONCAT('SB', SBK_TB.SBK_YM, '-', SBK_TB.TYPE, LPAD(SBK_TB.SBK_SEQ, 4, 0), IF(SBK_TB.REVISION > 0, CONCAT('-', SBK_TB.REVISION), ''))
+		WHERE TEST_ITEM_TB.TEST_ITEM_SEQ = #{testItemSeq}
+		AND TEST_ITEM_TB.STATE != 'D'
+		LIMIT 1
+	</select>
+
 	<update id="updateTestItemSign">
 			UPDATE TEST_ITEM_TB
 			SET

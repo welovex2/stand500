@@ -23,6 +23,9 @@ public interface SbkService {
 
   boolean updateTestItemSign(TestItemDTO req);
 
+  /** 서명요청 가능 여부: 1 가능, 0 시료 없음, null 시험항목 없음 */
+  Integer selectSignRequestSampleCheck(int testItemSeq);
+
   List<TestItemRej> signRejectList(String testItemSeq);
 
   boolean signRejectInsert(TestItemRej req);

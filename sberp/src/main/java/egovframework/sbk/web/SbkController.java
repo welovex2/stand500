@@ -486,8 +486,19 @@ public class SbkController {
     Boolean isAuthenticated = EgovUserDetailsHelper.isAuthenticated();
 
     if (isAuthenticated) {
-      req.setState("DT");
-      result = sbkService.updateTestItemSign(req);
+      // 시료가 없으면 서명요청(시험신청) 불가 — 현장시험·재발행은 쿼리에서 통과 처리
+      // 같은 서비스를 쓰는 /cmpDt/update.do 는 막지 않도록 이 API 에서만 확인한다
+      Integer sampleCheck = sbkService.selectSignRequestSampleCheck(req.getTestItemSeq());
+      if (sampleCheck == null) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      } else if (sampleCheck == 0) {
+        result = false;
+        msg = ResponseMessage.NO_SAMPLE;
+      } else {
+        req.setState("DT");
+        result = sbkService.updateTestItemSign(req);
+      }
     } else {
       result = false;
       msg = ResponseMessage.UNAUTHORIZED;
