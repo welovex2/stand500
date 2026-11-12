@@ -41,6 +41,11 @@ function minText(min) {
   return h ? `${h}시간 ${m}분` : `${m}분`;
 }
 
+// 구역이 하나뿐인 챔버는 구역 이름이 비어 있다
+function zoneLabel(name) {
+  return name || '전체';
+}
+
 function nowText() {
   return new Date().toLocaleTimeString('ko-KR', { hour12: false });
 }
@@ -49,6 +54,8 @@ function nowText() {
 async function initPage() {
   const me = await api('api/me');
   document.getElementById('who').textContent = me.memName + (me.monitorYn ? ' (조회 전용)' : '');
+  const admin = document.getElementById('navAdmin');
+  if (admin && me.revYn) admin.hidden = false;   // 챔버 관리는 기술책임자만
   document.getElementById('logout').addEventListener('click', async () => {
     await api('api/logout', {}).catch(() => {});
     location.href = 'login.html';

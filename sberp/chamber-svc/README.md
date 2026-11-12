@@ -1,6 +1,6 @@
 # chamber-svc
 
-챔버 현황판. 현황·이력 조회, 로데이터 외 사용(점검·디버깅·입회·예비시험) 기록, 온습도 센서 수신을 맡는다.
+챔버 현황판. 현황·이력 조회와 로데이터 외 사용(점검·디버깅·입회·예비시험) 기록을 맡는다.
 화면(html·js)을 이 서비스가 직접 내려 주므로 프론트엔드 프로젝트가 따로 없다.
 
 - 설계: `docs/design/chamber-svc.md` (ERP 쪽은 `chamber-erp.md`)
@@ -10,10 +10,11 @@
 
 | 항목 | 내용 |
 |---|---|
-| DB | `erp` 스키마는 읽기만, `ops` 스키마에만 쓴다. 전용 계정 `chamber_svc` |
+| DB | ERP 와 같은 `erp` 스키마. 쓰는 곳은 `CHAMBER_ETC_USE_TB`, 챔버 관리 테이블 3개, `MEMBER_TB` 의 로그인 실패 컬럼뿐이다. 전용 계정 `chamber_svc` 의 권한으로 막는다 |
 | 측정 행 | 보여 주기만 한다. 기록·종료는 ERP 가 한다 |
 | 사용 중 확인 | [사용] 때 구역 행(`erp.CHAMBER_ZONE_TB`)을 잠근 뒤 확인한다. ERP 의 측정 [시작]도 같은 행을 잠근다 |
-| 로그인 | ERP 계정(`MEMBER_TB`). 세션은 서명된 쿠키 (1시간, 모니터 계정 7일·조회 전용) |
+| 로그인 | ERP 계정(`MEMBER_TB`). 세션은 서명된 쿠키 (1시간, 모니터 계정 7일·조회 전용). 실패 횟수와 잠금은 ERP 와 같은 컬럼을 쓴다 — 현황판과 ERP 에서 틀린 횟수가 합쳐지고 10회면 ERP 계정도 잠긴다 |
+| 챔버 관리 | 챔버·구역·시험방법 매핑을 이 서비스의 관리 화면에서 등록·수정한다 (기술책임자만). 테이블 DDL 은 ERP 가 맡는다 |
 | 갱신 | 화면이 30초마다 다시 조회한다 |
 
 ## 폴더
@@ -24,16 +25,16 @@ app/
   config.py    환경변수 (비밀번호·서명 키가 비면 기동 실패), 용도 구분값
   auth.py      로그인, 세션 쿠키
   db.py        조회·기록 쿼리
-  static/      index.html(현황) history.html(이력) login.html app.js app.css
+  static/      index.html(현황) history.html(이력) admin.html(챔버 관리) login.html app.js app.css
 deploy/        compose 블록, nginx location
-sql/           ops_schema.sql, chamber_svc_user.sql, dev_seed.sql(개발용 시험 데이터)
+sql/           chamber_svc_user.sql, dev_seed.sql(개발용 시험 데이터), ops_schema.sql(온습도, 이번에 안 씀)
 ```
 
 ## 환경변수
 
 | 이름 | 기본값 | 설명 |
 |---|---|---|
-| `DB_HOST`, `DB_PORT`, `DB_USER` | `127.0.0.1`, `3306`, `chamber_svc` | DB 접속 |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_NAME` | `127.0.0.1`, `3306`, `chamber_svc`, `erp` | DB 접속 |
 | `DB_PASSWORD` | (필수) | 비어 있으면 기동 실패 |
 | `SESSION_SECRET` | (필수) | 쿠키 서명 키. 32자 이상. `openssl rand -hex 32` |
 | `MONITOR_MEM_ID` | 없음 | 모니터 전용 계정 아이디 |
@@ -43,11 +44,13 @@ sql/           ops_schema.sql, chamber_svc_user.sql, dev_seed.sql(개발용 시�
 
 ## DB 준비 (순서대로)
 
-1. ERP 의 챔버 테이블과 `RAW_ENV_TB.ZONE_SEQ` 가 적용돼 있어야 한다 (`chamber-erp.md` §3)
-2. `sql/ops_schema.sql` — ERP 가 도는 **모든 DB**에 실행한다
-3. `sql/chamber_svc_user.sql` — `<비밀번호>` 를 바꿔서 실행한다
+1. 챔버 테이블 4개(`CHAMBER_TB`, `CHAMBER_ZONE_TB`, `CHAMBER_ZONE_MET_TB`, `CHAMBER_ETC_USE_TB`)와 `RAW_ENV_TB.ZONE_SEQ`
+   - 정본은 ERP 의 `src/main/resources/db/CHAMBER_TB.sql` 이다 (`chamber-erp.md` §3)
+   - ERP 의 측정 [시작]이 `CHAMBER_ETC_USE_TB` 를 읽으므로 ERP 가 도는 **모든 DB**에 있어야 한다
+   - 로컬·개발 DB 에서 먼저 화면을 보려면 `sql/dev_seed.sql` 을 실행한다. 같은 정의로 테이블을 만들고 시험용 챔버·구역(번호 9001~)과 사용 기록을 넣는다. **운영 DB 에서는 실행하지 않는다.**
+2. `sql/chamber_svc_user.sql` — `<비밀번호>` 를 바꿔서 실행한다
 
-로컬·개발 DB 에서 화면을 바로 보려면 2번 뒤에 `sql/dev_seed.sql` 을 실행한다. 시험용 챔버·구역(번호 9001~)과 사용 기록을 넣고, ERP 챔버 테이블이 아직 없으면 같은 정의로 만든다. **운영 DB 에서는 실행하지 않는다.**
+`sql/ops_schema.sql`(온습도 기록)은 이번에 쓰지 않는다. 실행하지 않아도 된다.
 
 ## 로컬 실행
 
@@ -91,6 +94,7 @@ http://localhost:8010/ 로 연다.
 | `POST /api/etc-use/start` | 로데이터 외 [사용]. 사용 중이면 409 | 모니터 계정 제외 |
 | `POST /api/etc-use/{seq}/end` | [종료] | 기록한 사람 또는 기술책임자 |
 | `POST /api/etc-use/{seq}/delete` | 삭제 (사유 필수, `DEL_YN=1`) | 기록한 사람 또는 기술책임자 |
-| `GET /api/dht/latest` | 최근 온습도 | 로그인 |
-| `POST /api/dht` | ESP32 수신 `{temperature, humidity}` | 로그인 없음 (nginx 에서 IP 제한) |
+| `GET /api/admin/chambers` | 챔버·구역·매핑 전체 (숨긴 것 포함), 구역별 사용 중 건수 | 기술책임자 |
+| `POST /api/admin/chamber`, `/api/admin/chamber/{seq}` | 챔버 추가·수정 (이름, 순서, 사용 여부) | 기술책임자 |
+| `POST /api/admin/zone`, `/api/admin/zone/{seq}` | 구역 추가·수정 + 시험방법 매핑. 사용 중인 구역을 숨기면 409 `confirm` → `force:true` 로 다시 보냄 | 기술책임자 |
 | `GET /health` | DB 연결 확인 | - |

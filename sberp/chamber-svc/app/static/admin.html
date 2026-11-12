@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챔버 관리</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>챔버 현황판</h1>
+  <nav><a href="./">현황</a><a href="history.html">이력</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
+  <div class="right">
+    <span id="who"></span>
+    <button id="logout">로그아웃</button>
+  </div>
+</header>
+<main class="admin">
+  <div id="notice"></div>
+  <div class="search">
+    <button class="primary" id="addChamber">챔버 추가</button>
+    <span class="empty">챔버와 구역은 지우지 않고 "사용 안 함"으로 숨깁니다. 시험방법을 빼면 ERP 측정 [시작]의 구역 목록에서 바로 빠집니다.</span>
+  </div>
+  <div id="list"><p class="empty">불러오는 중...</p></div>
+</main>
+
+<dialog id="chamberDlg">
+  <form id="chamberForm">
+    <h3 id="chamberTitle">챔버</h3>
+    <label><span>이름</span><input id="cName" maxlength="50" required></label>
+    <label><span>표시 순서</span><input id="cSort" type="number" min="0" max="32767" value="0" required></label>
+    <label class="check"><input id="cUse" type="checkbox"> 사용</label>
+    <div class="err" id="cErr"></div>
+    <div class="btns">
+      <button type="button" data-close>취소</button>
+      <button class="primary">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="zoneDlg">
+  <form id="zoneForm">
+    <h3 id="zoneTitle">구역</h3>
+    <label><span>챔버</span><select id="zChamber" required></select></label>
+    <label><span>이름 (구역이 하나뿐이면 비워 둡니다)</span><input id="zName" maxlength="50"></label>
+    <label><span>표시 순서</span><input id="zSort" type="number" min="0" max="32767" value="0" required></label>
+    <label class="check"><input id="zMulti" type="checkbox"> 동시 사용 허용 (일반 시험실처럼 여러 건이 함께 쓰는 곳)</label>
+    <label class="check"><input id="zUse" type="checkbox"> 사용</label>
+    <label><span>이 구역에서 할 수 있는 시험방법</span><div class="mets" id="zMets"></div></label>
+    <div class="err" id="zErr"></div>
+    <div class="btns">
+      <button type="button" data-close>취소</button>
+      <button class="primary">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+<script>
+let data = { chambers: [], metKeys: [] };
+let editChamber = null, editZone = null;   // 수정 중인 번호 (null = 추가)
+const $ = (id) => document.getElementById(id);
+
+function notice(msg) {
+  $('notice').textContent = msg || '';
+  $('notice').classList.toggle('on', !!msg);
+}
+
+function zoneRow(z) {
+  return `<tr class="${z.useYn ? '' : 'off'}"><td>${esc(zoneLabel(z.name))}</td>` +
+    `<td>${z.multiYn ? '허용' : '-'}</td><td>${esc(z.metKeys.join(', ') || '-')}</td><td>${z.sortNo}</td>` +
+    `<td>${z.useYn ? '사용' : '사용 안 함'}` +
+    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}건</span>` : '') + `</td>` +
+    `<td><button data-zone="${z.zoneSeq}">수정</button></td></tr>`;
+}
+
+function render() {
+  if (!data.chambers.length) {
+    $('list').innerHTML = '<p class="empty">등록된 챔버가 없습니다.</p>';
+    return;
+  }
+  $('list').innerHTML = data.chambers.map(c =>
+    `<section class="chamber"><h2 class="${c.useYn ? '' : 'off'}">${esc(c.name)}` +
+    `<span class="badge">순서 ${c.sortNo}</span>` +
+    (c.useYn ? '' : '<span class="badge">사용 안 함</span>') +
+    `<button data-chamber="${c.chamberSeq}">수정</button>` +
+    `<button data-add-zone="${c.chamberSeq}">구역 추가</button></h2>` +
+    `<div class="tablewrap"><table><thead><tr><th>구역</th><th>동시 사용</th><th>시험방법</th><th>순서</th><th>상태</th><th></th></tr></thead>` +
+    `<tbody>${c.zones.map(zoneRow).join('') || '<tr><td colspan="6" class="empty">구역이 없습니다. 구역을 나누지 않는 챔버도 구역 1개를 만드세요.</td></tr>'}</tbody></table></div></section>`
+  ).join('');
+}
+
+async function load() {
+  try {
+    data = await api('api/admin/chambers');
+    render();
+    notice('');
+  } catch (e) {
+    notice(e.message);
+  }
+}
+
+// 사용 중인 구역을 숨기려 하면 서버가 확인을 요구한다 (confirm). 확인을 받으면 force 로 다시 보낸다
+async function save(path, body, errEl, dlg) {
+  try {
+    try {
+      await api(path, body);
+    } catch (e) {
+      if (!(e.data && e.data.confirm) || !confirm(e.message)) throw e;
+      await api(path, { ...body, force: true });
+    }
+    dlg.close();
+    load();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+}
+
+function openChamber(c) {
+  editChamber = c ? c.chamberSeq : null;
+  $('chamberTitle').textContent = c ? '챔버 수정' : '챔버 추가';
+  $('cName').value = c ? c.name : '';
+  $('cSort').value = c ? c.sortNo : 0;
+  $('cUse').checked = c ? c.useYn : true;
+  $('cErr').textContent = '';
+  $('chamberDlg').showModal();
+}
+
+function openZone(z, chamberSeq) {
+  editZone = z ? z.zoneSeq : null;
+  $('zoneTitle').textContent = z ? '구역 수정' : '구역 추가';
+  $('zChamber').innerHTML = data.chambers.map(c => `<option value="${c.chamberSeq}">${esc(c.name)}</option>`).join('');
+  $('zChamber').value = z ? z.chamberSeq : chamberSeq;
+  $('zName').value = z ? z.name : '';
+  $('zSort').value = z ? z.sortNo : 0;
+  $('zMulti').checked = z ? z.multiYn : false;
+  $('zUse').checked = z ? z.useYn : true;
+  const on = z ? z.metKeys : [];
+  $('zMets').innerHTML = data.metKeys.map(k =>
+    `<label><input type="checkbox" value="${esc(k)}"${on.includes(k) ? ' checked' : ''}>${esc(k)}</label>`).join('');
+  $('zErr').textContent = '';
+  $('zoneDlg').showModal();
+}
+
+$('addChamber').addEventListener('click', () => openChamber(null));
+
+$('list').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.chamber) {
+    openChamber(data.chambers.find(c => c.chamberSeq === Number(b.dataset.chamber)));
+  } else if (b.dataset.addZone) {
+    openZone(null, Number(b.dataset.addZone));
+  } else if (b.dataset.zone) {
+    const seq = Number(b.dataset.zone);
+    openZone(data.chambers.flatMap(c => c.zones).find(z => z.zoneSeq === seq));
+  }
+});
+
+document.querySelectorAll('[data-close]').forEach(b =>
+  b.addEventListener('click', () => b.closest('dialog').close()));
+
+$('chamberForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  save(editChamber === null ? 'api/admin/chamber' : `api/admin/chamber/${editChamber}`, {
+    name: $('cName').value,
+    sortNo: Number($('cSort').value),
+    useYn: $('cUse').checked,
+  }, $('cErr'), $('chamberDlg'));
+});
+
+$('zoneForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  save(editZone === null ? 'api/admin/zone' : `api/admin/zone/${editZone}`, {
+    chamberSeq: Number($('zChamber').value),
+    name: $('zName').value,
+    sortNo: Number($('zSort').value),
+    multiYn: $('zMulti').checked,
+    useYn: $('zUse').checked,
+    metKeys: [...$('zMets').querySelectorAll('input:checked')].map(i => i.value),
+  }, $('zErr'), $('zoneDlg'));
+});
+
+(async () => {
+  try {
+    const me = await initPage();
+    if (!me.revYn) {
+      $('list').innerHTML = '';
+      $('addChamber').disabled = true;
+      notice('챔버 관리는 기술책임자만 할 수 있습니다.');
+      return;
+    }
+  } catch (e) {
+    notice('연결 끊김: ' + e.message);
+    return;
+  }
+  load();
+})();
+</script>
+</body>
+</html>

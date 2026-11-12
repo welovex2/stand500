@@ -5,17 +5,19 @@
 -- 챔버·구역 이름은 화면 확인용으로 지어낸 값이다. 실제 목록은 기획에서 받아 ERP 가 넣는다.
 -- 여러 번 실행해도 된다 (IF NOT EXISTS, INSERT IGNORE). 지울 때는 맨 아래 "정리"를 쓴다.
 --
--- 실행 순서: ops_schema.sql → 이 파일 → chamber_svc_user.sql
+-- 실행 순서: 이 파일 → chamber_svc_user.sql
 -- 실행 예 (개발서버):
---   docker compose exec -T mariadb mysql -uroot -p < chamber-svc/sql/dev_seed.sql
+--   docker cp /docker-project/project/chamber-svc/sql mariadb:/tmp/chamber-sql
+--   docker exec -it mariadb mysql -uroot -p --default-character-set=utf8mb4 -e "source /tmp/chamber-sql/dev_seed.sql"
 -- =====================================================================
 
 USE erp;
 
 -- ---------------------------------------------------------------------
--- 1. ERP 챔버 테이블 (임시)
---    정본은 ERP 의 src/main/resources/db/CHAMBER_TB.sql 이다 (docs/design/chamber-erp.md §3.1).
---    ERP 쪽 SQL 이 아직 없어서 같은 정의를 여기에 둔다. 이미 있으면 건너뛴다.
+-- 1. 챔버 테이블 4개 (임시)
+--    DDL 정본은 ERP 의 src/main/resources/db/CHAMBER_TB.sql 이다. erp 스키마 DDL 은 ERP 가 맡는다.
+--    ERP 쪽 SQL 이 나오기 전에 개발 DB 에서 화면을 보려고 같은 정의를 여기에 둔다. 이미 있으면 건너뛴다.
+--    컬럼을 바꿀 때는 ERP 와 먼저 맞춘다.
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS CHAMBER_TB (
     CHAMBER_SEQ  INT          NOT NULL AUTO_INCREMENT COMMENT '챔버 SEQ',
@@ -50,6 +52,29 @@ CREATE TABLE IF NOT EXISTS CHAMBER_ZONE_MET_TB (
     PRIMARY KEY (ZONE_SEQ, MET_KEY),
     KEY IDX_CHAMBER_ZONE_MET (MET_KEY)
 ) COMMENT='구역에서 할 수 있는 시험방법';
+
+-- 로데이터 외 사용. 쓰는 쪽은 chamber-svc 하나, ERP 는 측정 [시작] 때 읽기만 한다.
+-- ERP 가 USE_SEQ, ZONE_SEQ, PURPOSE, MEM_NAME, START_DT, END_DT, DEL_YN 을 읽는다.
+CREATE TABLE IF NOT EXISTS CHAMBER_ETC_USE_TB (
+    USE_SEQ      INT          NOT NULL AUTO_INCREMENT,
+    ZONE_SEQ     INT          NOT NULL COMMENT '구역 (CHAMBER_ZONE_TB.ZONE_SEQ)',
+    PURPOSE      VARCHAR(10)  NOT NULL COMMENT 'PRE 예비시험 / DEBUG 고객 디버깅 / CHECK 점검 / WITNESS 입회 / ETC 기타',
+    TEST_SEQ     INT          NULL     COMMENT '관련 시험 (선택)',
+    MEMO         VARCHAR(200) NULL     COMMENT '업체명·내용 등',
+    MEM_ID       VARCHAR(20)  NOT NULL COMMENT '[사용] 누른 로그인 사용자',
+    MEM_NAME     VARCHAR(50)  NULL,
+    START_DT     DATETIME     NOT NULL COMMENT '서버시각',
+    END_DT       DATETIME     NULL     COMMENT '서버시각. NULL = 사용 중',
+    DEL_YN       TINYINT      NOT NULL DEFAULT 0,
+    DEL_REASON   VARCHAR(200) NULL,
+    DEL_MEM_ID   VARCHAR(20)  NULL,
+    DEL_DT       DATETIME     NULL,
+    INS_DT       DATETIME     NOT NULL,
+    UDT_MEM_ID   VARCHAR(20)  NULL,
+    UDT_DT       DATETIME     NULL,
+    PRIMARY KEY (USE_SEQ),
+    KEY IDX_CHAMBER_ETC_USE (ZONE_SEQ, START_DT)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='챔버 사용 (로데이터 외)';
 
 -- RAW_ENV_TB 에 구역 컬럼 (이미 있으면 건너뛴다)
 ALTER TABLE RAW_ENV_TB
@@ -91,7 +116,7 @@ INSERT IGNORE INTO CHAMBER_ZONE_MET_TB (ZONE_SEQ, MET_KEY) VALUES
 -- 3. 시험용 로데이터 외 사용 (번호 9001~)
 --    현황판에서 볼 수 있는 상태를 하나씩 만든다.
 -- ---------------------------------------------------------------------
-INSERT IGNORE INTO ops.CHAMBER_ETC_USE_TB
+INSERT IGNORE INTO CHAMBER_ETC_USE_TB
        (USE_SEQ, ZONE_SEQ, PURPOSE, MEMO, MEM_ID, MEM_NAME, START_DT, END_DT, INS_DT) VALUES
     -- 사용 중 (방금 시작)
     (9001, 9002, 'CHECK',   '분기 점검',        'seed', '시험용', DATE_SUB(NOW(), INTERVAL 20 MINUTE), NULL, NOW()),
@@ -104,7 +129,7 @@ INSERT IGNORE INTO ops.CHAMBER_ETC_USE_TB
     (9005, 9001, 'CHECK',   '안테나 교정',      'seed', '시험용', DATE_SUB(NOW(), INTERVAL 27 HOUR), DATE_SUB(NOW(), INTERVAL 24 HOUR), NOW()),
     (9006, 9006, 'ETC',     NULL,               'seed', '시험용', DATE_SUB(NOW(), INTERVAL 50 HOUR), DATE_SUB(NOW(), INTERVAL 49 HOUR), NOW());
 -- 삭제된 기록 (현황판·이력 어디에도 안 보여야 한다)
-INSERT IGNORE INTO ops.CHAMBER_ETC_USE_TB
+INSERT IGNORE INTO CHAMBER_ETC_USE_TB
        (USE_SEQ, ZONE_SEQ, PURPOSE, MEMO, MEM_ID, MEM_NAME, START_DT, INS_DT, DEL_YN, DEL_REASON, DEL_MEM_ID, DEL_DT) VALUES
     (9007, 9001, 'ETC', '잘못 누름', 'seed', '시험용', DATE_SUB(NOW(), INTERVAL 5 MINUTE), NOW(), 1, '잘못 등록', 'seed', NOW());
 
@@ -128,14 +153,14 @@ SELECT c.NAME AS CHAMBER, z.NAME AS ZONE, z.MULTI_YN, x.PURPOSE, x.MEMO, x.START
        TIMESTAMPDIFF(MINUTE, x.START_DT, NOW()) AS ELAPSED_MIN
   FROM CHAMBER_TB c
        INNER JOIN CHAMBER_ZONE_TB z ON z.CHAMBER_SEQ = c.CHAMBER_SEQ AND z.USE_YN = 1
-       LEFT JOIN ops.CHAMBER_ETC_USE_TB x ON x.ZONE_SEQ = z.ZONE_SEQ AND x.DEL_YN = 0 AND x.END_DT IS NULL
+       LEFT JOIN CHAMBER_ETC_USE_TB x ON x.ZONE_SEQ = z.ZONE_SEQ AND x.DEL_YN = 0 AND x.END_DT IS NULL
  WHERE c.USE_YN = 1
  ORDER BY c.SORT_NO, z.SORT_NO, x.START_DT;
 
 -- ---------------------------------------------------------------------
 -- 정리 (시험 데이터만 지운다. 필요할 때 주석을 풀어 실행)
 -- ---------------------------------------------------------------------
--- DELETE FROM ops.CHAMBER_ETC_USE_TB WHERE ZONE_SEQ BETWEEN 9001 AND 9099;
+-- DELETE FROM erp.CHAMBER_ETC_USE_TB WHERE ZONE_SEQ BETWEEN 9001 AND 9099;
 -- DELETE FROM erp.RAW_ENV_TB          WHERE ZONE_SEQ BETWEEN 9001 AND 9099 AND INS_MEM_ID = 'seed';
 -- DELETE FROM erp.CHAMBER_ZONE_MET_TB WHERE ZONE_SEQ BETWEEN 9001 AND 9099;
 -- DELETE FROM erp.CHAMBER_ZONE_TB     WHERE ZONE_SEQ BETWEEN 9001 AND 9099;
@@ -143,4 +168,4 @@ SELECT c.NAME AS CHAMBER, z.NAME AS ZONE, z.MULTI_YN, x.PURPOSE, x.MEMO, x.START
 -- 실제 목록을 넣기 전에 번호를 1부터 다시 시작하려면:
 -- ALTER TABLE erp.CHAMBER_TB AUTO_INCREMENT = 1;
 -- ALTER TABLE erp.CHAMBER_ZONE_TB AUTO_INCREMENT = 1;
--- ALTER TABLE ops.CHAMBER_ETC_USE_TB AUTO_INCREMENT = 1;
+-- ALTER TABLE erp.CHAMBER_ETC_USE_TB AUTO_INCREMENT = 1;

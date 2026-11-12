@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import auth, db
-from .config import PURPOSES, settings
+from .config import MET_KEYS, PURPOSES, settings
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("chamber-svc")
@@ -26,7 +26,9 @@ MAX_DAYS = 366
 @app.exception_handler(db.Reject)
 def _reject(_: Request, e: db.Reject) -> JSONResponse:
     body = {"detail": e.message}
-    if e.detail:
+    if e.detail and e.detail.get("confirm"):
+        body["confirm"] = True          # 화면이 확인을 받은 뒤 force=true 로 다시 보낸다
+    elif e.detail:
         body["busy"] = _use(e.detail)
     return JSONResponse(body, status_code=e.status)
 
@@ -230,28 +232,85 @@ def etc_delete(use_seq: int, body: EtcDeleteIn, session: dict = Depends(auth.req
     return {"ok": True}
 
 
-# ---------------------------------------------------------------- 온습도
+# ---------------------------------------------------------------- 챔버 관리 (기술책임자)
 
-class DhtIn(BaseModel):
-    temperature: float = Field(ge=-50, le=100)
-    humidity: float = Field(ge=0, le=100)
-    sensorId: str = Field("S1", max_length=20)
-
-
-@app.post("/api/dht")
-def dht_receive(body: DhtIn) -> dict:
-    """ESP32 수신. 로그인 없음 — nginx 에서 센서 IP 만 허용한다. 시각은 서버 시각을 쓴다."""
-    db.insert_dht(body.sensorId, body.temperature, body.humidity)
-    return {"ok": True}
+class ChamberIn(BaseModel):
+    name: str = Field(max_length=50)
+    sortNo: int = Field(0, ge=0, le=32767)
+    useYn: bool = True
+    force: bool = False
 
 
-@app.get("/api/dht/latest")
-def dht_latest(_: dict = Depends(auth.require_login)) -> dict:
-    r = db.fetch_dht_latest()
-    if not r:
-        return {"exists": False}
-    return {"exists": True, "sensorId": r["SENSOR_ID"], "temperature": float(r["TEMPERATURE"]),
-            "humidity": float(r["HUMIDITY"]), "uploadTime": _dt(r["UPLOAD_TIME"])}
+class ZoneIn(BaseModel):
+    chamberSeq: int
+    name: str = Field("", max_length=50)   # 구역이 하나뿐인 챔버는 빈 값
+    multiYn: bool = False
+    sortNo: int = Field(0, ge=0, le=32767)
+    useYn: bool = True
+    metKeys: List[str] = []
+    force: bool = False
+
+
+@app.get("/api/admin/chambers")
+def admin_chambers(_: dict = Depends(auth.require_rev)) -> dict:
+    t = db.fetch_admin_tree()
+    mets: dict = {}
+    for m in t["mets"]:
+        mets.setdefault(m["ZONE_SEQ"], []).append(m["MET_KEY"])
+    zones: dict = {}
+    for z in t["zones"]:
+        zones.setdefault(z["CHAMBER_SEQ"], []).append({
+            "zoneSeq": z["ZONE_SEQ"], "chamberSeq": z["CHAMBER_SEQ"], "name": z["NAME"],
+            "multiYn": bool(z["MULTI_YN"]), "sortNo": int(z["SORT_NO"]), "useYn": bool(z["USE_YN"]),
+            "metKeys": [k for k in MET_KEYS if k in mets.get(z["ZONE_SEQ"], [])],
+            "activeCnt": t["active"].get(z["ZONE_SEQ"], 0),
+        })
+    return {
+        "metKeys": MET_KEYS,
+        "chambers": [{
+            "chamberSeq": c["CHAMBER_SEQ"], "name": c["NAME"], "sortNo": int(c["SORT_NO"]),
+            "useYn": bool(c["USE_YN"]), "zones": zones.get(c["CHAMBER_SEQ"], []),
+        } for c in t["chambers"]],
+    }
+
+
+def _save_chamber(seq: Optional[int], body: ChamberIn, session: dict) -> dict:
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(400, "챔버 이름을 입력하세요.")
+    seq = db.save_chamber(seq, name, body.sortNo, int(body.useYn), session["id"], body.force)
+    log.info("챔버 저장: chamber=%s use=%s by %s", seq, int(body.useYn), session["id"])
+    return {"chamberSeq": seq}
+
+
+@app.post("/api/admin/chamber")
+def admin_chamber_add(body: ChamberIn, session: dict = Depends(auth.require_rev)) -> dict:
+    return _save_chamber(None, body, session)
+
+
+@app.post("/api/admin/chamber/{chamber_seq}")
+def admin_chamber_edit(chamber_seq: int, body: ChamberIn, session: dict = Depends(auth.require_rev)) -> dict:
+    return _save_chamber(chamber_seq, body, session)
+
+
+def _save_zone(seq: Optional[int], body: ZoneIn, session: dict) -> dict:
+    keys = list(dict.fromkeys(body.metKeys))
+    if any(k not in MET_KEYS for k in keys):
+        raise HTTPException(400, "알 수 없는 시험방법입니다.")
+    seq = db.save_zone(seq, body.chamberSeq, body.name.strip(), int(body.multiYn), body.sortNo,
+                       int(body.useYn), keys, session["id"], body.force)
+    log.info("구역 저장: zone=%s use=%s met=%s by %s", seq, int(body.useYn), ",".join(keys), session["id"])
+    return {"zoneSeq": seq}
+
+
+@app.post("/api/admin/zone")
+def admin_zone_add(body: ZoneIn, session: dict = Depends(auth.require_rev)) -> dict:
+    return _save_zone(None, body, session)
+
+
+@app.post("/api/admin/zone/{zone_seq}")
+def admin_zone_edit(zone_seq: int, body: ZoneIn, session: dict = Depends(auth.require_rev)) -> dict:
+    return _save_zone(zone_seq, body, session)
 
 
 @app.get("/health")

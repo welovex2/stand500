@@ -9,7 +9,7 @@
 <body>
 <header>
   <h1>챔버 현황판</h1>
-  <nav><a href="./">현황</a><a class="on" href="history.html">이력</a></nav>
+  <nav><a href="./">현황</a><a class="on" href="history.html">이력</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="right">
     <span id="who"></span>
     <button id="logout">로그아웃</button>
@@ -54,7 +54,7 @@ function rowHtml(r) {
     ? `${esc(r.testId || '시험')} · ${esc(r.metKey)}${r.prdctName ? ' · ' + esc(r.prdctName) : ''}`
     : `${esc(r.purposeName)}${r.memo ? ' · ' + esc(r.memo) : ''}`;
   return `<tr><td>${r.src === 'RAW' ? '시험' : '시험 외'}</td><td>${esc(r.chamberName)}</td>` +
-    `<td>${esc(r.zoneName)}</td><td>${what}</td><td>${esc(r.memName)}</td>` +
+    `<td>${esc(zoneLabel(r.zoneName))}</td><td>${what}</td><td>${esc(r.memName)}</td>` +
     `<td>${esc(r.startDt)}</td><td>${esc(r.endDt)}</td><td>${minText(r.useMin)}</td></tr>`;
 }
 

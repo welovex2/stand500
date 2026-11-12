@@ -9,9 +9,8 @@
 <body>
 <header>
   <h1>챔버 현황판</h1>
-  <nav><a class="on" href="./">현황</a><a href="history.html">이력</a></nav>
+  <nav><a class="on" href="./">현황</a><a href="history.html">이력</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="right">
-    <span id="dht"></span>
     <span id="updated"></span>
     <span id="who"></span>
     <button id="logout">로그아웃</button>
@@ -66,9 +65,9 @@ function zoneHtml(c, z) {
   if (first) cls += first.src === 'RAW' ? ' raw' : ' etc';
   if (z.uses.some(u => u.stale)) cls += ' stale';
   const canStart = !me.monitorYn && (z.multiYn || !z.uses.length);
-  let html = `<div class="${cls}"><div class="name"><span>${esc(z.zoneName)}` +
+  let html = `<div class="${cls}"><div class="name"><span>${esc(zoneLabel(z.zoneName))}` +
     (z.multiYn ? ' <span class="tag">동시 사용</span>' : '') + `</span>`;
-  if (canStart) html += `<button data-start="${z.zoneSeq}" data-label="${esc(c.chamberName + ' / ' + z.zoneName)}">사용</button>`;
+  if (canStart) html += `<button data-start="${z.zoneSeq}" data-label="${esc(c.chamberName + (z.zoneName ? ' / ' + z.zoneName : ''))}">사용</button>`;
   html += '</div>';
   html += z.uses.length ? z.uses.map(useHtml).join('') : '<div class="empty">비어 있음</div>';
   return html + '</div>';
@@ -98,10 +97,6 @@ async function load() {
     render(await api('api/status'));
     document.getElementById('updated').textContent = '갱신 ' + nowText();
     notice('');
-    api('api/dht/latest').then(d => {
-      document.getElementById('dht').textContent =
-        d.exists ? `${d.temperature}℃ · ${d.humidity}% (${d.uploadTime})` : '';
-    }).catch(() => {});
   } catch (e) {
     const last = document.getElementById('updated').textContent || '갱신 기록 없음';
     notice(`연결 끊김: ${e.message} (${last})`);
