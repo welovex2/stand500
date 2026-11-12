@@ -1,0 +1,29 @@
+# 서버 compose(docker-compose.yml) 의 services: 아래에 붙여 넣는다.
+# nginx 와 같은 compose 네트워크여야 nginx 가 http://chamber-svc:8000 으로 찾는다.
+# ports 는 열지 않는다 — 호스트 포트를 열면 nginx 의 IP 제한을 거치지 않고 들어올 수 있다.
+# compose .env 에 넣을 값:
+#   CHAMBER_DB_PASSWORD=      (sql/chamber_svc_user.sql 에서 정한 값)
+#   CHAMBER_SESSION_SECRET=   (32자 이상. 만들기: openssl rand -hex 32)
+#   CHAMBER_MONITOR_MEM_ID=   (시험실 모니터 전용 계정 아이디. 없으면 비워 둔다)
+
+  # 챔버 현황판 (현황·이력·로데이터 외 사용) + 온습도 수신. nginx /chamber/ 로만 접근.
+  chamber-svc:
+    build:
+      context: /mnt/tc/project/chamber-svc
+    container_name: chamber-svc
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+      - DB_HOST=${CHAMBER_DB_HOST:-mariadb}
+      - DB_PORT=${CHAMBER_DB_PORT:-3306}
+      - DB_USER=${CHAMBER_DB_USER:-chamber_svc}
+      - DB_PASSWORD=${CHAMBER_DB_PASSWORD:-}
+      - SESSION_SECRET=${CHAMBER_SESSION_SECRET:-}
+      - MONITOR_MEM_ID=${CHAMBER_MONITOR_MEM_ID:-}
+      - STALE_HOURS=12
+    expose:
+      - "8000"
+    mem_limit: 256m
+    cpus: 0.5
+    restart: unless-stopped

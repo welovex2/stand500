@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챔버 사용 이력</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>챔버 현황판</h1>
+  <nav><a href="./">현황</a><a class="on" href="history.html">이력</a></nav>
+  <div class="right">
+    <span id="who"></span>
+    <button id="logout">로그아웃</button>
+  </div>
+</header>
+<main>
+  <div id="notice"></div>
+  <form class="search" id="form">
+    <label>종료일 <input type="date" id="from" required> ~ <input type="date" id="to" required></label>
+    <select id="chamber"><option value="">챔버 전체</option></select>
+    <select id="src">
+      <option value="">구분 전체</option>
+      <option value="RAW">시험</option>
+      <option value="ETC">시험 외</option>
+    </select>
+    <button class="primary">검색</button>
+  </form>
+  <div class="sum" id="sum"></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>구분</th><th>챔버</th><th>구역</th><th>내용</th><th>사용자</th><th>시작</th><th>종료</th><th>사용 시간</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+<script src="app.js"></script>
+<script>
+function iso(d) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function notice(msg) {
+  const el = document.getElementById('notice');
+  el.textContent = msg || '';
+  el.classList.toggle('on', !!msg);
+}
+
+function rowHtml(r) {
+  const what = r.src === 'RAW'
+    ? `${esc(r.testId || '시험')} · ${esc(r.metKey)}${r.prdctName ? ' · ' + esc(r.prdctName) : ''}`
+    : `${esc(r.purposeName)}${r.memo ? ' · ' + esc(r.memo) : ''}`;
+  return `<tr><td>${r.src === 'RAW' ? '시험' : '시험 외'}</td><td>${esc(r.chamberName)}</td>` +
+    `<td>${esc(r.zoneName)}</td><td>${what}</td><td>${esc(r.memName)}</td>` +
+    `<td>${esc(r.startDt)}</td><td>${esc(r.endDt)}</td><td>${minText(r.useMin)}</td></tr>`;
+}
+
+async function search() {
+  const q = new URLSearchParams({
+    from: document.getElementById('from').value,
+    to: document.getElementById('to').value,
+    src: document.getElementById('src').value,
+  });
+  const chamber = document.getElementById('chamber').value;
+  if (chamber) q.set('chamberSeq', chamber);
+  try {
+    const d = await api('api/history?' + q);
+    document.getElementById('rows').innerHTML = d.rows.length
+      ? d.rows.map(rowHtml).join('')
+      : '<tr><td colspan="8" class="empty">기록이 없습니다.</td></tr>';
+    document.getElementById('sum').textContent = `${d.rows.length}건 · 사용 시간 합계 ${minText(d.totalMin)}` +
+      (d.truncated ? ' · 건수가 많아 최근 기록만 보여 줍니다. 기간을 줄여 주세요.' : '');
+    notice('');
+  } catch (e) {
+    notice(e.message);
+  }
+}
+
+document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); search(); });
+
+(async () => {
+  try {
+    await initPage();
+    const c = await api('api/chambers');
+    document.getElementById('chamber').insertAdjacentHTML('beforeend',
+      c.chambers.map(x => `<option value="${x.chamberSeq}">${esc(x.chamberName)}</option>`).join(''));
+  } catch (e) {
+    notice('연결 끊김: ' + e.message);
+    return;
+  }
+  const today = new Date();
+  document.getElementById('to').value = iso(today);
+  document.getElementById('from').value = iso(new Date(today.getTime() - 30 * 86400000));
+  search();
+})();
+</script>
+</body>
+</html>

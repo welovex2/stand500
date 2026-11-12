@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챔버 현황판</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>챔버 현황판</h1>
+  <nav><a class="on" href="./">현황</a><a href="history.html">이력</a></nav>
+  <div class="right">
+    <span id="dht"></span>
+    <span id="updated"></span>
+    <span id="who"></span>
+    <button id="logout">로그아웃</button>
+  </div>
+</header>
+<main>
+  <div id="notice"></div>
+  <div id="board"><p class="empty">불러오는 중...</p></div>
+</main>
+
+<dialog id="dlg">
+  <form id="dlgForm">
+    <h3>사용 등록</h3>
+    <label><span>구역</span><input id="dlgZone" readonly></label>
+    <label><span>용도</span><select id="dlgPurpose" required></select></label>
+    <label><span>메모 (업체명·내용, 200자)</span><textarea id="dlgMemo" rows="2" maxlength="200"></textarea></label>
+    <div class="err" id="dlgErr"></div>
+    <div class="btns">
+      <button type="button" id="dlgCancel">취소</button>
+      <button class="primary" id="dlgOk">사용 시작</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+<script>
+const POLL_MS = 30000;
+let me = null, loading = false, dlgZoneSeq = null;
+
+function useHtml(u) {
+  const title = u.src === 'RAW'
+    ? `${esc(u.testId || '시험')} · ${esc(u.metKey)}`
+    : `${esc(u.purposeName)}`;
+  const sub = u.src === 'RAW' ? esc(u.prdctName) : esc(u.memo);
+  let html = `<div class="use"><div class="title">${title}</div>`;
+  if (sub) html += `<div class="meta">${sub}</div>`;
+  html += `<div class="meta">${esc(u.memName)} · ${esc(u.startDt)} 시작 · ${minText(u.elapsedMin)} 경과</div>`;
+  if (u.stale) {
+    html += `<div class="warn">${me.staleHours}시간 넘게 사용 중` +
+      (u.src === 'RAW' ? ' · ERP에서 종료하세요' : '') + `</div>`;
+  }
+  if (u.canEnd) {
+    html += `<div class="btns"><button data-end="${u.seq}">종료</button>` +
+      `<button class="danger" data-del="${u.seq}">삭제</button></div>`;
+  }
+  return html + '</div>';
+}
+
+function zoneHtml(c, z) {
+  const first = z.uses[0];
+  let cls = 'zone';
+  if (first) cls += first.src === 'RAW' ? ' raw' : ' etc';
+  if (z.uses.some(u => u.stale)) cls += ' stale';
+  const canStart = !me.monitorYn && (z.multiYn || !z.uses.length);
+  let html = `<div class="${cls}"><div class="name"><span>${esc(z.zoneName)}` +
+    (z.multiYn ? ' <span class="tag">동시 사용</span>' : '') + `</span>`;
+  if (canStart) html += `<button data-start="${z.zoneSeq}" data-label="${esc(c.chamberName + ' / ' + z.zoneName)}">사용</button>`;
+  html += '</div>';
+  html += z.uses.length ? z.uses.map(useHtml).join('') : '<div class="empty">비어 있음</div>';
+  return html + '</div>';
+}
+
+function render(data) {
+  const board = document.getElementById('board');
+  if (!data.chambers.length) {
+    board.innerHTML = '<p class="empty">등록된 챔버가 없습니다. ERP 챔버 관리에서 등록하세요.</p>';
+    return;
+  }
+  board.innerHTML = data.chambers.map(c =>
+    `<section class="chamber"><h2>${esc(c.chamberName)}</h2><div class="zones">` +
+    c.zones.map(z => zoneHtml(c, z)).join('') + '</div></section>').join('');
+}
+
+function notice(msg) {
+  const el = document.getElementById('notice');
+  el.textContent = msg || '';
+  el.classList.toggle('on', !!msg);
+}
+
+async function load() {
+  if (loading) return;            // 앞 요청이 끝나지 않았으면 건너뛴다
+  loading = true;
+  try {
+    render(await api('api/status'));
+    document.getElementById('updated').textContent = '갱신 ' + nowText();
+    notice('');
+    api('api/dht/latest').then(d => {
+      document.getElementById('dht').textContent =
+        d.exists ? `${d.temperature}℃ · ${d.humidity}% (${d.uploadTime})` : '';
+    }).catch(() => {});
+  } catch (e) {
+    const last = document.getElementById('updated').textContent || '갱신 기록 없음';
+    notice(`연결 끊김: ${e.message} (${last})`);
+  } finally {
+    loading = false;
+  }
+}
+
+async function act(path, body) {
+  try {
+    await api(path, body);
+  } catch (e) {
+    alert(e.message);
+  }
+  load();
+}
+
+document.getElementById('board').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.start) {
+    dlgZoneSeq = Number(b.dataset.start);
+    document.getElementById('dlgZone').value = b.dataset.label;
+    document.getElementById('dlgMemo').value = '';
+    document.getElementById('dlgErr').textContent = '';
+    document.getElementById('dlg').showModal();
+  } else if (b.dataset.end) {
+    if (confirm('사용을 종료할까요?')) act(`api/etc-use/${b.dataset.end}/end`, {});
+  } else if (b.dataset.del) {
+    const reason = prompt('삭제 사유를 입력하세요.');
+    if (reason && reason.trim()) act(`api/etc-use/${b.dataset.del}/delete`, { reason });
+  }
+});
+
+document.getElementById('dlgCancel').addEventListener('click', () => document.getElementById('dlg').close());
+document.getElementById('dlgForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const ok = document.getElementById('dlgOk'), err = document.getElementById('dlgErr');
+  ok.disabled = true;
+  try {
+    await api('api/etc-use/start', {
+      zoneSeq: dlgZoneSeq,
+      purpose: document.getElementById('dlgPurpose').value,
+      memo: document.getElementById('dlgMemo').value,
+    });
+    document.getElementById('dlg').close();
+    load();
+  } catch (ex) {
+    const b = ex.data && ex.data.busy;
+    err.textContent = ex.message + (b
+      ? ` (${b.src === 'RAW' ? (b.testId || '시험') + ' ' + b.metKey : b.purposeName}, ${b.memName}, ${b.startDt} 시작)`
+      : '');
+  } finally {
+    ok.disabled = false;
+  }
+});
+
+(async () => {
+  try {
+    me = await initPage();
+  } catch (e) {
+    notice('연결 끊김: ' + e.message);
+    return;
+  }
+  document.getElementById('dlgPurpose').innerHTML =
+    me.purposes.map(p => `<option value="${esc(p.value)}">${esc(p.label)}</option>`).join('');
+  load();
+  setInterval(load, POLL_MS);
+})();
+</script>
+</body>
+</html>

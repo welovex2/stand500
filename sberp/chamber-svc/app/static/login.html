@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챔버 현황판 로그인</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<form class="login" id="form">
+  <h1>챔버 현황판</h1>
+  <input id="id" placeholder="ERP 아이디" autocomplete="username" maxlength="20" required autofocus>
+  <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+  <div class="err" id="err"></div>
+  <button class="primary" id="btn">로그인</button>
+</form>
+<script src="app.js"></script>
+<script>
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btn'), err = document.getElementById('err');
+  btn.disabled = true;
+  err.textContent = '';
+  try {
+    await api('api/login', { id: document.getElementById('id').value, password: document.getElementById('pw').value });
+    location.href = './';
+  } catch (ex) {
+    err.textContent = ex.message;
+    document.getElementById('pw').value = '';
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
