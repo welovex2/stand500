@@ -34,6 +34,10 @@ public class RawEnvDTO {
     @ApiModelProperty(value = "행 고유번호. [시작]으로 새로 만들 행은 0", example = "0")
     private int envSeq;
 
+    @ApiModelProperty(value = "시험 챔버(구역) zones.do 의 zoneSeq. [시작] 새 행은 필수, 진행 중 행은 바꿀 때만 (빈 값이면 그대로)",
+        example = "12")
+    private Integer zoneSeq;
+
     @ApiModelProperty(value = "온도", example = "23.1")
     private String temp;
     @ApiModelProperty(value = "온도 ±", example = "0.5")
@@ -53,7 +57,7 @@ public class RawEnvDTO {
     private String atchFileId;
   }
 
-  @ApiModel(value = "RawEnvUpdateReq", description = "측정일·환경조건 > 종료된 행 수정 (기술책임자)")
+  @ApiModel(value = "RawEnvUpdateReq", description = "측정일·환경조건 > 행 수정·종료 처리 (기술책임자)")
   @Getter
   @Setter
   @ToString
@@ -61,11 +65,14 @@ public class RawEnvDTO {
     @ApiModelProperty(value = "시험 고유번호 (성적서 발급일 등 시험 기준 검증용, 없으면 로데이터의 시험)", example = "15")
     private int testSeq;
 
-    @ApiModelProperty(value = "시작일시 yyyy-MM-dd HH:mm[:ss]. 시작·종료 둘 다 비우면 일시는 그대로",
+    @ApiModelProperty(value = "시작일시 yyyy-MM-dd HH:mm[:ss]. 종료된 행은 시작·종료 둘 다 비우면 그대로, 진행 중 행(종료 처리)은 둘 다 필수",
         example = "2026-11-04 09:10")
     private String testSDt;
     @ApiModelProperty(value = "종료일시 yyyy-MM-dd HH:mm[:ss]", example = "2026-11-04 11:40")
     private String testEDt;
+
+    @ApiModelProperty(value = "시험 챔버(구역). 빈 값이면 그대로", example = "12")
+    private Integer zoneSeq;
 
     @ApiModelProperty(value = "온도", example = "23.1")
     private String temp;
@@ -115,6 +122,13 @@ public class RawEnvDTO {
     @ApiModelProperty(value = "소요시간(분). 종료 전·이관 행은 null")
     private Long elapsedMin;
 
+    @ApiModelProperty(value = "시험 챔버(구역). 이관 행·챔버 도입 전 행은 null")
+    private Integer zoneSeq;
+    @ApiModelProperty(value = "챔버 이름 (표시용)")
+    private String chamberName;
+    @ApiModelProperty(value = "구역 이름 (표시용, 구역이 하나뿐인 챔버는 빈 값)")
+    private String zoneName;
+
     private String temp;
     private String tempPlus;
     private String hmdt;
@@ -139,10 +153,38 @@ public class RawEnvDTO {
     private boolean canEnd;
     @ApiModelProperty(value = "[중단] 가능 (종료 전)")
     private boolean canStop;
-    @ApiModelProperty(value = "종료된 행 수정(일시·온습도·이름·서명) 가능 : 기술책임자, update.do")
+    @ApiModelProperty(value = "[수정] 가능 : 기술책임자, update.do. 진행 중 행이면 종료 처리(시작·종료 일시 필수)")
     private boolean canRevEdit;
     @ApiModelProperty(value = "삭제 가능 (기술책임자)")
     private boolean canDelete;
+  }
+
+  @ApiModel(value = "RawEnvZone", description = "[시작] 때 고를 챔버(구역)")
+  @Getter
+  @Setter
+  @ToString
+  public static class Zone {
+    private int zoneSeq;
+    private int chamberSeq;
+    private String chamberName;
+    @ApiModelProperty(value = "구역 이름 (구역이 하나뿐인 챔버는 빈 값)")
+    private String zoneName;
+    @ApiModelProperty(value = "1이면 동시 사용 허용 (일반 시험실). 항상 inUse=false")
+    private int multiYn;
+
+    @ApiModelProperty(value = "사용 중이면 true (선택 불가로 표시)")
+    private boolean inUse;
+    @ApiModelProperty(value = "사용 중인 쪽 : RAW 측정 / ETC 로데이터 외 사용(현황판)")
+    private String useSrc;
+    @ApiModelProperty(value = "사용 중인 측정의 접수번호 (RAW)")
+    private String useTestId;
+    @ApiModelProperty(value = "사용 중인 측정의 시험방법 키 (RAW)")
+    private String useMetKey;
+    @ApiModelProperty(value = "로데이터 외 사용 용도 (ETC) : PRE 예비시험 / DEBUG 고객 디버깅 / CHECK 점검 / WITNESS 입회 / ETC 기타")
+    private String usePurpose;
+    private String useMemName;
+    @ApiModelProperty(value = "사용 시작일시 yyyy-MM-dd HH:mm:ss")
+    private String useStartDt;
   }
 
   @ApiModel(value = "RawEnvTable", description = "시험방법별 측정일·환경조건 표")

@@ -34,9 +34,34 @@ public interface RawEnvMapper {
   /** 온습도·기압·이름·서명 */
   int updateValues(RawEnv env);
 
-  /** 시작·종료 일시 (기술책임자) */
+  /** 시작·종료 일시 (기술책임자). 시작된 행만 — 진행 중 행이면 종료 처리가 된다 */
   int updateDates(@Param("envSeq") int envSeq, @Param("testSDt") LocalDateTime testSDt,
       @Param("testEDt") LocalDateTime testEDt, @Param("udtMemId") String udtMemId);
+
+  /** 시험 구역 변경 */
+  int updateZone(@Param("envSeq") int envSeq, @Param("zoneSeq") int zoneSeq,
+      @Param("udtMemId") String udtMemId);
+
+  // ---------------------------------------------------------------- 챔버 구역
+
+  /** 구역 행 잠금 (트랜잭션 안에서, RAW_TB 잠금 뒤에 호출). 구역이 없으면 null */
+  Integer lockZone(@Param("zoneSeq") int zoneSeq);
+
+  /** 그 시험방법에서 고를 수 있는 구역 (구역·챔버 사용 중 + 매핑). 아니면 null */
+  RawEnvZone selectZoneForMet(@Param("zoneSeq") int zoneSeq, @Param("metKey") String metKey);
+
+  /** 구역 1건 (사용 여부 상관없이). 없으면 null */
+  RawEnvZone selectZone(@Param("zoneSeq") int zoneSeq);
+
+  /** 그 시험방법에서 고를 수 있는 구역 목록 + 지금 사용 중인 건 */
+  List<RawEnvZone> selectZones(@Param("metKey") String metKey);
+
+  /**
+   * 같은 구역에서 시간이 겹치는 사용 1건 (측정 행 + 로데이터 외 사용). 없으면 null.
+   * testEDt 가 null 이면 진행 중(끝 없음)으로 본다. envSeq 행 자신은 제외.
+   */
+  RawEnvZone selectZoneConflict(@Param("envSeq") int envSeq, @Param("zoneSeq") int zoneSeq,
+      @Param("testSDt") LocalDateTime testSDt, @Param("testEDt") LocalDateTime testEDt);
 
   /** 소프트 삭제 (중단·삭제). 살아있는 행만, 갱신 건수 반환 */
   int softDelete(@Param("envSeq") int envSeq, @Param("reason") String reason,

@@ -2,10 +2,12 @@ package egovframework.raw.web;
 
 import javax.annotation.Resource;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import egovframework.cmm.service.BasicResponse;
@@ -23,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  * 로데이터 측정일·환경조건 (RAW_ENV_TB). 설계: docs/design/raw-env-msrmn-multi.md §4
  *
  * 조회는 방법별 detail.do 의 envList, [시작]·[종료]·[저장]은 방법별 insert.do(RawController)가 방법 데이터와 함께 처리한다.
- * 여기는 행 단위 작업([중단]·수정·삭제)만.
+ * 여기는 챔버 목록과 행 단위 작업([중단]·수정·삭제)만.
  *
  * 응답: result=false 이면 message 에 사유.
  */
@@ -61,6 +63,22 @@ public class RawEnvController {
     }
   }
 
+  @ApiOperation(value = "측정일·환경조건 챔버(구역) 목록",
+      notes = "[시작] 때 고를 챔버. 그 시험방법이 매핑된 구역만 (사용 안 하는 챔버·구역 제외)\n"
+          + "사용 중인 구역도 내려 준다 (inUse=true, 누가 쓰는지 use*). 동시 사용 허용(multiYn=1) 구역은 항상 inUse=false\n"
+          + "useSrc : RAW 측정 / ETC 로데이터 외 사용(현황판, usePurpose 에 용도)")
+  @GetMapping(value = "/env/zones.do")
+  public BasicResponse zones(
+      @ApiParam(value = "시험방법 키 (CE, RE1, RE2, RE3, ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL)",
+          required = true, example = "ESD") @RequestParam(name = "metKey") final String metKey) {
+    return respond("챔버 목록", metKey, new Call() {
+      @Override
+      public Object run(String loginId) {
+        return rawEnvService.zones(metKey);
+      }
+    });
+  }
+
   @ApiOperation(value = "측정일·환경조건 [중단]",
       notes = "진행 중(종료 전) 행 삭제. 사유 필수(200자) → 시험 작성내역에 기록")
   @PostMapping(value = "/env/{envSeq}/stop.do")
@@ -76,9 +94,10 @@ public class RawEnvController {
     });
   }
 
-  @ApiOperation(value = "측정일·환경조건 종료된 행 수정 (기술책임자)",
-      notes = "기술책임자만, 종료된 행만. 진행 중 행은 방법별 insert.do 의 envRows([저장]·[종료])로 저장\n"
-          + "일시: testSDt·testEDt 둘 다 주면 수정(종료 ≥ 시작, 미래 불가), 둘 다 비우면 그대로\n"
+  @ApiOperation(value = "측정일·환경조건 행 수정·종료 처리 (기술책임자)",
+      notes = "기술책임자만. 종료된 행은 수정, 진행 중 행은 [종료] 누락 처리(시작·종료 일시 필수, 저장하면 종료됨 + 작성내역 기록)\n"
+          + "일시: testSDt·testEDt 둘 다 주면 수정(종료 ≥ 시작, 미래 불가), 종료된 행은 둘 다 비우면 그대로\n"
+          + "챔버: zoneSeq 를 주면 변경 (같은 챔버 시간 겹침 확인), 빈 값이면 그대로\n"
           + "기압은 ESD·RS·EFT·SURGE·CS·MF·VDIP 만 저장 (그 외는 무시). 서명 취소는 atchFileId 빈 값")
   @PostMapping(value = "/env/{envSeq}/update.do")
   public BasicResponse update(

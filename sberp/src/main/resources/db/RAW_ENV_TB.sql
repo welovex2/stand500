@@ -4,6 +4,11 @@
 -- 설계    : docs/design/raw-env-msrmn-multi.md
 --
 -- 이 파일 : RAW_ENV_TB(신규) + RAW_ENV_INS_TG / RAW_ENV_UDT_TG(신규)
+-- 챔버    : ZONE_SEQ 는 CHAMBER_ZONE_TB 를 가리킨다. CHAMBER_TB.sql 을 먼저 실행한다 (FK 는 걸지 않음)
+--           이미 RAW_ENV_TB 가 있는 DB(개발)는 아래 ALTER 를 실행한다
+--             ALTER TABLE RAW_ENV_TB
+--                 ADD COLUMN ZONE_SEQ INT NULL COMMENT '시험 구역 (CHAMBER_ZONE_TB.ZONE_SEQ, 이관 행은 NULL)' AFTER TEST_E_DT,
+--                 ADD KEY IDX_RAW_ENV_ZONE (ZONE_SEQ, TEST_S_DT);
 -- 이관    : RAW_ENV_TB_migration.sql (프로그램 배포 시점에 별도 실행)
 -- 순서    : 이 파일 → (배포 직전) 이관 파일. 이 파일은 미리 반영해도 기존 동작에 영향 없음.
 --
@@ -55,6 +60,7 @@ CREATE TABLE RAW_ENV_TB (
 
     TEST_S_DT   DATETIME      NULL     COMMENT '시험시작일시 (서버시각)',
     TEST_E_DT   DATETIME      NULL     COMMENT '시험종료일시 (서버시각)',
+    ZONE_SEQ    INT           NULL     COMMENT '시험 구역 (CHAMBER_ZONE_TB.ZONE_SEQ, 이관 행은 NULL) — CHAMBER_TB.sql',
 
     TEMP        VARCHAR(50)   NULL     COMMENT '온도',
     TEMP_PLUS   VARCHAR(50)   NULL     COMMENT '온도 ±',
@@ -83,7 +89,8 @@ CREATE TABLE RAW_ENV_TB (
     PRIMARY KEY (ENV_SEQ),
     KEY IDX_RAW_ENV_RAW (RAW_SEQ, MET_KEY, DEL_YN, ROW_NO),
     KEY IDX_RAW_ENV_MEM (MEM_ID, TEST_S_DT),  -- 시험원 일정 달력용 (추후)
-    KEY IDX_RAW_ENV_SIGN (SIGN_URL, TEST_S_DT) -- [종료] 시 같은 시험원(서명) 시간 겹침 확인
+    KEY IDX_RAW_ENV_SIGN (SIGN_URL, TEST_S_DT), -- [종료] 시 같은 시험원(서명) 시간 겹침 확인
+    KEY IDX_RAW_ENV_ZONE (ZONE_SEQ, TEST_S_DT)  -- 챔버(구역) 사용 중·시간 겹침 확인, 현황판
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='로데이터 측정일·환경조건 (시험방법별 다건)';
 
 
@@ -169,7 +176,7 @@ DELIMITER ;
 -- ---------------------------------------------------------------------
 -- 3. 반영 후 확인
 -- ---------------------------------------------------------------------
--- 테이블 컬럼 25개
+-- 테이블 컬럼 26개
 SELECT COUNT(*)
   FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = DATABASE()

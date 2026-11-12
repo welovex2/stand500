@@ -33,7 +33,10 @@ public interface RawEnvService {
   /** [중단] 진행 중 행 삭제 + 작성내역 기록 */
   boolean stop(int envSeq, RawEnvDTO.ReasonReq req, String loginId);
 
-  /** 종료된 행 수정 (기술책임자) : 일시·온습도·기압·이름·서명 */
+  /** [시작] 때 고를 챔버(구역) 목록 + 사용 중 여부 */
+  List<RawEnvDTO.Zone> zones(String metKey);
+
+  /** 행 수정 (기술책임자) : 일시·온습도·기압·이름·서명·구역. 진행 중 행이면 종료 처리 */
   RawEnvDTO.Row update(int envSeq, RawEnvDTO.UpdateReq req, String loginId);
 
   /** 행 삭제 (기술책임자) + 작성내역 기록 */

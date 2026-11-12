@@ -22,6 +22,12 @@ public class RawEnv {
   private LocalDateTime testSDt;
   private LocalDateTime testEDt;
 
+  /** 시험 구역 (CHAMBER_ZONE_TB.ZONE_SEQ). 이관 행·챔버 도입 전 행은 null */
+  private Integer zoneSeq;
+  /** 조회용: 챔버·구역 이름 */
+  private String chamberName;
+  private String zoneName;
+
   private String temp;
   private String tempPlus;
   private String hmdt;

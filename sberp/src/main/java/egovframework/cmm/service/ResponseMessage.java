@@ -71,5 +71,10 @@ public class ResponseMessage {
     /** 같은 시험원의 다른 측정과 시간이 겹침. %s = 접수번호, 시험방법, 시작~종료 */
     public static final String CHECK_ENV_OVERLAP = "같은 시험원의 다른 측정과 시간이 겹칩니다. (%s %s %s)";
     public static final String CHECK_ENV_ACTION = "측정일 버튼 구분값이 올바르지 않습니다. (START, END 또는 빈 값)";
+    // 측정 행 챔버(구역) — docs/design/chamber-erp.md
+    public static final String CHECK_ENV_ZONE_REQUIRED = "시험할 챔버를 선택하세요.";
+    public static final String CHECK_ENV_ZONE = "이 시험방법에서 선택할 수 없는 챔버입니다. 새로고침 후 다시 선택하세요.";
+    /** 챔버 사용 중·시간 겹침. %s = 사용 중인 건 (접수번호 시험방법 또는 용도, 시험원, 시작~종료) */
+    public static final String CHECK_ENV_ZONE_BUSY = "선택한 챔버의 사용 시간이 다른 시험·작업과 겹칩니다. (%s)";
     
 }

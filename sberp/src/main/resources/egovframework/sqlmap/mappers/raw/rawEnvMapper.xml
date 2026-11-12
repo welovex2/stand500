@@ -10,6 +10,14 @@
 		ROW_NO,
 		TEST_S_DT,
 		TEST_E_DT,
+		ZONE_SEQ,
+		(SELECT c.NAME
+		   FROM CHAMBER_ZONE_TB z
+		  INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ
+		  WHERE z.ZONE_SEQ = RAW_ENV_TB.ZONE_SEQ) AS CHAMBER_NAME,
+		(SELECT z.NAME
+		   FROM CHAMBER_ZONE_TB z
+		  WHERE z.ZONE_SEQ = RAW_ENV_TB.ZONE_SEQ) AS ZONE_NAME,
 		TEMP,
 		TEMP_PLUS,
 		HMDT,
@@ -25,6 +33,13 @@
 		DEL_MEM_ID,
 		INS_MEM_ID,
 		UDT_MEM_ID
+	</sql>
+
+	<!-- 접수번호 (예: SB26-G3442-EM3328). 별칭 j = JOB_TB, t = TEST_TB -->
+	<sql id="rawIdExpr">
+		CONCAT('SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
+		       '-', t.TEST_TYPE_CODE, LPAD(t.TEST_NO, 4, 0),
+		       IF(j.SBK_REVISION > 0, CONCAT('-', j.SBK_REVISION), ''))
 	</sql>
 
 	<select id="lockRaw" resultType="java.lang.Integer">
@@ -66,6 +81,7 @@
 			MET_KEY,
 			ROW_NO,
 			TEST_S_DT,
+			ZONE_SEQ,
 			MEM_ID,
 			MIG_YN,
 			DEL_YN,
@@ -78,6 +94,7 @@
 			#{metKey},
 			#{rowNo},
 			NOW(),
+			#{zoneSeq},
 			#{memId},
 			0,
 			0,
@@ -121,7 +138,16 @@
 		       UDT_DT = NOW()
 		 WHERE ENV_SEQ = #{envSeq}
 		   AND DEL_YN = 0
-		   AND TEST_E_DT IS NOT NULL
+		   AND TEST_S_DT IS NOT NULL
+	</update>
+
+	<update id="updateZone">
+		UPDATE RAW_ENV_TB
+		   SET ZONE_SEQ = #{zoneSeq},
+		       UDT_MEM_ID = #{udtMemId},
+		       UDT_DT = NOW()
+		 WHERE ENV_SEQ = #{envSeq}
+		   AND DEL_YN = 0
 	</update>
 
 	<update id="softDelete">
@@ -200,9 +226,7 @@
 	-->
 	<select id="selectOverlap" resultType="egovframework.raw.service.RawEnvOverlap">
 		SELECT e.ENV_SEQ,
-		       CONCAT('SB', j.SBK_YM, '-', j.SBK_TYPE, LPAD(j.SBK_SEQ, 4, 0),
-		              '-', t.TEST_TYPE_CODE, LPAD(t.TEST_NO, 4, 0),
-		              IF(j.SBK_REVISION > 0, CONCAT('-', j.SBK_REVISION), '')) AS RAW_ID,
+		       <include refid="rawIdExpr" /> AS RAW_ID,
 		       e.MET_KEY,
 		       e.TEST_S_DT,
 		       e.TEST_E_DT
@@ -244,5 +268,138 @@
 			#{memId}
 		)
 	</insert>
+
+	<!-- ================================================================ 챔버 구역 (docs/design/chamber-erp.md) -->
+
+	<!-- 구역 행 잠금: 같은 구역 동시 [시작]·현황판 [사용]을 줄 세운다. ERP 잠금 순서는 RAW_TB → CHAMBER_ZONE_TB -->
+	<select id="lockZone" resultType="java.lang.Integer">
+		SELECT ZONE_SEQ
+		  FROM CHAMBER_ZONE_TB
+		 WHERE ZONE_SEQ = #{zoneSeq}
+		   FOR UPDATE
+	</select>
+
+	<!-- 그 시험방법에서 고를 수 있는 구역 1건 (구역·챔버 사용 중 + 시험방법 매핑). 없으면 null -->
+	<select id="selectZoneForMet" resultType="egovframework.raw.service.RawEnvZone">
+		SELECT z.ZONE_SEQ,
+		       c.CHAMBER_SEQ,
+		       c.NAME AS CHAMBER_NAME,
+		       z.NAME AS ZONE_NAME,
+		       z.MULTI_YN
+		  FROM CHAMBER_ZONE_TB z
+		 INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ AND c.USE_YN = 1
+		 INNER JOIN CHAMBER_ZONE_MET_TB m ON m.ZONE_SEQ = z.ZONE_SEQ AND m.MET_KEY = #{metKey}
+		 WHERE z.ZONE_SEQ = #{zoneSeq}
+		   AND z.USE_YN = 1
+	</select>
+
+	<!-- 구역 1건 (사용 여부 상관없이, 동시 사용 허용 확인용). 없으면 null -->
+	<select id="selectZone" resultType="egovframework.raw.service.RawEnvZone">
+		SELECT z.ZONE_SEQ,
+		       z.CHAMBER_SEQ,
+		       z.NAME AS ZONE_NAME,
+		       z.MULTI_YN
+		  FROM CHAMBER_ZONE_TB z
+		 WHERE z.ZONE_SEQ = #{zoneSeq}
+	</select>
+
+	<!--
+		진행 중인 사용 (측정 행 + 로데이터 외 사용). "진행 중" 정의는 chamber-svc 와 같다.
+	-->
+	<sql id="zoneUseNow">
+		SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ,
+		       <include refid="rawIdExpr" /> AS TEST_ID,
+		       e.MET_KEY, NULL AS PURPOSE, e.MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
+		  FROM RAW_ENV_TB e
+		  LEFT JOIN RAW_TB r ON r.RAW_SEQ = e.RAW_SEQ
+		  LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+		  LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		  LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+		 WHERE e.DEL_YN = 0
+		   AND e.MIG_YN = 0
+		   AND e.ZONE_SEQ IS NOT NULL
+		   AND e.TEST_S_DT IS NOT NULL
+		   AND e.TEST_E_DT IS NULL
+		 UNION ALL
+		SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT
+		  FROM CHAMBER_ETC_USE_TB x
+		 WHERE x.DEL_YN = 0
+		   AND x.END_DT IS NULL
+	</sql>
+
+	<!--
+		[시작] 때 고를 구역 목록 + 지금 사용 중인 건. 동시 사용 허용(MULTI_YN=1) 구역은 사용 중 정보를 붙이지 않는다.
+		한 구역에 사용 중인 건이 여러 개면(잘못된 데이터) 여러 줄이 나온다 → 서비스에서 첫 줄만 쓴다.
+	-->
+	<select id="selectZones" resultType="egovframework.raw.service.RawEnvZone">
+		SELECT z.ZONE_SEQ,
+		       c.CHAMBER_SEQ,
+		       c.NAME AS CHAMBER_NAME,
+		       z.NAME AS ZONE_NAME,
+		       z.MULTI_YN,
+		       u.SRC AS USE_SRC,
+		       u.SEQ AS USE_SEQ,
+		       u.TEST_ID AS USE_TEST_ID,
+		       u.MET_KEY AS USE_MET_KEY,
+		       u.PURPOSE AS USE_PURPOSE,
+		       u.MEM_NAME AS USE_MEM_NAME,
+		       u.S_DT AS USE_START_DT,
+		       u.E_DT AS USE_END_DT
+		  FROM CHAMBER_ZONE_MET_TB m
+		 INNER JOIN CHAMBER_ZONE_TB z ON z.ZONE_SEQ = m.ZONE_SEQ AND z.USE_YN = 1
+		 INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ AND c.USE_YN = 1
+		  LEFT JOIN (
+		        <include refid="zoneUseNow" />
+		       ) u ON u.ZONE_SEQ = z.ZONE_SEQ AND z.MULTI_YN = 0
+		 WHERE m.MET_KEY = #{metKey}
+		 ORDER BY c.SORT_NO, c.CHAMBER_SEQ, z.SORT_NO, z.ZONE_SEQ, u.S_DT
+	</select>
+
+	<!--
+		같은 구역에서 시간이 겹치는 사용 1건 (없으면 null). 측정 행 + 로데이터 외 사용.
+		겹침 = 상대 시작 &lt; 이 행 종료 AND (상대 진행 중 OR 상대 종료 &gt; 이 행 시작). 경계 시각은 겹침 아님.
+		testEDt 가 null(진행 중)이면 종료 조건 없음. 자기 자신·삭제·이관 행 제외.
+	-->
+	<select id="selectZoneConflict" resultType="egovframework.raw.service.RawEnvZone">
+		SELECT u.ZONE_SEQ,
+		       u.SRC AS USE_SRC,
+		       u.SEQ AS USE_SEQ,
+		       u.TEST_ID AS USE_TEST_ID,
+		       u.MET_KEY AS USE_MET_KEY,
+		       u.PURPOSE AS USE_PURPOSE,
+		       u.MEM_NAME AS USE_MEM_NAME,
+		       u.S_DT AS USE_START_DT,
+		       u.E_DT AS USE_END_DT
+		  FROM (
+		        SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ,
+		               <include refid="rawIdExpr" /> AS TEST_ID,
+		               e.MET_KEY, NULL AS PURPOSE, e.MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
+		          FROM RAW_ENV_TB e
+		          LEFT JOIN RAW_TB r ON r.RAW_SEQ = e.RAW_SEQ
+		          LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+		          LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		          LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+		         WHERE e.ZONE_SEQ = #{zoneSeq}
+		           AND e.ENV_SEQ != #{envSeq}
+		           AND e.DEL_YN = 0
+		           AND e.MIG_YN = 0
+		           AND e.TEST_S_DT IS NOT NULL
+		           <if test="testEDt != null">
+		           AND e.TEST_S_DT &lt; #{testEDt}
+		           </if>
+		           AND (e.TEST_E_DT IS NULL OR e.TEST_E_DT &gt; #{testSDt})
+		         UNION ALL
+		        SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT
+		          FROM CHAMBER_ETC_USE_TB x
+		         WHERE x.ZONE_SEQ = #{zoneSeq}
+		           AND x.DEL_YN = 0
+		           <if test="testEDt != null">
+		           AND x.START_DT &lt; #{testEDt}
+		           </if>
+		           AND (x.END_DT IS NULL OR x.END_DT &gt; #{testSDt})
+		       ) u
+		 ORDER BY u.S_DT
+		 LIMIT 1
+	</select>
 
 </mapper>

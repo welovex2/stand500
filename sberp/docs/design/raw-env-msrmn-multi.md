@@ -305,6 +305,7 @@ CREATE TABLE RAW_ENV_TB (
 4. 성적서 데이터 (`ReportDTO`, `RepController`) + 템플릿 담당 전달
 5. 프론트 전달 (§8) → 연동 테스트
 6. 운영 반영: DDL → 이관 → 배포 순. 기존 컬럼 DROP은 안정화 후 별도 (아래 10.1)
+7. 챔버 사용 관리: 측정 행에 사용 챔버(구역) 기록·사용 중 확인, 기술책임자 [종료] 누락 처리 — ERP 설계 `chamber-erp.md` (2026-11-12 구현). 현황판·로데이터 외 사용·챔버 관리 화면은 chamber-svc (`chamber-svc.md`). 챔버 목록은 기획 작성 중
 
 ### 10.1 운영 반영 체크 (2026-11-06)
 
@@ -312,6 +313,7 @@ CREATE TABLE RAW_ENV_TB (
 1. 성적서(4단계) 완료. 성적서가 아직 METHOD_*_TB 기존 컬럼(온습도·측정일·서명)을 읽음. 서버는 그 컬럼에 더 이상 쓰지 않으므로 이대로 반영하면 새 측정값이 성적서에 빈 값 (TEL HTML 은 반영됨)
 2. 프론트와 같이 배포. 백엔드만 먼저 올리면 기존 화면의 측정일·온습도·서명 입력이 저장 안 됨. [종료] 시 서명(atchFileId) 필수라 새 화면도 서명을 보내야 함
 3. 운영 DB 계정에 트리거 생성 권한 있는지 확인
+4. 챔버 사용 관리(`chamber-erp.md`): `CHAMBER_TB.sql`을 `RAW_ENV_TB.sql`보다 먼저 실행(`ZONE_SEQ` 포함), chamber-svc 계정 GRANT, 챔버 목록 입력. 목록이 없으면 [시작]이 전부 거부됨
 
 반영 순서
 1. DDL : RAW_ENV_TB.sql (테이블·이력 트리거·IDX_RAW_ENV_SIGN 포함). 운영은 RAW_ENV_TB_overlap_idx.sql 실행 불필요
