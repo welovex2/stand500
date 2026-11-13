@@ -701,7 +701,8 @@
 		    AND JOB_TB.SBK_REVISION >= revJob.SBK_REVISION
 		]]>
 		WHERE TEST_TB.TEST_SEQ = #{testSeq}
-		        
+		<!-- 원본 → 재발행 1 → 2 … 순서 (성적서 출력의 이전 발급번호 revReportNo·TEL 이력이 이 순서에 의존) -->
+		ORDER BY revJob.SBK_REVISION, report.TEST_SEQ
 	</select>
 	
 	<select id="tchnList" parameterType="int" resultType="egovMap">
