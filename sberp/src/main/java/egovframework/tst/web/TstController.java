@@ -637,6 +637,32 @@ public class TstController {
     return res;
   }
 
+  @ApiOperation(value = "성적서 발급정보 조회 (insertReportDt.do 호출 전 현재 값)",
+      notes = "로데이터 상세(/raw/{testSeq}/detail.do)의 reportList 와 같은 내용. 로데이터가 없는 시험도 조회된다.\n"
+          + "원본·재발행 시험별로 1행씩, 조회한 시험의 리비전 이하만 나온다.\n"
+          + "rawId:시험번호, testSeq:시험고유번호(저장 시 이 값 사용), reportDt:발급일, reportNo:발급번호, reportMemo:발급사유")
+  @GetMapping(value = "/reportDetail.do")
+  public BasicResponse reportDetail(@ApiParam(value = "시험 고유번호", required = true,
+      example = "21704") @RequestParam(value = "testSeq") int testSeq) throws Exception {
+
+    boolean result = true;
+    String msg = "";
+    List<egovframework.tst.service.Test> list = new ArrayList<>();
+
+    if (!EgovUserDetailsHelper.isAuthenticated()) {
+      result = false;
+      msg = ResponseMessage.UNAUTHORIZED;
+    } else {
+      list = rawService.reportDetail(testSeq);
+      if (list == null || list.isEmpty()) {
+        result = false;
+        msg = ResponseMessage.NO_DATA;
+      }
+    }
+
+    return BasicResponse.builder().result(result).message(msg).data(list).build();
+  }
+
   @ApiOperation(value = "성적서 발급정보 저장 (로데이터 유무와 관계없이 모든 시험 공통)")
   @PostMapping(value = "/insertReportDt.do")
   public BasicResponse insertReportDt(@ApiParam(
