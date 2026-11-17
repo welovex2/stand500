@@ -53,8 +53,10 @@ import egovframework.raw.dto.RsDTO;
 import egovframework.raw.dto.SurgeDTO;
 import egovframework.raw.dto.VdipDTO;
 import egovframework.raw.dto.EnvMetKey;
+import egovframework.raw.dto.RawEnvDTO;
 import egovframework.raw.service.RawEnv;
 import egovframework.raw.service.RawEnvMapper;
+import egovframework.raw.service.RawEnvService;
 import egovframework.raw.service.RawMet;
 import egovframework.raw.service.RawService;
 import egovframework.rte.fdl.property.EgovPropertyService;
@@ -76,6 +78,9 @@ public class RepController {
 
   @Resource(name = "RawEnvMapper")
   private RawEnvMapper rawEnvMapper;
+
+  @Resource(name = "RawEnvService")
+  private RawEnvService rawEnvService;
 
   // -------------------------------------------------------------------------
   // PDF / HTML 미리보기 (서버 Freemarker → pdf-svc)
@@ -554,6 +559,54 @@ public class RepController {
     tel.setHmdtPlus(ended.getHmdtPlus());
   }
 
+  /**
+   * 성적서 상세의 시험항목마다 측정일·환경조건 표(envList)를 붙인다 (#26-8).
+   * 형식은 방법별 detail.do 의 envList 와 같다. CE1~4 는 CE 표, RE0~2 는 RE1·RE2·RE3 표.
+   * 실패해도 성적서 나머지 데이터는 그대로 내려가도록 로그만 남긴다.
+   */
+  private void applyEnvList(ReportDTO detail, int rawSeq) {
+    try {
+      Map<String, RawEnvDTO.Table> byKey = new HashMap<String, RawEnvDTO.Table>();
+      List<String> keys = new ArrayList<String>();
+      for (EnvMetKey k : EnvMetKey.values()) {
+        keys.add(k.name());
+      }
+      for (RawEnvDTO.Table t : rawEnvService.tables(rawSeq, detail.getTestSeq(), null,
+          keys.toArray(new String[0]))) {
+        byKey.put(t.getMetKey(), t);
+      }
+
+      List<RawEnvDTO.Table> ce = envOf(byKey, "CE");
+      List<RawEnvDTO.Table> re = envOf(byKey, "RE1", "RE2", "RE3");
+      for (CeDTO d : new CeDTO[] {detail.getCe1(), detail.getCe2(), detail.getCe3(), detail.getCe4()}) {
+        if (d != null) d.setEnvList(ce);
+      }
+      for (ReDTO d : new ReDTO[] {detail.getRe0(), detail.getRe1(), detail.getRe2()}) {
+        if (d != null) d.setEnvList(re);
+      }
+      if (detail.getEsd() != null) detail.getEsd().setEnvList(envOf(byKey, "ESD"));
+      if (detail.getRs() != null) detail.getRs().setEnvList(envOf(byKey, "RS"));
+      if (detail.getEft() != null) detail.getEft().setEnvList(envOf(byKey, "EFT"));
+      if (detail.getSurge() != null) detail.getSurge().setEnvList(envOf(byKey, "SURGE"));
+      if (detail.getCs() != null) detail.getCs().setEnvList(envOf(byKey, "CS"));
+      if (detail.getMf() != null) detail.getMf().setEnvList(envOf(byKey, "MF"));
+      if (detail.getVdip() != null) detail.getVdip().setEnvList(envOf(byKey, "VDIP"));
+      if (detail.getClk() != null) detail.getClk().setEnvList(envOf(byKey, "CLK"));
+      if (detail.getDp() != null) detail.getDp().setEnvList(envOf(byKey, "DP"));
+      if (detail.getTel() != null) detail.getTel().setEnvList(envOf(byKey, "TEL"));
+    } catch (Exception e) {
+      log.warn("성적서 envList 실패 testSeq={}, rawSeq={}: {}", detail.getTestSeq(), rawSeq, e.getMessage(), e);
+    }
+  }
+
+  private List<RawEnvDTO.Table> envOf(Map<String, RawEnvDTO.Table> byKey, String... metKeys) {
+    List<RawEnvDTO.Table> out = new ArrayList<RawEnvDTO.Table>();
+    for (String k : metKeys) {
+      out.add(byKey.get(k));
+    }
+    return out;
+  }
+
   private ReportDTO getDetail(ReportDTO detail) {
     
     FileVO fileVO = new FileVO();
@@ -950,7 +1003,9 @@ public class RepController {
             totalResult = false;
           }
         }
-        
+
+        // 측정일·환경조건 표 (#26-8). detail.do 의 envList 와 같은 형식
+        applyEnvList(detail, rawSeq);
 
         // 성적서 적합/부적합
         detail.setResult(totalResult);
