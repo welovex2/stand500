@@ -173,6 +173,11 @@ public class RawEnvServiceImpl implements RawEnvService {
         if (env == null || env.getRawSeq() != rawSeq || !allowed.contains(env.getMetKey())) {
           throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
         }
+        // 이관 행(기존 로데이터)은 [수정] 없이 방법 저장으로 값·측정일을 고친다
+        if (env.getDelYn() == 0 && env.getMigYn() != 0) {
+          saveMigrated(env, r, testSeq, loginId);
+          continue;
+        }
         if (env.getDelYn() != 0 || !env.isInProgress()) {
           log.info("진행 중이 아닌 측정 행 값은 무시 - envSeq={}", env.getEnvSeq());
           continue;
@@ -421,6 +426,32 @@ public class RawEnvServiceImpl implements RawEnvService {
   }
 
   /**
+   * 이관 행(MIG_YN=1, 기존 로데이터) 저장. 방법별 insert.do 의 envRows 로 들어온다.
+   * 온습도·기압·이름·서명은 덮어쓰고, msrmnDt 가 있으면 시작=종료=측정일로 바꾼다 (같은 분이면 그대로).
+   * 측정일은 미래 불가 + 성적서 발급일·측정설비 교정일 검증 + 시험기간 재계산. 시간 겹침·챔버는 보지 않는다.
+   */
+  private void saveMigrated(RawEnv env, RawEnvDTO.RowReq r, int testSeq, String loginId) {
+    saveValues(env, r.getTemp(), r.getTempPlus(), r.getHmdt(), r.getHmdtPlus(), r.getBrmt(),
+        r.getBrmtPlus(), r.getMemName(), r.getAtchFileId(), loginId);
+
+    if (!StringUtils.hasText(r.getMsrmnDt())) {
+      return;
+    }
+    LocalDateTime dt = sameMinuteOrNew(parseDateTime(r.getMsrmnDt()), env.getTestSDt());
+    if (dt == null || dt.isAfter(LocalDateTime.now())) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
+    }
+    if (dt.equals(env.getTestSDt()) && dt.equals(env.getTestEDt())) {
+      return;
+    }
+    if (rawEnvMapper.updateDates(env.getEnvSeq(), dt, dt, loginId) == 0) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
+    }
+    afterDateChange(rawEnvMapper.selectOne(env.getEnvSeq()),
+        rawSupport.resolveTestSeq(testSeq, env.getRawSeq()));
+  }
+
+  /**
    * 종료일시가 정해지거나 바뀐 뒤: 측정일(종료일 기준) ≤ 성적서 발급일, 측정설비 교정일, 시험기간 재계산.
    */
   private void afterDateChange(RawEnv env, int testSeq) {
@@ -608,11 +639,13 @@ public class RawEnvServiceImpl implements RawEnvService {
 
     boolean inProgress = env.isInProgress();
     boolean ended = env.isEnded();
-    row.setCanEdit(editable && inProgress);
-    row.setCanEnd(editable && inProgress);
-    row.setCanStop(editable && inProgress);
+    // 이관 행(기존 로데이터)은 [수정] 없이 입력칸 + 방법 [저장]으로 고친다 (측정일 포함)
+    boolean migrated = env.getMigYn() != 0;
+    row.setCanEdit(editable && (inProgress || migrated));
+    row.setCanEnd(editable && inProgress && !migrated);
+    row.setCanStop(editable && inProgress && !migrated);
     // 진행 중 행도 기술책임자는 [수정]으로 종료 처리할 수 있다
-    row.setCanRevEdit(editable && rev && (ended || inProgress));
+    row.setCanRevEdit(editable && rev && !migrated && (ended || inProgress));
     row.setCanDelete(editable && rev);
     return row;
   }

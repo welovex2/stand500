@@ -21,6 +21,7 @@ public interface RawEnvService {
    *
    * <ol>
    * <li>envRows 중 진행 중 행(envSeq &gt; 0)의 온습도·이름·서명 저장. 종료·삭제된 행은 무시</li>
+   * <li>envRows 중 이관 행(migYn=1)은 온습도·이름·서명 + msrmnDt(시작=종료) 저장</li>
    * <li>action=START : envMetKey 표에 새 행 + 시작일시. envSeq=0 인 envRows 값을 새 행에 저장</li>
    * <li>action=END : envMetKey 표의 진행 중 행에 종료일시. 온도·습도(·기압)·시험자명 필수</li>
    * </ol>

@@ -151,6 +151,7 @@ CREATE TABLE RAW_ENV_TB (
 
 처리 순서 (`applyFromMethod`, 방법 데이터·측정설비 저장 뒤)
 1. `envRows` 중 `envSeq > 0`: 이 로데이터·이 방법 표의 행이 아니면 거부. **진행 중 행만 값 저장**, 종료·삭제된 행은 무시 (과거 측정 행은 건드리지 않음).
+   - 예외: **이관 행(`MIG_YN=1`)** 은 기존 로데이터 화면처럼 방법 [저장]으로 고친다 (2026-11-18). 온습도·이름·서명 덮어쓰기 + `msrmnDt`(분 단위)가 있으면 `TEST_S_DT = TEST_E_DT = msrmnDt`. 미래 불가, 성적서 발급일·측정설비 교정일 검증, 시험기간 재계산. 시간 겹침·챔버 검사 안 함, `MIG_YN`은 1 유지. 응답의 이관 행은 `canEdit=true`(로데이터 수정 가능 시), `canEnd/canStop/canRevEdit=false`.
 2. `START`: `envMetKey` 표에 새 행 + `TEST_S_DT=NOW()`, `MEM_ID`=로그인 사용자. `envSeq: 0` 행 값을 새 행에 저장.
 3. `END`: `envMetKey` 표의 진행 중 행에 `TEST_E_DT=NOW()`. 1번에서 저장된 값 기준으로 **온도·습도·시험자명·서명(THP는 기압도) 필수**. 이어서 같은 시험원 시간 겹침 확인 (§11).
 4. 시험기간 재계산.

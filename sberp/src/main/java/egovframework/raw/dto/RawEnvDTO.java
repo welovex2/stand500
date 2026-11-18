@@ -38,6 +38,10 @@ public class RawEnvDTO {
         example = "12")
     private Integer zoneSeq;
 
+    @ApiModelProperty(value = "측정일시 yyyy-MM-dd HH:mm. 이관 행(migYn=1)만 사용 : 시작·종료를 이 값으로 저장, 빈 값이면 그대로",
+        example = "2026-08-20 10:30")
+    private String msrmnDt;
+
     @ApiModelProperty(value = "온도", example = "23.1")
     private String temp;
     @ApiModelProperty(value = "온도 ±", example = "0.5")
