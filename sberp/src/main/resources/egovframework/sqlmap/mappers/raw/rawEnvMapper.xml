@@ -103,6 +103,35 @@
 		)
 	</insert>
 
+	<!-- 기존 화면(시작·종료 없음) 새 행 : 시작=종료=측정일, MIG_YN=2 (이관 행처럼 다룬다) -->
+	<insert id="insertLegacy" parameterType="egovframework.raw.service.RawEnv"
+		useGeneratedKeys="true" keyProperty="envSeq" keyColumn="ENV_SEQ">
+		INSERT INTO RAW_ENV_TB
+		(
+			RAW_SEQ,
+			MET_KEY,
+			ROW_NO,
+			TEST_S_DT,
+			TEST_E_DT,
+			MIG_YN,
+			DEL_YN,
+			INS_MEM_ID,
+			INS_DT
+		)
+		VALUES
+		(
+			#{rawSeq},
+			#{metKey},
+			#{rowNo},
+			#{testSDt},
+			#{testEDt},
+			2,
+			0,
+			#{insMemId},
+			NOW()
+		)
+	</insert>
+
 	<update id="updateEnd">
 		UPDATE RAW_ENV_TB
 		   SET TEST_E_DT = NOW(),

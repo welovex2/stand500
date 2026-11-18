@@ -27,7 +27,7 @@ detail.do 의 data.envList 사용. 데이터 없음(NO_DATA)이어도 envList는
 | memName | 시험자명 |
 | atchFileId | 서명 파일 ID. 저장 때 그대로 보냄 |
 | signUrl | 서명 이미지 주소. 표시용 |
-| migYn | 1이면 이관 행(기존 로데이터). 시작=종료 = 측정일 |
+| migYn | 0 새 화면 행, 1 이관 행, 2 기존 화면에서 만든 행. 1·2는 시작=종료 = 측정일 |
 | canEdit | true면 온습도·이름·서명 입력 가능 (진행 중 행, 이관 행은 측정일까지) |
 | canEnd | [종료] 표시 |
 | canStop | [중단] 표시 |
@@ -80,21 +80,43 @@ POST /raw/{방법}/insert.do. 화면 저장 데이터에 아래 값 추가
 2. 보낼 행 없으면 envRows: []
 3. 진행 중 행의 챔버를 바꾸려면 zoneSeq에 새 값. 그대로면 빼거나 같은 값 (사용 중이면 거부)
 
-### [종료]
-### 이관 행 (기존 로데이터, migYn=1)
-[시작]·[종료]·[수정] 버튼 없이 기존 화면처럼 입력칸 + 로데이터 [저장]. 같은 insert.do, envAction 빈 값
+### 기존 로데이터 (기존 화면 : 시작·종료 없음)
+화면 분기는 프론트에서 날짜 기준으로 한다. 기존 화면은 [시작]·[종료]·[수정] 버튼 없이 입력칸 + 로데이터 [저장]
+같은 insert.do, envAction 빈 값. 표마다 행 1개 (측정일 칸 1개)
+
+1) 표에 행이 있을 때 (이관 행 migYn=1, 또는 기존 화면에서 만든 행 migYn=2) → envSeq로 보냄
 ```json
 "envAction": "",
 "envRows": [ { "envSeq": 82543, "msrmnDt": "2026-08-20 10:30",
                "temp": "23.5", "tempPlus": "1.0", "hmdt": "45", "hmdtPlus": "5",
                "brmt": "", "brmtPlus": "", "memName": "이준우", "atchFileId": "FILE_000000000000862" } ]
 ```
-1. 측정일 칸 1개. 조회 값은 testSDt (testEDt와 같음), 보낼 때는 msrmnDt에 분 단위(yyyy-MM-dd HH:mm)
-2. msrmnDt 빈 값이면 측정일 그대로. 온습도·이름·서명은 보낸 값으로 덮어씀 (빈 값은 지움)
-3. 측정일은 현재 일시까지, 성적서 발급일 이전만. 측정설비 교정일도 이 날짜로 체크. 거부되면 message 그대로 표시
-4. 이관 행은 시간 겹침·챔버 검사 안 함. 소요시간 빈칸
-5. 기술책임자 [삭제]는 그대로 (canDelete)
+2) 표에 행이 없을 때 (예전 측정일이 비어 이관 안 된 로데이터) → envSeq 0 + msrmnDt
+```json
+"envAction": "",
+"envRows": [ { "envSeq": 0, "metKey": "RS", "msrmnDt": "2026-11-10 14:00",
+               "temp": "23.1", "tempPlus": "0.5", "hmdt": "45.2", "hmdtPlus": "0.5",
+               "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "atchFileId": "FILE_000000000000862" } ]
+```
+1. 측정일 칸 조회 값은 testSDt (testEDt와 같음). 보낼 때는 msrmnDt에 분 단위(yyyy-MM-dd HH:mm)
+2. envSeq 0 은 msrmnDt가 있어야 행이 생김 (측정일 비우고 저장하면 아무것도 안 만듦). 저장 후 detail.do 다시 조회해서 envSeq 받기
+3. envSeq 0 의 metKey : RE 화면만 필수(RE1·RE2·RE3), 나머지는 생략 가능. 표에 이미 행이 있으면 거부 (새로고침 안내)
+4. msrmnDt 빈 값이면 측정일 그대로(1번 경우). 온습도·이름·서명은 보낸 값으로 덮어씀 (빈 값은 지움)
+5. 측정일은 현재 일시까지, 성적서 발급일 이전만. 측정설비 교정일도 이 날짜로 체크. 거부되면 message 그대로 표시
+6. 시간 겹침·챔버 검사 안 함. 소요시간 빈칸
+7. 기술책임자 [삭제]는 그대로 (canDelete)
 
+### 저장 API 정리 (insert.do 의 envAction · envRows)
+| 화면 | 버튼 | envAction | envRows |
+|---|---|---|---|
+| 새 화면 | [시작] | START | envSeq 0 새 행 값 (+ 진행 중 다른 행) |
+| 새 화면 | [저장] | 빈 값 | 진행 중 행 (envSeq) |
+| 새 화면 | [종료] | END | 진행 중 행 (envSeq) |
+| 기존 화면 | [저장], 행 있음 | 빈 값 | envSeq + msrmnDt |
+| 기존 화면 | [저장], 행 없음 | 빈 값 | envSeq 0 + msrmnDt (+ RE는 metKey) |
+새 화면의 종료된 행은 envRows로 보내도 무시. 기존 화면 행(migYn 1·2)은 [시작]·[종료]와 상관없이 저장됨
+
+### [종료]
 같은 insert.do
 ```json
 "envAction": "END",

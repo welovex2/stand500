@@ -28,6 +28,9 @@ public interface RawEnvMapper {
   /** 시작: TEST_S_DT = NOW(), MEM_ID = 로그인 사용자. envSeq 채워짐 */
   void insertStart(RawEnv env);
 
+  /** 기존 화면 새 행: TEST_S_DT = TEST_E_DT = 측정일, MIG_YN = 2. envSeq 채워짐 */
+  void insertLegacy(RawEnv env);
+
   /** 종료: TEST_E_DT = NOW(). 진행 중 행만, 갱신 건수 반환 */
   int updateEnd(@Param("envSeq") int envSeq, @Param("udtMemId") String udtMemId);
 

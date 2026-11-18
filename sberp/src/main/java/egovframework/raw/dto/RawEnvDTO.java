@@ -38,7 +38,12 @@ public class RawEnvDTO {
         example = "12")
     private Integer zoneSeq;
 
-    @ApiModelProperty(value = "측정일시 yyyy-MM-dd HH:mm. 이관 행(migYn=1)만 사용 : 시작·종료를 이 값으로 저장, 빈 값이면 그대로",
+    @ApiModelProperty(value = "기존 화면 새 행(envSeq=0, envAction 빈 값)의 시험방법 표. RE만 필수(RE1·RE2·RE3), 표가 하나인 화면은 생략",
+        example = "RE1")
+    private String metKey;
+
+    @ApiModelProperty(value = "측정일시 yyyy-MM-dd HH:mm. 기존 방식 행(migYn 1·2)만 사용 : 시작·종료를 이 값으로 저장, 빈 값이면 그대로."
+        + " 기존 화면에서 envSeq=0 으로 보내면 표에 행이 없을 때 새 행(migYn=2)을 만든다",
         example = "2026-08-20 10:30")
     private String msrmnDt;
 

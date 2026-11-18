@@ -30,7 +30,7 @@
 --                      대상 컬럼 : TEST_S_DT, TEST_E_DT, TEMP, TEMP_PLUS, HMDT, HMDT_PLUS, BRMT, BRMT_PLUS, DEL_YN
 --                      변경 전 값이 없는 최초 입력(NULL·빈 값 → 값)은 남기지 않는다
 --                      → [종료] 클릭(TEST_E_DT NULL → 값)은 남지 않고, 기술책임자의 일시 수정은 남는다
---   이관 행(MIG_YN=1) 의 INSERT 는 기록하지 않는다
+--   이관 행(MIG_YN=1) 의 INSERT 는 기록하지 않는다 (기존 화면 입력 MIG_YN=2 는 기록)
 -- =====================================================================
 
 
@@ -74,7 +74,7 @@ CREATE TABLE RAW_ENV_TB (
     SIGN        MEDIUMTEXT    NULL     COMMENT '서명 (기존 METHOD_*.SIGN 과 같은 형식)',
     SIGN_URL    VARCHAR(500)  NULL     COMMENT '서명 URL',
 
-    MIG_YN      TINYINT       NOT NULL DEFAULT 0 COMMENT '기존 데이터 이관 행 (1이면 소요시간 표시 안 함)',
+    MIG_YN      TINYINT       NOT NULL DEFAULT 0 COMMENT '기존 방식 행 (0 일반, 1 이관, 2 기존 화면 입력). 0이 아니면 시작=종료, 소요시간 표시 안 함',
 
     DEL_YN      TINYINT       NOT NULL DEFAULT 0 COMMENT '삭제 여부 (중단·기술책임자 삭제)',
     DEL_REASON  VARCHAR(200)  NULL     COMMENT '중단/삭제 사유',
@@ -102,10 +102,10 @@ DROP TRIGGER IF EXISTS RAW_ENV_UDT_TG;
 
 DELIMITER ;;
 
--- 등록: 프로젝트완료 후 저장 기록 (이관 행 제외)
+-- 등록: 프로젝트완료 후 저장 기록 (이관 행 MIG_YN=1 제외, 기존 화면 입력 MIG_YN=2 는 기록)
 CREATE TRIGGER RAW_ENV_INS_TG AFTER INSERT ON RAW_ENV_TB FOR EACH ROW
 BEGIN
-    IF NEW.MIG_YN = 0 THEN
+    IF NEW.MIG_YN <> 1 THEN
         CALL RAW_DONE_EDIT_LOG(NEW.RAW_SEQ, NULL, 'RAW_ENV_TB', 'INSERT', NEW.INS_MEM_ID);
     END IF;
 END;;

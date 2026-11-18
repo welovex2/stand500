@@ -163,9 +163,12 @@ public class RawEnvServiceImpl implements RawEnvService {
           continue;
         }
         if (r.getEnvSeq() == 0) {
-          // 새 행 값은 [시작]일 때만 envMetKey 표의 새 행에 저장
+          // 새 행 값은 [시작]일 때 envMetKey 표의 새 행에 저장
           if (RawEnvDTO.ACTION_START.equals(act)) {
             newRowValues = r;
+          } else if (act == null && StringUtils.hasText(r.getMsrmnDt())) {
+            // 기존 화면(시작·종료 없음) [저장] : 측정일이 있으면 기존 방식 행을 새로 만든다
+            createLegacy(rawSeq, testSeq, r, allowed, allowedKeys, loginId);
           }
           continue;
         }
@@ -426,7 +429,42 @@ public class RawEnvServiceImpl implements RawEnvService {
   }
 
   /**
-   * 이관 행(MIG_YN=1, 기존 로데이터) 저장. 방법별 insert.do 의 envRows 로 들어온다.
+   * 기존 화면(시작·종료 없음) 새 행. 측정일이 비어 이관되지 않은 기존 로데이터에 측정일을 처음 넣을 때.
+   * 그 표에 살아있는 행이 없을 때만 만든다 (이미 있으면 envSeq 로 보내야 함). 시작=종료=측정일, MIG_YN=2.
+   * 검증은 이관 행 저장과 같다: 미래 불가, 성적서 발급일·측정설비 교정일, 시험기간 재계산. 시간 겹침·챔버 없음.
+   */
+  private void createLegacy(int rawSeq, int testSeq, RawEnvDTO.RowReq r, List<String> allowed,
+      String[] allowedKeys, String loginId) {
+    EnvMetKey key = !StringUtils.hasText(r.getMetKey()) && allowedKeys.length == 1
+        ? requireKey(allowedKeys[0]) : requireKey(r.getMetKey());
+    if (!allowed.contains(key.name())) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_MET_KEY);
+    }
+    if (!rawEnvMapper.selectList(rawSeq, key.name()).isEmpty()) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
+    }
+    LocalDateTime dt = parseDateTime(r.getMsrmnDt());
+    if (dt == null || dt.isAfter(LocalDateTime.now())) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
+    }
+
+    RawEnv env = new RawEnv();
+    env.setRawSeq(rawSeq);
+    env.setMetKey(key.name());
+    env.setRowNo(rawEnvMapper.selectNextRowNo(rawSeq, key.name()));
+    env.setTestSDt(dt);
+    env.setTestEDt(dt);
+    env.setInsMemId(loginId);
+    rawEnvMapper.insertLegacy(env);
+
+    RawEnv saved = rawEnvMapper.selectOne(env.getEnvSeq());
+    saveValues(saved, r.getTemp(), r.getTempPlus(), r.getHmdt(), r.getHmdtPlus(), r.getBrmt(),
+        r.getBrmtPlus(), r.getMemName(), r.getAtchFileId(), loginId);
+    afterDateChange(saved, rawSupport.resolveTestSeq(testSeq, rawSeq));
+  }
+
+  /**
+   * 기존 방식 행(MIG_YN 1 = 이관, 2 = 기존 화면 입력) 저장. 방법별 insert.do 의 envRows 로 들어온다.
    * 온습도·기압·이름·서명은 덮어쓰고, msrmnDt 가 있으면 시작=종료=측정일로 바꾼다 (같은 분이면 그대로).
    * 측정일은 미래 불가 + 성적서 발급일·측정설비 교정일 검증 + 시험기간 재계산. 시간 겹침·챔버는 보지 않는다.
    */
