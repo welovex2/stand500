@@ -476,11 +476,15 @@ public class RawEnvServiceImpl implements RawEnvService {
       return;
     }
     LocalDateTime dt = sameMinuteOrNew(parseDateTime(r.getMsrmnDt()), env.getTestSDt());
-    if (dt == null || dt.isAfter(LocalDateTime.now())) {
+    if (dt == null) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
     }
+    // 측정일이 그대로면 검증하지 않는다 (이관 데이터에 미래 측정일이 있어도 다른 값은 저장되게)
     if (dt.equals(env.getTestSDt()) && dt.equals(env.getTestEDt())) {
       return;
+    }
+    if (dt.isAfter(LocalDateTime.now())) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
     }
     if (rawEnvMapper.updateDates(env.getEnvSeq(), dt, dt, loginId) == 0) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
