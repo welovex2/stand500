@@ -1,157 +1,497 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>챔버 현황판</title>
+<title>시험장 현황판</title>
+<script>try { if (localStorage.getItem('chamberTheme') === 'dark') document.documentElement.classList.remove('light'); } catch (e) {}</script>
 <link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="monitor.css">
 </head>
 <body>
 <header>
-  <h1>챔버 현황판</h1>
-  <nav><a class="on" href="./">현황</a><a href="history.html">이력</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
-  <div class="right">
-    <span id="updated"></span>
-    <span id="who"></span>
-    <button id="logout">로그아웃</button>
-  </div>
+  <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
+  <nav><a class="on" href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
+  <div class="sigT"><b>시험장 현황판</b><span><i></i>실시간</span></div>
+  <div class="sp"></div>
+  <div class="sigC"><span id="sigD"></span><b id="sigH"></b><em id="sigS"></em></div>
+  <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
+  <button class="hbtn" id="monBtn" data-tip="모니터용 확대"><i class="ic ic-max"></i></button>
+  <div class="acct" id="acct"><div class="av" id="accAv"></div><div><div class="nm" id="who"></div><span class="rb" id="accRb"></span></div><span class="caret"><i class="ic ic-down"></i></span>
+    <div class="menu" id="menu"><button class="lo" id="logout">로그아웃</button></div></div>
 </header>
-<main>
-  <div id="notice"></div>
-  <div id="board"><p class="empty">불러오는 중...</p></div>
-</main>
 
-<dialog id="dlg">
-  <form id="dlgForm">
-    <h3>사용 등록</h3>
-    <label><span>구역</span><input id="dlgZone" readonly></label>
-    <label><span>용도</span><select id="dlgPurpose" required></select></label>
-    <label><span>메모 (업체명·내용, 200자)</span><textarea id="dlgMemo" rows="2" maxlength="200"></textarea></label>
-    <div class="err" id="dlgErr"></div>
-    <div class="btns">
-      <button type="button" id="dlgCancel">취소</button>
-      <button class="primary" id="dlgOk">사용 시작</button>
+<section id="board">
+  <div class="strip">
+    <div class="views" id="vTabs" hidden></div>
+    <div class="stat"><label>사용 중 시험장</label><b class="g" id="sOn">0</b><em id="sTot">/ 0</em></div>
+    <div class="stat"><label>진행 중</label><b id="sRun">0</b><em>건</em></div>
+    <div class="stat"><label id="sWLabel">장시간</label><b class="w" id="sW">0</b><em>건</em></div>
+    <div class="stat"><label>시험번호 미연결</label><b id="sE">0</b><em>건</em></div>
+    <div class="legend">
+      <span><i class="lg on"></i>사용 중</span>
+      <span><i class="lg link"></i>장비 이관</span>
+      <span><i class="lg warn"></i>장시간</span>
+      <span><i class="lg"></i>대기</span>
     </div>
-  </form>
-</dialog>
+    <div class="sync" id="sync"><i></i><span id="updated"></span></div>
+  </div>
+  <div id="notice"></div>
+  <div class="page"><div id="view"><p class="empty">불러오는 중...</p></div></div>
+</section>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
 <script>
 const POLL_MS = 30000;
-let me = null, loading = false, dlgZoneSeq = null;
+let me = null, loading = false, DATA = { chambers: [] }, VIEW = 'all';
+const USES = new Map();          // 화면에 그린 사용 건 (종료·삭제 팝업용)
+const $ = (id) => document.getElementById(id);
 
-function useHtml(u) {
-  const title = u.src === 'RAW'
-    ? `${esc(u.testId || '시험')} · ${esc(u.metKey)}`
-    : `${esc(u.purposeName)}`;
-  const sub = u.src === 'RAW' ? esc(u.prdctName) : esc(u.memo);
-  let html = `<div class="use"><div class="title">${title}</div>`;
-  if (sub) html += `<div class="meta">${sub}</div>`;
-  html += `<div class="meta">${esc(u.memName)} · ${esc(u.startDt)} 시작 · ${minText(u.elapsedMin)} 경과</div>`;
-  if (u.stale) {
-    html += `<div class="warn">${me.staleHours}시간 넘게 사용 중` +
-      (u.src === 'RAW' ? ' · ERP에서 종료하세요' : '') + `</div>`;
-  }
-  if (u.canEnd) {
-    html += `<div class="btns"><button data-end="${u.seq}">종료</button>` +
-      `<button class="danger" data-del="${u.seq}">삭제</button></div>`;
-  }
-  return html + '</div>';
+// 평면도 자리 [열, 행] (1층). 챔버 이름으로 찾는다 — 띄어쓰기·대소문자는 무시.
+// 층은 챔버 관리의 "층" (CHAMBER_TB.FLOOR). 1층 외의 층이 하나뿐이면 통합 화면 오른쪽 영역에,
+// 그 밖의 층과 평면도에 자리가 없는 1층 챔버는 평면도 아래에 층별로 놓인다.
+const PLAN = {
+  'RS#3': [1, 1], 'EMS#1': [2, 1], 'EMS#2': [3, 1], 'RS#2': [5, 1], 'CE': [6, 1], 'RS#4': [7, 1],
+  'DP/LLA': [2, 4], 'RE(ABOVE)': [3, 4], 'RE(3M)': [5, 3], 'RE(10M)': [5, 4],
+};
+const posOf = c => c.floor === 1 ? PLAN[c.chamberName.toUpperCase().replace(/\s+/g, '')] : null;
+
+const pad = n => String(n).padStart(2, '0');
+const hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+const usesOf = c => c.zones.flatMap(z => z.uses);
+const linkedOf = c => c.zones.flatMap(z => z.linked || []);
+const zoneBusy = z => z.uses.length > 0 || (z.linked || []).length > 0;
+const isBusy = c => c.zones.some(zoneBusy);
+// 단독 사용 시험장(RE (3m)·RE (10m)): 구역(항목)이 여러 개여도 한 번에 하나만 → 카드 하나 + 항목 선택
+const isSolo = c => !!c.soloYn && c.zones.length > 1;
+const isMulti = c => !isSolo(c) && (c.zones.length > 1 || c.zones.some(z => z.multiYn));
+// 상단 요약·층 탭의 "사용 중 시험장": 항목(구역) 1개 = 시험장 1개, 단독 사용 시험장은 1개 (기획 v7 집계 기준).
+// 장비 이관으로 점유된 시험장도 쓸 수 없으니 사용 중으로 센다
+const unitsIn = cs => cs.flatMap(c => isSolo(c) ? [isBusy(c)] : c.zones.map(zoneBusy));
+const busyText = (cs, sep) => { const u = unitsIn(cs); return `${u.filter(Boolean).length}${sep}${u.length}`; };
+const isRaw = u => u.src === 'RAW';
+const isTest = u => u.purpose === 'TEST';            // 현황판에서 시험번호를 골라 시작한 시험
+const hasTestNo = u => isRaw(u) || isTest(u);
+// ERP EnvMetKey 표시 이름 (raw/dto/EnvMetKey.java)
+const MET_LABEL = { CE: 'CE', RE1: 'RE (1)', RE2: 'RE (2)', RE3: 'RE (3)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST',
+  SURGE: 'SURGE', CS: 'CS', MF: 'M-Field', VDIP: 'V-Dip', CLK: 'CLICK', DP: 'DP', TEL: 'TEL' };
+const itemOf = u => isRaw(u) ? (MET_LABEL[u.metKey] || u.metKey || '시험') : isTest(u) ? '시험' : '시험장 점유';
+// 시안 v7_2: 시험번호 · 업체 / 시험번호 없음 · 사유
+const subOf = u => hasTestNo(u)
+  ? ([u.testId, u.cmpyName || u.prdctName].filter(Boolean).join(' · ') || '시험')
+  : ['시험번호 없음', u.purposeName, u.memo].filter(Boolean).join(' · ');
+const etcTag = () => '';
+const ZONES = new Map();         // zoneSeq → { c, z } (연계 대상 이름·사용 중 확인용)
+const zoneTitle = zs => { const h = ZONES.get(zs); return h ? h.c.chamberName + (h.z.zoneName ? ' / ' + h.z.zoneName : '') : ''; };
+
+// 'YYYY-MM-DD HH:MM' → 오늘이면 'HH:MM', 어제면 '전일 HH:MM', 그 전이면 'MM-DD HH:MM'
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function fromText(u) {
+  const d = new Date(), day = u.startDt.slice(0, 10);
+  const y = new Date(d); y.setDate(d.getDate() - 1);
+  return (day === ymd(d) ? u.startDt.slice(11) : day === ymd(y) ? '전일 ' + u.startDt.slice(11) : u.startDt.slice(5)) + ' 시작';
+}
+function startAttrs(c, z) {
+  return `data-start="${z.zoneSeq}" data-chamber="${c.chamberSeq}"`;
+}
+function endBtn(u, text) {
+  return u.canEnd ? `<button class="end" data-end="${u.seq}">${text}</button>` : '';
+}
+function staleNote(u) {
+  return u.stale && isRaw(u) ? '<div class="lnote">ERP에서 종료하세요</div>' : '';
+}
+// 이 구역을 쓰는 중이면 함께 점유한 구역 안내 (장비 이관)
+function linkNote(z) {
+  return z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="lnote lk">⇄ ${esc(zoneTitle(z.linkZoneSeq))} 장비 이관 받음</div>` : '';
 }
 
-function zoneHtml(c, z) {
-  const first = z.uses[0];
-  let cls = 'zone';
-  if (first) cls += first.src === 'RAW' ? ' raw' : ' etc';
-  if (z.uses.some(u => u.stale)) cls += ' stale';
-  const canStart = !me.monitorYn && (z.multiYn || !z.uses.length);
-  let html = `<div class="${cls}"><div class="name"><span>${esc(zoneLabel(z.zoneName))}` +
-    (z.multiYn ? ' <span class="tag">동시 사용</span>' : '') + `</span>`;
-  if (canStart) html += `<button data-start="${z.zoneSeq}" data-label="${esc(c.chamberName + (z.zoneName ? ' / ' + z.zoneName : ''))}">사용</button>`;
-  html += '</div>';
-  html += z.uses.length ? z.uses.map(useHtml).join('') : '<div class="empty">비어 있음</div>';
-  return html + '</div>';
+function slotOn(u, label, z) {
+  return `<div class="slot ${u.stale ? 'warn' : 'on'}"><span class="it">${label}</span>` +
+    `<span class="sw">${esc(u.memName)}</span><span class="t">${hm(u.elapsedMin)}</span>` +
+    `<div class="tno ${hasTestNo(u) ? '' : 'none'}">${esc(subOf(u))}${u.stale && isRaw(u) ? ' · ERP에서 종료하세요' : ''}</div>${endBtn(u, '종료')}${linkNote(z)}</div>`;
+}
+function slotLink(u, label) {
+  return `<div class="slot link"><span class="it">${label}</span><span class="sw">${esc(u.memName)}</span>` +
+    `<span class="t"></span><div class="tno">→ ${esc(u.linkFrom)}${u.linkZone ? ' / ' + esc(u.linkZone) : ''} 장비 이관 중</div></div>`;
 }
 
-function render(data) {
-  const board = document.getElementById('board');
-  if (!data.chambers.length) {
-    board.innerHTML = '<p class="empty">등록된 챔버가 없습니다. ERP 챔버 관리에서 등록하세요.</p>';
-    return;
+function card(c, free) {
+  const p = free ? null : posOf(c), st = p ? ` style="grid-column:${p[0]};grid-row:${p[1]}"` : '';
+  const writer = !me.monitorYn, us = usesOf(c), name = esc(c.chamberName);
+
+  if (isMulti(c)) {
+    const n = c.zones.filter(zoneBusy).length, w = us.some(u => u.stale), busy = n > 0;
+    const count = c.zones.length > 1 ? `${n} / ${c.zones.length}` : `${us.length}건`;
+    const slots = c.zones.map(z => {
+      const label = esc(zoneLabel(z.zoneName));
+      let h = z.uses.map(u => slotOn(u, label, z)).join('') + (z.linked || []).map(u => slotLink(u, label)).join('');
+      if (!zoneBusy(z) || z.multiYn) {
+        h += writer
+          ? `<button class="slot idle" ${startAttrs(c, z)}><span class="it">${label}</span><span class="add">＋ 시작</span></button>`
+          : (zoneBusy(z) ? '' : `<div class="slot idle"><span class="it">${label}</span><span class="wait">대기</span></div>`);
+      }
+      return h;
+    }).join('');
+    return `<div class="card multi ${busy ? (w ? 'warn' : 'on') : 'idle'}"${st}>` +
+      `<div class="head"><span class="name">${name}</span>` +
+      `<span class="pill ${busy ? (w ? 'warn' : 'on') : 'none'}">${busy ? '<i></i>' : ''}${count}</span></div>` +
+      `<div class="slots">${slots}</div></div>`;
   }
-  board.innerHTML = data.chambers.map(c =>
-    `<section class="chamber"><h2>${esc(c.chamberName)}</h2><div class="zones">` +
-    c.zones.map(z => zoneHtml(c, z)).join('') + '</div></section>').join('');
+
+  // 구역 하나, 또는 단독 사용 시험장 (쓰는 구역 = 시험 항목)
+  const z = c.zones.find(x => x.uses.length) || c.zones[0], u = z.uses[0];
+  if (u) {
+    const w = u.stale, item = isSolo(c) ? z.zoneName : itemOf(u);
+    return `<div class="card ${w ? 'warn' : 'on'}"${st}>` +
+      `<div class="head"><span class="name">${name}</span><span class="pill ${w ? 'warn' : 'on'}"><i></i>${w ? '장시간 사용' : '사용 중'}</span></div>` +
+      `<div class="meta"><span class="itm">${esc(item)}</span><span class="from">${esc(fromText(u))}</span></div>` +
+      `<div class="big">${hm(u.elapsedMin)}</div>` +
+      `<div class="who"><span>${esc(u.memName)}${etcTag(u)}</span>${endBtn(u, '사용 종료')}</div>` +
+      `<div class="tno ${hasTestNo(u) ? '' : 'none'}">${esc(subOf(u))}</div>${staleNote(u)}${linkNote(z)}</div>`;
+  }
+  // 다른 시험장 시험에 장비를 보낸 상태 (장비 이관 중): 여기서는 시작할 수 없다
+  const l = linkedOf(c)[0];
+  if (l) {
+    return `<div class="card link xcard"${st}>` +
+      `<div class="head"><span class="name">${name}</span><span class="pill on"><i></i>장비 이관</span></div>` +
+      `<div class="xbody"><div class="xto">→ ${esc(l.linkFrom)}</div>` +
+      `<div class="xfor">${esc(l.linkZone || itemOf(l))} 시험에 장비 이관 중</div>` +
+      `<div class="xsub">${esc(fromText(l).replace(' 시작', ''))}부터${hasTestNo(l) && l.testId ? ' · ' + esc(l.testId) : ''} · ${esc(l.memName)}</div>` +
+      `<div class="xsub">시험 종료 시 자동 해제</div></div></div>`;
+  }
+  const chips = isSolo(c) ? c.zones.map(x => x.zoneName) : (z.zoneName ? [z.zoneName] : []);
+  return `<div class="card idle"${st}><div class="head"><span class="name">${name}</span></div><div class="idle-body">` +
+    (chips.length ? `<div class="ichips">${chips.map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '') +
+    (writer ? `<button class="start" ${startAttrs(c, z)}>＋ 사용 시작</button>` : '<span class="wait">대기</span>') +
+    `</div></div>`;
 }
+
+function live(cs, wide) {
+  const rows = cs.flatMap(c => c.zones.flatMap(z => z.uses.map(u => ({ c, z, u }))))
+    .sort((a, b) => b.u.elapsedMin - a.u.elapsedMin);
+  return `<div class="live ${wide ? 'wide' : ''}"><h3>진행 중 <span class="mark" style="font-weight:500">${rows.length}건</span></h3><div class="lrs">` +
+    (rows.map(({ c, z, u }) => `<div class="lr ${u.stale ? 'warn' : ''}">` +
+      `<div class="a">${esc(c.chamberName)}<small>${esc(z.zoneName || itemOf(u))}</small></div>` +
+      `<div class="b">${esc(u.memName)}<small>${esc(subOf(u))}</small></div>` +
+      `<div class="c">${hm(u.elapsedMin)}</div></div>`).join('')
+      || '<div class="mark" style="padding:16px 0">진행 중인 사용이 없습니다</div>') + '</div></div>';
+}
+
+function render() {
+  const all = DATA.chambers, view = $('view');
+  USES.clear();
+  ZONES.clear();
+  all.forEach(c => {
+    usesOf(c).forEach(u => USES.set(u.src + u.seq, { u, c }));
+    c.zones.forEach(z => ZONES.set(z.zoneSeq, { c, z }));
+  });
+  const floors = [...new Set(all.map(c => c.floor))].sort((a, b) => a - b);
+  if (VIEW !== 'all' && !floors.includes(Number(VIEW))) VIEW = 'all';
+  const onFloor = f => all.filter(c => c.floor === f);
+  const placed = onFloor(1).filter(posOf);
+  // 통합 화면 오른쪽 영역에 둘 층: 1층 평면도가 있고, 1층 외의 층이 딱 하나일 때
+  const others = floors.filter(f => f !== 1);
+  const side = placed.length && others.length === 1 ? others[0] : null;
+
+  const used = cs => `사용 중 ${busyText(cs, ' / ')}`;
+  const section = (title, cs) => cs.length
+    ? `<div class="fh"><b>${title}</b><span>${used(cs)}</span></div><div class="cards">${cs.map(c => card(c, true)).join('')}</div>`
+    : '';
+  const decor = (badge) => '<div class="stair mark">계단</div>' +
+    `<div class="corridor mark">${badge ? '<span class="fbadge">1F</span>' : ''}<span style="margin-left:auto">출입구 →</span></div>` +
+    '<div class="pass mark">통로</div>';
+  const zone = f => {
+    const cs = onFloor(f);
+    return `<div class="f3zone"><span class="zlab"><b>${f}F</b> 시험장 · ${used(cs)}</span>` +
+      `<div class="f3grid ${cs.length === 3 ? 'three' : ''}">${cs.map(c => card(c, true)).join('')}</div></div>`;
+  };
+  const plan = (withSide, liveCs) => `<div class="floor" id="floor">${decor(withSide)}${placed.map(c => card(c)).join('')}` +
+    (withSide ? zone(side) + live(liveCs, true) : live(liveCs)) + '</div>';
+
+  let scope;
+  if (!all.length) {
+    scope = all;
+    view.innerHTML = '<p class="empty">등록된 챔버가 없습니다. 관리 화면에서 등록하세요.</p>';
+  } else if (VIEW === 'all') {
+    scope = all;
+    if (!placed.length) {
+      // 평면도 이름과 맞는 챔버가 없으면 층별로 순서대로만 보여 준다
+      view.innerHTML = floors.map(f => section(f + 'F', onFloor(f))).join('') + live(all);
+    } else {
+      view.innerHTML = plan(side !== null, all) +
+        section('1F 그 외', onFloor(1).filter(c => !posOf(c))) +
+        others.filter(f => f !== side).map(f => section(f + 'F', onFloor(f))).join('');
+    }
+  } else {
+    const f = Number(VIEW);
+    scope = onFloor(f);
+    if (f === 1 && placed.length) {
+      view.innerHTML = plan(false, scope) + section('1F 그 외', scope.filter(c => !posOf(c)));
+    } else {
+      view.innerHTML = `<div class="floor f3">${scope.map(c => card(c, true)).join('')}${live(scope)}</div>`;
+    }
+  }
+  fitView();
+
+  // 층 탭 (층이 둘 이상일 때만) · 통계. 진행 중 시험에는 장비 이관을 넣지 않는다
+  const tabs = $('vTabs');
+  tabs.hidden = floors.length < 2;
+  tabs.innerHTML = [['all', '통합', all], ...floors.map(f => [String(f), f + '층', onFloor(f)])]
+    .map(([v, label, cs]) => `<button data-v="${v}" class="${v === VIEW ? 'act' : ''}">${label} <em>${busyText(cs, '/')}</em></button>`)
+    .join('');
+  const us = scope.flatMap(usesOf), units = unitsIn(scope);
+  $('sOn').textContent = units.filter(Boolean).length;
+  $('sTot').textContent = '/ ' + units.length;
+  $('sRun').textContent = us.length;
+  $('sW').textContent = us.filter(u => u.stale).length;
+  $('sE').textContent = us.filter(u => !hasTestNo(u)).length;
+}
+
+// 평면도를 창 높이에 맞춘다 (넓은 화면에서만. 좁으면 CSS 가 순서대로 푼다)
+function fitView() {
+  const f = $('floor');
+  if (f) f.style.height = Math.max(640, innerHeight - f.getBoundingClientRect().top - scrollY - 20) + 'px';
+}
+window.addEventListener('resize', fitView);
 
 function notice(msg) {
-  const el = document.getElementById('notice');
-  el.textContent = msg || '';
-  el.classList.toggle('on', !!msg);
+  $('notice').textContent = msg || '';
+  $('notice').classList.toggle('on', !!msg);
+  $('sync').classList.toggle('off', !!msg);
 }
 
 async function load() {
   if (loading) return;            // 앞 요청이 끝나지 않았으면 건너뛴다
   loading = true;
   try {
-    render(await api('api/status'));
-    document.getElementById('updated').textContent = '갱신 ' + nowText();
+    DATA = await api('api/status');
+    render();
+    const d = new Date();
+    $('updated').textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]}) · 갱신 ${nowText()}`;
     notice('');
   } catch (e) {
-    const last = document.getElementById('updated').textContent || '갱신 기록 없음';
-    notice(`연결 끊김: ${e.message} (${last})`);
+    notice(`연결 끊김: ${e.message} (${$('updated').textContent || '갱신 기록 없음'})`);
   } finally {
     loading = false;
   }
 }
 
-async function act(path, body) {
-  try {
-    await api(path, body);
-  } catch (e) {
-    alert(e.message);
-  }
-  load();
+/* ---------------------------------------------------------------- 사용 시작 팝업
+   시험번호: 시험중인 EMC 시험 중 자동화 로데이터 규격이 아닌 것 (일반 사용자는 본인 담당만).
+   시험원: 일반 사용자는 본인, 기술책임자·관리자는 그 시험의 담당자 중에서 고른다.
+   시험번호 없이: 사유를 고른다. */
+let S = null, TESTS = null;      // 사용 시작 입력값, 시험번호 목록 (팝업을 열 때 새로 받는다)
+const closeM = () => $('ov').classList.remove('show');
+const mhead = (title, small) =>
+  `<div class="mh"><h3>${title}<small>${esc(small)}</small></h3><button class="mx" data-close aria-label="닫기">×</button></div>`;
+
+// 이 구역을 지금 시작할 수 없으면 이유 (같은 시험장 사용 중 / 연계 대상 사용 중)
+function blockOf(zoneSeq) {
+  const h = ZONES.get(zoneSeq);
+  if (!h) return '';
+  const { c, z } = h;
+  if (!z.multiYn && zoneBusy(z)) return '사용 중';
+  if (isSolo(c) && isBusy(c)) return '시험장 사용 중';
+  if (z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && zoneBusy(ZONES.get(z.linkZoneSeq).z)) return zoneTitle(z.linkZoneSeq) + ' 사용 중';
+  return '';
 }
 
-document.getElementById('board').addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  if (b.dataset.start) {
-    dlgZoneSeq = Number(b.dataset.start);
-    document.getElementById('dlgZone').value = b.dataset.label;
-    document.getElementById('dlgMemo').value = '';
-    document.getElementById('dlgErr').textContent = '';
-    document.getElementById('dlg').showModal();
-  } else if (b.dataset.end) {
-    if (confirm('사용을 종료할까요?')) act(`api/etc-use/${b.dataset.end}/end`, {});
-  } else if (b.dataset.del) {
-    const reason = prompt('삭제 사유를 입력하세요.');
-    if (reason && reason.trim()) act(`api/etc-use/${b.dataset.del}/delete`, { reason });
+function openStart(zoneSeq, chamberSeq) {
+  const c = DATA.chambers.find(x => x.chamberSeq === chamberSeq);
+  if (!c) return;
+  const solo = isSolo(c);
+  S = { c, solo, zoneSeq: solo ? null : zoneSeq, label: c.chamberName + (!solo && ZONES.get(zoneSeq).z.zoneName ? ' / ' + ZONES.get(zoneSeq).z.zoneName : ''),
+        noTest: false, test: null, memId: me.memId, purpose: '', q: '' };
+  if (solo) {
+    const open = c.zones.filter(z => !blockOf(z.zoneSeq));
+    if (open.length === 1) S.zoneSeq = open[0].zoneSeq;
   }
-});
+  TESTS = null;
+  drawStart();
+  $('ov').classList.add('show');
+  api('api/tests').then(d => { TESTS = d.tests; if (S && !S.test) drawList(); })
+    .catch(e => { TESTS = []; const l = $('mList'); if (l) l.innerHTML = `<div class="si dis">${esc(e.message)}</div>`; });
+}
 
-document.getElementById('dlgCancel').addEventListener('click', () => document.getElementById('dlg').close());
-document.getElementById('dlgForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const ok = document.getElementById('dlgOk'), err = document.getElementById('dlgErr');
+function drawStart() {
+  const c = S.c, z = S.zoneSeq ? ZONES.get(S.zoneSeq).z : null;
+  const items = S.solo ? `<div><label class="lb">시험 항목</label><div class="seg" id="mZone">${c.zones.map(x => {
+      const b = blockOf(x.zoneSeq);
+      return `<button type="button" data-zone="${x.zoneSeq}" class="${x.zoneSeq === S.zoneSeq ? 'act' : ''}" ${b ? 'disabled' : ''}>` +
+        `${esc(x.zoneName)}${b ? `<small>${esc(b)}</small>` : x.linkZoneSeq ? `<small>${esc(zoneTitle(x.linkZoneSeq))} 장비</small>` : ''}</button>`;
+    }).join('')}</div>${z && z.linkZoneSeq ? `<div class="mark lk" style="margin-top:8px">⇄ ${esc(zoneTitle(z.linkZoneSeq))}도 함께 [사용 중]으로 표시됩니다</div>` : ''}</div>`
+    : (z && z.linkZoneSeq ? `<div class="mark lk">⇄ ${esc(zoneTitle(z.linkZoneSeq))}도 함께 [사용 중]으로 표시됩니다</div>` : '');
+
+  let testBox;
+  if (S.noTest) {
+    testBox = `<div><label class="lb">사유</label><div class="seg" id="mPurpose">${me.purposes.map(p =>
+      `<button type="button" data-purpose="${esc(p.value)}" class="${S.purpose === p.value ? 'act' : ''}">${esc(p.label)}</button>`).join('')}</div></div>`;
+  } else if (S.test) {
+    testBox = `<div><label class="lb">시험번호</label><div class="picked"><div><b class="mono">${esc(S.test.testId)}</b>` +
+      `<span>${esc([S.test.cmpyName, S.test.prdctName].filter(Boolean).join(' · '))}</span></div><button type="button" class="ib x" id="mUnpick">✕ 삭제</button></div></div>`;
+  } else {
+    testBox = `<div><label class="lb" for="mQ">시험번호</label><div class="srch">` +
+      `<input class="inp w100 mono" id="mQ" placeholder="시험번호 · 업체명 · 제품명 입력" autocomplete="off" value="${esc(S.q)}">` +
+      `<div class="sl show" id="mList"></div></div>` +
+      `<div class="mark" style="margin-top:6px">${me.revYn ? '접수·시험중·디버깅인 EMC 시험' : '본인이 담당자인 접수·시험중·디버깅 시험'}만 나옵니다. ` +
+      `로데이터가 자동화된 시험은 ERP 로데이터 화면에서 [시작]하세요.</div></div>`;
+  }
+  const noTestChk = `<label class="chk"><input type="checkbox" id="mNoTest" ${S.noTest ? 'checked' : ''}> 시험번호 없이 시작 (점검·디버깅 등)</label>`;
+
+  let tester;
+  if (me.revYn && S.test && S.test.mngrs.length) {
+    tester = `<select class="inp w100" id="mMem">${S.test.mngrs.map(m =>
+      `<option value="${esc(m.memId)}" ${m.memId === S.memId ? 'selected' : ''}>${esc(m.memName)}</option>`).join('')}</select>` +
+      '<div class="mark" style="margin-top:6px">이 시험의 담당자 중에서 고릅니다</div>';
+  } else {
+    tester = `<div class="inp w100 ro">${esc(me.memName)}</div>` +
+      `<div class="mark" style="margin-top:6px">${me.revYn ? '시험번호를 고르면 담당자 중에서 고를 수 있습니다' : '본인 이름으로 시작합니다'}</div>`;
+  }
+
+  $('modal').innerHTML = mhead('사용 시작', S.label) +
+    `<div class="mb">${items}${testBox}${noTestChk}
+      <div><label class="lb">시험원</label>${tester}</div>
+      <div><label class="lb" for="mMemo">메모 (업체명·내용, 200자)</label><input class="inp w100" id="mMemo" maxlength="200" autocomplete="off" value="${esc(S.memo || '')}"></div>
+      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다.</div>
+      <div class="lerr" id="mErr"></div>
+    </div>
+    <div class="mf"><button class="btn sec" data-close>취소</button><button class="btn ok" id="mOk">사용 시작</button></div>`;
+  if (!S.noTest && !S.test) { drawList(); $('mQ').focus(); }
+}
+
+// 입력한 글자가 들어간 시험번호만, 일치하는 부분은 노랗게
+function drawList() {
+  const l = $('mList');
+  if (!l) return;
+  if (TESTS === null) { l.innerHTML = '<div class="si dis">불러오는 중...</div>'; return; }
+  const q = S.q.trim().toLowerCase();
+  const mark = s => {
+    const t = String(s || ''), i = q ? t.toLowerCase().indexOf(q) : -1;
+    return i < 0 ? esc(t) : esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' + esc(t.slice(i + q.length));
+  };
+  const hits = TESTS.filter(t => !q || (t.testId + ' ' + t.cmpyName + ' ' + t.prdctName).toLowerCase().includes(q)).slice(0, 50);
+  l.innerHTML = hits.map(t => `<div class="si" data-test="${t.testSeq}"><b class="mono">${mark(t.testId)}</b>` +
+    (t.stateName ? `<i class="st">${esc(t.stateName)}</i>` : '') +
+    `<span>${mark([t.cmpyName, t.prdctName].filter(Boolean).join(' · '))}</span><em>${esc(t.mngrs.map(m => m.memName).join(', '))}</em></div>`).join('')
+    || `<div class="si dis">${TESTS.length ? '맞는 시험번호가 없습니다' : '고를 수 있는 시험이 없습니다'}</div>`;
+}
+
+async function doStart() {
+  const err = $('mErr'), ok = $('mOk');
+  if (!S.zoneSeq) { err.textContent = '시험 항목을 선택하세요.'; return; }
+  if (!S.noTest && !S.test) { err.textContent = '시험번호를 고르거나 "시험번호 없이 시작"을 체크하세요.'; return; }
+  if (S.noTest && !S.purpose) { err.textContent = '사유를 선택하세요.'; return; }
+  const body = { zoneSeq: S.zoneSeq, memo: $('mMemo').value };
+  if (S.noTest) body.purpose = S.purpose;
+  else { body.testSeq = S.test.testSeq; if (me.revYn) body.memId = S.memId; }
   ok.disabled = true;
   try {
-    await api('api/etc-use/start', {
-      zoneSeq: dlgZoneSeq,
-      purpose: document.getElementById('dlgPurpose').value,
-      memo: document.getElementById('dlgMemo').value,
-    });
-    document.getElementById('dlg').close();
+    await api('api/etc-use/start', body);
+    closeM();
+    toast('사용을 시작했습니다');
     load();
   } catch (ex) {
     const b = ex.data && ex.data.busy;
     err.textContent = ex.message + (b
-      ? ` (${b.src === 'RAW' ? (b.testId || '시험') + ' ' + b.metKey : b.purposeName}, ${b.memName}, ${b.startDt} 시작)`
+      ? ` (${b.chamberName ? b.chamberName + ' · ' : ''}${b.testId || b.purposeName || b.metKey || ''} · ${b.memName}, ${b.startDt} 시작)`
       : '');
-  } finally {
     ok.disabled = false;
   }
+}
+
+function openEnd(seq) {
+  const hit = USES.get('ETC' + seq);
+  if (!hit) return;
+  const { u, c } = hit;
+  const z = c.zones.find(x => x.uses.includes(u));
+  $('modal').innerHTML = mhead('사용 종료', c.chamberName + (z && z.zoneName ? ' / ' + z.zoneName : '')) +
+    `<div class="mb"><div class="sum">
+      ${isTest(u) ? `<span>시험번호</span><div class="mono">${esc(u.testId || '-')}${u.cmpyName || u.prdctName ? ' · ' + esc(u.cmpyName || u.prdctName) : ''}</div>`
+                  : `<span>사유</span><div>${esc(u.purposeName)}</div>`}
+      ${u.memo ? `<span>메모</span><div>${esc(u.memo)}</div>` : ''}
+      <span>시험원</span><div>${esc(u.memName)}</div>
+      <span>시작</span><div>${esc(u.startDt)}</div>
+      <span>사용 시간</span><div class="bt">${minText(u.elapsedMin)}</div></div>
+      ${z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="mark lk">⇄ 함께 점유한 ${esc(zoneTitle(z.linkZoneSeq))}도 함께 풀립니다</div>` : ''}
+      <div id="mDelBox" hidden><label class="lb" for="mReason">삭제 사유</label><input class="inp w100" id="mReason" maxlength="200" placeholder="필수 · 잘못 등록한 기록만 삭제하세요" autocomplete="off"></div>
+      <div class="lerr" id="mErr"></div>
+    </div>
+    <div class="mf"><button class="btn del" id="mDel" data-seq="${u.seq}">기록 삭제</button>` +
+    `<button class="btn sec" data-close>취소</button><button class="btn dng" id="mEnd" data-seq="${u.seq}">사용 종료</button></div>`;
+  $('ov').classList.add('show');
+}
+
+async function act(path, body, done) {
+  try {
+    await api(path, body);
+    closeM();
+    toast(done);
+  } catch (e) {
+    $('mErr').textContent = e.message;
+  }
+  load();
+}
+
+$('view').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.start) openStart(Number(b.dataset.start), Number(b.dataset.chamber));
+  else if (b.dataset.end) openEnd(b.dataset.end);
+});
+
+$('modal').addEventListener('click', (e) => {
+  const si = e.target.closest('.si[data-test]');
+  if (si) {
+    S.test = TESTS.find(t => t.testSeq === Number(si.dataset.test)) || null;
+    // 시험원 기본값: 본인이 담당자면 본인, 아니면 첫 담당자
+    S.memId = S.test && me.revYn && !S.test.mngrs.some(m => m.memId === me.memId) && S.test.mngrs.length
+      ? S.test.mngrs[0].memId : me.memId;
+    drawStart();
+    return;
+  }
+  const b = e.target.closest('button');
+  if (!b) return;
+  if ('close' in b.dataset) closeM();
+  else if (b.dataset.zone) { S.zoneSeq = Number(b.dataset.zone); drawStart(); }
+  else if (b.dataset.purpose) { S.purpose = b.dataset.purpose; drawStart(); }
+  else if (b.id === 'mUnpick') { S.test = null; S.memId = me.memId; drawStart(); }
+  else if (b.id === 'mOk') doStart();
+  else if (b.id === 'mEnd') act(`api/etc-use/${b.dataset.seq}/end`, {}, '사용을 종료했습니다');
+  else if (b.id === 'mDel') {
+    // 첫 번째 누름: 사유 칸을 연다. 두 번째 누름: 삭제
+    const box = $('mDelBox'), reason = $('mReason');
+    if (box.hidden) { box.hidden = false; $('mEnd').hidden = true; reason.focus(); return; }
+    if (!reason.value.trim()) { $('mErr').textContent = '삭제 사유를 입력하세요.'; reason.focus(); return; }
+    act(`api/etc-use/${b.dataset.seq}/delete`, { reason: reason.value.trim() }, '기록을 삭제했습니다');
+  }
+});
+$('modal').addEventListener('change', (e) => {
+  if (e.target.id === 'mNoTest') { S.noTest = e.target.checked; S.test = null; S.memId = me.memId; drawStart(); }
+  else if (e.target.id === 'mMem') S.memId = e.target.value;
+});
+$('modal').addEventListener('input', (e) => {
+  if (e.target.id === 'mQ') { S.q = e.target.value; drawList(); }
+  else if (e.target.id === 'mMemo') S.memo = e.target.value;
+});
+$('modal').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.id === 'mMemo') doStart();
+});
+$('ov').addEventListener('click', (e) => { if (e.target === $('ov')) closeM(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeM(); });
+
+$('vTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) { VIEW = b.dataset.v; render(); }
+});
+
+// 모니터용 확대: 버튼을 숨기고 숫자를 키운다 (모니터 계정은 항상 이 상태)
+$('monBtn').addEventListener('click', () => {
+  const on = document.body.classList.toggle('monitor');
+  $('monBtn').dataset.tip = on ? '모니터 모드 해제' : '모니터용 확대';
+  fitView();
 });
 
 (async () => {
@@ -161,11 +501,13 @@ document.getElementById('dlgForm').addEventListener('submit', async (e) => {
     notice('연결 끊김: ' + e.message);
     return;
   }
-  document.getElementById('dlgPurpose').innerHTML =
-    me.purposes.map(p => `<option value="${esc(p.value)}">${esc(p.label)}</option>`).join('');
+  document.body.classList.toggle('monitor', me.monitorYn);
+  $('monBtn').hidden = me.monitorYn;
+  $('sWLabel').textContent = `장시간(${me.staleHours}시간↑)`;
   load();
   setInterval(load, POLL_MS);
 })();
 </script>
+<script src="monitor.js"></script>
 </body>
 </html>

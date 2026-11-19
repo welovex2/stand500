@@ -1,25 +1,31 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>챔버 관리</title>
+<script>try { if (localStorage.getItem('chamberTheme') === 'dark') document.documentElement.classList.remove('light'); } catch (e) {}</script>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header>
-  <h1>챔버 현황판</h1>
-  <nav><a href="./">현황</a><a href="history.html">이력</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
-  <div class="right">
-    <span id="who"></span>
-    <button id="logout">로그아웃</button>
-  </div>
+  <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
+  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
+  <div class="sp"></div>
+  <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
+  <div class="acct" id="acct"><div class="av" id="accAv"></div><div><div class="nm" id="who"></div><span class="rb" id="accRb"></span></div><span class="caret"><i class="ic ic-down"></i></span>
+    <div class="menu" id="menu"><button class="lo" id="logout">로그아웃</button></div></div>
 </header>
-<main class="admin">
-  <div id="notice"></div>
-  <div class="search">
-    <button class="primary" id="addChamber">챔버 추가</button>
-    <span class="empty">챔버와 구역은 지우지 않고 "사용 안 함"으로 숨깁니다. 시험방법을 빼면 ERP 측정 [시작]의 구역 목록에서 바로 빠집니다.</span>
+<div id="notice"></div>
+<main class="page admin">
+  <div class="h-top"><h2>챔버 관리</h2></div>
+  <div class="tools">
+    <div class="views" id="mode">
+      <button type="button" data-mode="chamber" class="act">챔버별</button>
+      <button type="button" data-mode="met">시험방법별</button>
+    </div>
+    <button class="btn pri" id="addChamber">챔버 추가</button>
+    <span class="mark">챔버와 구역은 지우지 않고 "사용 안 함"으로 숨깁니다. 시험방법을 빼면 ERP 측정 [시작]의 구역 목록에서 바로 빠집니다.</span>
   </div>
   <div id="list"><p class="empty">불러오는 중...</p></div>
 </main>
@@ -28,7 +34,9 @@
   <form id="chamberForm">
     <h3 id="chamberTitle">챔버</h3>
     <label><span>이름</span><input id="cName" maxlength="50" required></label>
-    <label><span>표시 순서</span><input id="cSort" type="number" min="0" max="32767" value="0" required></label>
+    <label><span>층</span><input id="cFloor" type="number" min="1" max="99" value="1" required></label>
+    <label><span>표시 순서 (같은 층 안에서)</span><input id="cSort" type="number" min="0" max="32767" value="0" required></label>
+    <label class="check"><input id="cSolo" type="checkbox"> 구역 단독 사용 (구역이 여러 개여도 한 번에 하나만. 예: RE (3m)의 RE (Below)·RE (Above))</label>
     <label class="check"><input id="cUse" type="checkbox"> 사용</label>
     <div class="err" id="cErr"></div>
     <div class="btns">
@@ -45,6 +53,7 @@
     <label><span>이름 (구역이 하나뿐이면 비워 둡니다)</span><input id="zName" maxlength="50"></label>
     <label><span>표시 순서</span><input id="zSort" type="number" min="0" max="32767" value="0" required></label>
     <label class="check"><input id="zMulti" type="checkbox"> 동시 사용 허용 (일반 시험실처럼 여러 건이 함께 쓰는 곳)</label>
+    <label><span>연계 구역 — 이 구역을 쓰면 함께 [사용 중]이 되는 다른 챔버 (장비 이관)</span><select id="zLink"></select></label>
     <label class="check"><input id="zUse" type="checkbox"> 사용</label>
     <label><span>이 구역에서 할 수 있는 시험방법</span><div class="mets" id="zMets"></div></label>
     <div class="err" id="zErr"></div>
@@ -58,6 +67,13 @@
 <script src="app.js"></script>
 <script>
 let data = { chambers: [], metKeys: [] };
+let MODE = 'chamber';                      // chamber: 챔버별 / met: 시험방법별
+try { if (localStorage.getItem('chamberAdminMode') === 'met') MODE = 'met'; } catch (e) { /* 기본값 */ }
+// ERP EnvMetKey 의 표시 이름 (raw/dto/EnvMetKey.java)
+const MET_LABEL = {
+  CE: 'CE', RE1: 'RE (1)', RE2: 'RE (2)', RE3: 'RE (3)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST', SURGE: 'SURGE',
+  CS: 'CS', MF: 'M-Field', VDIP: 'V-Dip', CLK: 'Click', DP: 'DP', TEL: 'TEL',
+};
 let editChamber = null, editZone = null;   // 수정 중인 번호 (null = 추가)
 const $ = (id) => document.getElementById(id);
 
@@ -66,28 +82,86 @@ function notice(msg) {
   $('notice').classList.toggle('on', !!msg);
 }
 
-function zoneRow(z) {
-  return `<tr class="${z.useYn ? '' : 'off'}"><td>${esc(zoneLabel(z.name))}</td>` +
-    `<td>${z.multiYn ? '허용' : '-'}</td><td>${esc(z.metKeys.join(', ') || '-')}</td><td>${z.sortNo}</td>` +
-    `<td>${z.useYn ? '사용' : '사용 안 함'}` +
-    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}건</span>` : '') + `</td>` +
-    `<td><button data-zone="${z.zoneSeq}">수정</button></td></tr>`;
+// 구역 번호 → "챔버 / 구역" (연계 구역 표시용)
+function zoneName(seq) {
+  for (const c of data.chambers) {
+    const z = c.zones.find(x => x.zoneSeq === seq);
+    if (z) return c.name + (z.name ? ' / ' + z.name : '');
+  }
+  return '';
 }
 
+function zoneRow(z) {
+  return `<tr class="${z.useYn ? '' : 'off'}"><td>${esc(zoneLabel(z.name))}</td>` +
+    `<td>${z.multiYn ? '허용' : '-'}</td><td>${z.linkZoneSeq ? '⇄ ' + esc(zoneName(z.linkZoneSeq)) : '-'}</td>` +
+    `<td>${esc(z.metKeys.join(', ') || '-')}</td><td>${z.sortNo}</td>` +
+    `<td>${z.useYn ? '사용' : '사용 안 함'}` +
+    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}건</span>` : '') + `</td>` +
+    `<td><button class="ib" data-zone="${z.zoneSeq}">수정</button></td></tr>`;
+}
+
+function chamberHtml(c) {
+  return `<section class="box lbox chamber"><div class="lbox-h"><div><b class="${c.useYn ? '' : 'off'}">${esc(c.name)}</b>` +
+    `<span class="badge">순서 ${c.sortNo}</span>` + (c.soloYn ? '<span class="badge">단독 사용</span>' : '') +
+    (c.useYn ? '' : '<span class="badge">사용 안 함</span>') + `</div>` +
+    `<div><button class="ib" data-chamber="${c.chamberSeq}">수정</button>` +
+    `<button class="ib" data-add-zone="${c.chamberSeq}">구역 추가</button></div></div>` +
+    `<div class="tablewrap"><table><thead><tr><th>구역</th><th>동시 사용</th><th>연계 구역</th><th>시험방법</th><th>순서</th><th>상태</th><th></th></tr></thead>` +
+    `<tbody>${c.zones.map(zoneRow).join('') || '<tr><td colspan="7" class="empty">구역이 없습니다. 구역을 나누지 않는 챔버도 구역 1개를 만드세요.</td></tr>'}</tbody></table></div></section>`;
+}
+
+// 구역 하나를 버튼으로 (누르면 구역 수정). 숨긴 구역·챔버는 흐리게
+function zoneChip(c, z) {
+  const off = !c.useYn || !z.useYn;
+  return `<button type="button" class="zchip${off ? ' off' : ''}" data-zone="${z.zoneSeq}" title="${off ? '사용 안 함 — ERP 목록에 나오지 않음' : '구역 수정'}">` +
+    `<span class="fbadge">${c.floor}F</span>${esc(c.name)}${z.name ? ` <small>${esc(z.name)}</small>` : ''}` +
+    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}</span>` : '') + '</button>';
+}
+
+// 시험방법별: 시험방법마다 고를 수 있는 구역 (= ERP 측정 [시작]의 구역 목록)
+function renderMet() {
+  const pairs = data.chambers.flatMap(c => c.zones.map(z => ({ c, z })));
+  const live = ({ c, z }) => c.useYn && z.useYn;
+  const rows = data.metKeys.map(k => {
+    const hit = pairs.filter(p => p.z.metKeys.includes(k));
+    const n = hit.filter(live).length;
+    return `<tr><td><b>${esc(MET_LABEL[k] || k)}</b><span class="co">${esc(k)}</span></td>` +
+      `<td class="dur">${n ? n : '<span class="nd">0</span>'}</td>` +
+      `<td class="zcell">${hit.length ? `<div class="zchips">${hit.map(p => zoneChip(p.c, p.z)).join('')}</div>`
+        : '<span class="nd">연결된 구역 없음 — ERP 측정 [시작]에서 고를 구역이 없습니다</span>'}</td></tr>`;
+  }).join('');
+  const none = pairs.filter(p => !p.z.metKeys.length);
+  $('list').innerHTML =
+    `<section class="box lbox chamber"><div class="lbox-h"><div><b>시험방법별 구역</b>` +
+    `<span class="s">ERP 측정 [시작]에서 시험방법마다 고를 수 있는 구역입니다. 구역을 누르면 수정합니다.</span></div></div>` +
+    `<div class="tablewrap"><table><thead><tr><th style="width:130px">시험방법</th><th style="width:90px">사용 구역</th><th>구역</th></tr></thead>` +
+    `<tbody>${rows}</tbody></table></div></section>` +
+    `<section class="box lbox chamber"><div class="lbox-h"><div><b>시험방법이 없는 구역</b>` +
+    `<span class="s">${none.length}곳 · 현황판 [사용]은 되지만 ERP 측정 [시작] 목록에는 나오지 않습니다</span></div></div>` +
+    `<div class="zpad">${none.length ? `<div class="zchips">${none.map(p => zoneChip(p.c, p.z)).join('')}</div>`
+      : '<span class="mark">없음</span>'}</div></section>`;
+}
+
+function setMode(m) {
+  MODE = m;
+  try { localStorage.setItem('chamberAdminMode', m); } catch (e) { /* 저장 못 해도 화면은 바뀐다 */ }
+  render();
+}
+
+// 챔버별은 층별로 묶는다 (서버가 층 → 표시 순서로 정렬해서 내려 준다)
 function render() {
+  $('mode').querySelectorAll('button').forEach(b => b.classList.toggle('act', b.dataset.mode === MODE));
   if (!data.chambers.length) {
     $('list').innerHTML = '<p class="empty">등록된 챔버가 없습니다.</p>';
     return;
   }
-  $('list').innerHTML = data.chambers.map(c =>
-    `<section class="chamber"><h2 class="${c.useYn ? '' : 'off'}">${esc(c.name)}` +
-    `<span class="badge">순서 ${c.sortNo}</span>` +
-    (c.useYn ? '' : '<span class="badge">사용 안 함</span>') +
-    `<button data-chamber="${c.chamberSeq}">수정</button>` +
-    `<button data-add-zone="${c.chamberSeq}">구역 추가</button></h2>` +
-    `<div class="tablewrap"><table><thead><tr><th>구역</th><th>동시 사용</th><th>시험방법</th><th>순서</th><th>상태</th><th></th></tr></thead>` +
-    `<tbody>${c.zones.map(zoneRow).join('') || '<tr><td colspan="6" class="empty">구역이 없습니다. 구역을 나누지 않는 챔버도 구역 1개를 만드세요.</td></tr>'}</tbody></table></div></section>`
-  ).join('');
+  if (MODE === 'met') { renderMet(); return; }
+  const floors = [...new Set(data.chambers.map(c => c.floor))];
+  $('list').innerHTML = floors.map(f => {
+    const cs = data.chambers.filter(c => c.floor === f);
+    return `<div class="fh"><b>${f}F</b><span>챔버 ${cs.length}개 · 사용 ${cs.filter(c => c.useYn).length}개</span></div>` +
+      cs.map(chamberHtml).join('');
+  }).join('');
 }
 
 async function load() {
@@ -120,7 +194,9 @@ function openChamber(c) {
   editChamber = c ? c.chamberSeq : null;
   $('chamberTitle').textContent = c ? '챔버 수정' : '챔버 추가';
   $('cName').value = c ? c.name : '';
+  $('cFloor').value = c ? c.floor : (data.chambers.length ? data.chambers[data.chambers.length - 1].floor : 1);
   $('cSort').value = c ? c.sortNo : 0;
+  $('cSolo').checked = c ? c.soloYn : false;
   $('cUse').checked = c ? c.useYn : true;
   $('cErr').textContent = '';
   $('chamberDlg').showModal();
@@ -129,11 +205,17 @@ function openChamber(c) {
 function openZone(z, chamberSeq) {
   editZone = z ? z.zoneSeq : null;
   $('zoneTitle').textContent = z ? '구역 수정' : '구역 추가';
-  $('zChamber').innerHTML = data.chambers.map(c => `<option value="${c.chamberSeq}">${esc(c.name)}</option>`).join('');
+  $('zChamber').innerHTML = data.chambers.map(c => `<option value="${c.chamberSeq}">${c.floor}F · ${esc(c.name)}</option>`).join('');
   $('zChamber').value = z ? z.chamberSeq : chamberSeq;
   $('zName').value = z ? z.name : '';
   $('zSort').value = z ? z.sortNo : 0;
   $('zMulti').checked = z ? z.multiYn : false;
+  // 연계 구역 후보: 다른 챔버의 구역 (동시 사용 허용 구역 제외)
+  const own = z ? z.chamberSeq : chamberSeq;
+  $('zLink').innerHTML = '<option value="">없음</option>' + data.chambers.filter(c => c.chamberSeq !== own)
+    .flatMap(c => c.zones.filter(x => !x.multiYn).map(x =>
+      `<option value="${x.zoneSeq}">${c.floor}F · ${esc(c.name)}${x.name ? ' / ' + esc(x.name) : ''}</option>`)).join('');
+  $('zLink').value = z && z.linkZoneSeq ? z.linkZoneSeq : '';
   $('zUse').checked = z ? z.useYn : true;
   const on = z ? z.metKeys : [];
   $('zMets').innerHTML = data.metKeys.map(k =>
@@ -143,6 +225,10 @@ function openZone(z, chamberSeq) {
 }
 
 $('addChamber').addEventListener('click', () => openChamber(null));
+$('mode').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) setMode(b.dataset.mode);
+});
 
 $('list').addEventListener('click', (e) => {
   const b = e.target.closest('button');
@@ -164,7 +250,9 @@ $('chamberForm').addEventListener('submit', (e) => {
   e.preventDefault();
   save(editChamber === null ? 'api/admin/chamber' : `api/admin/chamber/${editChamber}`, {
     name: $('cName').value,
+    floor: Number($('cFloor').value),
     sortNo: Number($('cSort').value),
+    soloYn: $('cSolo').checked,
     useYn: $('cUse').checked,
   }, $('cErr'), $('chamberDlg'));
 });
@@ -176,6 +264,7 @@ $('zoneForm').addEventListener('submit', (e) => {
     name: $('zName').value,
     sortNo: Number($('zSort').value),
     multiYn: $('zMulti').checked,
+    linkZoneSeq: $('zLink').value ? Number($('zLink').value) : null,
     useYn: $('zUse').checked,
     metKeys: [...$('zMets').querySelectorAll('input:checked')].map(i => i.value),
   }, $('zErr'), $('zoneDlg'));
@@ -184,10 +273,10 @@ $('zoneForm').addEventListener('submit', (e) => {
 (async () => {
   try {
     const me = await initPage();
-    if (!me.revYn) {
+    if (!me.adminMenu) {
       $('list').innerHTML = '';
       $('addChamber').disabled = true;
-      notice('챔버 관리는 기술책임자만 할 수 있습니다.');
+      notice('관리 메뉴는 P01 권한만 사용할 수 있습니다.');
       return;
     }
   } catch (e) {

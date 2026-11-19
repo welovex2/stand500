@@ -24,8 +24,17 @@ class Settings(BaseSettings):
     # 로그인 실패 한도. ERP(LoginController)와 같은 값이어야 한다 — 같은 MEMBER_TB.FAIL_PASS_CNT 를 센다
     login_fail_max: int = 10
 
-    stale_hours: int = 12           # 이 시간을 넘긴 사용 건은 현황판에서 강조
+    stale_hours: int = 10           # 이 시간을 넘긴 사용 건은 현황판에서 강조 (기획 v7: 10시간)
     history_limit: int = 500
+
+    # 로그인할 수 있는 부서 (MEMBER_TB.DEPT_SEQ). EMC 부서 = 5.
+    # 이 부서 + AUTH_CODE P04 → 기술책임자, 이 부서 → 일반 사용자, AUTH_CODE P01·P02 → 관리자 (부서 상관없음)
+    emc_dept_seq: int = 5
+    # 시험번호 목록에서 뺄 시험규격 (TEST_ITEM_TB.TEST_STNDR_SEQ). ERP 로데이터 화면이 있는(자동화된) 규격이라
+    # 측정 기록을 ERP 로데이터에서 남긴다. 프론트 test.js 의 로데이터 화면 분기와 같은 목록. 쉼표로 구분
+    rd_auto_stndr: str = "10,571,7,686,774,775,560,14"
+    # 시험번호 목록에 나오는 시험 상태 (TEST_TB.TEST_STATE_CODE, 공통코드 TS). 1 접수 / 2 시험중 / 3 디버깅
+    test_states: str = "1,2,3"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -38,8 +47,20 @@ if not settings.db_password.strip():
 if len(settings.session_secret.strip()) < 32:
     raise RuntimeError("환경변수 SESSION_SECRET 은 32자 이상이어야 합니다.")
 
-# 로데이터 외 사용 용도 (ERP 가 읽는 CHAMBER_ETC_USE_TB.PURPOSE 값. 바꿀 때는 ERP 쪽 라벨도 같이)
+RD_AUTO_STNDR = sorted({int(x) for x in settings.rd_auto_stndr.split(",") if x.strip()})
+TEST_STATES = sorted({int(x) for x in settings.test_states.split(",") if x.strip()})
+# 공통코드 TS 이름 (목록 표시용. 개발 ERP /cmm/comcode/list.do?code=TS 에서 확인, 2026-11-19)
+TEST_STATE_NAMES = {1: "접수", 2: "시험중", 3: "디버깅", 4: "홀딩", 5: "RD지연"}
+
+# 권한 (MEMBER_TB.AUTH_CODE)
+ADMIN_AUTH_CODES = ("P01", "P02")   # 관리자 — 부서 상관없이 들어오고, 기술책임자와 같은 일을 한다
+REV_AUTH_CODE = "P04"               # EMC 부서 + P04 = 기술책임자
+
+# 현황판 사용 용도 (ERP 가 읽는 CHAMBER_ETC_USE_TB.PURPOSE 값. 바꿀 때는 ERP 쪽 라벨도 같이)
+# TEST = 시험번호를 골라 시작한 시험. 나머지는 "시험번호 없이 사용"의 사유
+PURPOSE_TEST = "TEST"
 PURPOSES = {
+    PURPOSE_TEST: "시험",
     "PRE": "예비시험",
     "DEBUG": "고객 디버깅",
     "CHECK": "점검",

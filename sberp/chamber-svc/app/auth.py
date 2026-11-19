@@ -18,7 +18,7 @@ from typing import Optional
 from fastapi import HTTPException, Request, Response
 
 from . import db
-from .config import settings
+from .config import ADMIN_AUTH_CODES, REV_AUTH_CODE, settings
 
 COOKIE = "chamber_session"
 _KEY = settings.session_secret.encode()
@@ -79,13 +79,21 @@ def login(mem_id: str, password: str, response: Response) -> dict:
     if hmac.compare_digest(encrypt_password(member["ID"] + "300", member["ID"]), member["PASSWORD"] or ""):
         raise HTTPException(403, "초기 비밀번호입니다. ERP에서 비밀번호를 변경한 뒤 로그인하세요.")
 
-    db.login_succeeded(member["ID"])
     is_monitor = bool(settings.monitor_mem_id) and member["ID"] == settings.monitor_mem_id
+    role = "mon" if is_monitor else role_of(member)
+    if role is None:
+        raise HTTPException(403, "현황판은 EMC 부서만 사용할 수 있습니다.")
+
+    db.login_succeeded(member["ID"])
     max_age = settings.monitor_days * 86400 if is_monitor else settings.session_hours * 3600
     session = {
         "id": member["ID"],
         "name": member["MEM_NAME"] or member["ID"],
-        "rev": bool(member["REV_YN"]) and not is_monitor,
+        "role": role,
+        # 기술책임자·관리자: 다른 사람의 사용 종료·삭제, 시험원 선택, 챔버 관리
+        "rev": role in ("rev", "admin"),
+        # 관리 탭(챔버 관리)은 AUTH_CODE P01 만
+        "p01": (member.get("AUTH_CODE") or "").strip().upper() == "P01",
         "mon": is_monitor,
         "exp": int(time.time()) + max_age,
     }
@@ -94,6 +102,17 @@ def login(mem_id: str, password: str, response: Response) -> dict:
         httponly=True, secure=settings.cookie_secure, samesite="lax",
     )
     return session
+
+
+def role_of(member: dict) -> Optional[str]:
+    """admin(관리자: AUTH_CODE P01·P02, 부서 상관없음) / rev(기술책임자: EMC 부서 + P04) / user(EMC 부서).
+    그 밖의 부서는 None (로그인 거부)"""
+    auth_code = (member.get("AUTH_CODE") or "").strip().upper()
+    if auth_code in ADMIN_AUTH_CODES:
+        return "admin"
+    if member.get("DEPT_SEQ") != settings.emc_dept_seq:
+        return None
+    return "rev" if auth_code == REV_AUTH_CODE else "user"
 
 
 def logout(response: Response) -> None:
@@ -115,9 +134,17 @@ def require_writer(request: Request) -> dict:
     return session
 
 
+def require_p01(request: Request) -> dict:
+    """관리 탭(챔버 관리)은 AUTH_CODE P01 만"""
+    session = require_writer(request)
+    if not session.get("p01"):
+        raise HTTPException(403, "관리 메뉴는 P01 권한만 사용할 수 있습니다.")
+    return session
+
+
 def require_rev(request: Request) -> dict:
-    """기술책임자(MEMBER_TB.REV_YN=1)만. 챔버 관리에 쓴다."""
+    """기술책임자·관리자만. 챔버 관리에 쓴다."""
     session = require_writer(request)
     if not session.get("rev"):
-        raise HTTPException(403, "기술책임자만 할 수 있습니다.")
+        raise HTTPException(403, "기술책임자·관리자만 할 수 있습니다.")
     return session

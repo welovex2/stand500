@@ -1,21 +1,29 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>챔버 현황판 로그인</title>
+<title>시험장 현황판 로그인</title>
+<script>try { if (localStorage.getItem('chamberTheme') === 'dark') document.documentElement.classList.remove('light'); } catch (e) {}</script>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<form class="login" id="form">
-  <h1>챔버 현황판</h1>
-  <input id="id" placeholder="ERP 아이디" autocomplete="username" maxlength="20" required autofocus>
-  <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password" required>
-  <div class="err" id="err"></div>
-  <button class="primary" id="btn">로그인</button>
-</form>
+<section id="login">
+  <button class="hbtn lth" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
+  <form class="lcard" id="form">
+    <div class="logo"><img src="logo.svg" alt="Standard Bank"></div>
+    <h1>시험장 현황판</h1>
+    <p class="sub">ERP 계정으로 로그인하세요</p>
+    <input class="inp" id="id" placeholder="ERP 아이디" autocomplete="username" maxlength="20" required autofocus>
+    <input class="inp" id="pw" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+    <div class="lerr" id="err"></div>
+    <button class="btn pri lbtn" id="btn">로그인</button>
+    <div class="lfoot">비밀번호 변경·잠금 해제는 ERP에서 합니다</div>
+  </form>
+</section>
 <script src="app.js"></script>
 <script>
+initTheme();
 document.getElementById('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('btn'), err = document.getElementById('err');

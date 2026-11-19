@@ -1,5 +1,5 @@
 """
-erp 스키마를 읽고, CHAMBER_ETC_USE_TB(로데이터 외 사용)에만 쓴다. (MariaDB 10.1 — CTE 없음)
+erp 스키마를 읽고, CHAMBER_ETC_USE_TB(현황판 사용)·챔버 관리 테이블에만 쓴다. (MariaDB 10.1 — CTE 없음)
 다른 테이블은 계정 권한으로도 쓸 수 없다 (sql/chamber_svc_user.sql).
 
 "진행 중"의 정의는 ERP 와 같아야 한다 (docs/design/chamber-svc.md §2.2):
@@ -79,35 +79,65 @@ PRDCT_SQL = f"""(
      WHERE ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
      LIMIT 1)"""
 
+# 업체 (신청 업체)
+CMPY_SQL = f"""(
+    SELECT j.CMPY_NAME
+      FROM TEST_ITEM_TB ti
+           INNER JOIN JOB_TB j ON ti.QUO_YM = j.QUO_YM AND ti.QUO_SEQ = j.QUO_SEQ
+     WHERE ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+     LIMIT 1)"""
+
+# 측정 행의 시험원 이름: 시험자명(MEM_NAME)은 [종료] 때 들어가므로, 진행 중이면 [시작]을 누른 사람(MEM_ID)의 이름
+RAW_MEM_NAME = ("COALESCE(NULLIF(e.MEM_NAME, ''),"
+                " (SELECT mb.MEM_NAME FROM MEMBER_TB mb WHERE mb.ID = e.MEM_ID), e.MEM_ID)")
+
 RAW_ACTIVE = "e.DEL_YN = 0 AND e.MIG_YN = 0 AND e.TEST_S_DT IS NOT NULL AND e.TEST_E_DT IS NULL"
 ETC_ACTIVE = "x.DEL_YN = 0 AND x.END_DT IS NULL"
 
-# 진행 중인 사용 건 (측정 행 + 로데이터 외 사용)
+# 진행 중인 사용 건 (측정 행 + 현황판 사용). MEM_ID = 시험원 (측정 행은 [시작]을 누른 사람)
+# TEST_SEQ 는 현황판에서 시험번호를 골라 시작한 건만. 측정 행은 RAW_TB 를 거쳐 찾는다
 ACTIVE_UNION = f"""
-    SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, e.MET_KEY,
-           NULL AS PURPOSE, NULL AS MEMO, NULL AS MEM_ID, e.MEM_NAME, e.TEST_S_DT AS S_DT
+    SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, NULL AS TEST_SEQ, e.MET_KEY,
+           NULL AS PURPOSE, NULL AS MEMO, e.MEM_ID, {RAW_MEM_NAME} AS MEM_NAME, e.TEST_S_DT AS S_DT
       FROM RAW_ENV_TB e
      WHERE {RAW_ACTIVE} AND e.ZONE_SEQ IS NOT NULL
     UNION ALL
-    SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, NULL,
+    SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, x.TEST_SEQ, NULL,
            x.PURPOSE, x.MEMO, x.MEM_ID, x.MEM_NAME, x.START_DT
       FROM CHAMBER_ETC_USE_TB x
      WHERE {ETC_ACTIVE}"""
 
+# 구역 하나를 쓸 때 함께 점유되는 구역 (SRC_ZONE 을 쓰면 OCC_ZONE 들이 사용 중이 된다). ERP 와 같은 규칙.
+#   1) 자기 자신
+#   2) 연계 구역 (CHAMBER_ZONE_TB.LINK_ZONE_SEQ) — 장비 이관. 예: RE (3m)/RE (Above) → RE (Above) 챔버
+#   3) 단독 사용 챔버(CHAMBER_TB.SOLO_YN=1)의 다른 구역 — 예: RE (3m)는 RE (Below)·RE (Above) 중 하나만
+# 두 사용의 OCC_ZONE 이 하나라도 겹치면 함께 쓸 수 없다.
+OCC_SQL = """
+    SELECT z.ZONE_SEQ AS SRC_ZONE, z.ZONE_SEQ AS OCC_ZONE FROM CHAMBER_ZONE_TB z
+    UNION
+    SELECT z.ZONE_SEQ, z.LINK_ZONE_SEQ FROM CHAMBER_ZONE_TB z WHERE z.LINK_ZONE_SEQ IS NOT NULL
+    UNION
+    SELECT z.ZONE_SEQ, s.ZONE_SEQ
+      FROM CHAMBER_ZONE_TB z
+           INNER JOIN CHAMBER_TB sc ON sc.CHAMBER_SEQ = z.CHAMBER_SEQ AND sc.SOLO_YN = 1
+           INNER JOIN CHAMBER_ZONE_TB s ON s.CHAMBER_SEQ = z.CHAMBER_SEQ"""
+
 STATUS_SQL = f"""
-SELECT c.CHAMBER_SEQ, c.NAME AS CHAMBER_NAME, z.ZONE_SEQ, z.NAME AS ZONE_NAME, z.MULTI_YN,
+SELECT c.CHAMBER_SEQ, c.NAME AS CHAMBER_NAME, c.FLOOR, c.SOLO_YN,
+       z.ZONE_SEQ, z.NAME AS ZONE_NAME, z.MULTI_YN, z.LINK_ZONE_SEQ,
        u.SRC, u.SEQ, u.MET_KEY, u.PURPOSE, u.MEMO, u.MEM_ID, u.MEM_NAME, u.S_DT,
        TIMESTAMPDIFF(MINUTE, u.S_DT, NOW()) AS ELAPSED_MIN,
        {TEST_ID_SQL} AS TEST_ID,
-       {PRDCT_SQL} AS PRDCT_NAME
+       {PRDCT_SQL} AS PRDCT_NAME,
+       {CMPY_SQL} AS CMPY_NAME
   FROM CHAMBER_TB c
        INNER JOIN CHAMBER_ZONE_TB z ON z.CHAMBER_SEQ = c.CHAMBER_SEQ AND z.USE_YN = 1
        LEFT JOIN ({ACTIVE_UNION}
        ) u ON u.ZONE_SEQ = z.ZONE_SEQ
        LEFT JOIN RAW_TB r ON r.RAW_SEQ = u.RAW_SEQ
-       LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+       LEFT JOIN TEST_TB t ON t.TEST_SEQ = COALESCE(r.TEST_SEQ, u.TEST_SEQ)
  WHERE c.USE_YN = 1
- ORDER BY c.SORT_NO, c.CHAMBER_SEQ, z.SORT_NO, z.ZONE_SEQ, u.S_DT"""
+ ORDER BY c.FLOOR, c.SORT_NO, c.CHAMBER_SEQ, z.SORT_NO, z.ZONE_SEQ, u.S_DT"""
 
 
 def fetch_status() -> List[dict]:
@@ -119,50 +149,71 @@ def fetch_status() -> List[dict]:
 def fetch_chambers() -> List[dict]:
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
-            f"SELECT CHAMBER_SEQ, NAME FROM CHAMBER_TB WHERE USE_YN = 1 ORDER BY SORT_NO, CHAMBER_SEQ"
+            "SELECT CHAMBER_SEQ, NAME, FLOOR FROM CHAMBER_TB WHERE USE_YN = 1 ORDER BY FLOOR, SORT_NO, CHAMBER_SEQ"
         )
         return list(cur.fetchall())
 
 
-def fetch_history(date_from: date, date_to: date, chamber_seq: Optional[int], src: str) -> List[dict]:
-    """종료된 기록. 기간은 종료일 기준. history_limit + 1 건까지 읽는다."""
+def fetch_history(date_from: date, date_to: date, chamber_seq: Optional[int], src: str,
+                  include_deleted: bool = False, floor: Optional[int] = None) -> List[dict]:
+    """종료된 기록. 기간은 종료일 기준. history_limit + 1 건까지 읽는다.
+    include_deleted 이면 현황판에서 삭제한 로데이터 외 사용도 함께 (종료 전에 지운 건은 삭제일 기준).
+    측정 행(RAW_ENV_TB)의 삭제는 ERP 가 하므로 여기서 보여 주지 않는다."""
     dt_from = date_from.strftime("%Y-%m-%d")
     dt_to = (date_to + timedelta(days=1)).strftime("%Y-%m-%d")
     branches: List[str] = []
     params: list = []
     if src in ("", "RAW"):
         branches.append(f"""
-    SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, e.MET_KEY,
-           NULL AS PURPOSE, NULL AS MEMO, e.MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
+    SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, NULL AS TEST_SEQ, e.MET_KEY,
+           NULL AS PURPOSE, NULL AS MEMO, {RAW_MEM_NAME} AS MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT,
+           0 AS DEL_YN, NULL AS DEL_REASON, NULL AS DEL_MEM_ID, NULL AS DEL_DT
       FROM RAW_ENV_TB e
      WHERE e.DEL_YN = 0 AND e.MIG_YN = 0 AND e.ZONE_SEQ IS NOT NULL
        AND e.TEST_E_DT >= %s AND e.TEST_E_DT < %s""")
         params += [dt_from, dt_to]
-    if src in ("", "ETC"):
-        branches.append(f"""
-    SELECT 'ETC' AS SRC, x.USE_SEQ AS SEQ, x.ZONE_SEQ, NULL AS RAW_SEQ, NULL AS MET_KEY,
-           x.PURPOSE, x.MEMO, x.MEM_NAME, x.START_DT AS S_DT, x.END_DT AS E_DT
-      FROM CHAMBER_ETC_USE_TB x
-     WHERE x.DEL_YN = 0 AND x.END_DT >= %s AND x.END_DT < %s""")
+    if src in ("", "ETC", "TEST", "NOTEST"):
+        etc_where = "x.DEL_YN = 0 AND x.END_DT >= %s AND x.END_DT < %s"
+        if src == "TEST":       # 현황판에서 시험번호로 시작한 것
+            etc_where += " AND x.PURPOSE = 'TEST'"
+        elif src == "NOTEST":   # 시험번호 없이 사용
+            etc_where += " AND x.PURPOSE <> 'TEST'"
         params += [dt_from, dt_to]
+        if include_deleted:
+            etc_where = (f"(({etc_where}) OR (x.DEL_YN = 1"
+                         f" AND COALESCE(x.END_DT, x.DEL_DT) >= %s AND COALESCE(x.END_DT, x.DEL_DT) < %s))")
+            params += [dt_from, dt_to]
+        branches.append(f"""
+    SELECT 'ETC' AS SRC, x.USE_SEQ AS SEQ, x.ZONE_SEQ, NULL AS RAW_SEQ, x.TEST_SEQ, NULL AS MET_KEY,
+           x.PURPOSE, x.MEMO, x.MEM_NAME, x.START_DT AS S_DT, COALESCE(x.END_DT, x.DEL_DT) AS E_DT,
+           x.DEL_YN, x.DEL_REASON, x.DEL_MEM_ID, x.DEL_DT
+      FROM CHAMBER_ETC_USE_TB x
+     WHERE {etc_where}""")
 
-    where = ""
+    conds: List[str] = []
     if chamber_seq:
-        where = "WHERE c.CHAMBER_SEQ = %s"
+        conds.append("c.CHAMBER_SEQ = %s")
         params.append(chamber_seq)
+    if floor is not None:
+        conds.append("c.FLOOR = %s")
+        params.append(floor)
+    where = ("WHERE " + " AND ".join(conds)) if conds else ""
     params.append(settings.history_limit + 1)
 
     sql = f"""
-SELECT u.SRC, u.SEQ, c.NAME AS CHAMBER_NAME, z.NAME AS ZONE_NAME, u.MET_KEY, u.PURPOSE, u.MEMO,
+SELECT u.SRC, u.SEQ, c.NAME AS CHAMBER_NAME, c.FLOOR, z.NAME AS ZONE_NAME, u.MET_KEY, u.PURPOSE, u.MEMO,
        u.MEM_NAME, u.S_DT, u.E_DT, TIMESTAMPDIFF(MINUTE, u.S_DT, u.E_DT) AS USE_MIN,
+       u.DEL_YN, u.DEL_REASON, u.DEL_DT, COALESCE(m.MEM_NAME, u.DEL_MEM_ID) AS DEL_MEM_NAME,
        {TEST_ID_SQL} AS TEST_ID,
-       {PRDCT_SQL} AS PRDCT_NAME
+       {PRDCT_SQL} AS PRDCT_NAME,
+       {CMPY_SQL} AS CMPY_NAME
   FROM ({" UNION ALL ".join(branches)}
        ) u
        INNER JOIN CHAMBER_ZONE_TB z ON z.ZONE_SEQ = u.ZONE_SEQ
        INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ
        LEFT JOIN RAW_TB r ON r.RAW_SEQ = u.RAW_SEQ
-       LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+       LEFT JOIN TEST_TB t ON t.TEST_SEQ = COALESCE(r.TEST_SEQ, u.TEST_SEQ)
+       LEFT JOIN MEMBER_TB m ON m.ID = u.DEL_MEM_ID
  {where}
  ORDER BY u.E_DT DESC
  LIMIT %s"""
@@ -173,9 +224,26 @@ SELECT u.SRC, u.SEQ, c.NAME AS CHAMBER_NAME, z.NAME AS ZONE_NAME, u.MET_KEY, u.P
 
 # ---------------------------------------------------------------- 로데이터 외 사용
 
+_BUSY_COLS = f"""u.SRC, u.MET_KEY, u.PURPOSE, u.MEM_NAME, u.S_DT, {TEST_ID_SQL} AS TEST_ID,
+       uc.NAME AS CHAMBER_NAME, uz.NAME AS ZONE_NAME"""
+_BUSY_JOIN = """
+       INNER JOIN CHAMBER_ZONE_TB uz ON uz.ZONE_SEQ = u.ZONE_SEQ
+       INNER JOIN CHAMBER_TB uc ON uc.CHAMBER_SEQ = uz.CHAMBER_SEQ
+       LEFT JOIN RAW_TB r ON r.RAW_SEQ = u.RAW_SEQ
+       LEFT JOIN TEST_TB t ON t.TEST_SEQ = COALESCE(r.TEST_SEQ, u.TEST_SEQ)"""
+
+
+def occupied_zones(cur, zone_seq: int) -> List[int]:
+    """이 구역을 쓰면 함께 점유되는 구역 (자신 포함, 번호 순)"""
+    cur.execute(f"SELECT DISTINCT o.OCC_ZONE FROM ({OCC_SQL}\n) o WHERE o.SRC_ZONE = %s ORDER BY o.OCC_ZONE",
+                (zone_seq,))
+    return [int(r["OCC_ZONE"]) for r in cur.fetchall()]
+
+
 def start_etc_use(zone_seq: int, purpose: str, test_seq: Optional[int], memo: str,
-                  mem_id: str, mem_name: str) -> int:
-    """구역 행 잠금 → 사용 중 확인 → INSERT 를 한 트랜잭션에서 한다."""
+                  mem_id: str, mem_name: str, reg_mem_id: str) -> int:
+    """구역 잠금 → 사용 중 확인(연계·단독 사용 포함) → 1인 1시험 확인 → INSERT 를 한 트랜잭션에서 한다.
+    mem_id = 시험원, reg_mem_id = [사용 시작]을 누른 사람 (기술책임자·관리자가 시험원을 골라 시작한 경우 다름)"""
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
             f"SELECT ZONE_SEQ, MULTI_YN FROM CHAMBER_ZONE_TB WHERE ZONE_SEQ = %s AND USE_YN = 1",
@@ -186,37 +254,138 @@ def start_etc_use(zone_seq: int, purpose: str, test_seq: Optional[int], memo: st
             raise Reject(400, "사용할 수 없는 구역입니다.")
 
         if not zone["MULTI_YN"]:
-            # ERP 의 측정 [시작]도 같은 행을 잠근다. chamber-svc 는 이 행만 잠근다 (RAW_TB 는 잠그지 않는다)
-            cur.execute(
-                f"SELECT ZONE_SEQ FROM CHAMBER_ZONE_TB WHERE ZONE_SEQ = %s FOR UPDATE", (zone_seq,)
-            )
+            # 함께 점유되는 구역을 모두, 번호 순으로 잠근다. ERP 측정 [시작]도 같은 순서로 잠근다 (교착 방지)
+            # chamber-svc 는 구역만 잠근다 (RAW_TB 는 잠그지 않는다)
+            occ = occupied_zones(cur, zone_seq)
+            marks = ", ".join(["%s"] * len(occ))
+            cur.execute(f"SELECT ZONE_SEQ FROM CHAMBER_ZONE_TB WHERE ZONE_SEQ IN ({marks})"
+                        f" ORDER BY ZONE_SEQ FOR UPDATE", occ)
+            # 점유하는 구역이 하나라도 겹치는 진행 중 사용 (동시 사용 허용 구역의 사용은 제외)
             cur.execute(
                 f"""
-SELECT u.SRC, u.MET_KEY, u.PURPOSE, u.MEM_NAME, u.S_DT, {TEST_ID_SQL} AS TEST_ID
+SELECT {_BUSY_COLS}
   FROM ({ACTIVE_UNION}
-       ) u
-       LEFT JOIN RAW_TB r ON r.RAW_SEQ = u.RAW_SEQ
-       LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
- WHERE u.ZONE_SEQ = %s
+       ) u {_BUSY_JOIN}
+ WHERE uz.MULTI_YN = 0
+   AND u.ZONE_SEQ IN (SELECT o.SRC_ZONE FROM ({OCC_SQL}
+       ) o WHERE o.OCC_ZONE IN ({marks}))
  ORDER BY u.S_DT
  LIMIT 1""",
-                (zone_seq,),
+                occ,
             )
             busy = cur.fetchone()
             if busy:
                 conn.rollback()
-                raise Reject(409, "이미 사용 중인 구역입니다.", busy)
+                same = busy["CHAMBER_NAME"] == _chamber_name(cur, zone_seq)
+                raise Reject(409, "이미 사용 중인 시험장입니다." if same
+                             else f"{busy['CHAMBER_NAME']} 시험과 장비·시험장을 함께 쓰고 있어 시작할 수 없습니다.", busy)
+
+        # 1인 1시험: 같은 시험원이 진행 중인 측정 행·현황판 사용이 있으면 안 된다
+        cur.execute(
+            f"""
+SELECT {_BUSY_COLS}
+  FROM ({ACTIVE_UNION}
+       ) u {_BUSY_JOIN}
+ WHERE u.MEM_ID = %s
+ ORDER BY u.S_DT
+ LIMIT 1""",
+            (mem_id,),
+        )
+        mine = cur.fetchone()
+        if mine:
+            conn.rollback()
+            raise Reject(409, f"{mem_name} 님은 {mine['CHAMBER_NAME']}에서 진행 중인 시험이 있습니다. "
+                              f"한 사람은 한 번에 한 시험만 할 수 있습니다.", mine)
 
         cur.execute(
             f"""
 INSERT INTO CHAMBER_ETC_USE_TB
-       (ZONE_SEQ, PURPOSE, TEST_SEQ, MEMO, MEM_ID, MEM_NAME, START_DT, INS_DT)
-VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())""",
-            (zone_seq, purpose, test_seq, memo or None, mem_id, mem_name),
+       (ZONE_SEQ, PURPOSE, TEST_SEQ, MEMO, MEM_ID, MEM_NAME, REG_MEM_ID, START_DT, INS_DT)
+VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())""",
+            (zone_seq, purpose, test_seq, memo or None, mem_id, mem_name, reg_mem_id),
         )
         use_seq = cur.lastrowid
         conn.commit()
         return use_seq
+
+
+def _chamber_name(cur, zone_seq: int) -> str:
+    cur.execute("SELECT c.NAME FROM CHAMBER_ZONE_TB z INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ"
+                " WHERE z.ZONE_SEQ = %s", (zone_seq,))
+    row = cur.fetchone()
+    return row["NAME"] if row else ""
+
+
+# ---------------------------------------------------------------- 시험번호 (사용 시작 때 고를 목록)
+# 접수·시험중·디버깅(TEST_STATE_CODE 1·2·3, 설정 TEST_STATES) · EMC 시험(TEST_TYPE_CODE='EM') · 삭제 안 된 항목
+# · 자동화 로데이터 규격 제외.
+# 일반 사용자는 담당자(TEST_MNGR_TB)에 본인이 있는 시험만.
+
+def _test_where(mem_id: Optional[str]) -> tuple:
+    from .config import RD_AUTO_STNDR, TEST_STATES
+    states = ", ".join(["%s"] * len(TEST_STATES)) or "NULL"
+    marks = ", ".join(["%s"] * len(RD_AUTO_STNDR)) or "NULL"
+    where = (f"t.TEST_STATE_CODE IN ({states}) AND t.TEST_TYPE_CODE = 'EM' AND (ti.STATE IS NULL OR ti.STATE <> 'D')"
+             f" AND ti.TEST_STNDR_SEQ NOT IN ({marks})")
+    params: list = list(TEST_STATES) + list(RD_AUTO_STNDR)
+    if mem_id:
+        where += " AND EXISTS (SELECT 1 FROM TEST_MNGR_TB m WHERE m.TEST_SEQ = t.TEST_SEQ AND m.TEST_MNG_ID = %s)"
+        params.append(mem_id)
+    return where, params
+
+
+def fetch_tests(mem_id: Optional[str]) -> List[dict]:
+    """고를 수 있는 시험 + 담당자. mem_id 가 있으면 그 사람이 담당자인 시험만"""
+    where, params = _test_where(mem_id)
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            f"""
+SELECT t.TEST_SEQ, t.TEST_STATE_CODE, {TEST_ID_SQL} AS TEST_ID, {PRDCT_SQL} AS PRDCT_NAME, {CMPY_SQL} AS CMPY_NAME
+  FROM TEST_TB t
+       INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+ WHERE {where}
+ ORDER BY t.TEST_SEQ DESC
+ LIMIT 1000""",
+            params,
+        )
+        tests = list(cur.fetchall())
+        mngrs = _test_mngrs(cur, [r["TEST_SEQ"] for r in tests])
+    for r in tests:
+        r["MNGRS"] = mngrs.get(r["TEST_SEQ"], [])
+    return tests
+
+
+def fetch_test(test_seq: int, mem_id: Optional[str]) -> Optional[dict]:
+    """사용 시작 때 다시 확인: 고를 수 있는 시험인지 + 담당자"""
+    where, params = _test_where(mem_id)
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute(f"""
+SELECT t.TEST_SEQ, {TEST_ID_SQL} AS TEST_ID
+  FROM TEST_TB t
+       INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+ WHERE t.TEST_SEQ = %s AND {where}""", [test_seq] + params)
+        row = cur.fetchone()
+        if row:
+            row["MNGRS"] = _test_mngrs(cur, [test_seq]).get(test_seq, [])
+        return row
+
+
+def _test_mngrs(cur, test_seqs: List[int]) -> dict:
+    if not test_seqs:
+        return {}
+    marks = ", ".join(["%s"] * len(test_seqs))
+    cur.execute(f"""
+SELECT m.TEST_SEQ, m.TEST_MNG_ID AS ID, COALESCE(mb.MEM_NAME, m.TEST_MNG_ID) AS NAME
+  FROM TEST_MNGR_TB m
+       LEFT JOIN MEMBER_TB mb ON mb.ID = m.TEST_MNG_ID
+ WHERE m.TEST_SEQ IN ({marks}) AND m.TEST_MNG_ID IS NOT NULL AND m.TEST_MNG_ID <> ''
+ ORDER BY m.TEST_SEQ, m.TEST_MNGR_SEQ""", test_seqs)
+    out: dict = {}
+    for r in cur.fetchall():
+        lst = out.setdefault(r["TEST_SEQ"], [])
+        if all(x["ID"] != r["ID"] for x in lst):
+            lst.append({"ID": r["ID"], "NAME": r["NAME"]})
+    return out
 
 
 def _own_etc_use(cur, use_seq: int, mem_id: str, is_rev: bool) -> dict:
@@ -229,7 +398,7 @@ def _own_etc_use(cur, use_seq: int, mem_id: str, is_rev: bool) -> dict:
     if not row:
         raise Reject(404, "기록을 찾을 수 없습니다.")
     if row["MEM_ID"] != mem_id and not is_rev:
-        raise Reject(403, "기록한 사람 또는 기술책임자만 할 수 있습니다.")
+        raise Reject(403, "본인 시험이거나 기술책임자·관리자만 할 수 있습니다.")
     return row
 
 
@@ -265,10 +434,10 @@ def delete_etc_use(use_seq: int, reason: str, mem_id: str, is_rev: bool) -> None
 def fetch_admin_tree() -> dict:
     """숨긴 것까지 포함한 챔버·구역·매핑 전체와 구역별 진행 중 건수"""
     with connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT CHAMBER_SEQ, NAME, SORT_NO, USE_YN FROM CHAMBER_TB ORDER BY SORT_NO, CHAMBER_SEQ")
+        cur.execute("SELECT CHAMBER_SEQ, NAME, FLOOR, SOLO_YN, SORT_NO, USE_YN FROM CHAMBER_TB ORDER BY FLOOR, SORT_NO, CHAMBER_SEQ")
         chambers = list(cur.fetchall())
         cur.execute(
-            "SELECT ZONE_SEQ, CHAMBER_SEQ, NAME, MULTI_YN, SORT_NO, USE_YN FROM CHAMBER_ZONE_TB"
+            "SELECT ZONE_SEQ, CHAMBER_SEQ, NAME, MULTI_YN, LINK_ZONE_SEQ, SORT_NO, USE_YN FROM CHAMBER_ZONE_TB"
             " ORDER BY SORT_NO, ZONE_SEQ"
         )
         zones = list(cur.fetchall())
@@ -287,13 +456,15 @@ def _active_count(cur, zone_seqs: List[int]) -> int:
     return int(cur.fetchone()["CNT"])
 
 
-def save_chamber(chamber_seq: Optional[int], name: str, sort_no: int, use_yn: int,
+def save_chamber(chamber_seq: Optional[int], name: str, floor: int, solo_yn: int, sort_no: int, use_yn: int,
                  mem_id: str, force: bool) -> int:
+    """solo_yn=1: 구역이 여러 개여도 한 번에 한 구역만 쓴다 (예: RE (3m)의 RE (Below)·RE (Above))"""
     with connect() as conn, conn.cursor() as cur:
         if chamber_seq is None:
             cur.execute(
-                "INSERT INTO CHAMBER_TB (NAME, SORT_NO, USE_YN, INS_MEM_ID, INS_DT) VALUES (%s, %s, %s, %s, NOW())",
-                (name, sort_no, use_yn, mem_id),
+                "INSERT INTO CHAMBER_TB (NAME, FLOOR, SOLO_YN, SORT_NO, USE_YN, INS_MEM_ID, INS_DT)"
+                " VALUES (%s, %s, %s, %s, %s, %s, NOW())",
+                (name, floor, solo_yn, sort_no, use_yn, mem_id),
             )
             chamber_seq = cur.lastrowid
         else:
@@ -307,26 +478,37 @@ def save_chamber(chamber_seq: Optional[int], name: str, sort_no: int, use_yn: in
                 if cnt:
                     raise Reject(409, f"이 챔버에 사용 중인 건이 {cnt}건 있습니다. 그래도 숨길까요?", {"confirm": True})
             cur.execute(
-                "UPDATE CHAMBER_TB SET NAME = %s, SORT_NO = %s, USE_YN = %s, UDT_MEM_ID = %s, UDT_DT = NOW()"
-                " WHERE CHAMBER_SEQ = %s",
-                (name, sort_no, use_yn, mem_id, chamber_seq),
+                "UPDATE CHAMBER_TB SET NAME = %s, FLOOR = %s, SOLO_YN = %s, SORT_NO = %s, USE_YN = %s,"
+                " UDT_MEM_ID = %s, UDT_DT = NOW() WHERE CHAMBER_SEQ = %s",
+                (name, floor, solo_yn, sort_no, use_yn, mem_id, chamber_seq),
             )
         conn.commit()
         return chamber_seq
 
 
-def save_zone(zone_seq: Optional[int], chamber_seq: int, name: str, multi_yn: int, sort_no: int,
-              use_yn: int, met_keys: List[str], mem_id: str, force: bool) -> int:
-    """구역과 시험방법 매핑을 한 트랜잭션에서 저장한다."""
+def save_zone(zone_seq: Optional[int], chamber_seq: int, name: str, multi_yn: int, link_zone_seq: Optional[int],
+              sort_no: int, use_yn: int, met_keys: List[str], mem_id: str, force: bool) -> int:
+    """구역과 시험방법 매핑을 한 트랜잭션에서 저장한다.
+    link_zone_seq: 이 구역을 쓰면 함께 점유되는 구역 (장비 이관. 다른 챔버의 구역만)"""
     with connect() as conn, conn.cursor() as cur:
         cur.execute("SELECT CHAMBER_SEQ FROM CHAMBER_TB WHERE CHAMBER_SEQ = %s", (chamber_seq,))
         if not cur.fetchone():
             raise Reject(400, "챔버를 찾을 수 없습니다.")
+        if link_zone_seq is not None:
+            cur.execute("SELECT CHAMBER_SEQ, MULTI_YN, LINK_ZONE_SEQ FROM CHAMBER_ZONE_TB WHERE ZONE_SEQ = %s",
+                        (link_zone_seq,))
+            target = cur.fetchone()
+            if not target or target["CHAMBER_SEQ"] == chamber_seq:
+                raise Reject(400, "연계 구역은 다른 챔버의 구역이어야 합니다.")
+            if target["MULTI_YN"] or multi_yn:
+                raise Reject(400, "동시 사용 허용 구역은 연계할 수 없습니다.")
+            if target["LINK_ZONE_SEQ"] is not None:
+                raise Reject(400, "연계 구역이 또 다른 구역과 연계되어 있으면 안 됩니다 (한 단계만).")
         if zone_seq is None:
             cur.execute(
-                "INSERT INTO CHAMBER_ZONE_TB (CHAMBER_SEQ, NAME, MULTI_YN, SORT_NO, USE_YN, INS_MEM_ID, INS_DT)"
-                " VALUES (%s, %s, %s, %s, %s, %s, NOW())",
-                (chamber_seq, name, multi_yn, sort_no, use_yn, mem_id),
+                "INSERT INTO CHAMBER_ZONE_TB (CHAMBER_SEQ, NAME, MULTI_YN, LINK_ZONE_SEQ, SORT_NO, USE_YN,"
+                " INS_MEM_ID, INS_DT) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())",
+                (chamber_seq, name, multi_yn, link_zone_seq, sort_no, use_yn, mem_id),
             )
             zone_seq = cur.lastrowid
             old_keys: set = set()
@@ -341,9 +523,9 @@ def save_zone(zone_seq: Optional[int], chamber_seq: int, name: str, multi_yn: in
                 if cnt:
                     raise Reject(409, f"이 구역에 사용 중인 건이 {cnt}건 있습니다. 그래도 숨길까요?", {"confirm": True})
             cur.execute(
-                "UPDATE CHAMBER_ZONE_TB SET CHAMBER_SEQ = %s, NAME = %s, MULTI_YN = %s, SORT_NO = %s, USE_YN = %s,"
-                " UDT_MEM_ID = %s, UDT_DT = NOW() WHERE ZONE_SEQ = %s",
-                (chamber_seq, name, multi_yn, sort_no, use_yn, mem_id, zone_seq),
+                "UPDATE CHAMBER_ZONE_TB SET CHAMBER_SEQ = %s, NAME = %s, MULTI_YN = %s, LINK_ZONE_SEQ = %s,"
+                " SORT_NO = %s, USE_YN = %s, UDT_MEM_ID = %s, UDT_DT = NOW() WHERE ZONE_SEQ = %s",
+                (chamber_seq, name, multi_yn, link_zone_seq, sort_no, use_yn, mem_id, zone_seq),
             )
             cur.execute("SELECT MET_KEY FROM CHAMBER_ZONE_MET_TB WHERE ZONE_SEQ = %s", (zone_seq,))
             old_keys = {r["MET_KEY"] for r in cur.fetchall()}
@@ -363,7 +545,7 @@ def fetch_member(mem_id: str) -> Optional[dict]:
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
             f"""
-SELECT ID, PASSWORD, MEM_NAME, LOCK_YN, REV_YN, FAIL_PASS_CNT,
+SELECT ID, PASSWORD, MEM_NAME, LOCK_YN, DEPT_SEQ, AUTH_CODE, FAIL_PASS_CNT,
        IF(QUIT_DT IS NOT NULL AND QUIT_DT > '1900-01-01' AND QUIT_DT <= NOW(), 1, 0) AS QUIT_YN
   FROM MEMBER_TB
  WHERE ID = %s""",

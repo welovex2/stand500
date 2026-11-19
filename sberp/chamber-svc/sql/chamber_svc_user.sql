@@ -1,6 +1,6 @@
 -- =====================================================================
 -- chamber-svc 전용 계정 (MariaDB 10.1, schema erp)
--- 쓰는 곳: 로데이터 외 사용, 챔버 관리 테이블 3개, MEMBER_TB 의 로그인 실패 컬럼 2개. 나머지는 읽기만.
+-- 쓰는 곳: 현황판 사용(CHAMBER_ETC_USE_TB), 챔버 관리 테이블 3개, MEMBER_TB 의 로그인 실패 컬럼 2개. 나머지는 읽기만.
 -- 먼저 있어야 하는 테이블 (ERP 의 CHAMBER_TB.sql. 개발 DB 는 dev_seed.sql 이 임시로 만든다):
 --   CHAMBER_TB, CHAMBER_ZONE_TB, CHAMBER_ZONE_MET_TB, CHAMBER_ETC_USE_TB, RAW_ENV_TB.ZONE_SEQ
 -- '<비밀번호>' 를 바꿔서 실행하고, 같은 값을 compose .env 의 CHAMBER_DB_PASSWORD 에 넣는다.
@@ -17,6 +17,7 @@ GRANT SELECT ON erp.RAW_TB       TO 'chamber_svc'@'%';
 GRANT SELECT ON erp.TEST_TB      TO 'chamber_svc'@'%';
 GRANT SELECT ON erp.TEST_ITEM_TB TO 'chamber_svc'@'%';
 GRANT SELECT ON erp.JOB_TB       TO 'chamber_svc'@'%';
+GRANT SELECT ON erp.TEST_MNGR_TB TO 'chamber_svc'@'%';   -- 시험 담당자 (사용 시작 때 시험번호 목록·시험원 선택)
 
 -- 로데이터 외 사용 (DELETE 없음 — 삭제는 DEL_YN)
 GRANT SELECT, INSERT, UPDATE ON erp.CHAMBER_ETC_USE_TB TO 'chamber_svc'@'%';
@@ -28,7 +29,8 @@ GRANT SELECT, INSERT, UPDATE ON erp.CHAMBER_ZONE_TB     TO 'chamber_svc'@'%';
 GRANT SELECT, INSERT, DELETE ON erp.CHAMBER_ZONE_MET_TB TO 'chamber_svc'@'%';
 
 -- 로그인: 확인에 쓰는 컬럼만 읽고, 실패 횟수·잠금 컬럼만 고친다 (ERP 와 같은 컬럼을 함께 쓴다)
-GRANT SELECT (ID, PASSWORD, MEM_NAME, LOCK_YN, REV_YN, QUIT_DT, FAIL_PASS_CNT) ON erp.MEMBER_TB TO 'chamber_svc'@'%';
+-- DEPT_SEQ·AUTH_CODE: 권한 판단 (EMC 부서 = 일반 사용자, + P04 = 기술책임자, P01·P02 = 관리자)
+GRANT SELECT (ID, PASSWORD, MEM_NAME, LOCK_YN, REV_YN, QUIT_DT, FAIL_PASS_CNT, DEPT_SEQ, AUTH_CODE) ON erp.MEMBER_TB TO 'chamber_svc'@'%';
 GRANT UPDATE (FAIL_PASS_CNT, LOCK_YN) ON erp.MEMBER_TB TO 'chamber_svc'@'%';
 
 FLUSH PRIVILEGES;

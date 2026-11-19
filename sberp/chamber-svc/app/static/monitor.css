@@ -1,0 +1,215 @@
+/* 모니터 모드 스킨 (1층 대형 화면 상시 표출용). index.html 에서만 읽는다.
+   body.monitor 일 때만 적용된다: 모니터 계정은 항상, 그 밖의 계정은 [모니터용 확대] 버튼을 눌렀을 때.
+   다크·라이트는 따로 고른다 (화면 기능 정의서 SC-14). 다크 + 모니터일 때만 아래 어두운 색을 쓴다.
+   크기는 화면 비율 단위(--u)로 잡아 1920x1080 · 1680x960 · 4K 에서 같은 배치가 된다. */
+.sigT,.sigC,.pips{display:none}
+body.monitor{
+  /* 화면 크기에 비례하는 단위 (1920x1080 에서 19.2px). 4K 에서도 같은 비율로 커진다 */
+  --u:min(1vw,1.78vh);
+  --num:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;   /* 숫자도 같은 글꼴. 자리 폭은 tabular-nums 로 고정 */
+  min-height:100vh; overflow:hidden; color:var(--text);
+}
+/* 다크 + 모니터 (SC-14: 다크·모니터는 따로 켜는 옵션. 라이트 + 모니터는 기본 라이트 색을 그대로 쓴다) */
+html:not(.light) body.monitor{
+  --bg:#060a13; --hdr:transparent; --strip:transparent; --panel:#0d1424; --card:#0f1728; --sunk:#0a101c; --soft:#141d30; --hover:#121a28;
+  --line:#1c2740; --line2:#2a3856; --text:#eef3ff; --sub:#b7c3da; --muted:#8a97b3; --dim:#56627f; --idle:#7683a0;
+  --on:#34e08a; --onTxt:#8dffc8; --onBg1:#0f3324; --onBg2:#0a1f18; --onGlow:rgba(52,224,138,.20);
+  --warn:#ffb224; --warnTxt:#ffd685; --warnBg1:#3b2a08; --warnBg2:#221905; --warnGlow:rgba(255,178,36,.22);
+  --multiOn:#0e1829; --multiWarn:#1a1810; --tagBg:rgba(91,157,255,.16); --tagTxt:#a9c8ff;
+  --accent:#5b9dff; --shadow:rgba(0,0,0,.6);
+  --numGlow:0 0 calc(var(--u)*1.2) rgba(52,224,138,.45); --numGlowW:0 0 calc(var(--u)*1.2) rgba(255,178,36,.4);
+  --z3line:rgba(139,116,255,.5); --z3bg:rgba(139,116,255,.06); --z3txt:#a996ff;
+  background:
+    radial-gradient(60vw 45vh at 8% -12%,rgba(52,224,138,.10),transparent 62%),
+    radial-gradient(55vw 50vh at 104% -8%,rgba(91,157,255,.13),transparent 60%),
+    radial-gradient(70vw 40vh at 50% 115%,rgba(139,116,255,.07),transparent 60%),
+    #060a13;
+}
+body.monitor.nocur,body.monitor.nocur *{cursor:none!important}
+
+/* 머리글: 로고 · 제목 · 시계 */
+body.monitor>header{position:relative;height:calc(var(--u)*3.7);padding:0 calc(var(--u)*1.4);gap:calc(var(--u)*.9);background:transparent;border-bottom:0}
+body.monitor>header::after{content:"";position:absolute;left:calc(var(--u)*1.4);right:calc(var(--u)*1.4);bottom:0;height:1px;
+  background:linear-gradient(90deg,var(--on),rgba(91,157,255,.6) 28%,var(--line) 60%,transparent)}
+body.monitor>header .logo{height:calc(var(--u)*1.55);padding:calc(var(--u)*.1) calc(var(--u)*.3);border-radius:calc(var(--u)*.3)}
+/* 테마·모니터 버튼과 계정 영역은 남긴다 (SC-02 ⑤⑥, SC-10). 표출 중에는 눈에 덜 띄게 */
+body.monitor .hbtn{opacity:.35;border-color:transparent;width:calc(var(--u)*1.7);height:calc(var(--u)*1.6);font-size:calc(var(--u)*.8)}
+body.monitor .hbtn:hover{opacity:1;border-color:var(--line2)}
+body.monitor .acct{gap:calc(var(--u)*.45);padding-left:calc(var(--u)*.8);opacity:.7}
+body.monitor .acct .av{width:calc(var(--u)*1.5);height:calc(var(--u)*1.5);font-size:calc(var(--u)*.6)}
+body.monitor .acct .nm{font-size:calc(var(--u)*.66)}
+body.monitor .acct .rb{font-size:calc(var(--u)*.52);padding:0 calc(var(--u)*.3)}
+body.monitor .sigT{display:flex;align-items:baseline;gap:calc(var(--u)*.7);padding-left:calc(var(--u)*.9);border-left:1px solid var(--line2);white-space:nowrap}
+body.monitor .sigT b{font-size:calc(var(--u)*1.55);font-weight:800;letter-spacing:-.01em}
+body.monitor .sigT span{font-size:calc(var(--u)*.7);color:var(--muted);display:flex;align-items:center;gap:calc(var(--u)*.35)}
+body.monitor .sigT span i{width:calc(var(--u)*.42);height:calc(var(--u)*.42);border-radius:50%;background:var(--on);box-shadow:0 0 calc(var(--u)*.5) var(--on);animation:pulse 1.6s infinite}
+body.monitor .sigC{display:flex;align-items:baseline;gap:calc(var(--u)*.3);white-space:nowrap;font-family:var(--num);font-variant-numeric:tabular-nums}
+body.monitor .sigC>span{font-family:inherit;font-size:calc(var(--u)*.85);color:var(--sub);margin-right:calc(var(--u)*.6)}
+body.monitor .sigC b{font-size:calc(var(--u)*2.3);font-weight:700;line-height:1;letter-spacing:.01em}
+body.monitor .sigC em{font-style:normal;font-size:calc(var(--u)*1.05);color:var(--muted);min-width:1.3em}
+
+/* 현황 띠: 숫자 타일 */
+body.monitor .strip{padding:calc(var(--u)*.6) calc(var(--u)*1.4) calc(var(--u)*.3);gap:calc(var(--u)*.6);border-bottom:0;flex-wrap:nowrap}
+body.monitor .views{padding:calc(var(--u)*.2);border-radius:calc(var(--u)*.55);background:var(--panel);border:1px solid var(--line)}
+body.monitor .views button{padding:calc(var(--u)*.38) calc(var(--u)*.75);border-radius:calc(var(--u)*.4);font-size:calc(var(--u)*.72);gap:calc(var(--u)*.3)}
+body.monitor .views button em{font-size:calc(var(--u)*.6);font-family:var(--num)}
+body.monitor .views button.act{background:var(--soft);box-shadow:inset 0 0 0 1px var(--line2)}
+body.monitor .stat{align-items:center;gap:calc(var(--u)*.5);height:calc(var(--u)*2.5);padding:0 calc(var(--u)*.9);white-space:nowrap;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:calc(var(--u)*.6)}
+body.monitor .stat label{font-size:calc(var(--u)*.7);color:var(--muted)}
+body.monitor .stat b{font-family:var(--num);font-size:calc(var(--u)*1.7);line-height:1}
+body.monitor .stat b.zero{color:var(--dim);text-shadow:none}
+body.monitor .stat em{font-family:var(--num);font-size:calc(var(--u)*.85)}
+body.monitor .pips{display:flex;gap:calc(var(--u)*.16);margin-left:calc(var(--u)*.3)}
+body.monitor .pips i{width:calc(var(--u)*.28);height:calc(var(--u)*1.05);border-radius:calc(var(--u)*.14);background:var(--line2)}
+body.monitor .pips i.on{background:linear-gradient(180deg,var(--onTxt),var(--on));box-shadow:0 0 calc(var(--u)*.4) var(--onGlow)}
+body.monitor .legend{gap:calc(var(--u)*.8);font-size:calc(var(--u)*.65);white-space:nowrap}
+body.monitor .legend span{gap:calc(var(--u)*.3)}
+body.monitor .lg{width:calc(var(--u)*.75);height:calc(var(--u)*.75);border-radius:calc(var(--u)*.2)}
+/* 갱신 시각 · 연결 끊김 표시는 남긴다 (날짜는 머리글 시계에 있다) */
+body.monitor .sync{font-size:calc(var(--u)*.62);gap:calc(var(--u)*.3);white-space:nowrap}
+body.monitor .sync i{width:calc(var(--u)*.38);height:calc(var(--u)*.38)}
+
+/* 평면도 */
+body.monitor #board .page{padding:calc(var(--u)*.45) calc(var(--u)*1.4) 0;
+  background-image:linear-gradient(rgba(120,150,210,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(120,150,210,.045) 1px,transparent 1px);
+  background-size:calc(var(--u)*2) calc(var(--u)*2)}
+body.monitor .floor{gap:calc(var(--u)*.65);grid-template-rows:auto calc(var(--u)*1.25) minmax(0,1fr) minmax(0,1fr)}
+/* 3층 탭은 1층 카드와 같은 크기 (SC-04) — 위 규칙이 덮어쓰지 않게 기본 시안의 행 높이를 다시 적는다 */
+body.monitor .floor.f3{grid-template-rows:clamp(230px,31vh,320px) clamp(230px,31vh,320px)}
+/* 계단·통로·출입구는 글자로만, 박스 없음 (SC-03 ①) */
+body.monitor .mark{font-size:calc(var(--u)*.62);letter-spacing:.12em;color:var(--dim)}
+body.monitor .corridor{border-radius:calc(var(--u)*.3);padding:0 calc(var(--u)*.7)}
+body.monitor .fbadge{font-size:calc(var(--u)*.55);padding:calc(var(--u)*.05) calc(var(--u)*.3);letter-spacing:0}
+
+/* 카드 */
+body.monitor .card{position:relative;padding:calc(var(--u)*.65) calc(var(--u)*.8);border-radius:calc(var(--u)*.75);
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.008)),var(--card);border:1px solid var(--line)}
+body.monitor .head{margin-bottom:calc(var(--u)*.4);gap:calc(var(--u)*.4)}
+body.monitor .name{font-size:calc(var(--u)*1.12);white-space:nowrap;letter-spacing:-.01em}
+body.monitor .pill{font-size:calc(var(--u)*.6);padding:calc(var(--u)*.14) calc(var(--u)*.5);gap:calc(var(--u)*.3);font-family:var(--num);white-space:nowrap}
+body.monitor .pill i{width:calc(var(--u)*.4);height:calc(var(--u)*.4)}
+body.monitor .card.on,body.monitor .card.warn{border-width:1px}
+body.monitor .card.on:not(.multi){background:linear-gradient(155deg,rgba(52,224,138,.24),rgba(52,224,138,.07) 48%,rgba(52,224,138,.02)),var(--card);
+  border-color:var(--on);box-shadow:0 0 calc(var(--u)*1.6) var(--onGlow)}
+body.monitor .card.warn:not(.multi){background:linear-gradient(155deg,rgba(255,178,36,.26),rgba(255,178,36,.08) 48%,rgba(255,178,36,.02)),var(--card);
+  border-color:rgba(255,178,36,.7);animation:sigWarn 2.5s ease-in-out infinite}
+body.monitor .card.on::before,body.monitor .card.warn::before{content:"";position:absolute;left:0;right:0;top:0;height:calc(var(--u)*.16);
+  background:linear-gradient(90deg,var(--on),rgba(52,224,138,0))}
+body.monitor .card.warn::before{background:linear-gradient(90deg,var(--warn),rgba(255,178,36,0))}
+@keyframes sigWarn{0%,100%{box-shadow:0 0 calc(var(--u)*.8) rgba(255,178,36,.12)}50%{box-shadow:0 0 calc(var(--u)*2.2) rgba(255,178,36,.34)}}
+/* 여러 시험 카드도 사용 중이면 초록 테두리 빛 번짐 (상태 표현) */
+body.monitor .card.multi.on{background:linear-gradient(180deg,rgba(52,224,138,.07),rgba(52,224,138,.01)),var(--card);border-color:var(--on);box-shadow:0 0 calc(var(--u)*1.1) var(--onGlow)}
+body.monitor .card.multi.warn{background:linear-gradient(180deg,rgba(255,178,36,.08),rgba(255,178,36,.01)),var(--card);border-color:var(--warn);box-shadow:0 0 calc(var(--u)*1.1) var(--warnGlow)}
+/* 대기: 실선 테두리 (점선은 연계 사용 전용) + 항목 이름표 */
+body.monitor .card.idle{background:var(--card)}
+body.monitor .card.idle .name{color:var(--idle)}
+body.monitor .idle-body{gap:calc(var(--u)*.5)}
+body.monitor .card.idle .idle-body::after{content:"대기";font-size:calc(var(--u)*.8);font-weight:700;letter-spacing:.3em;text-indent:.3em;color:var(--dim)}
+body.monitor .ichips{gap:calc(var(--u)*.25)}
+body.monitor .ichips span{font-size:calc(var(--u)*.62);padding:calc(var(--u)*.1) calc(var(--u)*.45);border-radius:calc(var(--u)*.25)}
+body.monitor .meta{gap:calc(var(--u)*.45);margin-bottom:calc(var(--u)*.2)}
+body.monitor .itm{font-size:calc(var(--u)*.64);padding:calc(var(--u)*.08) calc(var(--u)*.45);border-radius:calc(var(--u)*.3)}
+body.monitor .from{font-size:calc(var(--u)*.62);color:var(--sub)}
+body.monitor .big{font-family:var(--num);font-weight:700;font-size:calc(var(--u)*3);letter-spacing:.01em}
+body.monitor .f3zone .big{font-size:calc(var(--u)*2.5)}
+body.monitor .card .who{font-size:calc(var(--u)*.95);margin-top:calc(var(--u)*.3)}
+body.monitor .tag{font-size:calc(var(--u)*.56);padding:calc(var(--u)*.1) calc(var(--u)*.35);border-radius:calc(var(--u)*.22)}
+body.monitor .card .who .tag{max-width:calc(var(--u)*8.5)}
+body.monitor .tno{font-size:calc(var(--u)*.66);margin-top:calc(var(--u)*.1)}
+body.monitor .lnote{font-size:calc(var(--u)*.62);margin-top:calc(var(--u)*.15)}
+
+/* 구역이 여러 개인 시험장 */
+body.monitor .slots{gap:calc(var(--u)*.3);flex:1;min-height:0}
+body.monitor .slot{padding:calc(var(--u)*.3) calc(var(--u)*.55);gap:calc(var(--u)*.1) calc(var(--u)*.45);border-radius:calc(var(--u)*.5);border-color:var(--line)}
+body.monitor .slot .it{font-size:calc(var(--u)*.68)}
+body.monitor .slot .sw{font-size:calc(var(--u)*.76)}
+body.monitor .slot .t{font-family:var(--num);font-weight:700;font-size:calc(var(--u)*1.2)}
+body.monitor .f3zone .slot .t{font-size:calc(var(--u)*1.1)}
+body.monitor .slot .tno{font-size:calc(var(--u)*.58);grid-column:1/-1}
+body.monitor .slot.on{background:linear-gradient(90deg,rgba(52,224,138,.22),rgba(52,224,138,.05));border:1px solid var(--on);box-shadow:0 0 calc(var(--u)*.7) var(--onGlow)}
+body.monitor .slot.warn{background:linear-gradient(90deg,rgba(255,178,36,.24),rgba(255,178,36,.05));border:1px solid var(--warn)}
+body.monitor .slot.idle{padding:calc(var(--u)*.3) calc(var(--u)*.55);border-color:var(--line);opacity:.75}
+body.monitor .slot.idle::after{content:"대기";font-size:calc(var(--u)*.6);color:var(--dim);letter-spacing:.15em}
+
+/* 진행 중 목록: 한 줄씩 */
+body.monitor .live{padding:calc(var(--u)*.6) calc(var(--u)*.85);border-radius:calc(var(--u)*.75);scrollbar-width:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008)),var(--panel);
+  -webkit-mask-image:linear-gradient(180deg,#000 88%,transparent);mask-image:linear-gradient(180deg,#000 88%,transparent)}
+body.monitor .live::-webkit-scrollbar{display:none}
+body.monitor .live h3{font-size:calc(var(--u)*.8);margin-bottom:calc(var(--u)*.2);display:flex;align-items:baseline;gap:calc(var(--u)*.4)}
+body.monitor .live.wide .lrs{column-gap:calc(var(--u)*1.6)}
+body.monitor .lr{grid-template-columns:minmax(0,1.15fr) minmax(0,1.5fr) auto;gap:calc(var(--u)*.5);padding:calc(var(--u)*.3) 0}
+body.monitor .lr .a,body.monitor .lr .b{font-size:calc(var(--u)*.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.monitor .lr small{display:inline;font-size:calc(var(--u)*.58);margin:0 0 0 calc(var(--u)*.4)}
+body.monitor .lr .c{font-family:var(--num);font-weight:700;font-size:calc(var(--u)*.95)}
+
+/* 3층 영역 */
+body.monitor .f3zone{border-width:1px;border-radius:calc(var(--u)*.85);padding:calc(var(--u)*.85) calc(var(--u)*.55) calc(var(--u)*.55)}
+body.monitor .zlab{top:calc(var(--u)*-.5);left:calc(var(--u)*.75);font-size:calc(var(--u)*.66);gap:calc(var(--u)*.35);padding:0 calc(var(--u)*.45);background:var(--bg)}
+body.monitor .zlab b{font-size:calc(var(--u)*.6);padding:calc(var(--u)*.1) calc(var(--u)*.4);border-radius:calc(var(--u)*.25)}
+body.monitor .f3grid{gap:calc(var(--u)*.55)}
+body.monitor .f3zone .card{padding:calc(var(--u)*.5) calc(var(--u)*.65)}
+body.monitor .f3zone .name{font-size:calc(var(--u)*.98)}
+body.monitor .f3zone .who{font-size:calc(var(--u)*.85)}
+body.monitor .f3zone .slot{padding:calc(var(--u)*.28) calc(var(--u)*.5)}
+body.monitor .toast{font-size:calc(var(--u)*.75);padding:calc(var(--u)*.6) calc(var(--u)*1);border-radius:calc(var(--u)*.5)}
+/* ---- 2차: 멀리서 읽기 (이름·시간·시험원 크게, 보조 정보는 흐리게) ---- */
+body.monitor .name{font-size:calc(var(--u)*1.32)}
+body.monitor .f3zone .name{font-size:calc(var(--u)*1.12)}
+body.monitor .big{font-size:calc(var(--u)*3.6);margin-top:auto;margin-bottom:calc(var(--u)*.2)}
+body.monitor .f3zone .big{font-size:calc(var(--u)*2.9)}
+body.monitor .card .who{font-size:calc(var(--u)*1.15)}
+body.monitor .f3zone .who{font-size:calc(var(--u)*1)}
+body.monitor .tno{color:var(--muted)}
+body.monitor .slot .it{font-size:calc(var(--u)*.74)}
+body.monitor .slot .sw{font-size:calc(var(--u)*.9)}
+body.monitor .slot .t{font-size:calc(var(--u)*1.45)}
+body.monitor .f3zone .slot .t{font-size:calc(var(--u)*1.3)}
+body.monitor .live h3{font-size:calc(var(--u)*.95);position:sticky;top:calc(var(--u)*-.6);z-index:1;background:var(--panel);
+  margin:calc(var(--u)*-.6) calc(var(--u)*-.85) 0;padding:calc(var(--u)*.6) calc(var(--u)*.85) calc(var(--u)*.3)}
+body.monitor .lr{padding:calc(var(--u)*.38) 0}
+body.monitor .lr .a,body.monitor .lr .b{font-size:calc(var(--u)*.86)}
+body.monitor .lr .a{font-weight:800}
+body.monitor .lr small{font-size:calc(var(--u)*.62);color:var(--dim)}
+body.monitor .lr .c{font-size:calc(var(--u)*1.15)}
+body.monitor .lr.warn{background:linear-gradient(90deg,rgba(255,178,36,.12),transparent 70%)}
+body.monitor .stat label{font-size:calc(var(--u)*.78)}
+body.monitor .stat b{font-size:calc(var(--u)*1.9)}
+/* 경과 시간 막대: 장시간 기준(me.staleHours)까지 얼마나 찼는지 */
+.prog{display:none}
+body.monitor .prog{display:block;height:calc(var(--u)*.26);border-radius:calc(var(--u)*.13);background:var(--line);
+  margin-top:calc(var(--u)*.4);overflow:hidden;flex-shrink:0}
+body.monitor .prog i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,rgba(52,224,138,.35),var(--on));
+  box-shadow:0 0 calc(var(--u)*.5) var(--onGlow);transition:width 1s}
+body.monitor .warn .prog i{background:linear-gradient(90deg,rgba(255,178,36,.4),var(--warn))}
+/* ---- 3차: 살아 있는 화면 ---- */
+/* 경과 시간·시계의 콜론이 1초마다 깜빡인다 (전광판 느낌) */
+body.monitor .cl{animation:colon 2s steps(1) infinite}
+@keyframes colon{50%{opacity:.2}}
+/* 상태가 바뀐 카드 (대기 → 사용 중, 사용 중 → 대기, 항목 추가·종료): 잠깐 밝게 */
+body.monitor .card.chg{animation:chg 1.4s ease-out 2}
+body.monitor .card.warn.chg:not(.multi){animation:chg 1.4s ease-out 2,sigWarn 2.5s ease-in-out infinite}
+body.monitor .card.chg::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%) no-repeat;background-size:250% 100%;
+  animation:sweep 1.4s ease-out 2}
+@keyframes chg{0%{filter:brightness(1.7);transform:scale(1.025)}100%{filter:none;transform:none}}
+@keyframes sweep{0%{background-position:120% 0}100%{background-position:-120% 0}}
+@media (prefers-reduced-motion:reduce){body.monitor *{animation:none!important}}
+
+/* ---- chamber-svc 화면에 맞춘 부분 ---- */
+/* 모니터 모드는 상단 메뉴를 숨긴다 (SC-14 ①). 보기 전환 탭은 남긴다 */
+body.monitor header nav{display:none}
+/* "대기" 는 위 ::after 로 한 번만 쓴다 (모니터 계정 화면이 그리는 글자는 숨김) */
+body.monitor .idle-body .wait,body.monitor .slot.idle .wait{display:none}
+body.monitor #notice{margin:calc(var(--u)*.4) calc(var(--u)*1.4) 0;padding:calc(var(--u)*.45) calc(var(--u)*.8);font-size:calc(var(--u)*.8);border-radius:calc(var(--u)*.4)}
+/* 장비 이관 중 카드: 위 카드 배경 규칙이 빗금을 덮지 않게 다시 적는다 (회색 빗금 + 초록 점선) */
+body.monitor .card.link{background:repeating-linear-gradient(135deg,var(--linkA) 0 calc(var(--u)*.45),var(--linkB) calc(var(--u)*.45) calc(var(--u)*.9));
+  border:1.5px dashed var(--on);box-shadow:0 0 calc(var(--u)*.7) var(--onGlow)}
+body.monitor .slot.link{border:1.5px dashed var(--on)}
+body.monitor .card.link .prog i{background:var(--linkLine);box-shadow:none}
+body.monitor .lnote.lk{font-size:calc(var(--u)*.62)}
+body.monitor .xcard .xbody{gap:calc(var(--u)*.25)}
+body.monitor .xcard .xto{font-size:calc(var(--u)*1.5)}
+body.monitor .xcard .xfor{font-size:calc(var(--u)*.85)}
+body.monitor .xcard .xsub{font-size:calc(var(--u)*.66)}

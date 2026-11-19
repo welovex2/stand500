@@ -22,7 +22,7 @@
       - DB_PASSWORD=${CHAMBER_DB_PASSWORD:-}
       - SESSION_SECRET=${CHAMBER_SESSION_SECRET:-}
       - MONITOR_MEM_ID=${CHAMBER_MONITOR_MEM_ID:-}
-      - STALE_HOURS=12
+      - STALE_HOURS=10
     expose:
       - "8000"
     mem_limit: 256m
