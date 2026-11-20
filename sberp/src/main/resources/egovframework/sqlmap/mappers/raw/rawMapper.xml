@@ -945,6 +945,13 @@
 		        CONCAT (SBK_TB.APP_YEAR, SBK_TB.APP_MON, SBK_TB.APP_DAY),
 		        '%Y%m%d'
 		    ), '%Y년 %m월 %d일') RCPT_DT,
+		    /* 2-1	최초 접수일 (재발행인 경우 원본 신청서의 접수일, 원본이면 NULL) */
+		    IF(SBK_TB.REVISION > 0,
+		        DATE_FORMAT(STR_TO_DATE (
+		            CONCAT (orgSbk.APP_YEAR, orgSbk.APP_MON, orgSbk.APP_DAY),
+		            '%Y%m%d'
+		        ), '%Y년 %m월 %d일'),
+		        NULL) ORG_RCPT_DT,
 		    /* 3	시험기간 */
 		    DATE_FORMAT(TEST_S_DT, '%Y년 %m월 %d일') TEST_S_DT,
 		    DATE_FORMAT(TEST_E_DT, '%Y년 %m월 %d일') TEST_E_DT,
@@ -1071,6 +1078,12 @@
 		    AND SBK_TB.TYPE = JOB_TB.SBK_TYPE AND JOB_TB.SBK_SEQ = SBK_TB.SBK_SEQ AND JOB_TB.SBK_REVISION = SBK_TB.REVISION
 		    
             INNER JOIN RAW_TB ON RAW_TB.TEST_SEQ = IF(SBK_TB.REVISION=0,TEST_TB.TEST_SEQ,orgTest.TEST_SEQ)
+            
+            /* 재발행 → 원본 신청서 (최초 접수일) */
+            LEFT JOIN TEST_ITEM_TB orgItem ON orgItem.TEST_ITEM_SEQ = orgTest.TEST_ITEM_SEQ
+            LEFT JOIN JOB_TB orgJob ON orgJob.QUO_YM = orgItem.QUO_YM AND orgJob.QUO_SEQ = orgItem.QUO_SEQ
+            LEFT JOIN SBK_TB orgSbk ON orgSbk.SBK_YM = orgJob.SBK_YM AND orgSbk.TYPE = orgJob.SBK_TYPE
+                AND orgSbk.SBK_SEQ = orgJob.SBK_SEQ AND orgSbk.REVISION = orgJob.SBK_REVISION
 		    
 		WHERE TEST_TB.TEST_SEQ = #{testSeq}
 	</select>

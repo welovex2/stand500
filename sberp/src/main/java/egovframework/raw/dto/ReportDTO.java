@@ -53,6 +53,10 @@ public class ReportDTO {
   @Column
   private String rcptDt;
 
+  @ApiModelProperty(value = "2-1	최초 접수일 (재발행인 경우 원본 신청서의 접수일, 원본이면 null)", example = "2026년 07월 22일")
+  @Column
+  private String orgRcptDt;
+
 
   @ApiModelProperty(value = "3	시험기간  ", example = "")
   @Column
