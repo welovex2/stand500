@@ -6,7 +6,7 @@
     <h2 style="font-size: 18pt;">방송통신기자재등(유선-영상정보처리기기) 시험성적서</h2>
     <ul class="info_list">
       <li><h4>1.&nbsp;발&nbsp;급&nbsp;번&nbsp;호<span>:</span></h4><p>${document.tel.reportNo!''}</p></li>
-      <li><h4>2.&nbsp;접&nbsp;수&nbsp;일<span>:</span></h4><p>${h.nullSafe(r.rcptDt)}<#if r.orgRcptDt?has_content>&nbsp;<span style="color: #ff0000;">(최초 접수일 : ${r.orgRcptDt})</span></#if></p></li>
+      <li><h4>2.&nbsp;접&nbsp;수&nbsp;일<span>:</span></h4><p style="justify-content: flex-start;"><span>${h.nullSafe(r.rcptDt)}</span><#if r.orgRcptDt?has_content>&nbsp;&nbsp;<span style="color: #ff0000;">(최초 접수일 : ${r.orgRcptDt})</span></#if></p></li>
       <li><h4>3.&nbsp;시&nbsp;험&nbsp;기&nbsp;간<span>:</span></h4>
         <p style="justify-content: flex-start;"><span style="font-size: 11pt;">${h.nullSafe(r.testSDt)}</span>&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;<span style="font-size: 11pt;">${h.nullSafe(r.testEDt)}</span></p></li>
       <li><h4>4.&nbsp;신청인(상호명)<span>:</span></h4><p>${h.nullSafe(r.aplcn)}</p>
