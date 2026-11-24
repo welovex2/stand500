@@ -12,7 +12,7 @@
   --accent: #4c8dff; --danger: #ff6464; --endTxt: #ffc9c9; --endBg: rgba(0,0,0,.3); --shadow: rgba(0,0,0,.6);
   --numGlow: 0 0 20px rgba(61,220,132,.5); --numGlowW: 0 0 20px rgba(255,176,32,.45);
   --z3line: rgba(124,92,255,.55); --z3bg: rgba(124,92,255,.07); --z3txt: #9d86ff;
-  --logoBg: #fff;
+  --logoBg: transparent;
   --linkA: #1b2232; --linkB: #161c29; --linkLine: #55627d; --linkTxt: #9aa6bf;
 }
 html.light {
@@ -43,6 +43,8 @@ header { display: flex; align-items: center; gap: 20px; padding: 12px 28px; back
   border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
 .logo { display: flex; align-items: center; height: 30px; padding: 2px 6px; border-radius: 6px; background: var(--logoBg); }
 .logo img { display: block; height: 100%; width: auto; }
+/* 다크 모드: 흰 바탕 없이, 글자를 밝게 바꾼 로고 (logo-dark.svg) */
+html:not(.light) .logo img { content: url("logo-dark.svg"); }
 nav { display: flex; gap: 4px; }
 nav a { color: var(--muted); padding: 8px 14px; border-radius: 7px; font-size: 14px; font-weight: 600; text-decoration: none; }
 nav a:hover { color: var(--text); }
@@ -385,7 +387,7 @@ body.monitor #monBtn .ic-max { --ic: url("data:image/svg+xml,%3Csvg xmlns='http:
 .chk input { accent-color: var(--accent); }
 .inp.ro { color: var(--sub); }
 .srch { position: relative; }
-.sl { margin-top: 6px; border: 1px solid var(--line2); border-radius: 10px; max-height: 220px; overflow: auto; background: var(--panel); }
+.sl { margin-top: 6px; border: 1px solid var(--line2); border-radius: 10px; height: 240px; overflow: auto; background: var(--panel); }
 .si { padding: 9px 12px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; display: flex; gap: 8px; align-items: baseline; }
 .si:last-child { border-bottom: 0; }
 .si:hover { background: var(--hover); }
@@ -406,3 +408,57 @@ body.monitor #monBtn .ic-max { --ic: url("data:image/svg+xml,%3Csvg xmlns='http:
 .xcard .xfor { font-size: 13.5px; font-weight: 700; color: var(--sub); }
 .xcard .xsub { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .si i.st { font-style: normal; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--soft); color: var(--sub); white-space: nowrap; }
+
+/* 사용 시작 팝업: 시험번호 목록 결과·선택 여부와 상관없이 크기 고정 (안쪽만 스크롤) */
+.modal.mstart { height: min(760px, 92vh); display: flex; flex-direction: column; overflow: hidden; }
+.modal.mstart .mb { flex: 1; min-height: 0; overflow: auto; }
+.two { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.chk.wit { height: 34px; white-space: nowrap; }
+/* 카드의 메모 줄 (시험번호로 시작한 시험) */
+.tno.memo { color: var(--muted); font-style: normal; }
+.slot .tno.memo { grid-column: 1 / -1; }
+/* 장시간 측정 행 안내 "ERP에서 종료하세요": 시험번호 줄과 따로 한 줄, ! 표시 (2026-11-20 시안 1-A) */
+.lnote.erp { display: flex; align-items: center; gap: 5px; font-weight: 700; }
+.lnote.erp b { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 1.15em; height: 1.15em;
+  border-radius: 50%; background: var(--warn); color: #fff; font-size: .8em; font-weight: 800; }
+html:not(.light) .lnote.erp b { color: #2a1c02; }
+.slot .lnote { grid-column: 1 / -1; margin: 0; }
+
+/* 로데이터 연동 없는 시험 (CTI · 4-39, 기획 SC-08) */
+.nordbox { background: var(--sunk); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; color: var(--sub); font-size: 13px; line-height: 1.5; }
+.tno.nord { color: var(--muted); }
+
+/* 시험장 점유 (시험번호 없이 · 항목 선택 안 함, 기획 SC-09): 회색 이름표 */
+.itm.hold, .warn .itm.hold { color: var(--sub); border-color: var(--line2); background: var(--sunk); }
+.lb .opt { font-weight: 500; color: var(--muted); font-size: 11.5px; margin-left: 6px; }
+.noi { color: var(--sub); background: var(--sunk); border: 1px solid var(--line2); border-radius: 6px; padding: 1px 7px; font-size: 12px; font-weight: 700; }
+
+/* ---- 시험장 사용 이력 (기획 v7_1 SC-15 · SC-16, 2026-11-20) ---- */
+.cg { font-size: 11px; font-weight: 800; color: var(--muted); margin: 0 2px 0 6px; }
+.cg:first-of-type { margin-left: 0; }
+.htable td .xh { display: block; color: var(--onTxt); font-size: 11.5px; margin-top: 2px; font-weight: 600; }
+.htable td a { color: var(--accent); text-decoration: none; font-weight: 700; }
+.htable td a:hover { text-decoration: underline; }
+.htable .etc { color: var(--warnTxt); font-weight: 700; }
+.htable .run { color: var(--onTxt); font-weight: 700; }
+.htable .wtxt { color: var(--warnTxt); }
+.htable .dim { color: var(--dim); }
+.htable td .co { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.htable .nd { color: var(--warnTxt); font-size: 10.5px; font-weight: 700; margin-left: 4px; }
+.htable .adm .co { font-size: 10.5px; }
+body:not(.canEdit) .htable .adm { display: none; }
+.pager { display: flex; justify-content: center; gap: 4px; padding: 14px 0; }
+.pager:empty { display: none; }
+.pager button { min-width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel); color: var(--sub); font-weight: 700; }
+.pager button.act { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* 챔버 관리: 다른 구역 사용 때문에 점유 중 (시험장 전체 점유 · 단독 사용 · 장비 이관) */
+.badge.hold { background: var(--soft); color: var(--muted); border: 1px dashed var(--line2); }
+.modal.medit { width: min(560px, 94vw); }
+.medit .two.half { grid-template-columns: 1fr 1fr; }   /* 시작 · 종료 같은 너비 */
+.medit .esl { height: auto; max-height: 180px; }
+.medit .mb > div > .mark, .medit .srch > .mark { margin-top: 6px; }
+.medit .mb > .mark { margin-top: -6px; }   /* 진행 중 안내는 시작·종료 바로 아래 */
+.medit .lb .tag { margin-left: 6px; vertical-align: 1px; }
+.his { display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow: auto; background: var(--sunk);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--sub); }
+.his span { display: block; color: var(--muted); }

@@ -173,7 +173,8 @@ body.monitor .lr .a,body.monitor .lr .b{font-size:calc(var(--u)*.86)}
 body.monitor .lr .a{font-weight:800}
 body.monitor .lr small{font-size:calc(var(--u)*.62);color:var(--dim)}
 body.monitor .lr .c{font-size:calc(var(--u)*1.15)}
-body.monitor .lr.warn{background:linear-gradient(90deg,rgba(255,178,36,.12),transparent 70%)}
+/* 장시간 행: 그라데이션 대신 왼쪽 주황 막대 + 주황 시간 숫자 (2026-11-20 시안 3-1) */
+body.monitor .lr.warn{box-shadow:inset calc(var(--u)*.16) 0 0 var(--warn);padding-left:calc(var(--u)*.55)}
 body.monitor .stat label{font-size:calc(var(--u)*.78)}
 body.monitor .stat b{font-size:calc(var(--u)*1.9)}
 /* 경과 시간 막대: 장시간 기준(me.staleHours)까지 얼마나 찼는지 */
@@ -213,3 +214,26 @@ body.monitor .xcard .xbody{gap:calc(var(--u)*.25)}
 body.monitor .xcard .xto{font-size:calc(var(--u)*1.5)}
 body.monitor .xcard .xfor{font-size:calc(var(--u)*.85)}
 body.monitor .xcard .xsub{font-size:calc(var(--u)*.66)}
+
+/* ---- 글자 자르지 않기 (2026-11-19) ----
+   진행 중 목록: 시험장 / 항목, 시험원 / 시험번호 · 업체를 두 줄로. "…"로 자르지 않고 줄을 바꾼다
+   카드 아래 시험번호 · 업체 줄도 줄을 바꾼다 (한국어는 단어 단위로) */
+body.monitor .lr{grid-template-columns:minmax(0,.95fr) minmax(0,1.7fr) auto;align-items:start;gap:calc(var(--u)*.6)}
+body.monitor .lr .a,body.monitor .lr .b{font-size:calc(var(--u)*.8);line-height:1.3;white-space:normal;overflow:visible;
+  text-overflow:clip;word-break:keep-all;overflow-wrap:anywhere}
+body.monitor .lr small,body.monitor .lr .b small{display:block;margin:calc(var(--u)*.08) 0 0;font-size:calc(var(--u)*.62);line-height:1.3;
+  color:var(--muted);white-space:normal;overflow:visible;text-overflow:clip;word-break:keep-all;overflow-wrap:anywhere}
+body.monitor .lr .c{align-self:center}
+body.monitor .tno,body.monitor .slot .tno{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3;
+  word-break:keep-all;overflow-wrap:anywhere}
+body.monitor .card .who>span{white-space:normal;flex-wrap:wrap}
+body.monitor .tno.memo{color:var(--dim)}
+
+/* ---- 진행 중 목록 흐름·글자 (2026-11-20) ----
+   스크롤 대신 목록을 transform 으로 옮긴다 (monitor.js). 제목은 제자리, 끝에서는 흐려졌다가 처음으로.
+   가운데 칸(시험원 / 시험번호 · 업체)은 왼쪽 시험장 칸보다 한 단계 작게 */
+body.monitor .live{overflow:hidden}
+body.monitor .live h3{position:relative;top:auto}
+body.monitor .live .lrs{will-change:transform;transition:opacity .6s ease}
+body.monitor .lr .b{font-size:calc(var(--u)*.7);font-weight:600}
+body.monitor .lr .b small{font-size:calc(var(--u)*.56)}

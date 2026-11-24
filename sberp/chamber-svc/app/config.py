@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # 시험번호 목록에서 뺄 시험규격 (TEST_ITEM_TB.TEST_STNDR_SEQ). ERP 로데이터 화면이 있는(자동화된) 규격이라
     # 측정 기록을 ERP 로데이터에서 남긴다. 프론트 test.js 의 로데이터 화면 분기와 같은 목록. 쉼표로 구분
     rd_auto_stndr: str = "10,571,7,686,774,775,560,14"
+    # 로데이터 연동 없는 시험 항목 (기획 SC-08). 구역 이름(CHAMBER_ZONE_TB.NAME)이 이 중 하나면
+    # 시험번호 없이 현황판에서 시작·종료 시간만 기록한다. 쉼표로 구분
+    no_rd_zones: str = "CTI,4-39"
+    # 사용 이력에서 시험번호를 누르면 여는 ERP 로데이터 화면 (ERP 프론트 주소. 같은 도메인이면 "/")
+    erp_web_base: str = "/"
     # 시험번호 목록에 나오는 시험 상태 (TEST_TB.TEST_STATE_CODE, 공통코드 TS). 1 접수 / 2 시험중 / 3 디버깅
     test_states: str = "1,2,3"
 
@@ -53,20 +58,37 @@ TEST_STATES = sorted({int(x) for x in settings.test_states.split(",") if x.strip
 TEST_STATE_NAMES = {1: "접수", 2: "시험중", 3: "디버깅", 4: "홀딩", 5: "RD지연"}
 
 # 권한 (MEMBER_TB.AUTH_CODE)
-ADMIN_AUTH_CODES = ("P01", "P02")   # 관리자 — 부서 상관없이 들어오고, 기술책임자와 같은 일을 한다
+ADMIN_AUTH_CODES = ("P01", "P02")   # 관리자 — 부서 상관없이 들어오고, 기술책임자와 같은 일 + 관리 탭 · 기록 수정
 REV_AUTH_CODE = "P04"               # EMC 부서 + P04 = 기술책임자
 
 # 현황판 사용 용도 (ERP 가 읽는 CHAMBER_ETC_USE_TB.PURPOSE 값. 바꿀 때는 ERP 쪽 라벨도 같이)
 # TEST = 시험번호를 골라 시작한 시험. 나머지는 "시험번호 없이 사용"의 사유
 PURPOSE_TEST = "TEST"
+# 사유는 기획 v7_1 SC-09 순서: 사전 점검 / 장비 점검 / 디버깅 / 기타 (2026-11-20)
 PURPOSES = {
     PURPOSE_TEST: "시험",
-    "PRE": "예비시험",
-    "DEBUG": "고객 디버깅",
-    "CHECK": "점검",
-    "WITNESS": "입회",
+    "PRE": "사전 점검",
+    "CHECK": "장비 점검",
+    "DEBUG": "디버깅",
     "ETC": "기타",
+    "WITNESS": "입회",     # 예전 사유. 이미 저장된 기록 표시용, 새로 고를 수 없다 (고객 입회는 시작 팝업의 체크박스)
 }
+PURPOSES_RETIRED = {"WITNESS"}
+# 로데이터 연동 없는 시험 (CTI · 4-39). 시험번호 없이 사용(사유)과 다르다 — 시험번호 미연결 건수에 넣지 않는다
+PURPOSE_NO_RD = "NORD"
+PURPOSES[PURPOSE_NO_RD] = "로데이터 연동 없음"
+
+
+# 시험규격(TEST_ITEM_TB.TEST_STNDR_SEQ) → ERP 로데이터 수정 화면. ERP 프론트 js/test.js 의 로데이터 화면 분기와 같다
+ERP_RAW_PAGES = {10: "html/raw_update.html", 571: "html/raw_update.html",
+                 7: "html/raw_update_9814.html", 686: "html/raw_update_9814.html",
+                 774: "html/raw_update_9814.html", 775: "html/raw_update_9814.html",
+                 560: "html/raw_update_tel.html", 14: "html/3124/raw_update.html"}
+
+
+def is_no_rd_zone(zone_name) -> bool:
+    return (zone_name or "").strip().upper() in {
+        x.strip().upper() for x in settings.no_rd_zones.split(",") if x.strip()}
 
 # 시험방법 키 (ERP EnvMetKey 와 같은 값. 구역별 시험방법 매핑에 쓴다)
 MET_KEYS = ["CE", "RE1", "RE2", "RE3", "ESD", "RS", "EFT", "SURGE", "CS", "MF", "VDIP", "CLK", "DP", "TEL"]

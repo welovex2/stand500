@@ -21,6 +21,7 @@ GRANT SELECT ON erp.TEST_MNGR_TB TO 'chamber_svc'@'%';   -- 시험 담당자 (�
 
 -- 로데이터 외 사용 (DELETE 없음 — 삭제는 DEL_YN)
 GRANT SELECT, INSERT, UPDATE ON erp.CHAMBER_ETC_USE_TB TO 'chamber_svc'@'%';
+GRANT SELECT, INSERT ON erp.CHAMBER_ETC_USE_HIS_TB TO 'chamber_svc'@'%';   -- 기록 수정 이력 (2026-11-20)
 
 -- 챔버 관리 화면. 챔버·구역은 지우지 않고 USE_YN 으로 숨긴다. 매핑만 행을 넣고 지운다.
 -- CHAMBER_ZONE_TB 의 UPDATE 권한으로 구역 행 잠금(SELECT ... FOR UPDATE)도 된다.

@@ -38,8 +38,8 @@ sql/           chamber_svc_user.sql, dev_seed.sql(개발용 시험 데이터), o
 | `DB_PASSWORD` | (필수) | 비어 있으면 기동 실패 |
 | `SESSION_SECRET` | (필수) | 쿠키 서명 키. 32자 이상. `openssl rand -hex 32` |
 | `MONITOR_MEM_ID` | 없음 | 모니터 전용 계정 아이디 |
-| `STALE_HOURS` | `10` | 이 시간을 넘긴 사용 건을 강조 (기획 v7) |
-| `EMC_DEPT_SEQ` | `5` | 로그인할 수 있는 부서 (`MEMBER_TB.DEPT_SEQ`). 이 부서 = 일반 사용자, + `AUTH_CODE` P04 = 기술책임자. P01·P02 는 부서와 관계없이 관리자 |
+| `STALE_HOURS` | `10` | 이 시간을 넘긴 사용 건을 강조. 기획 값(10시간)이 코드 기본값이라 compose 에는 넣지 않는다 |
+| `EMC_DEPT_SEQ` | `5` | 로그인할 수 있는 부서 (`MEMBER_TB.DEPT_SEQ`). 이 부서 = 일반 사용자, + `AUTH_CODE` P04 = 기술책임자. P01·P02 는 부서와 관계없이 관리자 (관리 탭 · 사용 이력 기록 수정 포함) |
 | `RD_AUTO_STNDR` | `10,571,7,686,774,775,560,14` | 시험번호 목록에서 뺄 시험규격 (자동화 로데이터. 프론트 test.js 의 로데이터 화면 분기와 같은 목록) |
 | `COOKIE_PATH` | `/chamber/` | 로컬에서 직접 띄울 때는 `/` |
 | `COOKIE_SECURE` | `true` | 로컬(http)에서는 `false` |

@@ -1,13 +1,15 @@
 // 공통: API 호출, 로그인 확인, 머리글, 테마. 주소는 모두 상대 경로 (/chamber/ 아래에서 동작)
 const TIMEOUT_MS = 10000;
 
-async function api(path, body) {
+// opts.poll: 화면 자동 새로고침. 로그인 연장으로 치지 않는다 (서버가 X-Chamber-Poll 을 본다)
+async function api(path, body, opts) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(path, {
       method: body === undefined ? 'GET' : 'POST',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      headers: Object.assign(body === undefined ? {} : { 'Content-Type': 'application/json' },
+        opts && opts.poll ? { 'X-Chamber-Poll': '1' } : {}),
       body: body === undefined ? undefined : JSON.stringify(body),
       credentials: 'same-origin',
       signal: ctrl.signal,
@@ -89,7 +91,7 @@ async function initPage() {
   rb.textContent = ROLE[me.role] || ROLE.user;
   rb.className = 'rb ' + (me.role || 'user');
   const admin = document.getElementById('navAdmin');
-  if (admin && me.adminMenu) admin.hidden = false;   // 관리 탭(챔버 관리)은 P01 만
+  if (admin && me.adminMenu) admin.hidden = false;   // 관리 탭(챔버 관리)은 관리자(P01·P02)
   const menu = document.getElementById('menu');
   document.getElementById('acct').addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('show'); });
   document.addEventListener('click', () => menu.classList.remove('show'));

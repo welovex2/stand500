@@ -11,7 +11,7 @@
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a class="on" href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
+  <nav><a class="on" href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a href="timeline.html">시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="sigT"><b>시험장 현황판</b><span><i></i>실시간</span></div>
   <div class="sp"></div>
   <div class="sigC"><span id="sigD"></span><b id="sigH"></b><em id="sigS"></em></div>
@@ -63,7 +63,8 @@ const pad = n => String(n).padStart(2, '0');
 const hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
 const usesOf = c => c.zones.flatMap(z => z.uses);
 const linkedOf = c => c.zones.flatMap(z => z.linked || []);
-const zoneBusy = z => z.uses.length > 0 || (z.linked || []).length > 0;
+const zoneBusy = z => z.uses.length > 0 || (z.linked || []).length > 0 || !!z.held;
+const wholeOf = c => usesOf(c).find(u => u.wholeYn);   // 시험장 전체 점유 (시험번호 없이 · 항목 선택 안 함)
 const isBusy = c => c.zones.some(zoneBusy);
 // 단독 사용 시험장(RE (3m)·RE (10m)): 구역(항목)이 여러 개여도 한 번에 하나만 → 카드 하나 + 항목 선택
 const isSolo = c => !!c.soloYn && c.zones.length > 1;
@@ -75,13 +76,15 @@ const busyText = (cs, sep) => { const u = unitsIn(cs); return `${u.filter(Boolea
 const isRaw = u => u.src === 'RAW';
 const isTest = u => u.purpose === 'TEST';            // 현황판에서 시험번호를 골라 시작한 시험
 const hasTestNo = u => isRaw(u) || isTest(u);
+const isNoRd = u => u.purpose === 'NORD';            // 로데이터 연동 없는 시험 (CTI · 4-39, 기획 SC-08)
 // ERP EnvMetKey 표시 이름 (raw/dto/EnvMetKey.java)
 const MET_LABEL = { CE: 'CE', RE1: 'RE (1)', RE2: 'RE (2)', RE3: 'RE (3)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST',
   SURGE: 'SURGE', CS: 'CS', MF: 'M-Field', VDIP: 'V-Dip', CLK: 'CLICK', DP: 'DP', TEL: 'TEL' };
-const itemOf = u => isRaw(u) ? (MET_LABEL[u.metKey] || u.metKey || '시험') : isTest(u) ? '시험' : '시험장 점유';
+const itemOf = u => isRaw(u) ? (MET_LABEL[u.metKey] || u.metKey || '시험') : isTest(u) || isNoRd(u) ? '시험' : '시험장 점유';
 // 시안 v7_2: 시험번호 · 업체 / 시험번호 없음 · 사유
 const subOf = u => hasTestNo(u)
   ? ([u.testId, u.cmpyName || u.prdctName].filter(Boolean).join(' · ') || '시험')
+  : isNoRd(u) ? ['로데이터 연동 없음 · 사용 기록만', u.memo].filter(Boolean).join(' · ')
   : ['시험번호 없음', u.purposeName, u.memo].filter(Boolean).join(' · ');
 const etcTag = () => '';
 const ZONES = new Map();         // zoneSeq → { c, z } (연계 대상 이름·사용 중 확인용)
@@ -100,18 +103,23 @@ function startAttrs(c, z) {
 function endBtn(u, text) {
   return u.canEnd ? `<button class="end" data-end="${u.seq}">${text}</button>` : '';
 }
+// 시험번호로 시작한 시험의 메모 (시험번호 없이 사용은 아래 줄에 이미 사유 · 메모가 나온다)
+function memoNote(u) {
+  return isTest(u) && u.memo ? `<div class="tno memo">✎ ${esc(u.memo)}</div>` : '';
+}
 function staleNote(u) {
-  return u.stale && isRaw(u) ? '<div class="lnote">ERP에서 종료하세요</div>' : '';
+  // 장시간 측정 행: 시험번호 줄과 따로 한 줄 (구역 줄에서도 잘리지 않게, 2026-11-20 시안 1-A)
+  return u.stale && isRaw(u) ? '<div class="lnote erp"><b>!</b>ERP에서 종료하세요</div>' : '';
 }
 // 이 구역을 쓰는 중이면 함께 점유한 구역 안내 (장비 이관)
-function linkNote(z) {
-  return z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="lnote lk">⇄ ${esc(zoneTitle(z.linkZoneSeq))} 장비 이관 받음</div>` : '';
+function linkNote(z, u) {
+  return z && u && hasTestNo(u) && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="lnote lk">⇄ ${esc(zoneTitle(z.linkZoneSeq))} 장비 이관 받음</div>` : '';
 }
 
 function slotOn(u, label, z) {
   return `<div class="slot ${u.stale ? 'warn' : 'on'}"><span class="it">${label}</span>` +
     `<span class="sw">${esc(u.memName)}</span><span class="t">${hm(u.elapsedMin)}</span>` +
-    `<div class="tno ${hasTestNo(u) ? '' : 'none'}">${esc(subOf(u))}${u.stale && isRaw(u) ? ' · ERP에서 종료하세요' : ''}</div>${endBtn(u, '종료')}${linkNote(z)}</div>`;
+    `<div class="tno ${hasTestNo(u) ? '' : isNoRd(u) ? 'nord' : 'none'}">${esc(subOf(u))}</div>${endBtn(u, '종료')}${memoNote(u)}${staleNote(u)}${linkNote(z, u)}</div>`;
 }
 function slotLink(u, label) {
   return `<div class="slot link"><span class="it">${label}</span><span class="sw">${esc(u.memName)}</span>` +
@@ -122,7 +130,7 @@ function card(c, free) {
   const p = free ? null : posOf(c), st = p ? ` style="grid-column:${p[0]};grid-row:${p[1]}"` : '';
   const writer = !me.monitorYn, us = usesOf(c), name = esc(c.chamberName);
 
-  if (isMulti(c)) {
+  if (isMulti(c) && !wholeOf(c)) {
     const n = c.zones.filter(zoneBusy).length, w = us.some(u => u.stale), busy = n > 0;
     const count = c.zones.length > 1 ? `${n} / ${c.zones.length}` : `${us.length}건`;
     const slots = c.zones.map(z => {
@@ -144,13 +152,13 @@ function card(c, free) {
   // 구역 하나, 또는 단독 사용 시험장 (쓰는 구역 = 시험 항목)
   const z = c.zones.find(x => x.uses.length) || c.zones[0], u = z.uses[0];
   if (u) {
-    const w = u.stale, item = isSolo(c) ? z.zoneName : itemOf(u);
+    const w = u.stale, item = u.wholeYn ? '시험장 점유' : isSolo(c) ? z.zoneName : itemOf(u);
     return `<div class="card ${w ? 'warn' : 'on'}"${st}>` +
       `<div class="head"><span class="name">${name}</span><span class="pill ${w ? 'warn' : 'on'}"><i></i>${w ? '장시간 사용' : '사용 중'}</span></div>` +
-      `<div class="meta"><span class="itm">${esc(item)}</span><span class="from">${esc(fromText(u))}</span></div>` +
+      `<div class="meta"><span class="itm${item === '시험장 점유' ? ' hold' : ''}">${esc(item)}</span><span class="from">${esc(fromText(u))}</span></div>` +
       `<div class="big">${hm(u.elapsedMin)}</div>` +
       `<div class="who"><span>${esc(u.memName)}${etcTag(u)}</span>${endBtn(u, '사용 종료')}</div>` +
-      `<div class="tno ${hasTestNo(u) ? '' : 'none'}">${esc(subOf(u))}</div>${staleNote(u)}${linkNote(z)}</div>`;
+      `<div class="tno ${hasTestNo(u) ? '' : isNoRd(u) ? 'nord' : 'none'}">${esc(subOf(u))}</div>${memoNote(u)}${staleNote(u)}${linkNote(z, u)}</div>`;
   }
   // 다른 시험장 시험에 장비를 보낸 상태 (장비 이관 중): 여기서는 시작할 수 없다
   const l = linkedOf(c)[0];
@@ -174,7 +182,7 @@ function live(cs, wide) {
     .sort((a, b) => b.u.elapsedMin - a.u.elapsedMin);
   return `<div class="live ${wide ? 'wide' : ''}"><h3>진행 중 <span class="mark" style="font-weight:500">${rows.length}건</span></h3><div class="lrs">` +
     (rows.map(({ c, z, u }) => `<div class="lr ${u.stale ? 'warn' : ''}">` +
-      `<div class="a">${esc(c.chamberName)}<small>${esc(z.zoneName || itemOf(u))}</small></div>` +
+      `<div class="a">${esc(c.chamberName)}<small>${esc(u.wholeYn ? '시험장 점유' : z.zoneName || itemOf(u))}</small></div>` +
       `<div class="b">${esc(u.memName)}<small>${esc(subOf(u))}</small></div>` +
       `<div class="c">${hm(u.elapsedMin)}</div></div>`).join('')
       || '<div class="mark" style="padding:16px 0">진행 중인 사용이 없습니다</div>') + '</div></div>';
@@ -247,7 +255,7 @@ function render() {
   $('sTot').textContent = '/ ' + units.length;
   $('sRun').textContent = us.length;
   $('sW').textContent = us.filter(u => u.stale).length;
-  $('sE').textContent = us.filter(u => !hasTestNo(u)).length;
+  $('sE').textContent = us.filter(u => !hasTestNo(u) && !isNoRd(u)).length;   // CTI · 4-39 는 미연결이 아니다
 }
 
 // 평면도를 창 높이에 맞춘다 (넓은 화면에서만. 좁으면 CSS 가 순서대로 푼다)
@@ -267,7 +275,7 @@ async function load() {
   if (loading) return;            // 앞 요청이 끝나지 않았으면 건너뛴다
   loading = true;
   try {
-    DATA = await api('api/status');
+    DATA = await api('api/status', undefined, { poll: true });   // 30초 자동 새로고침 — 로그인 연장 안 함
     render();
     const d = new Date();
     $('updated').textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]}) · 갱신 ${nowText()}`;
@@ -284,19 +292,28 @@ async function load() {
    시험원: 일반 사용자는 본인, 기술책임자·관리자는 그 시험의 담당자 중에서 고른다.
    시험번호 없이: 사유를 고른다. */
 let S = null, TESTS = null;      // 사용 시작 입력값, 시험번호 목록 (팝업을 열 때 새로 받는다)
+let MEMBERS = null;              // 시험원 목록 (기술책임자·관리자만. 팝업을 열 때 새로 받는다)
 const closeM = () => $('ov').classList.remove('show');
 const mhead = (title, small) =>
   `<div class="mh"><h3>${title}<small>${esc(small)}</small></h3><button class="mx" data-close aria-label="닫기">×</button></div>`;
 
 // 이 구역을 지금 시작할 수 없으면 이유 (같은 시험장 사용 중 / 연계 대상 사용 중)
-function blockOf(zoneSeq) {
+function blockOf(zoneSeq, tested = true) {
   const h = ZONES.get(zoneSeq);
   if (!h) return '';
   const { c, z } = h;
   if (!z.multiYn && zoneBusy(z)) return '사용 중';
   if (isSolo(c) && isBusy(c)) return '시험장 사용 중';
-  if (z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && zoneBusy(ZONES.get(z.linkZoneSeq).z)) return zoneTitle(z.linkZoneSeq) + ' 사용 중';
+  if (tested && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && zoneBusy(ZONES.get(z.linkZoneSeq).z)) return zoneTitle(z.linkZoneSeq) + ' 사용 중';
   return '';
+}
+
+// 장비 이관 안내: 시험번호로 시작할 때만 (시험번호 없이 시작하면 이관하지 않는다, 기획 X-5)
+function linkHint(z, style) {
+  if (!z || !z.linkZoneSeq) return '';
+  return S.noTest
+    ? `<div class="mark" style="${style}">시험번호 없이 시작하면 ${esc(zoneTitle(z.linkZoneSeq))} 장비는 이관되지 않습니다</div>`
+    : `<div class="mark lk" style="${style}">⇄ ${esc(zoneTitle(z.linkZoneSeq))}도 함께 [사용 중]으로 표시됩니다</div>`;
 }
 
 function openStart(zoneSeq, chamberSeq) {
@@ -304,29 +321,50 @@ function openStart(zoneSeq, chamberSeq) {
   if (!c) return;
   const solo = isSolo(c);
   S = { c, solo, zoneSeq: solo ? null : zoneSeq, label: c.chamberName + (!solo && ZONES.get(zoneSeq).z.zoneName ? ' / ' + ZONES.get(zoneSeq).z.zoneName : ''),
-        noTest: false, test: null, memId: me.memId, purpose: '', q: '' };
+        whole: false, zone0: solo ? null : zoneSeq,
+        noTest: false, test: null, memId: me.revYn ? '' : me.memId, purpose: '', q: '', witness: false, wname: '' };
   if (solo) {
     const open = c.zones.filter(z => !blockOf(z.zoneSeq));
     if (open.length === 1) S.zoneSeq = open[0].zoneSeq;
   }
   TESTS = null;
+  MEMBERS = null;
   drawStart();
   $('ov').classList.add('show');
+  if (me.revYn) {
+    api('api/members').then(d => {
+      MEMBERS = d.members;
+      // 기본값: 본인이 목록에 있고 시험 중이 아니면 본인
+      if (S && !S.memId && MEMBERS.some(m => m.memId === me.memId && !m.busy)) S.memId = me.memId;
+      drawTester();
+    }).catch(e => { MEMBERS = []; const t = $('mTester'); if (t) t.innerHTML = `<div class="inp w100 ro">${esc(e.message)}</div>`; });
+  }
   api('api/tests').then(d => { TESTS = d.tests; if (S && !S.test) drawList(); })
     .catch(e => { TESTS = []; const l = $('mList'); if (l) l.innerHTML = `<div class="si dis">${esc(e.message)}</div>`; });
 }
 
 function drawStart() {
   const c = S.c, z = S.zoneSeq ? ZONES.get(S.zoneSeq).z : null;
-  const items = S.solo ? `<div><label class="lb">시험 항목</label><div class="seg" id="mZone">${c.zones.map(x => {
-      const b = blockOf(x.zoneSeq);
+  const pickItem = S.solo || (S.noTest && c.zones.length > 1);
+  const wholeBlock = c.zones.some(zoneBusy) ? '다른 항목 사용 중' : '';
+  const wholeBtn = S.noTest && c.zones.length > 1
+    ? `<button type="button" data-zone="whole" class="${S.whole ? 'act' : ''}" ${wholeBlock ? 'disabled' : ''}>선택 안 함` +
+      `<small>${wholeBlock || '시험장 전체 점유'}</small></button>` : '';
+  const items = pickItem ? `<div><label class="lb">시험 항목${S.noTest ? ' <span class="opt">선택 안 함 가능</span>' : ''}</label>` +
+    `<div class="seg" id="mZone">${c.zones.map(x => {
+      const b = blockOf(x.zoneSeq, !S.noTest);
       return `<button type="button" data-zone="${x.zoneSeq}" class="${x.zoneSeq === S.zoneSeq ? 'act' : ''}" ${b ? 'disabled' : ''}>` +
-        `${esc(x.zoneName)}${b ? `<small>${esc(b)}</small>` : x.linkZoneSeq ? `<small>${esc(zoneTitle(x.linkZoneSeq))} 장비</small>` : ''}</button>`;
-    }).join('')}</div>${z && z.linkZoneSeq ? `<div class="mark lk" style="margin-top:8px">⇄ ${esc(zoneTitle(z.linkZoneSeq))}도 함께 [사용 중]으로 표시됩니다</div>` : ''}</div>`
-    : (z && z.linkZoneSeq ? `<div class="mark lk">⇄ ${esc(zoneTitle(z.linkZoneSeq))}도 함께 [사용 중]으로 표시됩니다</div>` : '');
+        `${esc(x.zoneName)}${b ? `<small>${esc(b)}</small>` : x.linkZoneSeq && !S.noTest ? `<small>${esc(zoneTitle(x.linkZoneSeq))} 장비</small>` : ''}</button>`;
+    }).join('')}${wholeBtn}</div>${linkHint(z, 'margin-top:8px')}${S.whole ? '<div class="mark" style="margin-top:8px">시험장의 모든 항목이 [사용 중]이 됩니다</div>' : ''}</div>`
+    : linkHint(z, '');
 
   let testBox;
-  if (S.noTest) {
+  const noRd = !!(z && z.noRd);
+  if (noRd) {
+    // 로데이터 연동 없는 시험 (CTI · 4-39): 시험번호 없이 바로 시작 (기획 SC-08)
+    testBox = `<div><label class="lb">시험번호</label><div class="nordbox">${esc(z.zoneName)} 시험은 로데이터와 연결되지 않습니다. ` +
+      `현황판에서 시작·종료 시간만 기록됩니다.</div></div>`;
+  } else if (S.noTest) {
     testBox = `<div><label class="lb">사유</label><div class="seg" id="mPurpose">${me.purposes.map(p =>
       `<button type="button" data-purpose="${esc(p.value)}" class="${S.purpose === p.value ? 'act' : ''}">${esc(p.label)}</button>`).join('')}</div></div>`;
   } else if (S.test) {
@@ -339,28 +377,44 @@ function drawStart() {
       `<div class="mark" style="margin-top:6px">${me.revYn ? '접수·시험중·디버깅인 EMC 시험' : '본인이 담당자인 접수·시험중·디버깅 시험'}만 나옵니다. ` +
       `로데이터가 자동화된 시험은 ERP 로데이터 화면에서 [시작]하세요.</div></div>`;
   }
-  const noTestChk = `<label class="chk"><input type="checkbox" id="mNoTest" ${S.noTest ? 'checked' : ''}> 시험번호 없이 시작 (점검·디버깅 등)</label>`;
+  const noTestChk = noRd ? '' : `<label class="chk"><input type="checkbox" id="mNoTest" ${S.noTest ? 'checked' : ''}> 시험번호 없이 시작 (점검·디버깅 등)</label>`;
 
-  let tester;
-  if (me.revYn && S.test && S.test.mngrs.length) {
-    tester = `<select class="inp w100" id="mMem">${S.test.mngrs.map(m =>
-      `<option value="${esc(m.memId)}" ${m.memId === S.memId ? 'selected' : ''}>${esc(m.memName)}</option>`).join('')}</select>` +
-      '<div class="mark" style="margin-top:6px">이 시험의 담당자 중에서 고릅니다</div>';
-  } else {
-    tester = `<div class="inp w100 ro">${esc(me.memName)}</div>` +
-      `<div class="mark" style="margin-top:6px">${me.revYn ? '시험번호를 고르면 담당자 중에서 고를 수 있습니다' : '본인 이름으로 시작합니다'}</div>`;
-  }
+  // 시험원 + 고객 입회 (기획 SC-06·07): 입회를 체크하면 시험원 칸은 잠기고 입회자 입력란이 나온다
+  const witness = `<div class="two"><div><label class="lb">시험원</label><div id="mTester">${testerHtml()}</div></div>` +
+    `<div><label class="lb">&nbsp;</label><label class="chk wit"><input type="checkbox" id="mWit" ${S.witness ? 'checked' : ''}> 고객 입회</label></div></div>` +
+    (S.witness ? `<div><label class="lb" for="mWname">입회자</label><input class="inp w100" id="mWname" maxlength="100" autocomplete="off"` +
+      ` placeholder="이름 (소속) · 예) 홍길동 (가온테크 품질팀)" value="${esc(S.wname)}"></div>` : '');
 
-  $('modal').innerHTML = mhead('사용 시작', S.label) +
+  $('modal').className = 'modal mstart';      // 시험번호 목록 결과와 상관없이 팝업 크기 고정
+  $('modal').innerHTML = mhead('사용 시작', S.whole ? c.chamberName + ' · 시험장 전체' : z && z.zoneName ? c.chamberName + ' / ' + z.zoneName : c.chamberName) +
     `<div class="mb">${items}${testBox}${noTestChk}
-      <div><label class="lb">시험원</label>${tester}</div>
+      ${witness}
       <div><label class="lb" for="mMemo">메모 (업체명·내용, 200자)</label><input class="inp w100" id="mMemo" maxlength="200" autocomplete="off" value="${esc(S.memo || '')}"></div>
-      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다.</div>
+      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다. (고객 입회 시험은 시험원을 지정하지 않습니다)</div>
       <div class="lerr" id="mErr"></div>
     </div>
     <div class="mf"><button class="btn sec" data-close>취소</button><button class="btn ok" id="mOk">사용 시작</button></div>`;
-  if (!S.noTest && !S.test) { drawList(); $('mQ').focus(); }
+  if (!noRd && !S.noTest && !S.test) { drawList(); $('mQ').focus(); }
 }
+
+function testerHtml() {
+  if (S.witness) {
+    return '<div class="inp w100 ro">입회 시험 (시험원 미지정)</div>' +
+      `<div class="mark" style="margin-top:6px">등록자 ${esc(me.memName)} · 1인 1시험 제한에 걸리지 않습니다</div>`;
+  }
+  if (!me.revYn) {
+    return `<div class="inp w100 ro">${esc(me.memName)}</div><div class="mark" style="margin-top:6px">본인 이름으로 시작합니다</div>`;
+  }
+  if (MEMBERS === null) return '<div class="inp w100 ro">불러오는 중...</div>';
+  // 고른 시험의 담당자를 위로
+  const mng = S.test ? S.test.mngrs.map(m => m.memId) : [];
+  const list = [...MEMBERS].sort((a, b) => (mng.includes(b.memId) ? 1 : 0) - (mng.includes(a.memId) ? 1 : 0));
+  return `<select class="inp w100" id="mMem"><option value="">시험원 선택</option>${list.map(m =>
+      `<option value="${esc(m.memId)}" ${m.memId === S.memId ? 'selected' : ''} ${m.busy ? 'disabled' : ''}>` +
+      `${esc(m.memName)}${mng.includes(m.memId) ? ' (담당)' : ''}${m.busy ? ` — ${esc(m.busy)} 시험 중` : ''}</option>`).join('')}</select>` +
+    '<div class="mark" style="margin-top:6px">다른 시험장에서 시험 중인 시험원은 고를 수 없습니다</div>';
+}
+function drawTester() { const t = $('mTester'); if (t && S) t.innerHTML = testerHtml(); }
 
 // 입력한 글자가 들어간 시험번호만, 일치하는 부분은 노랗게
 function drawList() {
@@ -381,12 +435,19 @@ function drawList() {
 
 async function doStart() {
   const err = $('mErr'), ok = $('mOk');
-  if (!S.zoneSeq) { err.textContent = '시험 항목을 선택하세요.'; return; }
-  if (!S.noTest && !S.test) { err.textContent = '시험번호를 고르거나 "시험번호 없이 시작"을 체크하세요.'; return; }
-  if (S.noTest && !S.purpose) { err.textContent = '사유를 선택하세요.'; return; }
-  const body = { zoneSeq: S.zoneSeq, memo: $('mMemo').value };
-  if (S.noTest) body.purpose = S.purpose;
-  else { body.testSeq = S.test.testSeq; if (me.revYn) body.memId = S.memId; }
+  if (!S.zoneSeq && !S.whole) { err.textContent = '시험 항목을 선택하세요.'; return; }
+  const noRd = !S.whole && !!ZONES.get(S.zoneSeq).z.noRd;
+  if (!noRd && !S.noTest && !S.test) { err.textContent = '시험번호를 고르거나 "시험번호 없이 시작"을 체크하세요.'; return; }
+  if (!noRd && S.noTest && !S.purpose) { err.textContent = '사유를 선택하세요.'; return; }
+  if (S.witness && !S.wname.trim()) { err.textContent = '입회자를 입력하세요.'; $('mWname').focus(); return; }
+  if (!S.witness && me.revYn && !S.memId) { err.textContent = '시험원을 선택하세요.'; return; }
+  const body = { zoneSeq: S.whole ? S.c.zones[0].zoneSeq : S.zoneSeq, memo: $('mMemo').value };
+  if (S.whole) body.whole = true;
+  if (noRd) body.purpose = 'NORD';               // 서버가 구역 이름으로 다시 확인한다
+  else if (S.noTest) body.purpose = S.purpose;
+  else body.testSeq = S.test.testSeq;
+  if (S.witness) { body.witness = true; body.witnessName = S.wname.trim(); }
+  else if (me.revYn) body.memId = S.memId;
   ok.disabled = true;
   try {
     await api('api/etc-use/start', body);
@@ -407,15 +468,18 @@ function openEnd(seq) {
   if (!hit) return;
   const { u, c } = hit;
   const z = c.zones.find(x => x.uses.includes(u));
-  $('modal').innerHTML = mhead('사용 종료', c.chamberName + (z && z.zoneName ? ' / ' + z.zoneName : '')) +
+  $('modal').className = 'modal';
+  $('modal').innerHTML = mhead('사용 종료', c.chamberName + (z && z.zoneName && !u.wholeYn ? ' / ' + z.zoneName : '')) +
     `<div class="mb"><div class="sum">
       ${isTest(u) ? `<span>시험번호</span><div class="mono">${esc(u.testId || '-')}${u.cmpyName || u.prdctName ? ' · ' + esc(u.cmpyName || u.prdctName) : ''}</div>`
+                  : isNoRd(u) ? `<span>시험번호</span><div class="mono">- <span class="mark">(로데이터 연동 없음)</span></div>`
                   : `<span>사유</span><div>${esc(u.purposeName)}</div>`}
       ${u.memo ? `<span>메모</span><div>${esc(u.memo)}</div>` : ''}
       <span>시험원</span><div>${esc(u.memName)}</div>
       <span>시작</span><div>${esc(u.startDt)}</div>
       <span>사용 시간</span><div class="bt">${minText(u.elapsedMin)}</div></div>
-      ${z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="mark lk">⇄ 함께 점유한 ${esc(zoneTitle(z.linkZoneSeq))}도 함께 풀립니다</div>` : ''}
+      ${u.wholeYn ? '<div class="mark">시험장 전체 점유 — 종료하면 모든 항목이 풀립니다</div>' : ''}
+      ${z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && hasTestNo(u) ? `<div class="mark lk">⇄ 함께 점유한 ${esc(zoneTitle(z.linkZoneSeq))}도 함께 풀립니다</div>` : ''}
       <div id="mDelBox" hidden><label class="lb" for="mReason">삭제 사유</label><input class="inp w100" id="mReason" maxlength="200" placeholder="필수 · 잘못 등록한 기록만 삭제하세요" autocomplete="off"></div>
       <div class="lerr" id="mErr"></div>
     </div>
@@ -446,18 +510,21 @@ $('modal').addEventListener('click', (e) => {
   const si = e.target.closest('.si[data-test]');
   if (si) {
     S.test = TESTS.find(t => t.testSeq === Number(si.dataset.test)) || null;
-    // 시험원 기본값: 본인이 담당자면 본인, 아니면 첫 담당자
-    S.memId = S.test && me.revYn && !S.test.mngrs.some(m => m.memId === me.memId) && S.test.mngrs.length
-      ? S.test.mngrs[0].memId : me.memId;
+    // 기술책임자·관리자: 시험원이 비어 있으면 시험 중이 아닌 첫 담당자
+    if (S.test && me.revYn && !S.memId && MEMBERS) {
+      const free = S.test.mngrs.find(m => MEMBERS.some(x => x.memId === m.memId && !x.busy));
+      if (free) S.memId = free.memId;
+    }
     drawStart();
     return;
   }
   const b = e.target.closest('button');
   if (!b) return;
   if ('close' in b.dataset) closeM();
-  else if (b.dataset.zone) { S.zoneSeq = Number(b.dataset.zone); drawStart(); }
+  else if (b.dataset.zone === 'whole') { S.whole = true; S.zoneSeq = null; drawStart(); }
+  else if (b.dataset.zone) { S.whole = false; S.zoneSeq = Number(b.dataset.zone); drawStart(); }
   else if (b.dataset.purpose) { S.purpose = b.dataset.purpose; drawStart(); }
-  else if (b.id === 'mUnpick') { S.test = null; S.memId = me.memId; drawStart(); }
+  else if (b.id === 'mUnpick') { S.test = null; drawStart(); }
   else if (b.id === 'mOk') doStart();
   else if (b.id === 'mEnd') act(`api/etc-use/${b.dataset.seq}/end`, {}, '사용을 종료했습니다');
   else if (b.id === 'mDel') {
@@ -469,12 +536,19 @@ $('modal').addEventListener('click', (e) => {
   }
 });
 $('modal').addEventListener('change', (e) => {
-  if (e.target.id === 'mNoTest') { S.noTest = e.target.checked; S.test = null; S.memId = me.memId; drawStart(); }
+  if (e.target.id === 'mNoTest') {
+    S.noTest = e.target.checked; S.test = null;
+    if (!S.noTest && S.whole) { S.whole = false; S.zoneSeq = S.zone0; }   // 시험번호로 시작하면 항목 필수
+    if (!S.noTest && !S.solo && !S.zoneSeq) S.zoneSeq = S.zone0;
+    drawStart();
+  }
+  else if (e.target.id === 'mWit') { S.witness = e.target.checked; drawStart(); if (S.witness) $('mWname').focus(); }
   else if (e.target.id === 'mMem') S.memId = e.target.value;
 });
 $('modal').addEventListener('input', (e) => {
   if (e.target.id === 'mQ') { S.q = e.target.value; drawList(); }
   else if (e.target.id === 'mMemo') S.memo = e.target.value;
+  else if (e.target.id === 'mWname') S.wname = e.target.value;
 });
 $('modal').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.id === 'mMemo') doStart();

@@ -53,23 +53,40 @@
     prev = Object.assign(prev || {}, cur);
   }
 
-  // 진행 중 목록: 넘치면 천천히 아래로 흐르고, 끝에서 3초 멈췄다가 처음으로
-  let liveTop = 0, livePause = 0;
-  setInterval(() => {
+  // 진행 중 목록: 넘치면 천천히 위로 흐른다. 처음·끝에서 4초 멈추고, 끝에서는 흐려졌다가 처음부터 다시.
+  // scrollTop 은 1px 단위로 끊겨 보여서, 목록(.lrs)을 transform 으로 소수점 단위로 부드럽게 옮긴다.
+  let liveTop = 0, liveWait = 4000, liveFade = 0, liveLast = 0;
+  function liveMove(l) {
+    const rs = l.querySelector('.lrs');
+    if (!rs) return;
+    rs.style.transform = liveTop ? `translate3d(0,${-liveTop}px,0)` : '';
+    rs.style.opacity = liveFade ? '0' : '';
+  }
+  function liveTick(now) {
+    requestAnimationFrame(liveTick);
+    const dt = Math.min(100, now - (liveLast || now));
+    liveLast = now;
     const l = document.querySelector('#view .live');
-    if (!l || !monitorOn()) return;
-    const max = l.scrollHeight - l.clientHeight;
-    if (max <= 2) { liveTop = 0; return; }
-    if (livePause > 0) {
-      livePause--;
-      if (livePause === 0 && liveTop >= max) liveTop = 0;
-      l.scrollTop = liveTop;
-      return;
+    if (!l) return;
+    const rs = l.querySelector('.lrs');
+    if (!rs || !monitorOn()) { liveTop = 0; liveFade = 0; if (rs) liveMove(l); return; }
+    // 목록 아래 끝이 패널 안쪽 아래 끝에 닿을 때까지
+    const pad = parseFloat(getComputedStyle(l).paddingBottom) || 0;
+    const max = Math.max(0, rs.getBoundingClientRect().bottom + liveTop - (l.getBoundingClientRect().bottom - pad));
+    if (max <= 2) { liveTop = 0; liveWait = 4000; liveFade = 0; liveMove(l); return; }
+    if (liveFade) {                        // 흐려진 동안 처음으로 돌아간다
+      liveFade -= dt;
+      if (liveFade <= 0) { liveFade = 0; liveTop = 0; liveWait = 4000; }
+    } else if (liveWait > 0) {
+      liveWait -= dt;
+      if (liveWait <= 0 && liveTop >= max - 2) liveFade = 700;   // 높이는 소수점이 조금씩 흔들려서 2px 여유
+    } else {
+      liveTop = Math.min(max, liveTop + dt * innerHeight / 45000);   // 1080 화면에서 초당 약 24px
+      if (liveTop >= max - 2) liveWait = 4000;
     }
-    liveTop = Math.min(max, liveTop + 1);
-    l.scrollTop = liveTop;
-    if (liveTop >= max || liveTop === 1) livePause = 60;
-  }, 50);
+    liveMove(l);
+  }
+  requestAnimationFrame(liveTick);
 
   // index.html 의 render 뒤에 붙인다 (30초마다·탭을 바꿀 때마다 다시 그려진다)
   const draw = render;
@@ -79,7 +96,7 @@
     changes();
     stats();
     const l = document.querySelector('#view .live');
-    if (l) l.scrollTop = liveTop;
+    if (l) liveMove(l);                    // 다시 그려도 흐르던 위치 그대로
   };
 
   // [모니터용 확대]를 누르면 전체 화면, 해제하면 전체 화면도 해제 (브라우저는 사용자가 누를 때만 전체 화면을 허용한다)

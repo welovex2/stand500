@@ -10,7 +10,7 @@
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
+  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a href="timeline.html">시험원 현황</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
   <div class="sp"></div>
   <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
   <div class="acct" id="acct"><div class="av" id="accAv"></div><div><div class="nm" id="who"></div><span class="rb" id="accRb"></span></div><span class="caret"><i class="ic ic-down"></i></span>
@@ -96,7 +96,8 @@ function zoneRow(z) {
     `<td>${z.multiYn ? '허용' : '-'}</td><td>${z.linkZoneSeq ? '⇄ ' + esc(zoneName(z.linkZoneSeq)) : '-'}</td>` +
     `<td>${esc(z.metKeys.join(', ') || '-')}</td><td>${z.sortNo}</td>` +
     `<td>${z.useYn ? '사용' : '사용 안 함'}` +
-    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}건</span>` : '') + `</td>` +
+    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}건</span>` : '') +
+    ((z.heldBy || []).length ? ` <span class="badge hold">점유 중 · ${esc(z.heldBy.join(', '))}</span>` : '') + `</td>` +
     `<td><button class="ib" data-zone="${z.zoneSeq}">수정</button></td></tr>`;
 }
 
@@ -115,7 +116,8 @@ function zoneChip(c, z) {
   const off = !c.useYn || !z.useYn;
   return `<button type="button" class="zchip${off ? ' off' : ''}" data-zone="${z.zoneSeq}" title="${off ? '사용 안 함 — ERP 목록에 나오지 않음' : '구역 수정'}">` +
     `<span class="fbadge">${c.floor}F</span>${esc(c.name)}${z.name ? ` <small>${esc(z.name)}</small>` : ''}` +
-    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}</span>` : '') + '</button>';
+    (z.activeCnt ? ` <span class="badge warn">사용 중 ${z.activeCnt}</span>` :
+      (z.heldBy || []).length ? ` <span class="badge hold" title="${esc(z.heldBy.join(', '))}">점유 중</span>` : '') + '</button>';
 }
 
 // 시험방법별: 시험방법마다 고를 수 있는 구역 (= ERP 측정 [시작]의 구역 목록)
@@ -276,7 +278,7 @@ $('zoneForm').addEventListener('submit', (e) => {
     if (!me.adminMenu) {
       $('list').innerHTML = '';
       $('addChamber').disabled = true;
-      notice('관리 메뉴는 P01 권한만 사용할 수 있습니다.');
+      notice('관리 메뉴는 관리자(P01·P02)만 사용할 수 있습니다.');
       return;
     }
   } catch (e) {

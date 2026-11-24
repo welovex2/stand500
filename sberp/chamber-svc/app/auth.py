@@ -3,6 +3,9 @@
 
 - 계정은 ERP MEMBER_TB 를 읽어 확인한다. 해시는 ERP(EgovFileScrty.encryptPassword)와 같다.
 - 세션은 서명된 쿠키에 담는다. 서버 메모리에 두지 않으므로 컨테이너를 다시 띄워도 유지된다.
+- 사용하는 동안 연장한다 (마지막 사용 후 session_hours 가 지나면 끊김). 남은 시간이 절반 아래일 때 사람이 보낸
+  요청이 오면 ERP 에서 잠금·퇴사·권한을 다시 읽고 새 쿠키를 준다. 화면 자동 새로고침(X-Chamber-Poll)은 연장하지
+  않는다 — 화면을 켜 두기만 한 PC 가 계속 로그인돼 있지 않게. 모니터 계정은 자동 새로고침으로도 연장한다.
 - 실패 횟수와 계정 잠금은 ERP 와 같은 컬럼(MEMBER_TB.FAIL_PASS_CNT, LOCK_YN)을 쓴다.
   현황판에서 틀린 횟수와 ERP 에서 틀린 횟수가 합쳐지고, 10회가 되면 ERP 로그인도 잠긴다.
   잠금 해제는 ERP 관리자가 한다.
@@ -79,29 +82,43 @@ def login(mem_id: str, password: str, response: Response) -> dict:
     if hmac.compare_digest(encrypt_password(member["ID"] + "300", member["ID"]), member["PASSWORD"] or ""):
         raise HTTPException(403, "초기 비밀번호입니다. ERP에서 비밀번호를 변경한 뒤 로그인하세요.")
 
-    is_monitor = bool(settings.monitor_mem_id) and member["ID"] == settings.monitor_mem_id
-    role = "mon" if is_monitor else role_of(member)
-    if role is None:
+    session = _session_of(member)
+    if session is None:
         raise HTTPException(403, "현황판은 EMC 부서만 사용할 수 있습니다.")
 
     db.login_succeeded(member["ID"])
-    max_age = settings.monitor_days * 86400 if is_monitor else settings.session_hours * 3600
-    session = {
+    _set_cookie(response, session)
+    return session
+
+
+def _max_age(is_monitor: bool) -> int:
+    return settings.monitor_days * 86400 if is_monitor else settings.session_hours * 3600
+
+
+def _session_of(member: dict) -> Optional[dict]:
+    """ERP 회원 정보 → 세션 내용. 현황판을 쓸 수 없는 사람이면 None"""
+    is_monitor = bool(settings.monitor_mem_id) and member["ID"] == settings.monitor_mem_id
+    role = "mon" if is_monitor else role_of(member)
+    if role is None:
+        return None
+    return {
         "id": member["ID"],
         "name": member["MEM_NAME"] or member["ID"],
         "role": role,
-        # 기술책임자·관리자: 다른 사람의 사용 종료·삭제, 시험원 선택, 챔버 관리
+        # 기술책임자·관리자: 다른 사람의 사용 종료·삭제, 시험원 선택
         "rev": role in ("rev", "admin"),
-        # 관리 탭(챔버 관리)은 AUTH_CODE P01 만
-        "p01": (member.get("AUTH_CODE") or "").strip().upper() == "P01",
+        # 관리자(AUTH_CODE P01·P02): 관리 탭(챔버 관리) · 사용 이력 기록 수정. 키 이름은 예전 세션과 맞추려고 p01 그대로
+        "p01": (member.get("AUTH_CODE") or "").strip().upper() in ADMIN_AUTH_CODES,
         "mon": is_monitor,
-        "exp": int(time.time()) + max_age,
+        "exp": int(time.time()) + _max_age(is_monitor),
     }
+
+
+def _set_cookie(response: Response, session: dict) -> None:
     response.set_cookie(
-        COOKIE, _pack(session), max_age=max_age, path=settings.cookie_path,
+        COOKIE, _pack(session), max_age=_max_age(bool(session.get("mon"))), path=settings.cookie_path,
         httponly=True, secure=settings.cookie_secure, samesite="lax",
     )
-    return session
 
 
 def role_of(member: dict) -> Optional[str]:
@@ -119,32 +136,50 @@ def logout(response: Response) -> None:
     response.delete_cookie(COOKIE, path=settings.cookie_path)
 
 
-def require_login(request: Request) -> dict:
+def require_login(request: Request, response: Response) -> dict:
     session = _unpack(request.cookies.get(COOKIE, ""))
     if not session:
         raise HTTPException(401, "로그인이 필요합니다.")
-    return session
+    return _renew(request, response, session)
 
 
-def require_writer(request: Request) -> dict:
+def _renew(request: Request, response: Response, session: dict) -> dict:
+    """사용 중이면 연장. 남은 시간이 절반 아래일 때만 (요청마다 DB 를 읽지 않게)"""
+    poll = request.headers.get("X-Chamber-Poll") == "1"
+    if poll and not session.get("mon"):
+        return session                      # 자동 새로고침은 연장하지 않는다
+    left = session.get("exp", 0) - time.time()
+    if left > _max_age(bool(session.get("mon"))) / 2:
+        return session
+    member = db.fetch_member(session["id"])
+    fresh = _session_of(member) if member and not member["LOCK_YN"] and not member["QUIT_YN"] else None
+    if fresh is None:
+        # ERP 에서 잠겼거나 퇴사·부서 이동으로 쓸 수 없게 됨 → 로그아웃
+        response.delete_cookie(COOKIE, path=settings.cookie_path)
+        raise HTTPException(401, "로그인 정보가 바뀌었습니다. 다시 로그인하세요.")
+    _set_cookie(response, fresh)
+    return fresh
+
+
+def require_writer(request: Request, response: Response) -> dict:
     """모니터 전용 계정은 조회만 할 수 있다."""
-    session = require_login(request)
+    session = require_login(request, response)
     if session.get("mon"):
         raise HTTPException(403, "조회 전용 계정입니다.")
     return session
 
 
-def require_p01(request: Request) -> dict:
-    """관리 탭(챔버 관리)은 AUTH_CODE P01 만"""
-    session = require_writer(request)
+def require_p01(request: Request, response: Response) -> dict:
+    """관리 탭(챔버 관리) · 기록 수정은 관리자(AUTH_CODE P01·P02) 만"""
+    session = require_writer(request, response)
     if not session.get("p01"):
-        raise HTTPException(403, "관리 메뉴는 P01 권한만 사용할 수 있습니다.")
+        raise HTTPException(403, "관리자(P01·P02)만 사용할 수 있습니다.")
     return session
 
 
-def require_rev(request: Request) -> dict:
-    """기술책임자·관리자만. 챔버 관리에 쓴다."""
-    session = require_writer(request)
+def require_rev(request: Request, response: Response) -> dict:
+    """기술책임자·관리자만 (시험원 선택 목록 등)"""
+    session = require_writer(request, response)
     if not session.get("rev"):
         raise HTTPException(403, "기술책임자·관리자만 할 수 있습니다.")
     return session

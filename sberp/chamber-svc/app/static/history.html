@@ -10,7 +10,7 @@
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a href="./">시험장 현황판</a><a class="on" href="history.html">시험장 사용 이력</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
+  <nav><a href="./">시험장 현황판</a><a class="on" href="history.html">시험장 사용 이력</a><a href="timeline.html">시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="sp"></div>
   <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
   <div class="acct" id="acct"><div class="av" id="accAv"></div><div><div class="nm" id="who"></div><span class="rb" id="accRb"></span></div><span class="caret"><i class="ic ic-down"></i></span>
@@ -19,133 +19,331 @@
 <div id="notice"></div>
 <main class="page">
   <div class="h-top"><h2>시험장 사용 이력</h2></div>
+  <!-- 조회 조건 (기획 v7_1 SC-15 ①~⑤) -->
   <form class="box fbox" id="form">
     <label>기간</label>
     <div class="filters">
-      <button type="button" class="chip" data-p="0">오늘</button>
-      <button type="button" class="chip" data-p="7">최근 7일</button>
-      <button type="button" class="chip act" data-p="30">최근 30일</button>
+      <button type="button" class="chip" data-p="today">오늘</button>
+      <button type="button" class="chip act" data-p="week">최근 7일</button>
+      <button type="button" class="chip" data-p="month">이번 달</button>
       <span class="div"></span>
       <input type="date" class="inp" id="from" required> ~ <input type="date" class="inp" id="to" required>
-      <span class="mark">종료일 기준</span>
+      <span class="mark">시작 일시 기준</span>
     </div>
+    <label>층</label>
+    <div class="filters"><div class="views" id="floors"></div></div>
+    <label>시험장</label>
+    <div class="filters" id="chips"></div>
     <label>조건</label>
     <div class="filters">
-      <select class="inp" id="floor"><option value="">층 전체</option></select>
-      <select class="inp" id="chamber"><option value="">시험장 전체</option></select>
-      <select class="inp" id="src">
-        <option value="">구분 전체</option>
-        <option value="RAW">시험 (로데이터)</option>
-        <option value="TEST">시험 (현황판)</option>
-        <option value="NOTEST">시험번호 없이 사용</option>
+      <select class="inp" id="fItem"></select>
+      <select class="inp" id="fMem"><option value="">시험원 전체</option></select>
+      <select class="inp" id="fState">
+        <option value="">상태 전체</option><option value="run">사용 중</option><option value="done">종료</option>
+        <option value="unl">시험번호 미연결</option><option value="wit">고객 입회</option>
       </select>
+      <select class="inp" id="fUse">
+        <option value="">사용 구분 전체</option><option value="test">시험 (시험번호 있음)</option><option value="etc">시험번호 없이 사용</option>
+      </select>
+      <input class="inp" id="fQ" placeholder="시험번호 · 업체명 검색" autocomplete="off" style="width:220px">
       <label class="chk"><input type="checkbox" id="deleted"> 삭제 포함</label>
     </div>
     <div class="fbtns"><button type="button" class="btn sec" id="reset">초기화</button><button class="btn pri">조회</button></div>
   </form>
   <div class="box lbox">
-    <div class="lbox-h"><div><b>조회 결과</b><span class="s" id="sum"></span></div></div>
+    <div class="lbox-h"><div><b>조회 결과</b><span class="s" id="sum"></span></div>
+      <button type="button" class="btn sec" id="xls">엑셀 다운로드</button></div>
     <div class="tablewrap">
-      <table>
+      <table class="htable">
         <thead><tr>
-          <th>구분</th><th>층</th><th>시험장</th><th>구역</th><th>내용</th><th>사용자</th><th>시작</th><th>종료</th><th>사용 시간</th>
+          <th style="width:56px">No.</th><th style="width:56px">층</th><th>시험장</th><th>시험 항목</th><th>시험번호</th><th>시험원</th>
+          <th>시작</th><th>종료</th><th>사용 시간</th><th class="adm" style="width:70px">관리</th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
+    <div class="pager" id="pager"></div>
   </div>
 </main>
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 <script src="app.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
-let CHAMBERS = [];
+const PAGE = 50;
+// ERP EnvMetKey 표시 이름 (항목 칸이 빈 측정 행)
+const MET_LABEL = { CE: 'CE', RE1: 'RE (1)', RE2: 'RE (2)', RE3: 'RE (3)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST',
+  SURGE: 'SURGE', CS: 'CS', MF: 'M-Field', VDIP: 'V-Dip', CLK: 'CLICK', DP: 'DP', TEL: 'TEL' };
+let CHAMBERS = [];      // [{chamberSeq, chamberName, floor, zones:[이름]}]
+let FLOOR = '';
+const PICK = new Set(); // 고른 시험장 (비면 전체)
+let ROWS = [], SHOWN = [], PAGE_NO = 1, STALE_H = 10, ME = null;
 
-// 시험장 목록은 고른 층의 것만
-function drawChambers() {
-  const f = $('floor').value, cur = $('chamber').value;
-  const cs = CHAMBERS.filter(x => !f || String(x.floor) === f);
-  $('chamber').innerHTML = '<option value="">시험장 전체</option>' +
-    cs.map(x => `<option value="${x.chamberSeq}">${x.floor}F · ${esc(x.chamberName)}</option>`).join('');
-  if (cs.some(x => String(x.chamberSeq) === cur)) $('chamber').value = cur;
+const isNoRd = r => r.purpose === 'NORD';                          // CTI · 4-39 (로데이터 연동 없음)
+const hasTest = r => r.src === 'RAW' || r.purpose === 'TEST';
+const noTest = r => r.src === 'ETC' && !hasTest(r) && !isNoRd(r);  // 시험번호 없이 사용
+// 항목이 하나뿐인 시험장(구역 이름 없음)은 측정 행이면 시험방법, 아니면 '-'
+const itemText = r => r.wholeYn ? '시험장 점유' : r.zoneName ? zoneLabel(r.zoneName)
+  : r.src === 'RAW' ? MET_LABEL[r.metKey] || r.metKey || '-' : '-';
+const memText = r => r.witnessYn ? '입회 · ' + (r.witnessName || '') : r.memName;
+
+function iso(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function notice(msg) { $('notice').textContent = msg || ''; $('notice').classList.toggle('on', !!msg); }
+const md = dt => dt ? dt.slice(5) : '';                     // 'MM-DD HH:MM'
+function days(a, b) { return Math.round((new Date(b.slice(0, 10)) - new Date(a.slice(0, 10))) / 86400000); }
+
+// ---------------------------------------------------------------- 조건
+function drawFloors() {
+  const fl = [...new Set(CHAMBERS.map(c => c.floor))].sort();
+  $('floors').innerHTML = [['', '전체'], ...fl.map(f => [String(f), f + '층'])]
+    .map(([v, t]) => `<button type="button" data-f="${v}" class="${v === FLOOR ? 'act' : ''}">${t}</button>`).join('');
+}
+const scope = () => CHAMBERS.filter(c => (!FLOOR || String(c.floor) === FLOOR) && (!PICK.size || PICK.has(c.chamberSeq)));
+function drawChips() {
+  const fl = FLOOR ? [Number(FLOOR)] : [...new Set(CHAMBERS.map(c => c.floor))].sort();
+  $('chips').innerHTML = `<button type="button" class="chip ${PICK.size ? '' : 'act'}" data-c="">전체</button>` +
+    fl.map(f => `<span class="cg">${f}F</span>` + CHAMBERS.filter(c => c.floor === f).map(c =>
+      `<button type="button" class="chip ${PICK.has(c.chamberSeq) ? 'act' : ''}" data-c="${c.chamberSeq}">${esc(c.chamberName)}</button>`).join('')).join('');
+  const cur = $('fItem').value;
+  const items = [...new Set(scope().flatMap(c => c.zones).filter(Boolean))];
+  $('fItem').innerHTML = '<option value="">시험 항목 전체</option>' +
+    items.map(i => `<option ${i === cur ? 'selected' : ''}>${esc(i)}</option>`).join('') +
+    `<option value="@whole" ${cur === '@whole' ? 'selected' : ''}>시험장 점유</option>`;
+}
+function drawMembers() {
+  const cur = $('fMem').value;
+  const names = [...new Set(ROWS.filter(r => !r.witnessYn && r.memName).map(r => r.memName))].sort((a, b) => a.localeCompare(b, 'ko'));
+  $('fMem').innerHTML = '<option value="">시험원 전체</option>' +
+    names.map(n => `<option ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+function setPeriod(p) {
+  const t = new Date(), f = new Date();
+  if (p === 'week') f.setDate(f.getDate() - 7);
+  if (p === 'month') f.setDate(1);
+  $('from').value = iso(f); $('to').value = iso(t);
+  document.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('act', b.dataset.p === p));
 }
 
-function iso(d) {
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-}
-
-function notice(msg) {
-  $('notice').textContent = msg || '';
-  $('notice').classList.toggle('on', !!msg);
-}
-
-function rowHtml(r) {
-  const what = r.src === 'RAW'
-    ? `${esc(r.testId || '시험')} · ${esc(r.metKey)}${r.prdctName ? `<span class="co">${esc(r.prdctName)}</span>` : ''}`
-    : r.purpose === 'TEST'
-      ? `${esc(r.testId || '시험')}${r.prdctName ? `<span class="co">${esc(r.prdctName)}</span>` : ''}${r.memo ? `<span class="co">${esc(r.memo)}</span>` : ''}`
-      : `${esc(r.purposeName)}${r.memo ? `<span class="co">${esc(r.memo)}</span>` : ''}`;
-  // 삭제한 건: 흐린 줄 + 삭제한 사람·시각·사유. 종료 칸은 삭제 시각(종료 전에 지운 경우), 합계에서는 빠진다
-  const del = r.delYn
-    ? `<div class="delinfo">삭제 ${esc(r.delMemName || '')} · ${esc(r.delDt || '')} · ${esc(r.delReason || '')}</div>`
-    : '';
-  return `<tr${r.delYn ? ' class="deleted"' : ''}>` +
-    `<td>${r.src === 'RAW' ? '시험 (로데이터)' : r.purpose === 'TEST' ? '시험 (현황판)' : '<span class="tag">시험번호 없이 사용</span>'}${r.delYn ? '<b class="deltag">삭제</b>' : ''}</td>` +
-    `<td><span class="fbadge">${r.floor}F</span></td><td><b>${esc(r.chamberName)}</b></td>` +
-    `<td>${esc(zoneLabel(r.zoneName))}</td><td>${what}${del}</td><td>${esc(r.memName)}</td>` +
-    `<td>${esc(r.startDt)}</td><td>${esc(r.endDt)}</td><td class="dur">${minText(r.useMin)}</td></tr>`;
-}
-
+// ---------------------------------------------------------------- 조회 (기간·층·시험장·삭제 포함은 서버, 나머지는 화면에서 거른다)
 async function search() {
-  const q = new URLSearchParams({ from: $('from').value, to: $('to').value, src: $('src').value });
-  if ($('chamber').value) q.set('chamberSeq', $('chamber').value);
-  if ($('floor').value) q.set('floor', $('floor').value);
+  const q = new URLSearchParams({ from: $('from').value, to: $('to').value });
+  if (FLOOR) q.set('floor', FLOOR);
+  if (PICK.size) q.set('chamberSeqs', [...PICK].join(','));
   if ($('deleted').checked) q.set('deleted', 'true');
   try {
     const d = await api('api/history?' + q);
-    $('rows').innerHTML = d.rows.length
-      ? d.rows.map(rowHtml).join('')
-      : '<tr><td colspan="9" class="empty">조회 결과가 없습니다</td></tr>';
-    const delCnt = d.rows.filter(r => r.delYn).length;
-    $('sum').textContent = `${d.rows.length}건` +
-      (delCnt ? ` (삭제 ${delCnt}건 포함)` : '') +
-      ` · 총 ${minText(d.totalMin)}` + (delCnt ? ' (삭제 제외)' : '') +
-      (d.truncated ? ' · 건수가 많아 최근 기록만 보여 줍니다. 기간을 줄여 주세요.' : '');
+    ROWS = d.rows; STALE_H = d.staleHours || 10;
+    drawMembers();
+    filter(d.truncated);
     notice('');
-  } catch (e) {
-    notice(e.message);
+  } catch (e) { notice(e.message); }
+}
+function filter(truncated) {
+  const item = $('fItem').value, mem = $('fMem').value, st = $('fState').value, use = $('fUse').value;
+  const q = $('fQ').value.trim().toLowerCase();
+  SHOWN = ROWS.filter(r =>
+    (!item || (item === '@whole' ? r.wholeYn : !r.wholeYn && r.zoneName === item)) &&
+    (!mem || (!r.witnessYn && r.memName === mem)) &&
+    (st !== 'run' || r.running) && (st !== 'done' || !r.running) &&
+    (st !== 'unl' || noTest(r)) && (st !== 'wit' || r.witnessYn) &&
+    (use !== 'test' || hasTest(r)) && (use !== 'etc' || noTest(r)) &&
+    (!q || `${r.testId || ''} ${r.cmpyName || ''}`.toLowerCase().includes(q)));
+  const live = SHOWN.filter(r => !r.delYn), f1 = live.filter(r => r.floor === 1).length;
+  const others = [...new Set(live.map(r => r.floor))].filter(f => f !== 1).sort();
+  const del = SHOWN.length - live.length;
+  $('sum').textContent = `${live.length}건 (1층 ${f1}` +
+    others.map(f => ` · ${f}층 ${live.filter(r => r.floor === f).length}`).join('') + (others.length ? '' : ' · 3층 0') + ')' +
+    ` · 시험번호 없이 사용 ${live.filter(noTest).length}건 · 총 ${minText(live.reduce((s, r) => s + r.useMin, 0))}` +
+    (del ? ` · 삭제 ${del}건 (합계 제외)` : '') +
+    (truncated ? ' · 건수가 많아 최근 기록만 보여 줍니다. 기간을 줄여 주세요.' : '');
+  PAGE_NO = 1;
+  draw();
+}
+
+function rowHtml(r, no) {
+  const item = (r.wholeYn ? '<span class="noi">시험장 점유</span>' : esc(itemText(r))) +
+    (r.linkName ? `<span class="xh">⇄ ${esc(r.linkName)} 장비 이관</span>` : '');
+  const tno = isNoRd(r) ? '<span class="dim">-</span><span class="co">로데이터 연동 없음</span>'
+    : hasTest(r)
+      ? (r.erpUrl ? `<a class="mono" href="${esc(r.erpUrl)}" target="_blank" rel="noopener" title="ERP 로데이터 열기">${esc(r.testId || '시험')}</a>`
+                  : `<span class="mono">${esc(r.testId || '시험')}</span>`) +
+        (r.cmpyName || r.prdctName ? `<span class="co">${esc(r.cmpyName || r.prdctName)}</span>` : '')
+      : `<span class="etc">시험번호 없음</span><span class="co">${esc([r.purposeName, r.memo].filter(Boolean).join(' · ') || '사유 미입력')}</span>`;
+  const del = r.delYn ? `<div class="delinfo">삭제 ${esc(r.delMemName || '')} · ${esc(r.delDt || '')} · ${esc(r.delReason || '')}</div>` : '';
+  const who = r.witnessYn ? `<span class="tag">입회</span><span class="co">${esc(r.witnessName || '-')}</span>` : esc(r.memName || '-');
+  const n = r.running ? 0 : days(r.startDt, r.endDt);
+  const end = r.running ? '<span class="run">사용 중</span>'
+    : esc(md(r.endDt)) + (n === 1 ? '<span class="nd">익일</span>' : n > 1 ? `<span class="nd">+${n}일</span>` : '');
+  // 사용 시간: 10시간 이상은 주황 (진행 중이어도), 그 밖의 진행 중은 초록 (기획 SC-15 ⑩)
+  const dur = `<td class="dur${r.useMin >= STALE_H * 60 ? ' wtxt' : r.running ? ' run' : ''}">${minText(r.useMin)}</td>`;
+  const adm = r.src === 'ETC' && !r.delYn
+    ? `<button type="button" class="ib" data-edit="${r.seq}">수정</button>${r.udtDt ? `<span class="co" title="${esc(r.udtMemName)} · ${esc(r.udtDt)}">수정됨</span>` : ''}`
+    : r.src === 'RAW' ? '<span class="dim" title="측정 행은 ERP 로데이터에서 고칩니다">ERP</span>' : '';
+  return `<tr${r.delYn ? ' class="deleted"' : ''}><td>${no}</td><td><span class="fbadge">${r.floor}F</span></td>` +
+    `<td><b>${esc(r.chamberName)}</b>${r.delYn ? '<b class="deltag">삭제</b>' : ''}</td><td>${item}</td><td>${tno}${del}</td><td>${who}</td>` +
+    `<td>${esc(md(r.startDt))}</td><td>${end}</td>${dur}<td class="adm">${adm}</td></tr>`;
+}
+function draw() {
+  const pages = Math.max(1, Math.ceil(SHOWN.length / PAGE));
+  const part = SHOWN.slice((PAGE_NO - 1) * PAGE, PAGE_NO * PAGE);
+  $('rows').innerHTML = part.length
+    ? part.map((r, i) => rowHtml(r, SHOWN.length - ((PAGE_NO - 1) * PAGE + i))).join('')
+    : '<tr><td colspan="10" class="empty">조회 결과가 없습니다</td></tr>';
+  $('pager').innerHTML = pages > 1
+    ? Array.from({ length: pages }, (_, i) => `<button type="button" data-pg="${i + 1}" class="${i + 1 === PAGE_NO ? 'act' : ''}">${i + 1}</button>`).join('')
+    : '';
+}
+
+// ---------------------------------------------------------------- 엑셀 (지금 조건 그대로 .xlsx, 기획 SC-15 ⑥)
+// 화면에서 거른 행을 서버로 보내 .xlsx 파일로만 바꿔 받는다
+async function download() {
+  const head = ['No.', '층', '시험장', '시험 항목', '장비 이관', '시험번호', '업체', '구분', '사유', '시험원', '입회자', '시작', '종료', '사용 시간(분)', '메모', '삭제'];
+  const kind = r => isNoRd(r) ? '로데이터 연동 없음' : hasTest(r) ? (r.src === 'RAW' ? '시험 (로데이터)' : '시험 (현황판)') : '시험번호 없이 사용';
+  const rows = SHOWN.map((r, i) => [SHOWN.length - i, r.floor + 'F', r.chamberName, itemText(r), r.linkName || '', isNoRd(r) ? '-' : r.testId || '',
+    r.cmpyName || r.prdctName || '', kind(r), noTest(r) ? r.purposeName || '' : '', r.witnessYn ? '' : r.memName || '', r.witnessName || '',
+    r.startDt, r.running ? '사용 중' : r.endDt, r.useMin, r.memo || '', r.delYn ? `${r.delDt} ${r.delReason || ''}` : '']);
+  const btn = $('xls');
+  btn.disabled = true;
+  try {
+    const res = await fetch('api/history/xlsx', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: `시험장_사용이력_${$('from').value}_${$('to').value}`, head, rows }) });
+    if (res.status === 401) { location.href = 'login.html'; return; }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(typeof d.detail === 'string' ? d.detail : '엑셀 파일을 만들지 못했습니다.');
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await res.blob());
+    a.download = `시험장_사용이력_${$('from').value}_${$('to').value}.xlsx`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (e) { notice(typeof e.message === 'string' ? e.message : '엑셀 파일을 만들지 못했습니다.'); }
+  finally { btn.disabled = false; }
+}
+
+// ---------------------------------------------------------------- 기록 수정 (기획 SC-16, P01·P02)
+let E = null, MEMBERS = null;
+const closeM = () => $('ov').classList.remove('show');
+async function openEdit(seq) {
+  const r = ROWS.find(x => x.src === 'ETC' && x.seq === seq);
+  if (!r) return;
+  E = { r, testSeq: hasTest(r) && !isNoRd(r) ? r.testSeq : null, testId: r.testId, cmpy: r.cmpyName, q: '', hits: [], his: null };
+  $('modal').innerHTML = '';   // 이전 팝업의 입력값(수정 사유 등)을 이어받지 않게
+  drawEdit();
+  $('ov').classList.add('show');
+  if (!MEMBERS) MEMBERS = await api('api/members').then(d => d.members).catch(() => []);
+  E.his = await api(`api/etc-use/${seq}/his`).then(d => d.his).catch(() => []);
+  drawEdit();
+}
+function drawEdit() {
+  const r = E.r, dt = v => (v || '').replace(' ', 'T');
+  const keep = id => { const el = $(id); return el ? el.value : null; };
+  const vals = { s: keep('eS') ?? dt(r.startDt), e: keep('eE') ?? dt(r.endDt), w: keep('eW') ?? (r.witnessName || ''),
+    m: keep('eM') ?? r.memId, why: keep('eR') ?? '' };
+  const tbox = isNoRd(r) ? ''
+    : `<div><label class="lb">시험번호</label>` + (E.testSeq
+        ? `<div class="picked"><div><b class="mono">${esc(E.testId)}</b><span>${esc(E.cmpy || '')}</span></div>` +
+          `<button type="button" class="ib x" id="eUnpick">✕ 없음으로</button></div>`
+        : `<div class="srch"><input class="inp w100 mono" id="eQ" placeholder="시험번호 · 업체명 2글자 이상 (상태와 관계없이 EMC 시험)" autocomplete="off" value="${esc(E.q)}">` +
+          (E.q.trim().length >= 2
+            ? `<div class="sl show esl" id="eList">${E.hits.map(t => `<div class="si" data-tseq="${t.testSeq}"><b class="mono">${esc(t.testId)}</b>` +
+                (t.stateName ? `<i class="st">${esc(t.stateName)}</i>` : '') + `<span>${esc(t.cmpyName)}</span></div>`).join('') ||
+                '<div class="si dis">맞는 시험번호가 없습니다</div>'}</div>`
+            : '<div class="mark">지금은 시험번호 없음 · 연결하려면 검색하세요</div>') + '</div>') + '</div>';
+  const mems = MEMBERS || [];
+  const who = r.witnessYn
+    ? `<div><label class="lb" for="eW">입회자 <span class="tag">고객 입회</span></label>` +
+      `<input class="inp w100" id="eW" maxlength="100" placeholder="이름 (소속)" value="${esc(vals.w)}">` +
+      '<div class="mark">고객 입회 시험은 시험원을 지정하지 않습니다. 입회자만 고칩니다.</div></div>'
+    : `<div><label class="lb" for="eM">시험원</label><select class="inp w100" id="eM">` +
+      (mems.some(m => m.memId === r.memId) ? '' : `<option value="${esc(r.memId)}">${esc(r.memName)}</option>`) +
+      mems.map(m => `<option value="${esc(m.memId)}" ${m.memId === vals.m ? 'selected' : ''}>${esc(m.memName)}</option>`).join('') + '</select></div>';
+  const his = E.his === null ? '<div class="mark">수정 이력 불러오는 중...</div>'
+    : E.his.length ? `<div class="his">${E.his.map(h => `<div><b>${esc(h.insDt)} · ${esc(h.memName)}</b> — ${esc(h.reason)}` +
+        `<span>${esc(h.before)}</span><span>→ ${esc(h.after)}</span></div>`).join('')}</div>` : '';
+  $('modal').className = 'modal medit';
+  $('modal').innerHTML =
+    `<div class="mh"><h3>기록 수정<small>${esc(r.chamberName)}${itemText(r) === '-' ? '' : ' · ' + esc(itemText(r))}</small></h3><button class="mx" data-close aria-label="닫기">×</button></div>` +
+    `<div class="mb">${tbox}${who}
+      <div class="two half"><div><label class="lb" for="eS">시작</label><input type="datetime-local" class="inp w100" id="eS" max="${nowLocal()}" value="${esc(vals.s)}"></div>
+      <div><label class="lb" for="eE">종료</label>${r.running
+        ? '<input class="inp w100" id="eE" value="사용 중" disabled>'
+        : `<input type="datetime-local" class="inp w100" id="eE" max="${nowLocal()}" value="${esc(vals.e)}">`}</div></div>
+      ${r.running ? '<div class="mark">진행 중인 기록은 종료 시각을 고칠 수 없습니다. 현황판에서 종료하세요.</div>' : ''}
+      <div><label class="lb" for="eR">수정 사유</label><input class="inp w100" id="eR" maxlength="200" placeholder="필수 · 수정 이력에 기록됩니다" autocomplete="off" value="${esc(vals.why)}"></div>
+      ${his ? `<div><label class="lb">수정 이력</label>${his}</div>` : ''}
+      <div class="lerr" id="eErr"></div></div>
+    <div class="mf"><button type="button" class="btn sec" data-close>취소</button><button type="button" class="btn pri" id="eOk">저장</button></div>`;
+}
+const nowLocal = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+let eTimer = 0;
+async function findTests() {
+  const q = E.q.trim();
+  E.hits = q.length >= 2 ? (await api('api/tests/search?q=' + encodeURIComponent(q)).catch(() => ({ tests: [] }))).tests : [];
+  const pos = $('eQ') && $('eQ').selectionStart;
+  drawEdit();
+  if ($('eQ')) { $('eQ').focus(); $('eQ').setSelectionRange(pos, pos); }
+}
+async function saveEdit() {
+  const r = E.r, err = $('eErr');
+  const body = { testSeq: E.testSeq, startDt: $('eS').value, endDt: r.running ? '' : $('eE').value, reason: $('eR').value };
+  if (r.witnessYn) body.witnessName = $('eW').value; else body.memId = $('eM').value;
+  if (!body.reason.trim()) { err.textContent = '수정 사유를 입력하세요.'; $('eR').focus(); return; }
+  if (body.endDt && body.endDt <= body.startDt) { err.textContent = '종료 시각이 시작 시각보다 빠릅니다.'; return; }
+  $('eOk').disabled = true;
+  try {
+    await api(`api/etc-use/${r.seq}/edit`, body);
+    closeM();
+    toast('수정했습니다 · 수정 이력에 기록됨');
+    search();
+  } catch (e) { err.textContent = e.message; $('eOk').disabled = false; }
+}
+
+// ---------------------------------------------------------------- 이벤트
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button, .si');
+  if (!b) { if (e.target === $('ov')) closeM(); return; }
+  if (b.dataset.p) { setPeriod(b.dataset.p); search(); }
+  else if (b.dataset.f !== undefined) { FLOOR = b.dataset.f; PICK.clear(); drawFloors(); drawChips(); search(); }
+  else if (b.dataset.c !== undefined) {
+    const c = Number(b.dataset.c);
+    if (!c) PICK.clear(); else if (PICK.has(c)) PICK.delete(c); else PICK.add(c);
+    drawChips(); search();
   }
-}
-
-function setPeriod(days) {
-  const today = new Date();
-  $('to').value = iso(today);
-  $('from').value = iso(new Date(today.getTime() - days * 86400000));
-  document.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('act', Number(b.dataset.p) === days));
-}
-
-document.querySelectorAll('[data-p]').forEach(b =>
-  b.addEventListener('click', () => { setPeriod(Number(b.dataset.p)); search(); }));
+  else if (b.dataset.pg) { PAGE_NO = Number(b.dataset.pg); draw(); window.scrollTo(0, 0); }
+  else if (b.dataset.edit) openEdit(Number(b.dataset.edit));
+  else if (b.dataset.close !== undefined) closeM();
+  else if (b.id === 'eUnpick') { E.testSeq = null; E.q = ''; E.hits = []; drawEdit(); $('eQ').focus(); }
+  else if (b.dataset.tseq) { const t = E.hits.find(x => x.testSeq === Number(b.dataset.tseq)); E.testSeq = t.testSeq; E.testId = t.testId; E.cmpy = t.cmpyName; drawEdit(); }
+  else if (b.id === 'eOk') saveEdit();
+  else if (b.id === 'xls') download();
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'eQ') { E.q = e.target.value; clearTimeout(eTimer); eTimer = setTimeout(findTests, 250); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeM(); });
 ['from', 'to'].forEach(id => $(id).addEventListener('change', () =>
   document.querySelectorAll('[data-p]').forEach(b => b.classList.remove('act'))));
+$('deleted').addEventListener('change', search);
 $('form').addEventListener('submit', (e) => { e.preventDefault(); search(); });
-$('floor').addEventListener('change', drawChambers);
 $('reset').addEventListener('click', () => {
-  $('floor').value = ''; drawChambers(); $('chamber').value = ''; $('src').value = ''; $('deleted').checked = false;
-  setPeriod(30); search();
+  FLOOR = ''; PICK.clear(); ['fItem', 'fMem', 'fState', 'fUse', 'fQ'].forEach(id => { $(id).value = ''; });
+  $('deleted').checked = false; drawFloors(); drawChips(); setPeriod('week'); search();
 });
 
 (async () => {
   try {
-    await initPage();
-    CHAMBERS = (await api('api/chambers')).chambers;
-    $('floor').insertAdjacentHTML('beforeend', [...new Set(CHAMBERS.map(x => x.floor))]
-      .map(f => `<option value="${f}">${f}층</option>`).join(''));
-    drawChambers();
+    ME = await initPage();
+    // 시험장과 시험 항목 (사용하는 것만)
+    const st = await api('api/status', undefined, { poll: true });
+    CHAMBERS = st.chambers.map(c => ({ chamberSeq: c.chamberSeq, chamberName: c.chamberName, floor: c.floor,
+      zones: c.zones.map(z => z.zoneName) }));
+    document.body.classList.toggle('canEdit', !!(ME && ME.adminMenu));   // 기록 수정: 관리자 P01·P02 (SC-16 의 경영지원실 대신)
+    drawFloors(); drawChips();
   } catch (e) {
     notice('연결 끊김: ' + e.message);
     return;
   }
-  setPeriod(30);
+  setPeriod('week');
   search();
 })();
 </script>
