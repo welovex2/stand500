@@ -106,12 +106,10 @@ INSERT INTO CHAMBER_ZONE_MET_TB (ZONE_SEQ, MET_KEY) VALUES
 
 --    3-2. 미정 — 표만으로는 ERP 시험방법 키를 정할 수 없다. 추측으로 넣지 않았다.
 --         매핑이 없는 구역은 ERP 측정 [시작]의 구역 목록에 나오지 않는다 (현황판 [사용]은 된다).
---      구역 17~21 (RE 5곳) : 표는 Below 1GHz / Above 1GHz 로 나누는데, ERP 의 RE1·RE2·RE3 은 규격마다
---                            대역이 달라 (RE1 이 9kHz~30MHz 인 규격도, 1GHz 이하인 규격도 있다) 1:1 로 맞지 않는다.
---                            RE 구역 전부에 RE1·RE2·RE3 을 다 넣는 안:
--- INSERT INTO CHAMBER_ZONE_MET_TB (ZONE_SEQ, MET_KEY) VALUES
---     (17, 'RE1'), (17, 'RE2'), (17, 'RE3'), (18, 'RE1'), (18, 'RE2'), (18, 'RE3'), (19, 'RE1'), (19, 'RE2'), (19, 'RE3'),
---     (20, 'RE1'), (20, 'RE2'), (20, 'RE3'), (21, 'RE1'), (21, 'RE2'), (21, 'RE3');
+--      구역 17~21 (RE 5곳) : 시험방법 키(RE1~RE3)가 아니라 대역 RA(RE (Below))·RB(RE (Above))로 매핑한다
+--                            (2026-11-25. RE1~RE3 의 Below·Above 가 규격마다 달라 ERP 가 규격으로 대역을 정한다).
+--                            이 파일 → chamber_link_2026-11-19.sql → chamber_items_2026-11-24.sql 뒤에
+--                            ERP 의 src/main/resources/db/CHAMBER_ZONE_MET_RE_band.sql 로 넣는다 (구역 이름 기준)
 --      구역  5 (EMS #1 / CTI)  : CTI 에 해당하는 ERP 키 확인 필요
 --      구역 10 (EMS #2 / 4-39) : ERP 시험방법 키에 없음 (표에서 "추가"된 항목)
 --      구역 16 의 H/F          : ERP 시험방법 키에 없음. DP 만 넣었다

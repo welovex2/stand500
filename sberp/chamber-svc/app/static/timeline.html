@@ -6,125 +6,12 @@
 <title>시험원 현황</title>
 <script>try { if (localStorage.getItem('chamberTheme') === 'dark') document.documentElement.classList.remove('light'); } catch (e) {}</script>
 <link rel="stylesheet" href="app.css">
-<style>
-/* ---------- 시험원 현황: [지금] 카드형 줄 + 타임라인 / [기간] 여러 날 / 모니터 모드는 카드 ---------- */
-.tl-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.tl-top h2 { margin: 0; }
-.tl-top .sp { flex: 1; }
-.tabs3 { display: inline-flex; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
-.tabs3 button { border: 0; background: none; color: var(--sub); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
-.tabs3 button.act { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--sub); align-items: center; }
-.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
-.desc { font-size: 12.5px; color: var(--muted); margin: -4px 0 12px; }
-
-/* 막대 색 (구분) */
-.k-test { --bar: var(--accent); }
-.k-etc  { --bar: #e8913a; }
-.k-nord { --bar: #8a93a3; }
-.k-wit  { --bar: #8b6cf0; }
-.bar { position: absolute; top: 5px; bottom: 5px; min-width: 3px; border-radius: 5px; background: var(--bar);
-  color: #fff; font-size: 11px; font-weight: 600; line-height: 1; display: flex; align-items: center; padding: 0 6px;
-  overflow: hidden; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
-.bar:hover { filter: brightness(1.08); z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
-.bar.run { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px); }
-.bar.run::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 3px; background: #fff; opacity: .9; animation: blink 1.4s infinite; }
-.bar.long { box-shadow: inset 0 0 0 2px var(--warnTxt); }
-.bar.cut-l { border-top-left-radius: 0; border-bottom-left-radius: 0; }
-@keyframes blink { 50% { opacity: .2; } }
-.nowline { position: absolute; top: 0; bottom: 0; width: 2px; background: #e5484d; z-index: 3; pointer-events: none; }
-.nowline b { position: absolute; top: -18px; left: -18px; font-size: 10.5px; color: #e5484d; background: var(--panel); padding: 0 3px; border-radius: 3px; }
-
-/* ① 지금 기준 타임라인 */
-.g1 { display: grid; grid-template-columns: 250px 1fr; }
-.g1 .hd { height: 30px; position: relative; border-bottom: 1px solid var(--line); }
-.g1 .hd span { position: absolute; top: 8px; font-size: 11px; color: var(--muted); transform: translateX(-50%); }
-.g1 .who { padding: 8px 12px 8px 10px; border-bottom: 1px solid var(--line); min-height: 66px; box-sizing: border-box;
-  border-left: 3px solid transparent; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
-.g1 .who.on { border-left-color: var(--onTxt); }
-.g1 .wh { display: flex; align-items: center; gap: 7px; }
-.g1 .wh .av { width: 24px; height: 24px; border-radius: 50%; background: var(--soft); display: grid; place-items: center;
-  font-size: 11.5px; font-weight: 700; color: var(--sub); flex: none; }
-.g1 .who.on .wh .av { background: var(--onBg2); color: var(--onTxt); }
-.g1 .wh b { font-size: 13.5px; }
-.g1 .wh .st { margin-left: auto; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 9px; background: var(--soft); color: var(--muted); }
-.g1 .who.on .wh .st { background: var(--onBg2); color: var(--onTxt); }
-.g1 .wl { font-size: 11.5px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 31px; }
-.g1 .we { font-size: 16px; font-weight: 700; color: var(--onTxt); padding-left: 31px; line-height: 1.2; }
-.g1 .we.w { color: var(--warnTxt); }
-.g1 .we.idle { font-size: 11.5px; font-weight: 500; color: var(--muted); }
-.g1 .lane { position: relative; border-bottom: 1px solid var(--line); min-height: 66px;
-  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); }
-.g1 .lane.alt, .g1 .who.alt { background-color: var(--sunk); }
-.g1 .lane .bar { top: 16px; bottom: 16px; }
-.g1 .future { position: absolute; top: 0; bottom: 0; right: 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--soft) 6px 8px); opacity: .6; pointer-events: none; }
-.g1 .grp { grid-column: 1 / -1; font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 10px 12px 4px; letter-spacing: .02em; }
-
-/* ② 시험원 카드 */
-.cnt { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-.cnt div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; min-width: 120px; }
-.cnt b { font-size: 22px; display: block; }
-.cnt span { font-size: 12px; color: var(--muted); }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
-.pc { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
-.pc.on { border-color: var(--onTxt); box-shadow: 0 0 0 1px var(--onTxt) inset; }
-.pc .ph { display: flex; align-items: center; gap: 10px; }
-.pc .ph .av { width: 34px; height: 34px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; font-weight: 700; color: var(--sub); }
-.pc.on .ph .av { background: var(--onBg2); color: var(--onTxt); }
-.pc .ph b { font-size: 15px; }
-.pc .ph .st { margin-left: auto; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; background: var(--soft); color: var(--muted); }
-.pc.on .ph .st { background: var(--onBg2); color: var(--onTxt); }
-.pc .cur { min-height: 46px; }
-.pc .cur .t { font-size: 14px; font-weight: 600; }
-.pc .cur .s { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.pc .cur .el { font-size: 22px; font-weight: 700; color: var(--onTxt); }
-.pc .cur .el.w { color: var(--warnTxt); }
-.pc .mini { position: relative; height: 16px; background: var(--sunk); border-radius: 4px; }
-.pc .mini .bar { top: 2px; bottom: 2px; padding: 0; border-radius: 3px; }
-.pc .ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); margin-top: -6px; }
-.pc .ft { display: flex; justify-content: space-between; font-size: 12px; color: var(--sub); border-top: 1px solid var(--line); padding-top: 8px; }
-
-/* ③ 기간 타임라인 */
-.ctl { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-.g3wrap { display: grid; grid-template-columns: 150px 1fr 104px; }
-.g3wrap .col { background: var(--panel); position: relative; z-index: 4; }
-.g3wrap .col .c { height: 40px; border-bottom: 1px solid var(--line); padding: 0 12px; display: flex; align-items: center; font-size: 13px; font-weight: 600; box-sizing: border-box; }
-.g3wrap .col .c.h { height: 46px; font-size: 11.5px; color: var(--muted); font-weight: 700; }
-.g3wrap .col.r .c { white-space: nowrap; justify-content: flex-end; font-variant-numeric: tabular-nums; color: var(--sub); }
-.g3scroll { overflow-x: auto; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
-.g3 { position: relative; }
-.g3 .days { height: 46px; position: relative; border-bottom: 1px solid var(--line); }
-.g3 .day { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line2); }
-.g3 .day b { position: absolute; top: 5px; left: 6px; font-size: 12px; white-space: nowrap; }
-.g3 .day.we b { color: #e5484d; }
-.g3 .day i { position: absolute; bottom: 4px; font-size: 10px; color: var(--dim); font-style: normal; transform: translateX(-50%); }
-.g3 .lane { position: relative; height: 40px; border-bottom: 1px solid var(--line); }
-.g3 .night { position: absolute; top: 46px; bottom: 0; background: var(--sunk); pointer-events: none; }
-.g3 .dl { position: absolute; top: 46px; bottom: 0; width: 1px; background: var(--line2); pointer-events: none; }
-.g3 .bar { top: 7px; bottom: 7px; font-size: 10.5px; }
-
-.dt { display: grid; grid-template-columns: 90px 1fr; gap: 8px 12px; font-size: 13.5px; }
-.dt dt { color: var(--muted); }
-.dt dd { margin: 0; }
-/* 모니터 모드 (벽걸이): 카드만 크게. 보기 전환 · 범례 · 설명은 숨긴다 */
-body.monitor .tl-top .tabs3, body.monitor .tl-top .legend, body.monitor .desc { display: none; }
-body.monitor .page { max-width: none; }
-body.monitor .cnt b { font-size: 34px; }
-body.monitor .cnt span { font-size: 15px; }
-body.monitor .cards { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-body.monitor .pc { padding: 18px 20px 14px; }
-body.monitor .pc .ph b { font-size: 20px; }
-body.monitor .pc .cur .t { font-size: 18px; }
-body.monitor .pc .cur .s { font-size: 14px; }
-body.monitor .pc .cur .el { font-size: 32px; }
-body.monitor .pc .mini { height: 22px; }
-@media (max-width: 720px) { .g1 { grid-template-columns: 150px 1fr; } .g3wrap { grid-template-columns: 96px 1fr 60px; } }
-</style>
+<link rel="stylesheet" href="timeline.css?v=20261124d">
 </head>
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a class="on" href="timeline.html">시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
+  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navTimeline" class="on" href="timeline.html" hidden>시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="sp"></div>
   <button class="hbtn" id="monBtn" data-tip="모니터용 확대"><i class="ic ic-max"></i></button>
   <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
@@ -154,9 +41,9 @@ const $ = (id) => document.getElementById(id);
 const H = 3600e3;
 let VIEW = '1', DATA = null, NOW = new Date(), STALE_H = 10, RANGE3 = 7, END3 = null, timer = 0;
 const DESC = {
-  '1': '지금을 기준으로 앞 10시간 · 뒤 2시간. 사용 중 → 대기 → 오늘 기록 없음 순서이고, 1분마다 새로 고칩니다. 막대를 누르면 자세히.',
+  '1': '',
   '2': '',
-  '3': '여러 날을 이어서 가로로 스크롤. 밤(20시~8시)은 흐리게, 오른쪽에 기간 합계. 쏠림 · 장시간 · 야간 사용을 볼 때.',
+  '3': '',
 };
 
 // ---------------------------------------------------------------- 데이터
@@ -180,18 +67,37 @@ async function load(from, to) {
   DATA = d;
   return d;
 }
-// 줄: EMC 시험원 (기록 없는 사람 포함) + 기록에만 있는 사람 + 고객 입회
+// 줄: EMC 시험원 (기록 없는 사람 포함) + 기록에만 있는 사람 + 고객 입회 (입회 업체별)
+// 입회 업체: 시험번호의 업체 → 없으면 입회자 이름의 괄호 안 소속 ("최윤 (하늘정밀)" → 하늘정밀) → 입회자 이름
+const witKey = r => {
+  if (r.cmpyName) return r.cmpyName;
+  const m = /\(([^()]+)\)\s*$/.exec(r.witnessName || '');
+  return (m && m[1].trim()) || r.witnessName || '고객';
+};
 function lanes(rows) {
   const map = new Map(DATA.members.map(m => [m.memId, { id: m.memId, name: m.memName, rows: [] }]));
-  const wit = { id: '@wit', name: '고객 입회', wit: true, rows: [] };
+  const wits = new Map();
   for (const r of rows) {
-    if (r.witnessYn) { wit.rows.push(r); continue; }
+    if (r.witnessYn) {
+      const k = witKey(r);
+      if (!wits.has(k)) wits.set(k, []);
+      wits.get(k).push(r);
+      continue;
+    }
     if (!map.has(r.memId)) map.set(r.memId, { id: r.memId, name: r.memName || r.memId, rows: [] });
     map.get(r.memId).rows.push(r);
   }
   const out = [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-  if (wit.rows.length) out.push(wit);
   out.forEach(l => l.rows.sort((a, b) => a.s - b.s));
+  // 고객 입회: 업체(입회자)별 한 줄. 같은 업체가 같은 시간에 두 곳 이상이면 그 업체 줄을 겹치지 않게 나눈다
+  for (const k of [...wits.keys()].sort((a, b) => a.localeCompare(b, 'ko'))) {
+    const subs = [];
+    for (const r of wits.get(k).sort((a, b) => a.s - b.s)) {
+      const sub = subs.find(x => { const p = x[x.length - 1]; return !p.running && p.e <= r.s; });   // 진행 중이면 끝나지 않은 것
+      sub ? sub.push(r) : subs.push([r]);
+    }
+    subs.forEach((rs, i) => out.push({ id: '@wit:' + k + ':' + i, name: '입회 · ' + k + (i ? ` (${i + 1})` : ''), wit: true, rows: rs }));
+  }
   return out;
 }
 function barHtml(r, lo, hi, unit) {
@@ -230,19 +136,19 @@ async function view1() {
     const run = l.rows.find(r => r.running);
     if (run) {
       const m = elapsed(run);
-      return { o: 0, on: true, chip: '사용 중', line: `${place(run)} · ${what(run)}`,
+      return { o: 0, on: true, chip: '사용 중', line: `${l.wit ? run.witnessName + ' · ' : ''}${place(run)} · ${what(run)}`,
         big: `<div class="we${m >= STALE_H * 60 ? ' w' : ''}">${minText(m)}</div>` };
     }
     const today = l.rows.filter(r => r.e > d0 && !r.running);
     if (today.length) {
       const last = today[today.length - 1];
-      return { o: 1, chip: '대기', line: `${place(last)} · ${hm(last.e)} 종료`,
+      return { o: 1, chip: '대기', line: `${l.wit ? last.witnessName + ' · ' : ''}${place(last)} · ${hm(last.e)} 종료`,
         big: `<div class="we idle">${minText(Math.round((NOW - last.e) / 60000))} 전 · 오늘 ${today.length}건</div>` };
     }
     return { o: 2, chip: '없음', line: '오늘 기록 없음', big: '' };
   };
   const rows = all.filter(l => !l.wit || l.rows.some(r => r.e > lo))
-    .map(l => ({ l, st: state(l) })).sort((a, b) => (a.l.wit - b.l.wit) || (a.st.o - b.st.o));
+    .map(l => ({ l, st: state(l) })).sort((a, b) => (!!a.l.wit - !!b.l.wit) || (a.st.o - b.st.o));
   const tickPct = h => (h - lo) / (hi - lo) * 100;
   let ticks = '';
   for (let t = new Date(lo); t <= hi; t = new Date(+t + H)) {
@@ -256,13 +162,18 @@ async function view1() {
   let lastO = -1;
   rows.forEach(({ l, st }, i) => {
     const o = l.wit ? 3 : st.o;
-    if (o !== lastO) { html += `<div class="grp">${l.wit ? '고객 입회 (시험원 없음)' : label[o]} · ${rows.filter(x => (x.l.wit ? 3 : x.st.o) === o).length}</div>`; lastO = o; }
+    if (o !== lastO) {
+      const grp = rows.filter(x => (x.l.wit ? 3 : x.st.o) === o);
+      const runN = grp.reduce((n, x) => n + x.l.rows.filter(r => r.running).length, 0);
+      html += `<div class="grp">${l.wit ? `고객 입회 (시험원 없음) · ${new Set(grp.map(x => x.l.rows[0] && witKey(x.l.rows[0]))).size}곳` +
+        (runN ? ` · ${runN}건 진행 중` : '') : `${label[o]} · ${grp.length}`}</div>`;
+      lastO = o;
+    }
     const alt = i % 2 ? ' alt' : '';
-    const card = l.wit
-      ? `<div class="wh"><span class="av">입</span><b>${esc(l.name)}</b></div><div class="wl">시험원 없이 진행한 입회 시험</div>`
-      : `<div class="wh"><span class="av">${esc(l.name[0])}</span><b>${esc(l.name)}</b><span class="st">${st.chip}</span></div>` +
-        `<div class="wl" title="${esc(st.line)}">${esc(st.line)}</div>${st.big}`;
-    html += `<div class="who${alt}${st.on && !l.wit ? ' on' : ''}">${card}</div>` +
+    const chip = l.wit ? (st.on ? '진행 중' : '종료') : st.chip;
+    const card = `<div class="wh"><span class="av">${esc(l.wit ? '입' : l.name[0])}</span><b title="${esc(l.name)}">${esc(l.name)}</b><span class="st">${chip}</span></div>` +
+      `<div class="wl" title="${esc(st.line)}">${esc(st.line)}</div>${st.big}`;
+    html += `<div class="who${alt}${st.on ? ' on' : ''}">${card}</div>` +
       `<div class="lane${alt}" style="${grid}">${l.rows.map(r => barHtml(r, lo, hi, '%')).join('')}` +
       `<div class="future" style="left:${nowPct}%"></div><div class="nowline" style="left:${nowPct}%">${i === 0 ? `<b>${hm(NOW)}</b>` : ''}</div></div>`;
   });
@@ -282,18 +193,18 @@ async function view2() {
     const tot = l.rows.reduce((s, r) => s + Math.max(0, Math.min(r.e, NOW) - Math.max(r.s, d0)), 0) / 60000;
     const last = [...l.rows].reverse().find(r => !r.running);
     return { l, run, tot, last, o: run ? 0 : l.rows.length ? 1 : 2 };
-  }).sort((a, b) => (a.l.wit - b.l.wit) || (a.o - b.o) || a.l.name.localeCompare(b.l.name, 'ko'));
+  }).sort((a, b) => (!!a.l.wit - !!b.l.wit) || (a.o - b.o) || a.l.name.localeCompare(b.l.name, 'ko'));
   let html = summary(ls) + '<div class="cards">';
   for (const x of info) {
     const r = x.run;
     const cur = r
-      ? `<div class="t">${esc(place(r))}</div><div class="s">${esc(what(r))}${r.cmpyName ? ' · ' + esc(r.cmpyName) : ''} · ${hm(r.s)} 시작</div>` +
+      ? `<div class="t">${esc(place(r))}</div><div class="s">${esc(x.l.wit ? r.witnessName : what(r))}${!x.l.wit && r.cmpyName ? ' · ' + esc(r.cmpyName) : ''} · ${hm(r.s)} 시작</div>` +
         `<div class="el${elapsed(r) >= STALE_H * 60 ? ' w' : ''}">${minText(elapsed(r))}</div>`
-      : x.last ? `<div class="t" style="color:var(--sub)">대기 중</div><div class="s">마지막: ${esc(place(x.last))} · ${hm(x.last.e)} 종료 (${minText(Math.round((NOW - x.last.e) / 60000))} 전)</div>`
+      : x.last ? `<div class="t" style="color:var(--sub)">${x.l.wit ? '종료' : '대기 중'}</div><div class="s">마지막: ${esc(place(x.last))} · ${hm(x.last.e)} 종료 (${minText(Math.round((NOW - x.last.e) / 60000))} 전)</div>`
       : '<div class="t" style="color:var(--dim)">오늘 기록 없음</div>';
     const nowPct = Math.min(100, Math.max(0, (NOW - lo) / (hi - lo) * 100));
     html += `<div class="pc${r ? ' on' : ''}"><div class="ph"><span class="av">${esc(x.l.wit ? '입' : x.l.name[0])}</span><b>${esc(x.l.name)}</b>` +
-      `<span class="st">${r ? '사용 중' : x.l.rows.length ? '대기' : '없음'}</span></div><div class="cur">${cur}</div>` +
+      `<span class="st">${r ? (x.l.wit ? '진행 중' : '사용 중') : x.l.wit ? '종료' : x.l.rows.length ? '대기' : '없음'}</span></div><div class="cur">${cur}</div>` +
       `<div class="mini">${x.l.rows.map(q => barHtml(q, lo, hi, '%').replace(/>[^<]*<\/div>$/, '></div>')).join('')}<div class="nowline" style="left:${nowPct}%"></div></div>` +
       `<div class="ticks"><span>7시</span><span>10</span><span>13</span><span>16</span><span>19</span><span>21시</span></div>` +
       `<div class="ft"><span>오늘 ${x.l.rows.length}건</span><span>합계 <b>${minText(Math.round(x.tot))}</b></span></div></div>`;
@@ -337,18 +248,25 @@ async function view3() {
 function detail(key) {
   const r = DATA.rows.find(x => `${x.src}:${x.seq}` === key);
   if (!r) return;
-  const rows = [['시험장', place(r)], ['구분', { test: '시험', etc: '시험번호 없이 사용', nord: '로데이터 연동 없음', wit: '고객 입회 시험' }[kind(r)]],
+  // 왼쪽: 시작 → 사용 시간 → 종료(지금) 흐름, 오른쪽: 누가·무엇을 (시안 B, 2026-11-24)
+  const k = kind(r), min = r.running ? elapsed(r) : r.useMin, long = r.running && min >= STALE_H * 60;
+  const info = [[r.witnessYn ? '입회자' : '시험원', r.witnessYn ? r.witnessName : r.memName],
     ['시험번호', hasTest(r) ? (r.testId || '-') + (r.cmpyName ? ' · ' + r.cmpyName : '') : '-'],
-    ['사유 · 메모', hasTest(r) ? r.memo : [r.purposeName, r.memo].filter(Boolean).join(' · ')],
-    ['시험원', r.witnessYn ? '입회 · ' + r.witnessName : r.memName], ['시작', r.startDt],
-    ['종료', r.running ? '사용 중' : r.endDt], ['사용 시간', minText(r.running ? elapsed(r) : r.useMin)],
+    ['사유 · 메모', (hasTest(r) ? r.memo : [r.purposeName, r.memo].filter(Boolean).join(' · ')) || '-'],
     ['장비 이관', r.linkName ? '⇄ ' + r.linkName : '']].filter(x => x[1]);
-  $('modal').className = 'modal';
-  $('modal').innerHTML = `<div class="mh"><h3>사용 기록<small>${esc(r.src === 'RAW' ? 'ERP 측정' : '현황판')}</small></h3><button class="mx" data-close>×</button></div>` +
-    `<div class="mb"><dl class="dt">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl></div>` +
+  $('modal').className = 'modal mrec k-' + k;
+  $('modal').innerHTML = `<div class="rh"><div class="ri">${r.src === 'RAW' ? 'RAW' : k === 'wit' ? '입회' : 'ETC'}</div>` +
+    `<div class="rt"><b>${esc(place(r))}</b><span>${{ test: '시험', etc: '시험번호 없이 사용', nord: '로데이터 연동 없음', wit: '고객 입회 시험' }[k]} · ${r.src === 'RAW' ? 'ERP 측정' : '현황판'}</span></div>` +
+    `<button class="mx" data-close>×</button></div>` +
+    `<div class="rb"><ol class="steps"><li class="done"><span>시작</span><b>${esc(r.startDt)}</b></li>` +
+    `<li class="gap${r.running ? (long ? ' w' : '') : ' fin'}"><b>${minText(min)}</b>${r.running ? '지금까지' : '사용'}</li>` +
+    `<li class="${r.running ? 'now' : 'done'}"><span>${r.running ? '지금' : '종료'}</span><b>${r.running ? '사용 중' : esc(r.endDt)}</b></li></ol>` +
+    `<div class="kv">${info.map(([t, v]) => `<div><span>${t}</span><b>${esc(v)}</b></div>`).join('')}</div></div>` +
+    (long ? `<div class="rw">${STALE_H}시간 넘게 사용 중입니다. 종료를 빠뜨렸는지 확인해 주세요.</div>` : '') +
     `<div class="mf">${r.erpUrl ? `<a class="btn sec" href="${esc(r.erpUrl)}" target="_blank" rel="noopener">ERP 로데이터</a>` : ''}<button class="btn pri" data-close>닫기</button></div>`;
   $('ov').classList.add('show');
 }
+function notice(msg) { $('notice').textContent = msg || ''; $('notice').classList.toggle('on', !!msg); }
 const MONITOR = () => document.body.classList.contains('monitor');
 async function show(v) {
   if (MONITOR()) v = '2';                 // 모니터 모드는 언제나 카드
@@ -397,7 +315,12 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('ov').cl
   }
   let me;
   try { me = await initPage(); } catch (e) { notice('연결 끊김: ' + e.message); return; }
-  if (me.monitorYn) { document.body.classList.add('monitor'); $('monBtn').hidden = true; }   // 모니터 계정은 항상 카드
+  if (!me.timelineMenu) {               // 기술책임자·관리자만
+    document.querySelector('.tl-top').hidden = true; $('desc').hidden = true;
+    $('view').innerHTML = '<div class="box lbox" style="padding:40px;text-align:center;color:var(--muted)">' +
+      '시험원 현황은 기술책임자·관리자만 볼 수 있습니다.</div>';
+    return;
+  }
   try { v = localStorage.getItem('tlView') || '1'; } catch (e) {}
   if (v !== '3') v = '1';
   show(v);

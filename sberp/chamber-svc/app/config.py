@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     session_hours: int = 1
     monitor_mem_id: str = ""        # 모니터 전용 계정 (조회만, 7일 유지)
     monitor_days: int = 7
+    # 모니터 전용 주소: …/monitor?key=<이 값> 으로 열면 로그인 없이 조회 전용 모니터 화면만 연다.
+    # 일반 로그인 쿠키와 따로 저장하므로 그 PC 에서 누가 로그인·로그아웃해도 모니터 화면은 그대로다.
+    # 비워 두면 이 기능은 꺼진다. 값을 바꾸면 이미 열려 있는 모니터도 끊긴다 (다시 새 주소로 열어야 함)
+    monitor_key: str = ""
     cookie_path: str = "/chamber/"  # 로컬에서 직접 띄울 때는 "/"
     cookie_secure: bool = True      # 로컬(http)에서는 false
 
@@ -79,16 +83,42 @@ PURPOSE_NO_RD = "NORD"
 PURPOSES[PURPOSE_NO_RD] = "로데이터 연동 없음"
 
 
-# 시험규격(TEST_ITEM_TB.TEST_STNDR_SEQ) → ERP 로데이터 수정 화면. ERP 프론트 js/test.js 의 로데이터 화면 분기와 같다
-ERP_RAW_PAGES = {10: "html/raw_update.html", 571: "html/raw_update.html",
-                 7: "html/raw_update_9814.html", 686: "html/raw_update_9814.html",
-                 774: "html/raw_update_9814.html", 775: "html/raw_update_9814.html",
-                 560: "html/raw_update_tel.html", 14: "html/3124/raw_update.html"}
+# 시험규격(TEST_ITEM_TB.TEST_STNDR_SEQ) → ERP 로데이터 화면 계열 (폴더, 파일 뒤붙임).
+# ERP 프론트 js/test.js 의 로데이터 화면 분기와 같다
+ERP_RAW_FAMILY = {10: ("html/", ""), 571: ("html/", ""),
+                  7: ("html/", "_9814"), 686: ("html/", "_9814"), 774: ("html/", "_9814"), 775: ("html/", "_9814"),
+                  560: ("html/", "_tel"), 14: ("html/3124/", "")}
+# 시험방법 키 → 로데이터 항목 화면 (raw_update_{항목}{뒤붙임}.html, ERP 프론트 raw_basic*.js 의 data-tm 값).
+# 계열에 그 항목 화면이 없으면 로데이터 기본 정보 화면(raw_update{뒤붙임}.html)으로 간다
+_RAW_TAB = {"CE": "CE", "RE1": "RE", "RE2": "RE", "RE3": "RE", "ESD": "ED", "RS": "RS", "EFT": "ET",
+            "SURGE": "SG", "CS": "CS", "MF": "MF", "VDIP": "VD"}
+ERP_RAW_TABS = {
+    "": _RAW_TAB,
+    "_9814": dict(_RAW_TAB, RE1="REA", RE2="REB", RE3="REC", CLK="CL", DP="DP"),   # RE 대역별 화면
+    "_tel": {"TEL": "TEL"},
+}
+ERP_RAW_TABS_3124 = {k: v for k, v in _RAW_TAB.items() if v != "MF"}           # 3124 에는 M-Field 화면이 없다
+
+
+def erp_raw_page(stndr_seq, met_key):
+    """(화면 경로, type 값). 시험규격에 로데이터 화면이 없으면 None"""
+    fam = ERP_RAW_FAMILY.get(int(stndr_seq)) if stndr_seq is not None else None
+    if not fam:
+        return None
+    folder, suffix = fam
+    tabs = ERP_RAW_TABS_3124 if folder == "html/3124/" else ERP_RAW_TABS[suffix]
+    tab = tabs.get((met_key or "").upper())
+    if tab:
+        return f"{folder}raw_update_{tab}{suffix}.html", tab
+    return f"{folder}raw_update{suffix}.html", "update"
 
 
 def is_no_rd_zone(zone_name) -> bool:
     return (zone_name or "").strip().upper() in {
         x.strip().upper() for x in settings.no_rd_zones.split(",") if x.strip()}
 
-# 시험방법 키 (ERP EnvMetKey 와 같은 값. 구역별 시험방법 매핑에 쓴다)
-MET_KEYS = ["CE", "RE1", "RE2", "RE3", "ESD", "RS", "EFT", "SURGE", "CS", "MF", "VDIP", "CLK", "DP", "TEL"]
+# 구역별 시험방법 매핑(CHAMBER_ZONE_MET_TB.MET_KEY)에 쓰는 키. RE 가 아니면 ERP EnvMetKey 와 같은 값.
+# RE 는 시험방법(RE1~RE3) 대신 대역으로 매핑한다 (2026-11-25, ERP RawEnvServiceImpl.zoneMetKey):
+#   RA = RE (Below), RB = RE (Above). 9814 는 RE1·RE2 → RA, RE3 → RB / 그 외 규격은 RE1 → RA, RE2 → RB
+#   데이터 전환 : ERP src/main/resources/db/CHAMBER_ZONE_MET_RE_band.sql
+MET_KEYS = ["CE", "RA", "RB", "ESD", "RS", "EFT", "SURGE", "CS", "MF", "VDIP", "CLK", "DP", "TEL"]

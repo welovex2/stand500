@@ -1,5 +1,7 @@
 // 공통: API 호출, 로그인 확인, 머리글, 테마. 주소는 모두 상대 경로 (/chamber/ 아래에서 동작)
 const TIMEOUT_MS = 10000;
+// 모니터 전용 주소(…/monitor?key=)로 연 화면: 일반 로그인과 다른 모니터 쿠키를 쓴다 (서버가 X-Chamber-Kiosk 를 본다)
+const KIOSK = new URLSearchParams(location.search).has('kiosk');
 
 // opts.poll: 화면 자동 새로고침. 로그인 연장으로 치지 않는다 (서버가 X-Chamber-Poll 을 본다)
 async function api(path, body, opts) {
@@ -9,11 +11,12 @@ async function api(path, body, opts) {
     const res = await fetch(path, {
       method: body === undefined ? 'GET' : 'POST',
       headers: Object.assign(body === undefined ? {} : { 'Content-Type': 'application/json' },
-        opts && opts.poll ? { 'X-Chamber-Poll': '1' } : {}),
+        opts && opts.poll ? { 'X-Chamber-Poll': '1' } : {}, KIOSK ? { 'X-Chamber-Kiosk': '1' } : {}),
       body: body === undefined ? undefined : JSON.stringify(body),
       credentials: 'same-origin',
       signal: ctrl.signal,
     });
+    if (res.status === 401 && KIOSK) throw new Error('모니터 주소로 다시 열어 주세요.');   // 로그인 화면으로 보내지 않는다
     if (res.status === 401 && !path.startsWith('api/login')) {
       location.href = 'login.html';
       throw new Error('로그인이 필요합니다.');
@@ -82,6 +85,7 @@ function toast(msg) {
 // 머리글에 사용자 이름·구분과 로그아웃을 넣고, 로그인 정보를 돌려준다
 async function initPage() {
   initTheme();
+  if (KIOSK) document.body.classList.add('kiosk');   // 메뉴 · 계정 · 로그아웃 · 모니터 버튼 숨김
   const me = await api('api/me');
   document.getElementById('who').textContent = me.memName;
   document.getElementById('accAv').textContent = (me.memName || '?')[0];
@@ -91,7 +95,9 @@ async function initPage() {
   rb.textContent = ROLE[me.role] || ROLE.user;
   rb.className = 'rb ' + (me.role || 'user');
   const admin = document.getElementById('navAdmin');
-  if (admin && me.adminMenu) admin.hidden = false;   // 관리 탭(챔버 관리)은 관리자(P01·P02)
+  if (admin && me.adminMenu) admin.hidden = false;
+  const tl = document.getElementById('navTimeline');
+  if (tl && me.timelineMenu) tl.hidden = false;   // 시험원 현황은 기술책임자·관리자   // 관리 탭(챔버 관리)은 관리자(P01·P02)
   const menu = document.getElementById('menu');
   document.getElementById('acct').addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('show'); });
   document.addEventListener('click', () => menu.classList.remove('show'));

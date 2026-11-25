@@ -18,6 +18,8 @@ GRANT SELECT ON erp.TEST_TB      TO 'chamber_svc'@'%';
 GRANT SELECT ON erp.TEST_ITEM_TB TO 'chamber_svc'@'%';
 GRANT SELECT ON erp.JOB_TB       TO 'chamber_svc'@'%';
 GRANT SELECT ON erp.TEST_MNGR_TB TO 'chamber_svc'@'%';   -- 시험 담당자 (사용 시작 때 시험번호 목록·시험원 선택)
+-- 신청서 등록일 (사용 이력 → ERP 로데이터 링크의 sbkInsDt, 2026-11-24). 연결 키와 등록일 컬럼만
+GRANT SELECT (SBK_YM, TYPE, SBK_SEQ, REVISION, INS_DT) ON erp.SBK_TB TO 'chamber_svc'@'%';
 
 -- 로데이터 외 사용 (DELETE 없음 — 삭제는 DEL_YN)
 GRANT SELECT, INSERT, UPDATE ON erp.CHAMBER_ETC_USE_TB TO 'chamber_svc'@'%';

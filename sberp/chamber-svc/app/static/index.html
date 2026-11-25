@@ -6,12 +6,12 @@
 <title>시험장 현황판</title>
 <script>try { if (localStorage.getItem('chamberTheme') === 'dark') document.documentElement.classList.remove('light'); } catch (e) {}</script>
 <link rel="stylesheet" href="app.css">
-<link rel="stylesheet" href="monitor.css">
+<link rel="stylesheet" href="monitor.css?v=20261124b">
 </head>
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a class="on" href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a href="timeline.html">시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
+  <nav><a class="on" href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navTimeline" href="timeline.html" hidden>시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="sigT"><b>시험장 현황판</b><span><i></i>실시간</span></div>
   <div class="sp"></div>
   <div class="sigC"><span id="sigD"></span><b id="sigH"></b><em id="sigS"></em></div>
@@ -58,6 +58,9 @@ const PLAN = {
   'DP/LLA': [2, 4], 'RE(ABOVE)': [3, 4], 'RE(3M)': [5, 3], 'RE(10M)': [5, 4],
 };
 const posOf = c => c.floor === 1 ? PLAN[c.chamberName.toUpperCase().replace(/\s+/g, '')] : null;
+// 3층만 볼 때 자리 [열, 행]: 3F_RE (10m) 은 3F_RE (3m) 바로 아래, 3F_CE 는 3F_RE (3m) 옆. 여기 없는 3층 시험장은 빈자리에 차례로
+const PLAN3 = { '3F_RE(3M)': [1, 1], '3F_RE(10M)': [1, 2], '3F_CE': [2, 1] };
+const pos3Of = c => PLAN3[c.chamberName.toUpperCase().replace(/\s+/g, '')] || null;
 
 const pad = n => String(n).padStart(2, '0');
 const hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
@@ -89,6 +92,8 @@ const subOf = u => hasTestNo(u)
 const etcTag = () => '';
 const ZONES = new Map();         // zoneSeq → { c, z } (연계 대상 이름·사용 중 확인용)
 const zoneTitle = zs => { const h = ZONES.get(zs); return h ? h.c.chamberName + (h.z.zoneName ? ' / ' + h.z.zoneName : '') : ''; };
+// 장비를 보내는 시험장 이름 (기획 v8: "⇄ RS #3 장비 이관 받음", "RS #3 사용 중". 항목 이름은 붙이지 않는다)
+const linkTitle = zs => { const h = ZONES.get(zs); return h ? h.c.chamberName : ''; };
 
 // 'YYYY-MM-DD HH:MM' → 오늘이면 'HH:MM', 어제면 '전일 HH:MM', 그 전이면 'MM-DD HH:MM'
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -113,7 +118,7 @@ function staleNote(u) {
 }
 // 이 구역을 쓰는 중이면 함께 점유한 구역 안내 (장비 이관)
 function linkNote(z, u) {
-  return z && u && hasTestNo(u) && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="lnote lk">⇄ ${esc(zoneTitle(z.linkZoneSeq))} 장비 이관 받음</div>` : '';
+  return z && u && hasTestNo(u) && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) ? `<div class="lnote lk">⇄ ${esc(linkTitle(z.linkZoneSeq))} 장비 이관 받음</div>` : '';
 }
 
 function slotOn(u, label, z) {
@@ -127,7 +132,7 @@ function slotLink(u, label) {
 }
 
 function card(c, free) {
-  const p = free ? null : posOf(c), st = p ? ` style="grid-column:${p[0]};grid-row:${p[1]}"` : '';
+  const p = free === 3 ? pos3Of(c) : free ? null : posOf(c), st = p ? ` style="grid-column:${p[0]};grid-row:${p[1]}"` : '';
   const writer = !me.monitorYn, us = usesOf(c), name = esc(c.chamberName);
 
   if (isMulti(c) && !wholeOf(c)) {
@@ -152,7 +157,7 @@ function card(c, free) {
   // 구역 하나, 또는 단독 사용 시험장 (쓰는 구역 = 시험 항목)
   const z = c.zones.find(x => x.uses.length) || c.zones[0], u = z.uses[0];
   if (u) {
-    const w = u.stale, item = u.wholeYn ? '시험장 점유' : isSolo(c) ? z.zoneName : itemOf(u);
+    const w = u.stale, item = u.wholeYn ? '시험장 점유' : isSolo(c) || z.zoneName ? z.zoneName : itemOf(u);
     return `<div class="card ${w ? 'warn' : 'on'}"${st}>` +
       `<div class="head"><span class="name">${name}</span><span class="pill ${w ? 'warn' : 'on'}"><i></i>${w ? '장시간 사용' : '사용 중'}</span></div>` +
       `<div class="meta"><span class="itm${item === '시험장 점유' ? ' hold' : ''}">${esc(item)}</span><span class="from">${esc(fromText(u))}</span></div>` +
@@ -239,10 +244,9 @@ function render() {
     if (f === 1 && placed.length) {
       view.innerHTML = plan(false, scope) + section('1F 그 외', scope.filter(c => !posOf(c)));
     } else {
-      view.innerHTML = `<div class="floor f3">${scope.map(c => card(c, true)).join('')}${live(scope)}</div>`;
+      view.innerHTML = `<div class="floor f3">${scope.map(c => card(c, f === 3 ? 3 : true)).join('')}${live(scope)}</div>`;
     }
   }
-  fitView();
 
   // 층 탭 (층이 둘 이상일 때만) · 통계. 진행 중 시험에는 장비 이관을 넣지 않는다
   const tabs = $('vTabs');
@@ -256,6 +260,8 @@ function render() {
   $('sRun').textContent = us.length;
   $('sW').textContent = us.filter(u => u.stale).length;
   $('sE').textContent = us.filter(u => !hasTestNo(u) && !isNoRd(u)).length;   // CTI · 4-39 는 미연결이 아니다
+  // 높이는 맨 끝에 잰다: 처음 그릴 때는 층 탭이 위에서 막 나타나 평면도를 아래로 밀기 때문 (먼저 재면 탭 높이만큼 스크롤이 생긴다)
+  fitView();
 }
 
 // 평면도를 창 높이에 맞춘다 (넓은 화면에서만. 좁으면 CSS 가 순서대로 푼다)
@@ -304,7 +310,7 @@ function blockOf(zoneSeq, tested = true) {
   const { c, z } = h;
   if (!z.multiYn && zoneBusy(z)) return '사용 중';
   if (isSolo(c) && isBusy(c)) return '시험장 사용 중';
-  if (tested && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && zoneBusy(ZONES.get(z.linkZoneSeq).z)) return zoneTitle(z.linkZoneSeq) + ' 사용 중';
+  if (tested && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && zoneBusy(ZONES.get(z.linkZoneSeq).z)) return linkTitle(z.linkZoneSeq) + ' 사용 중';
   return '';
 }
 
@@ -312,8 +318,8 @@ function blockOf(zoneSeq, tested = true) {
 function linkHint(z, style) {
   if (!z || !z.linkZoneSeq) return '';
   return S.noTest
-    ? `<div class="mark" style="${style}">시험번호 없이 시작하면 ${esc(zoneTitle(z.linkZoneSeq))} 장비는 이관되지 않습니다</div>`
-    : `<div class="mark lk" style="${style}">⇄ ${esc(zoneTitle(z.linkZoneSeq))}도 함께 [사용 중]으로 표시됩니다</div>`;
+    ? `<div class="mark" style="${style}">시험번호 없이 시작하면 ${esc(linkTitle(z.linkZoneSeq))} 장비는 자동 이관되지 않습니다</div>`
+    : `<div class="mark lk" style="${style}">시작하면 ${esc(linkTitle(z.linkZoneSeq))} 시험장이 자동으로 [장비 이관] 상태가 되고, 종료하면 자동 해제됩니다</div>`;
 }
 
 function openStart(zoneSeq, chamberSeq) {
@@ -354,7 +360,7 @@ function drawStart() {
     `<div class="seg" id="mZone">${c.zones.map(x => {
       const b = blockOf(x.zoneSeq, !S.noTest);
       return `<button type="button" data-zone="${x.zoneSeq}" class="${x.zoneSeq === S.zoneSeq ? 'act' : ''}" ${b ? 'disabled' : ''}>` +
-        `${esc(x.zoneName)}${b ? `<small>${esc(b)}</small>` : x.linkZoneSeq && !S.noTest ? `<small>${esc(zoneTitle(x.linkZoneSeq))} 장비</small>` : ''}</button>`;
+        `${esc(x.zoneName)}${b ? `<small>${esc(b)}</small>` : x.linkZoneSeq && !S.noTest ? `<small>${esc(linkTitle(x.linkZoneSeq))} 장비 자동 이관</small>` : ''}</button>`;
     }).join('')}${wholeBtn}</div>${linkHint(z, 'margin-top:8px')}${S.whole ? '<div class="mark" style="margin-top:8px">시험장의 모든 항목이 [사용 중]이 됩니다</div>' : ''}</div>`
     : linkHint(z, '');
 
@@ -389,8 +395,9 @@ function drawStart() {
   $('modal').innerHTML = mhead('사용 시작', S.whole ? c.chamberName + ' · 시험장 전체' : z && z.zoneName ? c.chamberName + ' / ' + z.zoneName : c.chamberName) +
     `<div class="mb">${items}${testBox}${noTestChk}
       ${witness}
-      <div><label class="lb" for="mMemo">메모 (업체명·내용, 200자)</label><input class="inp w100" id="mMemo" maxlength="200" autocomplete="off" value="${esc(S.memo || '')}"></div>
-      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다. (고객 입회 시험은 시험원을 지정하지 않습니다)</div>
+      <!-- 메모란: 잠시 숨김 (2026-11-24). 다시 쓰려면 hidden 만 지운다. 값은 그대로 서버로 간다 (빈 값) -->
+      <div hidden><label class="lb" for="mMemo">메모 (업체명·내용, 200자)</label><input class="inp w100" id="mMemo" maxlength="200" autocomplete="off" value="${esc(S.memo || '')}"></div>
+      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다.</div>
       <div class="lerr" id="mErr"></div>
     </div>
     <div class="mf"><button class="btn sec" data-close>취소</button><button class="btn ok" id="mOk">사용 시작</button></div>`;
@@ -403,7 +410,7 @@ function testerHtml() {
       `<div class="mark" style="margin-top:6px">등록자 ${esc(me.memName)} · 1인 1시험 제한에 걸리지 않습니다</div>`;
   }
   if (!me.revYn) {
-    return `<div class="inp w100 ro">${esc(me.memName)}</div><div class="mark" style="margin-top:6px">본인 이름으로 시작합니다</div>`;
+    return `<div class="inp w100 ro">${esc(me.memName)}</div>`;
   }
   if (MEMBERS === null) return '<div class="inp w100 ro">불러오는 중...</div>';
   // 고른 시험의 담당자를 위로
@@ -479,11 +486,11 @@ function openEnd(seq) {
       <span>시작</span><div>${esc(u.startDt)}</div>
       <span>사용 시간</span><div class="bt">${minText(u.elapsedMin)}</div></div>
       ${u.wholeYn ? '<div class="mark">시험장 전체 점유 — 종료하면 모든 항목이 풀립니다</div>' : ''}
-      ${z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && hasTestNo(u) ? `<div class="mark lk">⇄ 함께 점유한 ${esc(zoneTitle(z.linkZoneSeq))}도 함께 풀립니다</div>` : ''}
+      ${z && z.linkZoneSeq && ZONES.has(z.linkZoneSeq) && hasTestNo(u) ? `<div class="mark lk">${esc(linkTitle(z.linkZoneSeq))} 장비 이관도 함께 자동 해제됩니다</div>` : ''}
       <div id="mDelBox" hidden><label class="lb" for="mReason">삭제 사유</label><input class="inp w100" id="mReason" maxlength="200" placeholder="필수 · 잘못 등록한 기록만 삭제하세요" autocomplete="off"></div>
       <div class="lerr" id="mErr"></div>
     </div>
-    <div class="mf"><button class="btn del" id="mDel" data-seq="${u.seq}">기록 삭제</button>` +
+    <div class="mf">${me.adminMenu ? `<button class="btn del" id="mDel" data-seq="${u.seq}">기록 삭제</button>` : ''}` +   // 기록 삭제는 관리자(P01·P02)만
     `<button class="btn sec" data-close>취소</button><button class="btn dng" id="mEnd" data-seq="${u.seq}">사용 종료</button></div>`;
   $('ov').classList.add('show');
 }

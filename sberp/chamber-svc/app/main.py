@@ -7,12 +7,12 @@ from urllib.parse import quote
 
 import pymysql
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import auth, db, xlsx
-from .config import (ERP_RAW_PAGES, MET_KEYS, PURPOSE_NO_RD, PURPOSE_TEST, PURPOSES, PURPOSES_RETIRED, TEST_STATE_NAMES,
+from .config import (erp_raw_page,MET_KEYS, PURPOSE_NO_RD, PURPOSE_TEST, PURPOSES, PURPOSES_RETIRED, TEST_STATE_NAMES,
                      is_no_rd_zone, settings)
 
 logging.basicConfig(level=logging.INFO)
@@ -140,7 +140,8 @@ def _me(session: dict) -> dict:
         # user 일반 사용자 / rev 기술책임자 / admin 관리자 / mon 조회 전용 (예전 세션은 role 이 없다)
         "role": session.get("role") or ("mon" if session.get("mon") else "rev" if session.get("rev") else "user"),
         "monitorYn": bool(session.get("mon")),
-        "adminMenu": bool(session.get("p01")),   # 관리 탭 · 기록 수정 (P01·P02)
+        "timelineMenu": bool(session.get("rev")) and not session.get("mon"),   # 시험원 현황 (기술책임자·관리자)
+        "adminMenu": bool(session.get("p01")) and not session.get("mon"),   # 관리 탭 · 기록 수정 (P01·P02, 모니터 화면 제외)
         "staleHours": settings.stale_hours,
         # "시험번호 없이 사용" 사유 (TEST 제외)
         "purposes": [{"value": k, "label": v} for k, v in PURPOSES.items()
@@ -222,20 +223,22 @@ def history(
     out = []
     for r in rows[:limit]:
         row = _use(r)
-        stndr = r.get("STNDR_SEQ")
-        page = ERP_RAW_PAGES.get(int(stndr)) if r["SRC"] == "RAW" and stndr is not None and r.get("RAW_SEQ") else None
+        page = erp_raw_page(r.get("STNDR_SEQ"), r.get("MET_KEY")) if r["SRC"] == "RAW" and r.get("RAW_SEQ") else None
         row.update(
             chamberSeq=r["CHAMBER_SEQ"], chamberName=r["CHAMBER_NAME"], floor=int(r["FLOOR"]),
             zoneName=r["ZONE_NAME"] or "", memId=r.get("MEM_ID") or "",
             endDt=_dt(r["E_DT"]), useMin=int(r["USE_MIN"] or 0), running=r["E_DT"] is None,
             stale=int(r["USE_MIN"] or 0) >= settings.stale_hours * 60,
             testSeq=r.get("TEST_SEQ"),
-            # 장비 이관받은 시험: "⇄ RE (Above) 장비 이관"
-            linkName=(r["LINK_CHAMBER_NAME"] + (" / " + r["LINK_ZONE_NAME"] if r.get("LINK_ZONE_NAME") else ""))
-            if r.get("LINK_CHAMBER_NAME") else "",
-            # 측정 행: 시험번호를 누르면 ERP 로데이터 화면 (자동화 시험규격만 화면이 있다)
-            erpUrl=(f"{settings.erp_web_base.rstrip('/')}/{page}?test={r['TEST_SEQ']}&&type=update"
-                    f"&&raw={r['RAW_SEQ']}&&dt={r.get('REPORT_DT') or '-'}") if page and r.get("TEST_SEQ") else "",
+            # 장비 이관받은 시험: "⇄ RE (Above) 장비 이관" (기획 v8: 장비를 보낸 시험장 이름만)
+            linkName=r.get("LINK_CHAMBER_NAME") or "",
+            # 측정 행: 시험번호를 누르면 ERP 로데이터의 그 시험 항목 화면 (자동화 시험규격만 화면이 있다).
+            # ERP 시험리스트의 RD 링크와 같은 형식: ?test=&&raw=&&type=RS&&rdEditYn=0&&sbkInsDt=26-10-16&dt=-
+            # rdEditYn = ERP 와 같은 TEST_TB.RAW_EDIT_YN (없으면 1, 프로젝트완료면 0)
+            erpUrl=(f"{settings.erp_web_base.rstrip('/')}/{page[0]}?test={r['TEST_SEQ']}&&raw={r['RAW_SEQ']}"
+                    f"&&type={page[1]}&&rdEditYn={1 if r.get('RAW_EDIT_YN') is None else int(r['RAW_EDIT_YN'])}"
+                    f"&&sbkInsDt={r.get('SBK_INS_DT') or ''}"
+                    f"&dt={r.get('REPORT_DT') or '-'}") if page and r.get("TEST_SEQ") else "",
             delYn=bool(r["DEL_YN"]),
             udtDt=_dt(r.get("UDT_DT")), udtMemName=r.get("UDT_MEM_NAME") or "",
         )
@@ -255,9 +258,10 @@ def history(
 def timeline(
     date_from: Optional[date] = Query(None, alias="from"),
     date_to: Optional[date] = Query(None, alias="to"),
-    session: dict = Depends(auth.require_login),
+    session: dict = Depends(auth.require_rev_view),
 ) -> dict:
-    """시험원 현황 (시험원별 타임라인): 기간과 겹치는 사용 기록 + EMC 시험원 목록 (기록이 없는 사람도 빈 줄로)"""
+    """시험원 현황 (시험원별 타임라인): 기간과 겹치는 사용 기록 + EMC 시험원 목록 (기록이 없는 사람도 빈 줄로).
+    기술책임자·관리자만"""
     date_to = date_to or date.today()
     date_from = date_from or date_to
     if (date_to - date_from).days > 31:
@@ -368,6 +372,9 @@ def etc_edit(use_seq: int, body: EtcEditIn, session: dict = Depends(auth.require
             mem_id, mem_name = pick["ID"], pick["MEM_NAME"] or pick["ID"]
     test_id = ""
     test_seq = None if cur["PURPOSE"] == PURPOSE_NO_RD else body.testSeq
+    if cur.get("WHOLE_YN") and test_seq is not None:
+        # 시작과 같은 규칙: 시험장 전체 점유는 시험번호 없이 사용할 때만 (연결했다 빼면 사유가 "기타"로 바뀌는 것도 막는다)
+        raise HTTPException(400, "시험장 전체 점유 기록에는 시험번호를 연결할 수 없습니다.")
     if test_seq is not None and test_seq != cur.get("TEST_SEQ"):
         hit = db.search_test_by_seq(test_seq)
         if not hit:
@@ -475,13 +482,14 @@ def etc_end(use_seq: int, session: dict = Depends(auth.require_writer)) -> dict:
 
 
 @app.post("/api/etc-use/{use_seq}/delete")
-def etc_delete(use_seq: int, body: EtcDeleteIn, session: dict = Depends(auth.require_writer)) -> dict:
+def etc_delete(use_seq: int, body: EtcDeleteIn, session: dict = Depends(auth.require_p01)) -> dict:
+    """기록 삭제: 일단 관리자(P01·P02)만 (2026-11-25. 기획 v8 에는 없는 기능. 기록한 사람 · 기술책임자는 못 한다)"""
     reason = body.reason.strip()
     if not reason:
         raise HTTPException(400, "삭제 사유를 입력하세요.")
     if len(reason) > 200:
         raise HTTPException(400, "삭제 사유는 200자까지 입력할 수 있습니다.")
-    db.delete_etc_use(use_seq, reason, session["id"], bool(session.get("rev")))
+    db.delete_etc_use(use_seq, reason, session["id"], True)
     log.info("사용 삭제: use=%s by %s", use_seq, session["id"])
     return {"ok": True}
 
@@ -581,5 +589,22 @@ def health() -> dict:
     return {"ok": err is None, "service": "chamber-svc", "dbError": err}
 
 
+@app.get("/api/kiosk")
+def kiosk(request: Request) -> dict:
+    """로그인 화면의 [모니터링 화면으로 보기] 버튼: 모니터로 등록된 PC(모니터 쿠키가 있는 브라우저)에만 보인다 (2026-11-25)"""
+    return {"kiosk": auth.kiosk_ok(request)}
+
+
 # 화면 (index.html, history.html, login.html, app.js, app.css). API 경로 뒤에 둔다
+@app.get("/monitor")
+def monitor(key: str = "") -> Response:
+    """모니터 전용 주소: …/monitor?key=MONITOR_KEY → 현황판 모니터 화면.
+    키가 맞으면 모니터 쿠키를 심고 화면으로 보낸다. 주소창에 키가 남지 않게 다시 보낸다.
+    (시험원 현황은 기술책임자·관리자만 볼 수 있어 모니터 화면에서는 열지 않는다)"""
+    resp = RedirectResponse("./?kiosk=1", status_code=303)
+    auth.open_kiosk(key, resp)
+    log.info("모니터 주소로 열림")
+    return resp
+
+
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

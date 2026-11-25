@@ -38,6 +38,7 @@ sql/           chamber_svc_user.sql, dev_seed.sql(개발용 시험 데이터), o
 | `DB_PASSWORD` | (필수) | 비어 있으면 기동 실패 |
 | `SESSION_SECRET` | (필수) | 쿠키 서명 키. 32자 이상. `openssl rand -hex 32` |
 | `MONITOR_MEM_ID` | 없음 | 모니터 전용 계정 아이디 |
+| `MONITOR_KEY` | 없음 | 모니터 전용 주소 키. `…/chamber/monitor?key=<값>` 으로 열면 로그인 없이 조회 전용 모니터 화면만 연다 일반 로그인과 다른 쿠키라 그 PC 에서 누가 로그인·로그아웃해도 그대로. 값을 바꾸면 기존 모니터가 끊긴다. 비우면 기능 꺼짐 |
 | `STALE_HOURS` | `10` | 이 시간을 넘긴 사용 건을 강조. 기획 값(10시간)이 코드 기본값이라 compose 에는 넣지 않는다 |
 | `EMC_DEPT_SEQ` | `5` | 로그인할 수 있는 부서 (`MEMBER_TB.DEPT_SEQ`). 이 부서 = 일반 사용자, + `AUTH_CODE` P04 = 기술책임자. P01·P02 는 부서와 관계없이 관리자 (관리 탭 · 사용 이력 기록 수정 포함) |
 | `RD_AUTO_STNDR` | `10,571,7,686,774,775,560,14` | 시험번호 목록에서 뺄 시험규격 (자동화 로데이터. 프론트 test.js 의 로데이터 화면 분기와 같은 목록) |
@@ -78,7 +79,7 @@ http://localhost:8010/ 로 연다.
 
 1. 이 폴더를 서버의 `/mnt/tc/project/chamber-svc` (개발서버는 `/docker-project/chamber-svc`) 에 둔다
 2. `deploy/docker-compose.chamber-svc.yml` 블록을 서버 compose 의 `services:` 아래에 붙인다 (`context` 경로 확인)
-3. compose `.env` 에 `CHAMBER_DB_PASSWORD`, `CHAMBER_SESSION_SECRET`, `CHAMBER_MONITOR_MEM_ID` 를 넣는다
+3. compose `.env` 에 `CHAMBER_DB_PASSWORD`, `CHAMBER_SESSION_SECRET`, `CHAMBER_MONITOR_MEM_ID`, `CHAMBER_MONITOR_KEY` 를 넣는다
 4. `docker compose up -d --build chamber-svc`
 5. `docker compose exec chamber-svc python -c "import urllib.request;print(urllib.request.urlopen('http://localhost:8000/health').read().decode())"` — `"ok":true` 확인
 6. `deploy/nginx-chamber.conf` 를 nginx 설정에 붙이고 `docker compose exec nginx nginx -t` 후 `docker compose exec nginx nginx -s reload`

@@ -10,6 +10,9 @@
   현황판에서 틀린 횟수와 ERP 에서 틀린 횟수가 합쳐지고, 10회가 되면 ERP 로그인도 잠긴다.
   잠금 해제는 ERP 관리자가 한다.
 - 비밀번호와 쿠키 값은 로그에 남기지 않는다.
+- 모니터 전용 주소(…/monitor?key=MONITOR_KEY): 일반 로그인과 다른 쿠키(chamber_kiosk)에 조회 전용 세션을 담는다.
+  화면이 X-Chamber-Kiosk 머리글을 보낼 때만 그 쿠키를 쓰므로, 같은 PC 에서 누가 로그인·로그아웃해도 모니터는 그대로다.
+  쿠키에는 키의 지문만 넣는다. MONITOR_KEY 를 바꾸면 지문이 달라져 기존 모니터가 끊긴다.
 """
 import base64
 import hashlib
@@ -24,6 +27,8 @@ from . import db
 from .config import ADMIN_AUTH_CODES, REV_AUTH_CODE, settings
 
 COOKIE = "chamber_session"
+KIOSK_COOKIE = "chamber_kiosk"
+KIOSK_MAX_AGE = 400 * 86400          # 브라우저가 허용하는 최대 쿠키 기간. 쓰는 동안 계속 연장한다
 _KEY = settings.session_secret.encode()
 
 
@@ -136,7 +141,48 @@ def logout(response: Response) -> None:
     response.delete_cookie(COOKIE, path=settings.cookie_path)
 
 
+# ---------------------------------------------------------------- 모니터 전용 주소
+
+def _kiosk_fp() -> str:
+    return hashlib.sha256(("kiosk:" + settings.monitor_key).encode()).hexdigest()[:24]
+
+
+def open_kiosk(key: str, response: Response) -> None:
+    """…/monitor?key= 로 들어왔을 때. 키가 맞으면 모니터 쿠키를 심는다"""
+    if not settings.monitor_key or not hmac.compare_digest(key.encode(), settings.monitor_key.encode()):
+        raise HTTPException(404, "Not Found")
+    _set_kiosk(response)
+
+
+def _set_kiosk(response: Response) -> dict:
+    session = {"id": "@monitor", "name": "모니터", "role": "mon", "rev": False, "p01": False, "mon": True,
+               "kiosk": True, "fp": _kiosk_fp(), "exp": int(time.time()) + KIOSK_MAX_AGE}
+    response.set_cookie(KIOSK_COOKIE, _pack(session), max_age=KIOSK_MAX_AGE, path=settings.cookie_path,
+                        httponly=True, secure=settings.cookie_secure, samesite="lax")
+    return session
+
+
+def kiosk_ok(request: Request) -> bool:
+    """이 브라우저가 모니터로 등록돼 있는지 (…/monitor?key= 로 연 적이 있고 키가 그대로인지). 쿠키는 건드리지 않는다"""
+    session = _unpack(request.cookies.get(KIOSK_COOKIE, ""))
+    return bool(session and settings.monitor_key and session.get("kiosk")
+                and hmac.compare_digest(str(session.get("fp", "")), _kiosk_fp()))
+
+
+def _kiosk_session(request: Request, response: Response) -> dict:
+    session = _unpack(request.cookies.get(KIOSK_COOKIE, ""))
+    if (not session or not settings.monitor_key or not session.get("kiosk")
+            or not hmac.compare_digest(str(session.get("fp", "")), _kiosk_fp())):
+        response.delete_cookie(KIOSK_COOKIE, path=settings.cookie_path)
+        raise HTTPException(401, "모니터 주소로 다시 열어 주세요.")
+    if session["exp"] - time.time() < KIOSK_MAX_AGE / 2:
+        session = _set_kiosk(response)      # 켜 두는 동안 만료되지 않게 연장
+    return session
+
+
 def require_login(request: Request, response: Response) -> dict:
+    if request.headers.get("X-Chamber-Kiosk") == "1":
+        return _kiosk_session(request, response)       # 모니터 화면: 일반 로그인과 무관
     session = _unpack(request.cookies.get(COOKIE, ""))
     if not session:
         raise HTTPException(401, "로그인이 필요합니다.")
@@ -174,6 +220,14 @@ def require_p01(request: Request, response: Response) -> dict:
     session = require_writer(request, response)
     if not session.get("p01"):
         raise HTTPException(403, "관리자(P01·P02)만 사용할 수 있습니다.")
+    return session
+
+
+def require_rev_view(request: Request, response: Response) -> dict:
+    """기술책임자·관리자만 볼 수 있는 화면 (시험원 현황). 모니터 화면 · 일반 시험원은 볼 수 없다"""
+    session = require_login(request, response)
+    if session.get("mon") or not session.get("rev"):
+        raise HTTPException(403, "시험원 현황은 기술책임자·관리자만 볼 수 있습니다.")
     return session
 
 

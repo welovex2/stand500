@@ -13,7 +13,7 @@ from typing import List, Optional
 
 import pymysql
 
-from .config import settings
+from .config import MET_KEYS, settings
 
 # 동시 접속 수 제한 — ERP 가 쓸 DB 접속을 차지하지 않게 한다
 _slots = threading.BoundedSemaphore(settings.db_max_conn)
@@ -215,7 +215,16 @@ SELECT u.SRC, u.SEQ, u.RAW_SEQ, c.CHAMBER_SEQ, c.NAME AS CHAMBER_NAME, c.FLOOR, 
        u.DEL_YN, u.DEL_REASON, u.DEL_DT, COALESCE(m.MEM_NAME, u.DEL_MEM_ID) AS DEL_MEM_NAME,
        u.UDT_DT, COALESCE(um.MEM_NAME, u.UDT_MEM_ID) AS UDT_MEM_NAME,
        t.TEST_SEQ, DATE_FORMAT(t.REPORT_DT, '%%y-%%m-%%d') AS REPORT_DT,
+       -- ERP 로데이터 링크의 rdEditYn: ERP rawMapper detail 의 EDIT_YN 과 같은 값 (프로젝트완료(18)면 0)
+       IFNULL(t.RAW_EDIT_YN, 1) AS RAW_EDIT_YN,
        (SELECT ti.TEST_STNDR_SEQ FROM TEST_ITEM_TB ti WHERE ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ LIMIT 1) AS STNDR_SEQ,
+       -- 신청서 등록일 (ERP 로데이터 링크의 sbkInsDt, ERP tstMapper sbkInsDtStr 와 같은 식)
+       (SELECT DATE_FORMAT(s.INS_DT, '%%y-%%m-%%d')
+          FROM TEST_ITEM_TB ti
+               INNER JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+               INNER JOIN SBK_TB s ON s.SBK_YM = j.SBK_YM AND s.TYPE = j.SBK_TYPE
+                                  AND s.SBK_SEQ = j.SBK_SEQ AND s.REVISION = j.SBK_REVISION
+         WHERE ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ LIMIT 1) AS SBK_INS_DT,
        lc.NAME AS LINK_CHAMBER_NAME, lz.NAME AS LINK_ZONE_NAME,
        {TEST_ID_SQL} AS TEST_ID,
        {PRDCT_SQL} AS PRDCT_NAME,
@@ -232,7 +241,10 @@ SELECT u.SRC, u.SEQ, u.RAW_SEQ, c.CHAMBER_SEQ, c.NAME AS CHAMBER_NAME, c.FLOOR, 
     SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, x.TEST_SEQ, NULL,
            x.PURPOSE, x.MEMO, x.MEM_ID, x.MEM_NAME, x.WITNESS_NAME,
            x.REG_MEM_ID, x.WHOLE_YN, x.START_DT, x.END_DT,
-           x.DEL_YN, x.DEL_REASON, x.DEL_MEM_ID, x.DEL_DT, x.UDT_MEM_ID, x.UDT_DT
+           x.DEL_YN, x.DEL_REASON, x.DEL_MEM_ID, x.DEL_DT,
+           -- "수정됨" 은 기록 수정 이력이 있을 때만. UDT_DT 는 [종료] 때도 채워지므로 쓰지 않는다 (2026-11-24)
+           (SELECT h.MEM_ID FROM CHAMBER_ETC_USE_HIS_TB h WHERE h.USE_SEQ = x.USE_SEQ ORDER BY h.HIS_SEQ DESC LIMIT 1),
+           (SELECT MAX(h.INS_DT) FROM CHAMBER_ETC_USE_HIS_TB h WHERE h.USE_SEQ = x.USE_SEQ)
       FROM CHAMBER_ETC_USE_TB x
      WHERE {etc_range} {etc_del}
        ) u
@@ -369,7 +381,7 @@ def fetch_etc_use(use_seq: int) -> Optional[dict]:
         cur.execute(
             f"""
 SELECT x.USE_SEQ, x.PURPOSE, x.TEST_SEQ, x.MEM_ID, x.MEM_NAME, x.WITNESS_NAME, x.START_DT, x.END_DT, x.DEL_YN,
-       {TEST_ID_SQL} AS TEST_ID
+       x.WHOLE_YN, {TEST_ID_SQL} AS TEST_ID
   FROM CHAMBER_ETC_USE_TB x
        LEFT JOIN TEST_TB t ON t.TEST_SEQ = x.TEST_SEQ
  WHERE x.USE_SEQ = %s""",
@@ -807,7 +819,9 @@ def save_zone(zone_seq: Optional[int], chamber_seq: int, name: str, multi_yn: in
             old_keys = {r["MET_KEY"] for r in cur.fetchall()}
 
         new_keys = set(met_keys)
-        for key in sorted(old_keys - new_keys):
+        # 화면이 모르는 키(예: 전환 전 RE1~RE3)는 화면에 안 보이므로 저장 때 지우지 않는다.
+        # 지우면 이름·순서만 바꿔도 ERP 측정 [시작]의 구역 목록에서 빠진다. 정리는 SQL 로 한다
+        for key in sorted((old_keys - new_keys) & set(MET_KEYS)):
             cur.execute("DELETE FROM CHAMBER_ZONE_MET_TB WHERE ZONE_SEQ = %s AND MET_KEY = %s", (zone_seq, key))
         for key in sorted(new_keys - old_keys):
             cur.execute("INSERT INTO CHAMBER_ZONE_MET_TB (ZONE_SEQ, MET_KEY) VALUES (%s, %s)", (zone_seq, key))

@@ -10,7 +10,7 @@
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a href="./">시험장 현황판</a><a class="on" href="history.html">시험장 사용 이력</a><a href="timeline.html">시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
+  <nav><a href="./">시험장 현황판</a><a class="on" href="history.html">시험장 사용 이력</a><a id="navTimeline" href="timeline.html" hidden>시험원 현황</a><a id="navAdmin" href="admin.html" hidden>관리</a></nav>
   <div class="sp"></div>
   <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
   <div class="acct" id="acct"><div class="av" id="accAv"></div><div><div class="nm" id="who"></div><span class="rb" id="accRb"></span></div><span class="caret"><i class="ic ic-down"></i></span>
@@ -177,7 +177,10 @@ function rowHtml(r, no) {
   const dur = `<td class="dur${r.useMin >= STALE_H * 60 ? ' wtxt' : r.running ? ' run' : ''}">${minText(r.useMin)}</td>`;
   const adm = r.src === 'ETC' && !r.delYn
     ? `<button type="button" class="ib" data-edit="${r.seq}">수정</button>${r.udtDt ? `<span class="co" title="${esc(r.udtMemName)} · ${esc(r.udtDt)}">수정됨</span>` : ''}`
-    : r.src === 'RAW' ? '<span class="dim" title="측정 행은 ERP 로데이터에서 고칩니다">ERP</span>' : '';
+    // 측정 행은 ERP 로데이터(그 시험항목 탭)에서 고친다 — ERP 의 시간 규칙(성적서 발급일 · 교정일 · 서명 겹침 · 측정 기간)을 그대로 쓰려고
+    : r.src === 'RAW' ? (r.erpUrl
+        ? `<a class="ib" href="${esc(r.erpUrl)}" target="_blank" rel="noopener" title="ERP 로데이터에서 시작·종료를 고칩니다 (ERP 기술책임자 권한)">수정 ↗</a>`
+        : '<span class="dim" title="측정 행은 ERP 로데이터에서 고칩니다">ERP</span>') : '';
   return `<tr${r.delYn ? ' class="deleted"' : ''}><td>${no}</td><td><span class="fbadge">${r.floor}F</span></td>` +
     `<td><b>${esc(r.chamberName)}</b>${r.delYn ? '<b class="deltag">삭제</b>' : ''}</td><td>${item}</td><td>${tno}${del}</td><td>${who}</td>` +
     `<td>${esc(md(r.startDt))}</td><td>${end}</td>${dur}<td class="adm">${adm}</td></tr>`;
@@ -240,6 +243,9 @@ function drawEdit() {
   const vals = { s: keep('eS') ?? dt(r.startDt), e: keep('eE') ?? dt(r.endDt), w: keep('eW') ?? (r.witnessName || ''),
     m: keep('eM') ?? r.memId, why: keep('eR') ?? '' };
   const tbox = isNoRd(r) ? ''
+    // 시험장 전체 점유는 시험번호 없이 사용할 때만 (시작과 같은 규칙). 사유는 그대로 둔다
+    : r.wholeYn && !E.testSeq ? `<div><label class="lb">시험번호</label><div class="mark">시험장 전체 점유 기록은 시험번호 없이 사용합니다` +
+        `${r.purposeName ? ' · 사유 ' + esc(r.purposeName) : ''}</div></div>`
     : `<div><label class="lb">시험번호</label>` + (E.testSeq
         ? `<div class="picked"><div><b class="mono">${esc(E.testId)}</b><span>${esc(E.cmpy || '')}</span></div>` +
           `<button type="button" class="ib x" id="eUnpick">✕ 없음으로</button></div>`

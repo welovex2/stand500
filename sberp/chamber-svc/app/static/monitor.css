@@ -237,3 +237,15 @@ body.monitor .live h3{position:relative;top:auto}
 body.monitor .live .lrs{will-change:transform;transition:opacity .6s ease}
 body.monitor .lr .b{font-size:calc(var(--u)*.7);font-weight:600}
 body.monitor .lr .b small{font-size:calc(var(--u)*.56)}
+
+/* ---- 진행 중 목록 글자 한 단계 작게 (2026-11-24) ----
+   한 줄 높이를 약 2.7u → 2.0u 로 줄여 같은 칸에 더 많은 줄이 들어가게 한다 (몇 줄만 넘쳐 흐르는 어색한 움직임을 줄임) */
+body.monitor .lr{padding:calc(var(--u)*.22) 0;gap:calc(var(--u)*.5)}
+body.monitor .lr .a{font-size:calc(var(--u)*.68);line-height:1.25}
+body.monitor .lr .b{font-size:calc(var(--u)*.6);line-height:1.25}
+body.monitor .lr small,body.monitor .lr .b small{font-size:calc(var(--u)*.5);line-height:1.25;margin-top:calc(var(--u)*.04)}
+body.monitor .lr .c{font-size:calc(var(--u)*.95)}
+body.monitor .live h3{font-size:calc(var(--u)*.8)}
+
+/* 모니터 모드에서는 "ERP에서 종료하세요" 안내를 뺀다 (보기 전용 화면, 2026-11-24). 장시간 주황 표시는 그대로 */
+body.monitor .lnote.erp{display:none}

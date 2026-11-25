@@ -10,7 +10,7 @@
 <body>
 <header>
   <a class="logo" href="./"><img src="logo.svg" alt="Standard Bank"></a>
-  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a href="timeline.html">시험원 현황</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
+  <nav><a href="./">시험장 현황판</a><a href="history.html">시험장 사용 이력</a><a id="navTimeline" href="timeline.html" hidden>시험원 현황</a><a id="navAdmin" class="on" href="admin.html" hidden>관리</a></nav>
   <div class="sp"></div>
   <button class="hbtn" id="thBtn" data-tip="다크 모드"><i class="ic ic-moon"></i></button>
   <div class="acct" id="acct"><div class="av" id="accAv"></div><div><div class="nm" id="who"></div><span class="rb" id="accRb"></span></div><span class="caret"><i class="ic ic-down"></i></span>
@@ -69,11 +69,13 @@
 let data = { chambers: [], metKeys: [] };
 let MODE = 'chamber';                      // chamber: 챔버별 / met: 시험방법별
 try { if (localStorage.getItem('chamberAdminMode') === 'met') MODE = 'met'; } catch (e) { /* 기본값 */ }
-// ERP EnvMetKey 의 표시 이름 (raw/dto/EnvMetKey.java)
+// 시험방법 표시 이름. RE 가 아니면 ERP EnvMetKey 의 이름 (raw/dto/EnvMetKey.java)
+// RE 는 대역으로 매핑한다 : RA = RE (Below), RB = RE (Above). 규격별 RE1~RE3 → 대역은 ERP 가 정한다
 const MET_LABEL = {
-  CE: 'CE', RE1: 'RE (1)', RE2: 'RE (2)', RE3: 'RE (3)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST', SURGE: 'SURGE',
+  CE: 'CE', RA: 'RE (Below)', RB: 'RE (Above)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST', SURGE: 'SURGE',
   CS: 'CS', MF: 'M-Field', VDIP: 'V-Dip', CLK: 'Click', DP: 'DP', TEL: 'TEL',
 };
+const RE_BAND = ['RA', 'RB'];
 let editChamber = null, editZone = null;   // 수정 중인 번호 (null = 추가)
 const $ = (id) => document.getElementById(id);
 
@@ -221,7 +223,9 @@ function openZone(z, chamberSeq) {
   $('zUse').checked = z ? z.useYn : true;
   const on = z ? z.metKeys : [];
   $('zMets').innerHTML = data.metKeys.map(k =>
-    `<label><input type="checkbox" value="${esc(k)}"${on.includes(k) ? ' checked' : ''}>${esc(k)}</label>`).join('');
+    // RE 대역(RA·RB)은 키만으로는 뜻을 알 수 없어 이름을 붙인다. 나머지는 키 그대로
+    `<label><input type="checkbox" value="${esc(k)}"${on.includes(k) ? ' checked' : ''}>${esc(k)}` +
+    `${RE_BAND.includes(k) ? `<span class="mn">${esc(MET_LABEL[k])}</span>` : ''}</label>`).join('');
   $('zErr').textContent = '';
   $('zoneDlg').showModal();
 }

@@ -5,6 +5,7 @@
 #   CHAMBER_DB_PASSWORD=      (sql/chamber_svc_user.sql 에서 정한 값)
 #   CHAMBER_SESSION_SECRET=   (32자 이상. 만들기: openssl rand -hex 32)
 #   CHAMBER_MONITOR_MEM_ID=   (시험실 모니터 전용 계정 아이디. 없으면 비워 둔다)
+#   CHAMBER_MONITOR_KEY=      (모니터 전용 주소 …/chamber/monitor?key=값. 긴 무작위 값, 예: openssl rand -hex 24. 비우면 꺼짐)
 
   # 챔버 현황판 (현황·이력·로데이터 외 사용). nginx /chamber/ 로만 접근.
   chamber-svc:
@@ -22,6 +23,7 @@
       - DB_PASSWORD=${CHAMBER_DB_PASSWORD:-}
       - SESSION_SECRET=${CHAMBER_SESSION_SECRET:-}
       - MONITOR_MEM_ID=${CHAMBER_MONITOR_MEM_ID:-}
+      - MONITOR_KEY=${CHAMBER_MONITOR_KEY:-}
     expose:
       - "8000"
     mem_limit: 256m
