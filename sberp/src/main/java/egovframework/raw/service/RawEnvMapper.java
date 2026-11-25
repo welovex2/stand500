@@ -47,8 +47,23 @@ public interface RawEnvMapper {
 
   // ---------------------------------------------------------------- 챔버 구역
 
-  /** 구역 행 잠금 (트랜잭션 안에서, RAW_TB 잠금 뒤에 호출). 구역이 없으면 null */
-  Integer lockZone(@Param("zoneSeq") int zoneSeq);
+  /** 이 구역을 쓰면 함께 점유되는 구역 번호 (자신 포함, 번호 순). 동시 사용 허용 구역이면 빈 목록 */
+  List<Integer> selectOccZones(@Param("zoneSeq") int zoneSeq);
+
+  /**
+   * 구역 행 잠금 (트랜잭션 안에서, RAW_TB 잠금 뒤에 호출). 주어진 구역만 번호 순으로 잠근다 (chamber-svc 와 같은 순서).
+   * 잠근 구역 번호 목록 (없는 구역은 빠진다)
+   */
+  List<Integer> lockZones(@Param("zoneSeqs") List<Integer> zoneSeqs);
+
+  /**
+   * 숨김 챔버(CHAMBER_TB.USE_YN=0)에서 그 시험방법이 매핑된 구역 1건 (번호가 가장 작은 것). 없으면 null.
+   * TEL 처럼 챔버를 고르지 않고 고정 구역을 쓰는 시험방법용 (현황판·선택 목록에는 안 보인다)
+   */
+  RawEnvZone selectHiddenZone(@Param("metKey") String metKey);
+
+  /** 로데이터 시험의 규격 (TEST_ITEM_TB.TEST_STNDR_SEQ). RE 대역(RA·RB) 판단용. 없으면 null */
+  Integer selectStndrSeq(@Param("rawSeq") int rawSeq);
 
   /** 그 시험방법에서 고를 수 있는 구역 (구역·챔버 사용 중 + 매핑). 아니면 null */
   RawEnvZone selectZoneForMet(@Param("zoneSeq") int zoneSeq, @Param("metKey") String metKey);
@@ -65,6 +80,13 @@ public interface RawEnvMapper {
    */
   RawEnvZone selectZoneConflict(@Param("envSeq") int envSeq, @Param("zoneSeq") int zoneSeq,
       @Param("testSDt") LocalDateTime testSDt, @Param("testEDt") LocalDateTime testEDt);
+
+  /**
+   * 1인 1시험: 같은 시험원(MEM_ID)의 진행 중 측정 행(envSeq 제외) 또는 진행 중 현황판 사용 1건. 없으면 null.
+   * rs=true(이 행이 RS 측정)면 상대도 RS(RS #2·#3·#4·RE (10m)/RS (#3실))인 건은 제외한다.
+   */
+  RawEnvZone selectMemBusy(@Param("memId") String memId, @Param("envSeq") int envSeq,
+      @Param("rs") boolean rs);
 
   /** 소프트 삭제 (중단·삭제). 살아있는 행만, 갱신 건수 반환 */
   int softDelete(@Param("envSeq") int envSeq, @Param("reason") String reason,
@@ -83,10 +105,11 @@ public interface RawEnvMapper {
    * 같은 시험원의 시간이 겹치는 측정 행 1건 (없으면 null).
    * 같은 시험원 = 서명 파일(SIGN_URL)이 같거나, MEMBER_SIGN_TB 에서 같은 회원의 서명 파일.
    * 겹침 = 상대 시작 &lt; 이 행 종료 AND (상대 진행 중 OR 상대 종료 &gt; 이 행 시작). 경계 시각은 겹침 아님.
-   * 자기 자신·삭제·중단·이관(MIG_YN=1) 행 제외.
+   * 자기 자신·삭제·중단·이관(MIG_YN=1) 행 제외. rs=true(이 행이 RS 측정)면 상대 RS 측정 행도 제외.
    */
   RawEnvOverlap selectOverlap(@Param("envSeq") int envSeq, @Param("signUrl") String signUrl,
-      @Param("testSDt") LocalDateTime testSDt, @Param("testEDt") LocalDateTime testEDt);
+      @Param("testSDt") LocalDateTime testSDt, @Param("testEDt") LocalDateTime testEDt,
+      @Param("rs") boolean rs);
 
   /** 시험 작성내역 (TEST_MEMO_TB, 시험리스트 View 모달) */
   void insertTestMemo(@Param("testSeq") int testSeq, @Param("memo") String memo,

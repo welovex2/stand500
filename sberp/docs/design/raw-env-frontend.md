@@ -21,7 +21,7 @@ detail.do 의 data.envList 사용. 데이터 없음(NO_DATA)이어도 envList는
 |---|---|
 | envSeq | 행 번호. 저장·중단·수정·삭제 때 사용 |
 | testSDt / testEDt | 시작·종료 일시. 입력 불가 |
-| zoneSeq | 시험 챔버(구역). 이관 행·챔버 도입 전 행은 null |
+| zoneSeq | 측정장소 (챔버·구역). 이관 행·챔버 도입 전 행은 null |
 | chamberName, zoneName | 챔버·구역 이름. 표시용 (구역이 하나뿐인 챔버는 zoneName 빈 값) |
 | temp, tempPlus, hmdt, hmdtPlus, brmt, brmtPlus | 온습도·기압 |
 | memName | 시험자명 |
@@ -34,8 +34,16 @@ detail.do 의 data.envList 사용. 데이터 없음(NO_DATA)이어도 envList는
 | canRevEdit | [수정] 표시 (기술책임자). 진행 중 행도 true → [종료] 누락 처리 |
 | canDelete | [삭제] 표시 (기술책임자) |
 
-### 챔버 목록
-GET /raw/env/zones.do?metKey=ESD (RE는 RE1·RE2·RE3 표마다)
+### 측정장소(챔버) 목록
+GET /raw/env/zones.do?metKey=ESD (RE는 표마다 대역 RA·RB로 조회, RE1·RE2·RE3로 보내면 거부)
+
+| RE 화면 | RE1 표 | RE2 표 | RE3 표 |
+|---|---|---|---|
+| 9832·9835·3124·3126 | RA (RE (Below)) | RB (RE (Above)) | - |
+| 9814 | RA (RE (Below)) | RA (RE (Below)) | RB (RE (Above)) |
+
+[시작] 때 서버가 로데이터 규격으로 대역을 다시 계산해 확인함 (다른 대역 챔버를 보내면 "선택할 수 없는 챔버")
+측정장소는 챔버로 대신함. 화면 표기는 "측정장소", 따로 입력하는 칸 없음
 
 | data[] | 설명 |
 |---|---|
@@ -48,8 +56,9 @@ GET /raw/env/zones.do?metKey=ESD (RE는 RE1·RE2·RE3 표마다)
 | usePurpose | ETC일 때 용도. PRE 예비시험, DEBUG 고객 디버깅, CHECK 점검, WITNESS 입회, ETC 기타 |
 | useMemName, useStartDt | 사용자·시작 일시 |
 
-1. 진행 전 빈 행에 챔버 선택 칸. 사용 중인 챔버는 비활성 + 누가 쓰는지 표시
+1. 진행 전 빈 행에 측정장소(챔버) 선택 칸. 사용 중인 챔버는 비활성 + 누가 쓰는지 표시
 2. 목록은 시험방법별로 등록된 챔버만 내려옴. 목록이 비어 있으면 [시작] 불가 (챔버 관리에서 등록 필요)
+3. TEL(3078)은 챔버 선택 칸 없이 처리 가능. zones.do?metKey=TEL 은 숨김 "TEL" 챔버 1개만 내려오고, [시작] 때 zoneSeq를 안 보내거나 다른 값을 보내도 서버가 항상 TEL 챔버로 저장
 
 ### [시작]
 POST /raw/{방법}/insert.do. 화면 저장 데이터에 아래 값 추가
@@ -61,7 +70,7 @@ POST /raw/{방법}/insert.do. 화면 저장 데이터에 아래 값 추가
     "brmt": "99.8", "brmtPlus": "0.1", "memName": "김시험", "atchFileId": "" }
 ]
 ```
-1. 새 행은 envSeq 0. zoneSeq 필수 (없으면 "시험할 챔버를 선택하세요.")
+1. 새 행은 envSeq 0. zoneSeq 필수 (없으면 "시험할 챔버를 선택하세요."). TEL은 생략 가능
 2. 고른 챔버를 그사이 다른 사람이 쓰기 시작했으면 서버에서 거부. message 그대로 표시
    예) 선택한 챔버의 사용 시간이 다른 시험·작업과 겹칩니다. (점검 홍길동 2026-11-12 09:00 ~ 진행 중)
 3. RE 화면만 envMetKey 추가 (RE1 / RE2 / RE3). envAction과 같은 위치

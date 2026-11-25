@@ -69,7 +69,8 @@ public class RawEnvController {
           + "useSrc : RAW 측정 / ETC 로데이터 외 사용(현황판, usePurpose 에 용도)")
   @GetMapping(value = "/env/zones.do")
   public BasicResponse zones(
-      @ApiParam(value = "시험방법 키 (CE, RE1, RE2, RE3, ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL)",
+      @ApiParam(value = "시험방법 키 (CE, ESD, RS, EFT, SURGE, CS, MF, VDIP, CLK, DP, TEL). "
+          + "RE 는 대역 RA(RE (Below)) / RB(RE (Above)) — 9832: RE1=RA·RE2=RB, 9814: RE1·RE2=RA·RE3=RB",
           required = true, example = "ESD") @RequestParam(name = "metKey") final String metKey) {
     return respond("챔버 목록", metKey, new Call() {
       @Override

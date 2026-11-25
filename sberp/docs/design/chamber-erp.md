@@ -32,6 +32,7 @@
 | 챔버 목록 | 기획 목록으로 새로 입력한다 |
 | 챔버 관리 화면 | chamber-svc가 만든다. ERP(`sys`)에는 만들지 않는다. 테이블과 DDL은 그대로 `erp`·ERP |
 | 반영 시점 | `RAW_ENV_TB` 운영 반영(#26-8)과 같이 한다. 운영 DDL에 `ZONE_SEQ`를 처음부터 넣는다 |
+| 측정장소 (2026-11-13) | **챔버(구역)로 대신한다.** 측정 행에 장소 칸을 따로 만들지 않는다. 화면 표기는 "측정장소". [시작] 때 필수, 진행 중 행은 시험원이 [저장]으로, 종료된 행은 기술책임자가 `update.do`로 바꾼다 (지금 구역 규칙 그대로) |
 
 ---
 
@@ -92,6 +93,7 @@ ERP는 아래 컬럼만 쓴다. chamber-svc는 이 컬럼의 이름과 뜻을 �
 CREATE TABLE CHAMBER_TB (
     CHAMBER_SEQ  INT          NOT NULL AUTO_INCREMENT COMMENT '챔버 SEQ',
     NAME         VARCHAR(50)  NOT NULL COMMENT '챔버 이름 (예: 10m 챔버, 차폐실 1)',
+    FLOOR        TINYINT      NOT NULL DEFAULT 1 COMMENT '층 (현황판 층 구분, 2026-11-16 추가)',
     SORT_NO      SMALLINT     NOT NULL DEFAULT 0 COMMENT '현황판 표시 순서',
     USE_YN       TINYINT      NOT NULL DEFAULT 1 COMMENT '사용 여부 (0이면 선택 목록·현황판에서 숨김)',
     INS_MEM_ID   VARCHAR(20)  NOT NULL,
@@ -297,3 +299,7 @@ ERP 단독 테스트 (chamber-svc 없이 가능)
 | 4 | 챔버 목록 최초 입력 방식: chamber-svc 관리 화면 / INSERT SQL | ERP·chamber-svc |
 | 5 | 구역 변경 이력(트리거·his-svc 라벨) | 보류 |
 | 6 | 챔버 관리 화면 수정 권한 (기술책임자만?) | chamber-svc |
+| 7 | 챔버 목록에 **모든 시험방법** 매핑 (CLK·DP·TEL 포함). 구역이 [시작] 필수라 빠진 시험방법은 시작할 수 없다 | 기획 |
+| 8 | 측정장소로 쓰므로 성적서 시험장소와 같은 단위로 나눌지: "EMS 시험실 #1·#2"(지금 체크박스는 구분, 시험용 목록은 "일반 시험실" 하나), "10 m 반무반사실", "Special Room"(기존 기타 입력 상위 2개) | 기획 |
+| 9 | 현장시험(출장) 측정장소: "현장" 구역(`MULTI_YN=1`)을 둘지 | 기획 |
+| 10 | 성적서 시험장소 출력: 측정 행 구역에서 읽을지 / 구역에 맞춰 `ROOM*_YN` 자동 체크할지. 구역 ↔ 체크박스 칸 연결은 순서가 아니라 표로 정한다 (RS는 `room1Yn` = 화면 "반무반사실 #2"). 이관 행은 기존 체크박스 그대로 | 성적서 단계(#26-8 4단계) |

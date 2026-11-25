@@ -74,7 +74,9 @@ public class ResponseMessage {
     // 측정 행 챔버(구역) — docs/design/chamber-erp.md
     public static final String CHECK_ENV_ZONE_REQUIRED = "시험할 챔버를 선택하세요.";
     public static final String CHECK_ENV_ZONE = "이 시험방법에서 선택할 수 없는 챔버입니다. 새로고침 후 다시 선택하세요.";
+    public static final String CHECK_ENV_ZONE_BAND = "RE 챔버 목록은 대역으로 조회하세요. (RA: RE (Below), RB: RE (Above))";
     /** 챔버 사용 중·시간 겹침. %s = 사용 중인 건 (접수번호 시험방법 또는 용도, 시험원, 시작~종료) */
     public static final String CHECK_ENV_ZONE_BUSY = "선택한 챔버의 사용 시간이 다른 시험·작업과 겹칩니다. (%s)";
+    public static final String CHECK_ENV_MEM_BUSY = "진행 중인 다른 시험이 있습니다. 한 사람은 한 번에 한 시험만 할 수 있습니다. (%s)";
     
 }

@@ -42,6 +42,14 @@
 		       IF(j.SBK_REVISION > 0, CONCAT('-', j.SBK_REVISION), ''))
 	</sql>
 
+	<!--
+		측정 행의 시험원 이름 (별칭 e = RAW_ENV_TB). 시험자명(MEM_NAME)은 [종료] 때 들어가므로,
+		진행 중이면 [시작]을 누른 사람(MEM_ID)의 이름. chamber-svc db.RAW_MEM_NAME 과 같은 규칙
+	-->
+	<sql id="rawMemName">
+		COALESCE(NULLIF(e.MEM_NAME, ''), (SELECT mb.MEM_NAME FROM MEMBER_TB mb WHERE mb.ID = e.MEM_ID), e.MEM_ID)
+	</sql>
+
 	<select id="lockRaw" resultType="java.lang.Integer">
 		SELECT RAW_SEQ
 		  FROM RAW_TB
@@ -252,6 +260,7 @@
 		같은 시험원의 시간 겹침 ([종료]·기술책임자 수정). 서명 파일 → MEMBER_SIGN_TB 로 회원 단위 비교
 		(서명을 다시 등록해 파일 ID 가 바뀐 경우 포함). 회원과 연결 안 되는 파일은 같은 파일 ID 만 같은 사람.
 		경계(10:00 종료 · 10:00 시작)는 겹침 아님. 이관 행(MIG_YN=1)은 시작=종료 순간값이라 제외.
+		RS 예외: rs=true(이 행이 RS 측정)면 상대 RS 측정 행과는 겹쳐도 된다 (selectMemBusy 와 같은 규칙).
 	-->
 	<select id="selectOverlap" resultType="egovframework.raw.service.RawEnvOverlap">
 		SELECT e.ENV_SEQ,
@@ -277,6 +286,9 @@
 		   AND e.MIG_YN = 0
 		   AND e.TEST_S_DT &lt; #{testEDt}
 		   AND (e.TEST_E_DT IS NULL OR e.TEST_E_DT &gt; #{testSDt})
+		<if test="rs">
+		   AND e.MET_KEY != 'RS'
+		</if>
 		 ORDER BY e.TEST_S_DT
 		 LIMIT 1
 	</select>
@@ -300,12 +312,119 @@
 
 	<!-- ================================================================ 챔버 구역 (docs/design/chamber-erp.md) -->
 
-	<!-- 구역 행 잠금: 같은 구역 동시 [시작]·현황판 [사용]을 줄 세운다. ERP 잠금 순서는 RAW_TB → CHAMBER_ZONE_TB -->
-	<select id="lockZone" resultType="java.lang.Integer">
+	<!--
+		구역 하나를 쓸 때 함께 점유되는 구역 (SRC_ZONE 을 쓰면 OCC_ZONE 들이 사용 중). chamber-svc db.OCC_SQL 과 같은 규칙.
+		  1) 자기 자신  2) 연계 구역 LINK_ZONE_SEQ (장비 이관. 예: RE (3m)/RE (Above) → RE (Above))
+		  3) 단독 사용 챔버(SOLO_YN=1)의 다른 구역 (예: RE (3m)는 RE (Below)·RE (Above) 중 하나만)
+		두 사용의 OCC_ZONE 이 하나라도 겹치면 함께 쓸 수 없다. 동시 사용 허용(MULTI_YN=1) 구역은 넣지 않는다.
+		측정 행은 항상 시험번호가 있으므로 이 규칙 그대로. 현황판 사용(CHAMBER_ETC_USE_TB)은 etcOccHit 참고.
+	-->
+	<sql id="occZones">
+		SELECT z.ZONE_SEQ AS SRC_ZONE, z.ZONE_SEQ AS OCC_ZONE FROM CHAMBER_ZONE_TB z WHERE z.MULTI_YN = 0
+		UNION
+		SELECT z.ZONE_SEQ, z.LINK_ZONE_SEQ FROM CHAMBER_ZONE_TB z WHERE z.MULTI_YN = 0 AND z.LINK_ZONE_SEQ IS NOT NULL
+		UNION
+		SELECT z.ZONE_SEQ, s.ZONE_SEQ
+		  FROM CHAMBER_ZONE_TB z
+		 INNER JOIN CHAMBER_TB sc ON sc.CHAMBER_SEQ = z.CHAMBER_SEQ AND sc.SOLO_YN = 1
+		 INNER JOIN CHAMBER_ZONE_TB s ON s.CHAMBER_SEQ = z.CHAMBER_SEQ AND s.MULTI_YN = 0
+		 WHERE z.MULTI_YN = 0
+	</sql>
+
+	<!-- occZones 에서 연계 구역(장비 이관)만 뺀 것. 시험번호 없이 쓴 현황판 사용의 점유 (기획 X-5) -->
+	<sql id="occZonesBare">
+		SELECT z.ZONE_SEQ AS SRC_ZONE, z.ZONE_SEQ AS OCC_ZONE FROM CHAMBER_ZONE_TB z WHERE z.MULTI_YN = 0
+		UNION
+		SELECT z.ZONE_SEQ, s.ZONE_SEQ
+		  FROM CHAMBER_ZONE_TB z
+		 INNER JOIN CHAMBER_TB sc ON sc.CHAMBER_SEQ = z.CHAMBER_SEQ AND sc.SOLO_YN = 1
+		 INNER JOIN CHAMBER_ZONE_TB s ON s.CHAMBER_SEQ = z.CHAMBER_SEQ AND s.MULTI_YN = 0
+		 WHERE z.MULTI_YN = 0
+	</sql>
+
+	<!--
+		현황판 사용 건(별칭 x: ZONE_SEQ, PURPOSE, WHOLE_YN)이 구역 ${hitZone} 을 쓰는 시험과 겹치는지. chamber-svc db.ACTIVE_OCC 와 같은 규칙.
+		  - 시험번호 있는 사용(PURPOSE='TEST'): 측정 행과 같다 (연계 구역 포함)
+		  - 시험번호 없이 사용: 연계 구역(장비 이관)은 점유하지 않는다 (기획 X-5)
+		  - 시험장 전체 점유(WHOLE_YN=1): 그 챔버의 모든 구역 (기획 SC-09, 동시 사용 허용 구역 포함)
+		hitZone 은 SQL 식 (#{zoneSeq} 또는 z.ZONE_SEQ)
+	-->
+	<sql id="etcOccHit">
+		(
+		  (x.PURPOSE = 'TEST'
+		   AND x.ZONE_SEQ IN (SELECT ow.SRC_ZONE
+		                        FROM (<include refid="occZones" />) ow
+		                       INNER JOIN (<include refid="occZones" />) oz ON oz.OCC_ZONE = ow.OCC_ZONE
+		                       WHERE oz.SRC_ZONE = ${hitZone}))
+		  OR (IFNULL(x.PURPOSE, '') != 'TEST'
+		   AND x.ZONE_SEQ IN (SELECT ow.SRC_ZONE
+		                        FROM (<include refid="occZonesBare" />) ow
+		                       INNER JOIN (<include refid="occZones" />) oz ON oz.OCC_ZONE = ow.OCC_ZONE
+		                       WHERE oz.SRC_ZONE = ${hitZone}))
+		  OR (x.WHOLE_YN = 1
+		   AND (SELECT xz.CHAMBER_SEQ FROM CHAMBER_ZONE_TB xz WHERE xz.ZONE_SEQ = x.ZONE_SEQ)
+		       IN (SELECT oc.CHAMBER_SEQ FROM CHAMBER_ZONE_TB oc
+		            WHERE oc.ZONE_SEQ = ${hitZone}
+		               OR oc.ZONE_SEQ IN (SELECT o.OCC_ZONE FROM (<include refid="occZones" />) o WHERE o.SRC_ZONE = ${hitZone})))
+		)
+	</sql>
+
+	<!-- #{zoneSeq} 를 쓸 때 겹치는 구역들 (이 구역들의 진행 중 측정 행이 있으면 시작할 수 없다) -->
+	<sql id="occConflictZones">
+		SELECT ow.SRC_ZONE
+		  FROM (<include refid="occZones" />) ow
+		 INNER JOIN (<include refid="occZones" />) oz ON oz.OCC_ZONE = ow.OCC_ZONE
+		 WHERE oz.SRC_ZONE = #{zoneSeq}
+	</sql>
+
+	<!-- #{zoneSeq} 를 쓰면 함께 점유되는 구역 번호 (자신 포함, 번호 순). 동시 사용 허용 구역은 빈 목록 -->
+	<select id="selectOccZones" resultType="java.lang.Integer">
+		SELECT DISTINCT o.OCC_ZONE
+		  FROM (<include refid="occZones" />) o
+		 WHERE o.SRC_ZONE = #{zoneSeq}
+		 ORDER BY o.OCC_ZONE
+	</select>
+
+	<!--
+		구역 행 잠금: 같은 구역 동시 [시작]·현황판 [사용]을 줄 세운다. ERP 잠금 순서는 RAW_TB → CHAMBER_ZONE_TB.
+		함께 점유되는 구역(selectOccZones)만 번호 순으로 잠근다 (chamber-svc 와 같은 방식·순서).
+		서브쿼리로 한 번에 잠그면 전체 스캔이 돼 REPEATABLE READ 에서 구역 행 전체가 잠긴다.
+	-->
+	<select id="lockZones" resultType="java.lang.Integer">
 		SELECT ZONE_SEQ
 		  FROM CHAMBER_ZONE_TB
-		 WHERE ZONE_SEQ = #{zoneSeq}
+		 WHERE ZONE_SEQ IN
+		<foreach collection="zoneSeqs" item="seq" open="(" separator="," close=")">#{seq}</foreach>
+		 ORDER BY ZONE_SEQ
 		   FOR UPDATE
+	</select>
+
+	<!--
+		숨김 챔버(USE_YN=0)에서 그 시험방법이 매핑된 구역 1건. TEL 전용 고정 구역 (CHAMBER_TB.sql 4번).
+		현황판·구역 목록(selectZones)은 USE_YN=1 챔버만 보므로 이 구역은 어디에도 나오지 않는다.
+	-->
+	<select id="selectHiddenZone" resultType="egovframework.raw.service.RawEnvZone">
+		SELECT z.ZONE_SEQ,
+		       c.CHAMBER_SEQ,
+		       c.NAME AS CHAMBER_NAME,
+		       z.NAME AS ZONE_NAME,
+		       z.MULTI_YN
+		  FROM CHAMBER_ZONE_MET_TB m
+		 INNER JOIN CHAMBER_ZONE_TB z ON z.ZONE_SEQ = m.ZONE_SEQ
+		 INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ AND c.USE_YN = 0
+		 WHERE m.MET_KEY = #{metKey}
+		 ORDER BY z.ZONE_SEQ
+		 LIMIT 1
+	</select>
+
+	<!-- 로데이터 시험의 규격. RE 대역 판단 (9814: 7·686·774·775 / 그 외는 9832 규칙) -->
+	<select id="selectStndrSeq" resultType="java.lang.Integer">
+		SELECT ti.TEST_STNDR_SEQ
+		  FROM RAW_TB r
+		 INNER JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+		 INNER JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		 WHERE r.RAW_SEQ = #{rawSeq}
+		 LIMIT 1
 	</select>
 
 	<!-- 그 시험방법에서 고를 수 있는 구역 1건 (구역·챔버 사용 중 + 시험방법 매핑). 없으면 null -->
@@ -338,7 +457,8 @@
 	<sql id="zoneUseNow">
 		SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ,
 		       <include refid="rawIdExpr" /> AS TEST_ID,
-		       e.MET_KEY, NULL AS PURPOSE, e.MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
+		       e.MET_KEY, NULL AS PURPOSE, <include refid="rawMemName" /> AS MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT,
+		       0 AS WHOLE_YN
 		  FROM RAW_ENV_TB e
 		  LEFT JOIN RAW_TB r ON r.RAW_SEQ = e.RAW_SEQ
 		  LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
@@ -350,15 +470,23 @@
 		   AND e.TEST_S_DT IS NOT NULL
 		   AND e.TEST_E_DT IS NULL
 		 UNION ALL
-		SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT
+		SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ,
+		       IF(x.TEST_SEQ IS NULL, NULL, <include refid="rawIdExpr" />),
+		       NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT,
+		       x.WHOLE_YN
 		  FROM CHAMBER_ETC_USE_TB x
+		  LEFT JOIN TEST_TB t ON t.TEST_SEQ = x.TEST_SEQ
+		  LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		  LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
 		 WHERE x.DEL_YN = 0
 		   AND x.END_DT IS NULL
 	</sql>
 
 	<!--
 		[시작] 때 고를 구역 목록 + 지금 사용 중인 건. 동시 사용 허용(MULTI_YN=1) 구역은 사용 중 정보를 붙이지 않는다.
-		한 구역에 사용 중인 건이 여러 개면(잘못된 데이터) 여러 줄이 나온다 → 서비스에서 첫 줄만 쓴다.
+		함께 점유되는 구역(연계·단독 사용)의 사용도 이 구역의 사용 중으로 본다 (예: RE (3m)/RE (Above) 측정 중이면
+		RE (Above) 챔버도, RE (3m)/RE (Below) 도 사용 중).
+		한 구역에 사용 중인 건이 여러 개면 여러 줄이 나온다 → 서비스에서 첫 줄만 쓴다.
 	-->
 	<select id="selectZones" resultType="egovframework.raw.service.RawEnvZone">
 		SELECT z.ZONE_SEQ,
@@ -379,18 +507,30 @@
 		 INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ AND c.USE_YN = 1
 		  LEFT JOIN (
 		        <include refid="zoneUseNow" />
-		       ) u ON u.ZONE_SEQ = z.ZONE_SEQ AND z.MULTI_YN = 0
+		       ) u ON (u.SRC = 'RAW'
+		               AND z.MULTI_YN = 0
+		               AND u.ZONE_SEQ IN (SELECT ow.SRC_ZONE
+		                                    FROM (<include refid="occZones" />) ow
+		                                   INNER JOIN (<include refid="occZones" />) oz ON oz.OCC_ZONE = ow.OCC_ZONE
+		                                   WHERE oz.SRC_ZONE = z.ZONE_SEQ))
+		          OR (u.SRC = 'ETC'
+		              AND (z.MULTI_YN = 0 OR u.WHOLE_YN = 1)
+		              AND EXISTS (SELECT 1 FROM CHAMBER_ETC_USE_TB x
+		                           WHERE x.USE_SEQ = u.SEQ
+		                             AND <include refid="etcOccHit"><property name="hitZone" value="z.ZONE_SEQ"/></include>))
 		 WHERE m.MET_KEY = #{metKey}
 		 ORDER BY c.SORT_NO, c.CHAMBER_SEQ, z.SORT_NO, z.ZONE_SEQ, u.S_DT
 	</select>
 
 	<!--
-		같은 구역에서 시간이 겹치는 사용 1건 (없으면 null). 측정 행 + 로데이터 외 사용.
+		같은 구역(함께 점유되는 구역 포함)에서 시간이 겹치는 사용 1건 (없으면 null). 측정 행 + 현황판 사용.
 		겹침 = 상대 시작 &lt; 이 행 종료 AND (상대 진행 중 OR 상대 종료 &gt; 이 행 시작). 경계 시각은 겹침 아님.
 		testEDt 가 null(진행 중)이면 종료 조건 없음. 자기 자신·삭제·이관 행 제외.
 	-->
 	<select id="selectZoneConflict" resultType="egovframework.raw.service.RawEnvZone">
 		SELECT u.ZONE_SEQ,
+		       (SELECT c.NAME FROM CHAMBER_ZONE_TB uz INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = uz.CHAMBER_SEQ
+		         WHERE uz.ZONE_SEQ = u.ZONE_SEQ) AS CHAMBER_NAME,
 		       u.SRC AS USE_SRC,
 		       u.SEQ AS USE_SEQ,
 		       u.TEST_ID AS USE_TEST_ID,
@@ -402,13 +542,13 @@
 		  FROM (
 		        SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ,
 		               <include refid="rawIdExpr" /> AS TEST_ID,
-		               e.MET_KEY, NULL AS PURPOSE, e.MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
+		               e.MET_KEY, NULL AS PURPOSE, <include refid="rawMemName" /> AS MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
 		          FROM RAW_ENV_TB e
 		          LEFT JOIN RAW_TB r ON r.RAW_SEQ = e.RAW_SEQ
 		          LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
 		          LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
 		          LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
-		         WHERE e.ZONE_SEQ = #{zoneSeq}
+		         WHERE e.ZONE_SEQ IN (<include refid="occConflictZones" />)
 		           AND e.ENV_SEQ != #{envSeq}
 		           AND e.DEL_YN = 0
 		           AND e.MIG_YN = 0
@@ -418,15 +558,85 @@
 		           </if>
 		           AND (e.TEST_E_DT IS NULL OR e.TEST_E_DT &gt; #{testSDt})
 		         UNION ALL
-		        SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT
+		        SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ,
+		               IF(x.TEST_SEQ IS NULL, NULL, <include refid="rawIdExpr" />),
+		               NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT
 		          FROM CHAMBER_ETC_USE_TB x
-		         WHERE x.ZONE_SEQ = #{zoneSeq}
+		          LEFT JOIN TEST_TB t ON t.TEST_SEQ = x.TEST_SEQ
+		          LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		          LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+		         WHERE <include refid="etcOccHit"><property name="hitZone" value="#{zoneSeq}"/></include>
 		           AND x.DEL_YN = 0
 		           <if test="testEDt != null">
 		           AND x.START_DT &lt; #{testEDt}
 		           </if>
 		           AND (x.END_DT IS NULL OR x.END_DT &gt; #{testSDt})
 		       ) u
+		 ORDER BY u.S_DT
+		 LIMIT 1
+	</select>
+
+	<!--
+		RS 시험장 사용 여부 (1/0). 구역 ${zoneExpr} 에 RS 시험방법이 매핑돼 있으면 RS.
+		RS #2 · RS #3 · RS #4 · RE (10m)/RS (#3실) 가 해당 (CHAMBER_ZONE_MET_TB.MET_KEY = 'RS').
+		시험장 전체 점유(WHOLE_YN=1)는 그 챔버 첫 구역으로 판단한다 → RE (10m) 전체 점유는 RS 가 아니다.
+	-->
+	<sql id="rsZoneYn">
+		IF(EXISTS (SELECT 1 FROM CHAMBER_ZONE_MET_TB rm WHERE rm.ZONE_SEQ = ${zoneExpr} AND rm.MET_KEY = 'RS'), 1, 0)
+	</sql>
+
+	<!--
+		1인 1시험: 같은 시험원(MEM_ID)의 진행 중 측정 행(자신 제외) 또는 진행 중 현황판 사용 1건 (없으면 null).
+		챔버(구역)가 있는 건만 본다 — 현황판·chamber-svc 1인 1시험과 같은 기준 (챔버 도입 전에 시작한 측정 행은 제외).
+		측정 행의 MEM_ID 는 [시작]을 누른 로그인 아이디, 현황판 사용의 MEM_ID 는 시험원 아이디 (같은 ERP 아이디)
+		RS 예외: rs=true(이 행이 RS 측정)면 상대도 RS 인 건은 막지 않는다 (RS #2·#3·#4·RE (10m)/RS (#3실) 끼리 동시 진행 허용).
+		RS 와 RS 아닌 시험은 서로 막는다.
+	-->
+	<select id="selectMemBusy" resultType="egovframework.raw.service.RawEnvZone">
+		SELECT u.ZONE_SEQ,
+		       (SELECT c.NAME FROM CHAMBER_ZONE_TB uz INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = uz.CHAMBER_SEQ
+		         WHERE uz.ZONE_SEQ = u.ZONE_SEQ) AS CHAMBER_NAME,
+		       u.SRC AS USE_SRC,
+		       u.SEQ AS USE_SEQ,
+		       u.TEST_ID AS USE_TEST_ID,
+		       u.MET_KEY AS USE_MET_KEY,
+		       u.PURPOSE AS USE_PURPOSE,
+		       u.MEM_NAME AS USE_MEM_NAME,
+		       u.S_DT AS USE_START_DT,
+		       u.E_DT AS USE_END_DT
+		  FROM (
+		        SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ,
+		               <include refid="rawIdExpr" /> AS TEST_ID,
+		               e.MET_KEY, NULL AS PURPOSE, <include refid="rawMemName" /> AS MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT,
+		               IF(e.MET_KEY = 'RS', 1, 0) AS RS_YN
+		          FROM RAW_ENV_TB e
+		          LEFT JOIN RAW_TB r ON r.RAW_SEQ = e.RAW_SEQ
+		          LEFT JOIN TEST_TB t ON t.TEST_SEQ = r.TEST_SEQ
+		          LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		          LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+		         WHERE e.MEM_ID = #{memId}
+		           AND e.ENV_SEQ != #{envSeq}
+		           AND e.DEL_YN = 0
+		           AND e.MIG_YN = 0
+		           AND e.TEST_S_DT IS NOT NULL
+		           AND e.TEST_E_DT IS NULL
+		         UNION ALL
+		        SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ,
+		               IF(x.TEST_SEQ IS NULL, NULL, <include refid="rawIdExpr" />),
+		               NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT,
+		               <include refid="rsZoneYn"><property name="zoneExpr" value="x.ZONE_SEQ"/></include>
+		          FROM CHAMBER_ETC_USE_TB x
+		          LEFT JOIN TEST_TB t ON t.TEST_SEQ = x.TEST_SEQ
+		          LEFT JOIN TEST_ITEM_TB ti ON ti.TEST_ITEM_SEQ = t.TEST_ITEM_SEQ
+		          LEFT JOIN JOB_TB j ON j.QUO_YM = ti.QUO_YM AND j.QUO_SEQ = ti.QUO_SEQ
+		         WHERE x.MEM_ID = #{memId}
+		           AND x.DEL_YN = 0
+		           AND x.END_DT IS NULL
+		       ) u
+		 INNER JOIN CHAMBER_ZONE_TB uz ON uz.ZONE_SEQ = u.ZONE_SEQ
+		<if test="rs">
+		 WHERE u.RS_YN = 0
+		</if>
 		 ORDER BY u.S_DT
 		 LIMIT 1
 	</select>

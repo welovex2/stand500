@@ -48,6 +48,12 @@ public class RawEnvServiceImpl implements RawEnvService {
   private static final int MAX_REASON = 200;
   private static final int MAX_VALUE = 50;
 
+  /** RE 챔버 매핑 대역 : RA = RE (Below), RB = RE (Above) */
+  private static final String ZONE_RA = "RA";
+  private static final String ZONE_RB = "RB";
+  /** RE 가 3대역(RE1·RE2 = Below, RE3 = Above)인 9814 규격. rawEnvMapper.selectDtRange 의 RE_SP 와 같은 목록 */
+  private static final List<Integer> RE_9814_STNDR = Arrays.asList(7, 686, 774, 775);
+
   private static final DateTimeFormatter OUT_DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
   private static final DateTimeFormatter MEMO_DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
   private static final DateTimeFormatter IN_DT_SEC = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -93,10 +99,34 @@ public class RawEnvServiceImpl implements RawEnvService {
 
   @Override
   public List<RawEnvDTO.Zone> zones(String metKey) {
-    EnvMetKey key = requireKey(metKey);
     List<RawEnvDTO.Zone> out = new ArrayList<RawEnvDTO.Zone>();
+
+    // RE 는 대역(RA·RB)으로 조회한다. RE1~RE3 는 규격마다 Below·Above 가 달라 구역을 정할 수 없다
+    String zoneKey = metKey == null ? null : metKey.trim().toUpperCase();
+    EnvMetKey key = null;
+    if (!ZONE_RA.equals(zoneKey) && !ZONE_RB.equals(zoneKey)) {
+      key = requireKey(metKey);
+      if (isRe(key)) {
+        throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_ZONE_BAND);
+      }
+      zoneKey = key.name();
+    }
+
+    // TEL : 숨김 TEL 챔버 하나만 (항상 그 챔버로 시작). 동시 사용 허용 구역이라 사용 중 표시 없음
+    if (key != null && usesFixedZone(key)) {
+      RawEnvZone z = requireFixedZone(key);
+      RawEnvDTO.Zone zone = new RawEnvDTO.Zone();
+      zone.setZoneSeq(z.getZoneSeq());
+      zone.setChamberSeq(z.getChamberSeq());
+      zone.setChamberName(z.getChamberName());
+      zone.setZoneName(z.getZoneName());
+      zone.setMultiYn(z.getMultiYn());
+      out.add(zone);
+      return out;
+    }
+
     int lastZoneSeq = 0;
-    for (RawEnvZone z : rawEnvMapper.selectZones(key.name())) {
+    for (RawEnvZone z : rawEnvMapper.selectZones(zoneKey)) {
       // 한 구역에 사용 중인 건이 여러 개면(잘못된 데이터) 가장 먼저 시작한 건만
       if (z.getZoneSeq() == lastZoneSeq) {
         continue;
@@ -187,8 +217,9 @@ public class RawEnvServiceImpl implements RawEnvService {
         }
         saveValues(env, r.getTemp(), r.getTempPlus(), r.getHmdt(), r.getHmdtPlus(), r.getBrmt(),
             r.getBrmtPlus(), r.getMemName(), r.getAtchFileId(), loginId);
-        // 진행 중 행의 챔버는 [저장] 때 바꿀 수 있다 (빈 값이면 그대로)
-        if (r.getZoneSeq() != null && !r.getZoneSeq().equals(env.getZoneSeq())) {
+        // 진행 중 행의 챔버는 [저장] 때 바꿀 수 있다 (빈 값이면 그대로). TEL 은 고정 챔버라 무시
+        if (r.getZoneSeq() != null && !r.getZoneSeq().equals(env.getZoneSeq())
+            && !usesFixedZone(EnvMetKey.of(env.getMetKey()))) {
           changeZone(env, r.getZoneSeq(), loginId);
         }
       }
@@ -255,9 +286,11 @@ public class RawEnvServiceImpl implements RawEnvService {
         req.getBrmt(), req.getBrmtPlus(), req.getMemName(), req.getAtchFileId(), loginId);
 
     // 챔버: 빈 값이면 그대로. 바꾸면 그 시험방법에서 고를 수 있는 구역인지 확인 (시간 겹침은 아래에서)
-    boolean zoneChanged = req.getZoneSeq() != null && !req.getZoneSeq().equals(env.getZoneSeq());
+    // TEL 은 고정 챔버라 보낸 값을 무시한다
+    boolean zoneChanged = req.getZoneSeq() != null && !req.getZoneSeq().equals(env.getZoneSeq())
+        && !usesFixedZone(EnvMetKey.of(env.getMetKey()));
     if (zoneChanged) {
-      requireZone(requireKey(env.getMetKey()), req.getZoneSeq());
+      requireZone(requireKey(env.getMetKey()), env.getRawSeq(), req.getZoneSeq());
       if (rawEnvMapper.updateZone(envSeq, req.getZoneSeq(), loginId) == 0) {
         throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
       }
@@ -345,10 +378,16 @@ public class RawEnvServiceImpl implements RawEnvService {
       }
     }
 
-    if (zoneSeq == null) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_ZONE_REQUIRED);
+    if (usesFixedZone(key)) {
+      // TEL : 보낸 값과 상관없이 숨김 TEL 챔버로 시작한다 (동시 사용 허용 구역 → 사용 중 확인 없음, 1인 1시험은 확인)
+      zoneSeq = requireFixedZone(key).getZoneSeq();
+      lockZones(zoneSeq);
+    } else {
+      if (zoneSeq == null) {
+        throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_ZONE_REQUIRED);
+      }
+      requireZone(key, rawSeq, zoneSeq);
     }
-    requireZone(key, zoneSeq);
 
     RawEnv env = new RawEnv();
     env.setRawSeq(rawSeq);
@@ -361,8 +400,18 @@ public class RawEnvServiceImpl implements RawEnvService {
 
     RawEnv saved = rawEnvMapper.selectOne(env.getEnvSeq());
 
-    // 같은 챔버에 진행 중인 측정·로데이터 외 사용이 있으면 안 된다 (구역 잠금은 requireZone 에서)
+    // 같은 챔버(연계·단독 사용으로 함께 점유되는 챔버 포함)에 진행 중인 측정·현황판 사용이 있으면 안 된다
+    // (구역 잠금은 requireZone 에서)
     checkZoneConflict(saved);
+
+    // 1인 1시험: 같은 시험원의 진행 중 측정·현황판 사용이 있으면 안 된다
+    // 예외: RS 끼리(RS #2·#3·#4·RE (10m)/RS (#3실))는 동시에 진행할 수 있다. RS ↔ 다른 시험은 막는다
+    RawEnvZone mine = rawEnvMapper.selectMemBusy(loginId, saved.getEnvSeq(), key == EnvMetKey.RS);
+    if (mine != null) {
+      log.info("1인 1시험 - envSeq={}, memId={}, 상대 {} {}", saved.getEnvSeq(), loginId, mine.getUseSrc(),
+          mine.getUseSeq());
+      throw new IllegalArgumentException(String.format(ResponseMessage.CHECK_ENV_MEM_BUSY, describeUse(mine)));
+    }
 
     LocalDate startDt = saved.getTestSDt().toLocalDate();
 
@@ -518,6 +567,7 @@ public class RawEnvServiceImpl implements RawEnvService {
   /**
    * 같은 시험원(서명)의 다른 측정과 시간이 겹치면 거부 (예외 → 방법 저장까지 롤백).
    * 서명이 없거나 시작·종료가 비어 있으면 비교할 수 없어 넘어간다. 이관 행끼리는 비교하지 않는다.
+   * RS 측정끼리는 겹쳐도 된다 (1인 1시험 RS 예외와 같은 규칙).
    */
   private void checkOverlap(RawEnv env) {
     if (env == null || env.getMigYn() != 0 || !StringUtils.hasText(env.getSignUrl())
@@ -525,7 +575,7 @@ public class RawEnvServiceImpl implements RawEnvService {
       return;
     }
     RawEnvOverlap hit = rawEnvMapper.selectOverlap(env.getEnvSeq(), env.getSignUrl().trim(),
-        env.getTestSDt(), env.getTestEDt());
+        env.getTestSDt(), env.getTestEDt(), EnvMetKey.of(env.getMetKey()) == EnvMetKey.RS);
     if (hit == null) {
       return;
     }
@@ -560,21 +610,73 @@ public class RawEnvServiceImpl implements RawEnvService {
   /**
    * 구역 행을 잠그고(RAW_TB 잠금 뒤), 그 시험방법에서 고를 수 있는 구역인지 확인한다.
    * 구역·챔버가 사용 중(USE_YN=1)이고 CHAMBER_ZONE_MET_TB 에 시험방법이 매핑돼 있어야 한다.
+   * RE 는 로데이터 규격으로 대역(RA·RB)을 정해 그 대역 매핑을 본다 (zoneMetKey).
    */
-  private RawEnvZone requireZone(EnvMetKey key, int zoneSeq) {
-    if (rawEnvMapper.lockZone(zoneSeq) == null) {
+  private RawEnvZone requireZone(EnvMetKey key, int rawSeq, int zoneSeq) {
+    if (lockZones(zoneSeq).isEmpty()) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_ZONE);
     }
-    RawEnvZone zone = rawEnvMapper.selectZoneForMet(zoneSeq, key.name());
+    RawEnvZone zone = rawEnvMapper.selectZoneForMet(zoneSeq, zoneMetKey(key, rawSeq));
     if (zone == null) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_ZONE);
     }
     return zone;
   }
 
+  private static boolean isRe(EnvMetKey key) {
+    return key == EnvMetKey.RE1 || key == EnvMetKey.RE2 || key == EnvMetKey.RE3;
+  }
+
+  /**
+   * 챔버 매핑(CHAMBER_ZONE_MET_TB.MET_KEY)에서 찾을 값. RE 가 아니면 시험방법 키 그대로.
+   * RE 는 대역 : RA = RE (Below), RB = RE (Above)
+   * <ul>
+   * <li>9814 (규격 7·686·774·775) : RE1·RE2 → RA, RE3 → RB</li>
+   * <li>그 외 (9832·9835·3124·3126 등) : RE1 → RA, RE2 → RB (RE3 는 없지만 오면 RB)</li>
+   * </ul>
+   */
+  private String zoneMetKey(EnvMetKey key, int rawSeq) {
+    if (!isRe(key)) {
+      return key.name();
+    }
+    Integer stndr = rawEnvMapper.selectStndrSeq(rawSeq);
+    if (stndr != null && RE_9814_STNDR.contains(stndr)) {
+      return key == EnvMetKey.RE3 ? ZONE_RB : ZONE_RA;
+    }
+    return key == EnvMetKey.RE1 ? ZONE_RA : ZONE_RB;
+  }
+
+  /** 챔버를 고르지 않고 숨김 챔버의 고정 구역을 쓰는 시험방법 (TEL) */
+  private boolean usesFixedZone(EnvMetKey key) {
+    return key == EnvMetKey.TEL;
+  }
+
+  /** 고정 구역 (숨김 챔버에 그 시험방법이 매핑된 구역). 등록돼 있지 않으면 거부 */
+  private RawEnvZone requireFixedZone(EnvMetKey key) {
+    RawEnvZone zone = rawEnvMapper.selectHiddenZone(key.name());
+    if (zone == null) {
+      log.warn("{} 전용 숨김 챔버가 없습니다 (CHAMBER_TB.sql 4번)", key.name());
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_ZONE);
+    }
+    return zone;
+  }
+
+  /**
+   * 구역과 함께 점유되는 구역(연계·단독 사용) 행만 번호 순으로 잠근다 (chamber-svc 와 같은 방식·순서).
+   * 잠근 구역 번호 목록, 구역이 없으면 빈 목록. 동시 사용 허용 구역은 자신만 잠근다.
+   */
+  private List<Integer> lockZones(int zoneSeq) {
+    List<Integer> occ = new ArrayList<Integer>(rawEnvMapper.selectOccZones(zoneSeq));
+    if (!occ.contains(zoneSeq)) {
+      occ.add(zoneSeq);
+      Collections.sort(occ);
+    }
+    return rawEnvMapper.lockZones(occ);
+  }
+
   /** 진행 중 행의 챔버 변경 ([저장]) : 고를 수 있는 구역 + 시간 겹침 없음 */
   private void changeZone(RawEnv env, int zoneSeq, String loginId) {
-    requireZone(requireKey(env.getMetKey()), zoneSeq);
+    requireZone(requireKey(env.getMetKey()), env.getRawSeq(), zoneSeq);
     if (rawEnvMapper.updateZone(env.getEnvSeq(), zoneSeq, loginId) == 0) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
     }
@@ -595,8 +697,8 @@ public class RawEnvServiceImpl implements RawEnvService {
     if (zone == null || zone.getMultiYn() == 1) {
       return;
     }
-    // 이미 잠갔으면 그대로 통과한다 (같은 트랜잭션)
-    rawEnvMapper.lockZone(env.getZoneSeq());
+    // 이미 잠갔으면 그대로 통과한다 (같은 트랜잭션). 함께 점유되는 구역까지
+    lockZones(env.getZoneSeq());
 
     RawEnvZone hit = rawEnvMapper.selectZoneConflict(env.getEnvSeq(), env.getZoneSeq(),
         env.getTestSDt(), env.getTestEDt());
@@ -609,11 +711,20 @@ public class RawEnvServiceImpl implements RawEnvService {
         String.format(ResponseMessage.CHECK_ENV_ZONE_BUSY, describeUse(hit)));
   }
 
-  /** 예) SB26-G3712-EM3320 ESD 김시험 2026-11-05 14:33 ~ 진행 중 / 점검 홍길동 2026-11-12 09:00 ~ 진행 중 */
+  /**
+   * 예) RE (Above) SB26-G3712-EM3320 ESD 김시험 2026-11-05 14:33 ~ 진행 중 / CE 점검 홍길동 2026-11-12 09:00 ~ 진행 중
+   * (앞의 챔버 이름은 알 때만)
+   */
   private String describeUse(RawEnvZone use) {
     StringBuilder sb = new StringBuilder();
+    if (StringUtils.hasText(use.getChamberName())) {
+      sb.append(use.getChamberName()).append(' ');
+    }
     if ("ETC".equals(use.getUseSrc())) {
       sb.append(purposeLabel(use.getUsePurpose()));
+      if (StringUtils.hasText(use.getUseTestId())) {
+        sb.append(' ').append(use.getUseTestId());
+      }
     } else {
       EnvMetKey key = EnvMetKey.of(use.getUseMetKey());
       sb.append(use.getUseTestId() == null ? "-" : use.getUseTestId()).append(' ')
@@ -634,14 +745,18 @@ public class RawEnvServiceImpl implements RawEnvService {
       return "로데이터 외 사용";
     }
     switch (purpose) {
+      case "TEST":
+        return "현황판 시험";
       case "PRE":
-        return "예비시험";
+        return "사전 점검";
       case "DEBUG":
-        return "고객 디버깅";
+        return "디버깅";
       case "CHECK":
-        return "점검";
+        return "장비 점검";
       case "WITNESS":
         return "입회";
+      case "NORD":
+        return "로데이터 연동 없음";
       default:
         return "기타 사용";
     }

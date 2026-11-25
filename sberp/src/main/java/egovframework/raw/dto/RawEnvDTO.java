@@ -189,7 +189,7 @@ public class RawEnvDTO {
     private String useTestId;
     @ApiModelProperty(value = "사용 중인 측정의 시험방법 키 (RAW)")
     private String useMetKey;
-    @ApiModelProperty(value = "로데이터 외 사용 용도 (ETC) : PRE 예비시험 / DEBUG 고객 디버깅 / CHECK 점검 / WITNESS 입회 / ETC 기타")
+    @ApiModelProperty(value = "로데이터 외 사용 용도 (ETC) : PRE 사전 점검 / CHECK 장비 점검 / DEBUG 디버깅 / ETC 기타 (WITNESS 입회는 예전 값)")
     private String usePurpose;
     private String useMemName;
     @ApiModelProperty(value = "사용 시작일시 yyyy-MM-dd HH:mm:ss")
