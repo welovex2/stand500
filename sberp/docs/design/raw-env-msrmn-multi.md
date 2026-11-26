@@ -204,7 +204,8 @@ CREATE TABLE RAW_ENV_TB (
 | 같은 시험원(로그인 아이디)의 다른 측정·현황판 사용과 시간 겹침, RS 끼리는 허용 (§11) | END, update | `CHECK_ENV_OVERLAP` (상대 시험장·시험번호·시험원·기간 표시) |
 | 중단은 진행 중 행만 / 수정은 종료된 행만 | stop / update | `CHECK_ENV_STATE` |
 | 사유 공란(공백만 포함) 불가, 최대 200자 | stop, delete | `CHECK_ENV_REASON` |
-| 일시: 둘 다 입력, 시작 ≤ 종료, 미래 불가 | update | `CHECK_ENV_DATE` |
+| 일시: 둘 다 입력, 시작 ≤ 종료 | update | `CHECK_ENV_DATE` |
+| 일시·측정일 미래 불가 | update, 기존 화면 저장 | `CHECK_ENV_FUTURE` (2026-11-26 분리) |
 | 시작일·종료일 ≤ 성적서 발급일 | START, END, update | 기존 `CHECK_MSRMN_DT` |
 | 측정설비 교정일 (그 표의 측정설비, 시작일 기준) | START | 기존 `CHECK_MAC_DATE` |
 | 측정설비 교정일 (그 표의 측정설비, 종료일 기준) | END, update | 기존 `CHECK_MAC_DATE` |

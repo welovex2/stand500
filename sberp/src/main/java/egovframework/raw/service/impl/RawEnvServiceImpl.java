@@ -318,8 +318,11 @@ public class RawEnvServiceImpl implements RawEnvService {
     if (hasS || hasE) {
       LocalDateTime s = sameMinuteOrNew(parseDateTime(req.getTestSDt()), env.getTestSDt());
       LocalDateTime e = sameMinuteOrNew(parseDateTime(req.getTestEDt()), env.getTestEDt());
-      if (s == null || e == null || e.isBefore(s) || e.isAfter(LocalDateTime.now())) {
+      if (s == null || e == null || e.isBefore(s)) {
         throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
+      }
+      if (e.isAfter(LocalDateTime.now())) {
+        throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_FUTURE);
       }
       if (!s.equals(env.getTestSDt()) || !e.equals(env.getTestEDt())) {
         datesChanged = true;
@@ -508,8 +511,11 @@ public class RawEnvServiceImpl implements RawEnvService {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
     }
     LocalDateTime dt = parseDateTime(r.getMsrmnDt());
-    if (dt == null || dt.isAfter(LocalDateTime.now())) {
+    if (dt == null) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
+    }
+    if (dt.isAfter(LocalDateTime.now())) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_FUTURE);
     }
 
     RawEnv env = new RawEnv();
@@ -548,7 +554,7 @@ public class RawEnvServiceImpl implements RawEnvService {
       return;
     }
     if (dt.isAfter(LocalDateTime.now())) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_FUTURE);
     }
     if (rawEnvMapper.updateDates(env.getEnvSeq(), dt, dt, loginId) == 0) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);

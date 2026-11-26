@@ -66,6 +66,7 @@ public class ResponseMessage {
     public static final String CHECK_ENV_STATE = "이미 처리되었거나 현재 상태에서 할 수 없는 작업입니다. 새로고침 후 다시 시도하세요.";
     public static final String CHECK_ENV_REASON = "사유를 200자 이내로 입력하세요.";
     public static final String CHECK_ENV_DATE = "시작·종료 일시를 확인하세요. (종료는 시작 이후, 형식 yyyy-MM-dd HH:mm)";
+    public static final String CHECK_ENV_FUTURE = "측정 일시는 현재 시각 이후로 입력할 수 없습니다.";
     public static final String CHECK_ENV_AUTH = "기술책임자만 수정·삭제할 수 있습니다.";
     public static final String CHECK_ENV_OWNER = "측정을 시작한 시험원 또는 기술책임자만 종료·중단할 수 있습니다.";
     public static final String CHECK_ENV_REQUIRED = "시험종료 전에 온도·습도(·기압)와 시험자명, 서명을 입력하세요.";
