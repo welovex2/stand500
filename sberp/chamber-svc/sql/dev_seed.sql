@@ -155,7 +155,7 @@ INSERT IGNORE INTO CHAMBER_ETC_USE_TB
     (9002, 9004, 'DEBUG',   '(주)가나다 디버깅', 'seed', '시험용', DATE_SUB(NOW(), INTERVAL 15 HOUR),   NULL, NOW()),
     -- 동시 사용 구역에 두 건
     (9003, 9008, 'PRE',     '예비시험 A',       'seed', '시험용', DATE_SUB(NOW(), INTERVAL 2 HOUR),    NULL, NOW()),
-    (9004, 9008, 'WITNESS', '입회 B',           'seed', '시험용', DATE_SUB(NOW(), INTERVAL 1 HOUR),    NULL, NOW()),
+    (9004, 9008, 'ETC',     '기타 B',           'seed', '시험용', DATE_SUB(NOW(), INTERVAL 1 HOUR),    NULL, NOW()),
     -- 종료된 기록 (이력 화면)
     (9005, 9001, 'CHECK',   '안테나 교정',      'seed', '시험용', DATE_SUB(NOW(), INTERVAL 27 HOUR), DATE_SUB(NOW(), INTERVAL 24 HOUR), NOW()),
     (9006, 9006, 'ETC',     NULL,               'seed', '시험용', DATE_SUB(NOW(), INTERVAL 50 HOUR), DATE_SUB(NOW(), INTERVAL 49 HOUR), NOW());

@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import auth, db, xlsx
-from .config import (erp_raw_page,MET_KEYS, PURPOSE_NO_RD, PURPOSE_TEST, PURPOSES, PURPOSES_RETIRED, TEST_STATE_NAMES,
+from .config import (erp_raw_page,MET_KEYS, PURPOSE_NO_RD, PURPOSE_TEST, PURPOSES, TEST_STATE_NAMES,
                      is_no_rd_zone, settings)
 
 logging.basicConfig(level=logging.INFO)
@@ -149,7 +149,7 @@ def _me(session: dict) -> dict:
         "staleHours": settings.stale_hours,
         # "시험번호 없이 사용" 사유 (TEST 제외)
         "purposes": [{"value": k, "label": v} for k, v in PURPOSES.items()
-                     if k not in (PURPOSE_TEST, PURPOSE_NO_RD) and k not in PURPOSES_RETIRED],
+                     if k not in (PURPOSE_TEST, PURPOSE_NO_RD)],
     }
 
 
@@ -469,7 +469,7 @@ def etc_start(body: EtcStartIn, session: dict = Depends(auth.require_writer)) ->
             raise HTTPException(400, "고를 수 없는 시험번호입니다. (접수·시험중·디버깅인 EMC 시험, 일반 사용자는 본인 담당 시험만)")
     else:
         purpose = body.purpose
-        if purpose not in PURPOSES or purpose in (PURPOSE_TEST, PURPOSE_NO_RD) or purpose in PURPOSES_RETIRED:
+        if purpose not in PURPOSES or purpose in (PURPOSE_TEST, PURPOSE_NO_RD):
             raise HTTPException(400, "시험번호를 고르거나, 시험번호 없이 사용할 사유를 선택하세요.")
     if body.whole and purpose in (PURPOSE_TEST, PURPOSE_NO_RD):
         raise HTTPException(400, "시험장 전체 점유는 시험번호 없이 사용할 때만 고를 수 있습니다.")

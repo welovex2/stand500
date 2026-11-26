@@ -84,7 +84,7 @@ CREATE TABLE CHAMBER_ZONE_MET_TB (
 CREATE TABLE CHAMBER_ETC_USE_TB (
     USE_SEQ      INT          NOT NULL AUTO_INCREMENT COMMENT '사용 SEQ',
     ZONE_SEQ     INT          NOT NULL COMMENT '구역 (CHAMBER_ZONE_TB.ZONE_SEQ)',
-    PURPOSE      VARCHAR(10)  NOT NULL COMMENT 'TEST 시험(시험번호 있음) / NORD 로데이터 연동 없는 시험(CTI·4-39) / 시험번호 없이 사용 사유: PRE 사전 점검 / CHECK 장비 점검 / DEBUG 디버깅 / ETC 기타 (WITNESS 입회는 예전 값)',
+    PURPOSE      VARCHAR(10)  NOT NULL COMMENT 'TEST 시험(시험번호 있음) / NORD 로데이터 연동 없는 시험(CTI·4-39) / 시험번호 없이 사용 사유: PRE 사전 점검 / CHECK 장비 점검 / DEBUG 디버깅 / ETC 기타',
     TEST_SEQ     INT          NULL     COMMENT '시험 (PURPOSE=TEST 일 때. 자동화 로데이터 규격이 아닌 시험)',
     MEMO         VARCHAR(200) NULL     COMMENT '업체명·내용 등',
     MEM_ID       VARCHAR(20)  NULL     COMMENT '시험원 (1인 1시험 확인 기준). 고객 입회 시험은 NULL (시험원 미지정)',

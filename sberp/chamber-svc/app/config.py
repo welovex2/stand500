@@ -75,9 +75,7 @@ PURPOSES = {
     "CHECK": "장비 점검",
     "DEBUG": "디버깅",
     "ETC": "기타",
-    "WITNESS": "입회",     # 예전 사유. 이미 저장된 기록 표시용, 새로 고를 수 없다 (고객 입회는 시작 팝업의 체크박스)
 }
-PURPOSES_RETIRED = {"WITNESS"}
 # 로데이터 연동 없는 시험 (CTI · 4-39). 시험번호 없이 사용(사유)과 다르다 — 시험번호 미연결 건수에 넣지 않는다
 PURPOSE_NO_RD = "NORD"
 PURPOSES[PURPOSE_NO_RD] = "로데이터 연동 없음"

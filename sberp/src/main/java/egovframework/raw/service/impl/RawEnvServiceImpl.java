@@ -770,8 +770,6 @@ public class RawEnvServiceImpl implements RawEnvService {
         return "디버깅";
       case "CHECK":
         return "장비 점검";
-      case "WITNESS":
-        return "입회";
       case "NORD":
         return "로데이터 연동 없음";
       default:
