@@ -67,6 +67,7 @@ public class ResponseMessage {
     public static final String CHECK_ENV_REASON = "사유를 200자 이내로 입력하세요.";
     public static final String CHECK_ENV_DATE = "시작·종료 일시를 확인하세요. (종료는 시작 이후, 형식 yyyy-MM-dd HH:mm)";
     public static final String CHECK_ENV_AUTH = "기술책임자만 수정·삭제할 수 있습니다.";
+    public static final String CHECK_ENV_OWNER = "측정을 시작한 시험원 또는 기술책임자만 종료·중단할 수 있습니다.";
     public static final String CHECK_ENV_REQUIRED = "시험종료 전에 온도·습도(·기압)와 시험자명, 서명을 입력하세요.";
     /** 같은 시험원의 다른 측정과 시간이 겹침. %s = 접수번호, 시험방법, 시작~종료 */
     public static final String CHECK_ENV_OVERLAP = "같은 시험원의 다른 시험과 시간이 겹칩니다. (%s)";

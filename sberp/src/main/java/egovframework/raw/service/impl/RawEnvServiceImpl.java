@@ -85,7 +85,7 @@ public class RawEnvServiceImpl implements RawEnvService {
         if (EnvMetKey.of(env.getMetKey()) != key) {
           continue;
         }
-        table.getRows().add(toRow(env, rev, editable));
+        table.getRows().add(toRow(env, rev, editable, loginId));
         if (env.getTestEDt() == null) {
           anyOpen = true;
         }
@@ -185,6 +185,8 @@ public class RawEnvServiceImpl implements RawEnvService {
     lockRaw(rawSeq);
 
     // 1) 진행 중 행 값 저장 (종료·삭제된 행, 다른 로데이터·다른 방법 행은 건드리지 않음)
+    //    진행 중 행은 시작한 시험원·기술책임자만 고친다. 다른 사람 행은 무시 (방법 저장은 그대로 진행)
+    Boolean rev = null;
     RawEnvDTO.RowReq newRowValues = null;
     if (hasRows) {
       for (RawEnvDTO.RowReq r : rows) {
@@ -212,6 +214,14 @@ public class RawEnvServiceImpl implements RawEnvService {
         }
         if (env.getDelYn() != 0 || !env.isInProgress()) {
           log.info("진행 중이 아닌 측정 행 값은 무시 - envSeq={}", env.getEnvSeq());
+          continue;
+        }
+        if (rev == null) {
+          rev = isRev(loginId);
+        }
+        if (!canHandle(env, loginId, rev)) {
+          log.info("다른 시험원이 시작한 측정 행 값은 무시 - envSeq={}, memId={}, loginId={}", env.getEnvSeq(),
+              env.getMemId(), loginId);
           continue;
         }
         saveValues(env, r.getTemp(), r.getTempPlus(), r.getHmdt(), r.getHmdtPlus(), r.getBrmt(),
@@ -249,6 +259,9 @@ public class RawEnvServiceImpl implements RawEnvService {
     RawEnv env = requireAlive(envSeq);
     if (!env.isInProgress()) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
+    }
+    if (!canHandle(env, loginId, isRev(loginId))) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_OWNER);
     }
     rawSupport.assertRawEditable(req.getTestSeq(), env.getRawSeq());
     lockRaw(env.getRawSeq());
@@ -332,7 +345,7 @@ public class RawEnvServiceImpl implements RawEnvService {
           key == null ? result.getMetKey() : key.getLabel(), result.getRowNo(),
           startedAt.format(MEMO_DT), result.getTestEDt().format(MEMO_DT)), result, loginId);
     }
-    return toRow(result, true, true);
+    return toRow(result, true, true, loginId);
   }
 
   @Override
@@ -435,6 +448,9 @@ public class RawEnvServiceImpl implements RawEnvService {
     }
     if (open == null) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
+    }
+    if (!canHandle(open, loginId, isRev(loginId))) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_OWNER);
     }
 
     // 서명은 성적서용 필수값 (시간 겹침 확인은 서명이 아니라 [시작]을 누른 로그인 아이디로 한다)
@@ -763,7 +779,7 @@ public class RawEnvServiceImpl implements RawEnvService {
     return table;
   }
 
-  private RawEnvDTO.Row toRow(RawEnv env, boolean rev, boolean editable) {
+  private RawEnvDTO.Row toRow(RawEnv env, boolean rev, boolean editable, String loginId) {
     RawEnvDTO.Row row = new RawEnvDTO.Row();
     row.setEnvSeq(env.getEnvSeq());
     row.setRawSeq(env.getRawSeq());
@@ -793,9 +809,11 @@ public class RawEnvServiceImpl implements RawEnvService {
     boolean ended = env.isEnded();
     // 이관 행(기존 로데이터)은 [수정] 없이 입력칸 + 방법 [저장]으로 고친다 (측정일 포함)
     boolean migrated = env.getMigYn() != 0;
-    row.setCanEdit(editable && (inProgress || migrated));
-    row.setCanEnd(editable && inProgress && !migrated);
-    row.setCanStop(editable && inProgress && !migrated);
+    // 진행 중 행의 값 입력·[종료]·[중단]은 시작한 시험원과 기술책임자만 (2026-11-26)
+    boolean mine = canHandle(env, loginId, rev);
+    row.setCanEdit(editable && ((inProgress && mine) || migrated));
+    row.setCanEnd(editable && inProgress && !migrated && mine);
+    row.setCanStop(editable && inProgress && !migrated && mine);
     // 진행 중 행도 기술책임자는 [수정]으로 종료 처리할 수 있다
     row.setCanRevEdit(editable && rev && !migrated && (ended || inProgress));
     row.setCanDelete(editable && rev);
@@ -822,6 +840,11 @@ public class RawEnvServiceImpl implements RawEnvService {
     if (rawEnvMapper.lockRaw(rawSeq) == null) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_DATA);
     }
+  }
+
+  /** 진행 중 행을 다룰 수 있는지: 시작한 시험원(MEM_ID) 본인 또는 기술책임자. MEM_ID 없는 행은 누구나 */
+  private boolean canHandle(RawEnv env, String loginId, boolean rev) {
+    return rev || !StringUtils.hasText(env.getMemId()) || env.getMemId().equals(loginId);
   }
 
   private boolean isRev(String loginId) {
