@@ -91,6 +91,16 @@ CMPY_SQL = f"""(
 RAW_MEM_NAME = ("COALESCE(NULLIF(e.MEM_NAME, ''),"
                 " (SELECT mb.MEM_NAME FROM MEMBER_TB mb WHERE mb.ID = e.MEM_ID), e.MEM_ID)")
 
+# RS 시험 여부 (1인 1시험 RS 예외, 2026-11-26 · docs/design/chamber-svc-rs-exception.md). ERP rawEnvMapper rsZoneYn 과 같다.
+#   측정 행은 MET_KEY = 'RS', 현황판 기록은 구역에 RS 시험방법 매핑이 있으면 RS. 전체 점유는 기록된 첫 구역으로 판단
+RAW_RS_YN = "IF(e.MET_KEY = 'RS', 1, 0)"
+
+
+def rs_zone_yn(zone_expr: str) -> str:
+    return (f"IF(EXISTS (SELECT 1 FROM CHAMBER_ZONE_MET_TB rm WHERE rm.ZONE_SEQ = {zone_expr}"
+            f" AND rm.MET_KEY = 'RS'), 1, 0)")
+
+
 RAW_ACTIVE = "e.DEL_YN = 0 AND e.MIG_YN = 0 AND e.TEST_S_DT IS NOT NULL AND e.TEST_E_DT IS NULL"
 ETC_ACTIVE = "x.DEL_YN = 0 AND x.END_DT IS NULL"
 
@@ -99,13 +109,13 @@ ETC_ACTIVE = "x.DEL_YN = 0 AND x.END_DT IS NULL"
 ACTIVE_UNION = f"""
     SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, NULL AS TEST_SEQ, e.MET_KEY,
            NULL AS PURPOSE, NULL AS MEMO, e.MEM_ID, {RAW_MEM_NAME} AS MEM_NAME, e.TEST_S_DT AS S_DT,
-           NULL AS WITNESS_NAME, NULL AS REG_MEM_ID, 0 AS WHOLE_YN
+           NULL AS WITNESS_NAME, NULL AS REG_MEM_ID, 0 AS WHOLE_YN, {RAW_RS_YN} AS RS_YN
       FROM RAW_ENV_TB e
      WHERE {RAW_ACTIVE} AND e.ZONE_SEQ IS NOT NULL
     UNION ALL
     SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, x.TEST_SEQ, NULL,
            x.PURPOSE, x.MEMO, x.MEM_ID, x.MEM_NAME, x.START_DT,
-           x.WITNESS_NAME, x.REG_MEM_ID, x.WHOLE_YN
+           x.WITNESS_NAME, x.REG_MEM_ID, x.WHOLE_YN, {rs_zone_yn("x.ZONE_SEQ")}
       FROM CHAMBER_ETC_USE_TB x
      WHERE {ETC_ACTIVE}"""
 
@@ -135,14 +145,14 @@ ACTIVE_OCC = f"""
 RANGE_UNION = f"""
     SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, NULL AS TEST_SEQ, e.MET_KEY,
            NULL AS PURPOSE, NULL AS MEMO, e.MEM_ID, {RAW_MEM_NAME} AS MEM_NAME, e.TEST_S_DT AS S_DT,
-           NULL AS WITNESS_NAME, NULL AS REG_MEM_ID, 0 AS WHOLE_YN, e.TEST_E_DT AS E_DT
+           NULL AS WITNESS_NAME, NULL AS REG_MEM_ID, 0 AS WHOLE_YN, {RAW_RS_YN} AS RS_YN, e.TEST_E_DT AS E_DT
       FROM RAW_ENV_TB e
      WHERE e.DEL_YN = 0 AND e.MIG_YN = 0 AND e.TEST_S_DT IS NOT NULL AND e.ZONE_SEQ IS NOT NULL
        AND e.TEST_S_DT < %(hi)s AND (e.TEST_E_DT IS NULL OR e.TEST_E_DT > %(lo)s)
     UNION ALL
     SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, x.TEST_SEQ, NULL,
            x.PURPOSE, x.MEMO, x.MEM_ID, x.MEM_NAME, x.START_DT,
-           x.WITNESS_NAME, x.REG_MEM_ID, x.WHOLE_YN, x.END_DT
+           x.WITNESS_NAME, x.REG_MEM_ID, x.WHOLE_YN, {rs_zone_yn("x.ZONE_SEQ")}, x.END_DT
       FROM CHAMBER_ETC_USE_TB x
      WHERE x.DEL_YN = 0 AND x.USE_SEQ <> %(self)s
        AND x.START_DT < %(hi)s AND (x.END_DT IS NULL OR x.END_DT > %(lo)s)"""
@@ -151,6 +161,8 @@ RANGE_OCC = ACTIVE_OCC.replace(ACTIVE_UNION, RANGE_UNION)
 STATUS_SQL = f"""
 SELECT c.CHAMBER_SEQ, c.NAME AS CHAMBER_NAME, c.FLOOR, c.SOLO_YN,
        z.ZONE_SEQ, z.NAME AS ZONE_NAME, z.MULTI_YN, z.LINK_ZONE_SEQ,
+       (SELECT GROUP_CONCAT(zm.MET_KEY ORDER BY zm.MET_KEY) FROM CHAMBER_ZONE_MET_TB zm WHERE zm.ZONE_SEQ = z.ZONE_SEQ) AS ZONE_METS,
+       t.TEST_SEQ AS USE_TEST_SEQ,
        u.SRC, u.SEQ, u.MET_KEY, u.PURPOSE, u.MEMO, u.MEM_ID, u.MEM_NAME, u.S_DT, u.WITNESS_NAME, u.REG_MEM_ID,
        u.WHOLE_YN, TIMESTAMPDIFF(MINUTE, u.S_DT, NOW()) AS ELAPSED_MIN,
        {TEST_ID_SQL} AS TEST_ID,
@@ -334,20 +346,23 @@ SELECT {_BUSY_COLS}, u.E_DT, u.WITNESS_NAME, u.WHOLE_YN
             raise Reject(409, f"같은 시간에 {place} 다른 기록({hit['S_DT']:%m-%d %H:%M} · {who})이 있어 "
                               f"시험장이 겹칩니다.", hit)
         if mem_id:
+            # RS 예외 (사용 시작과 같은 규칙): 이 기록이 RS 구역이면 상대도 RS 인 건은 겹쳐도 된다
+            rs = is_rs_zone(cur, int(row["ZONE_SEQ"]))
             cur.execute(
                 f"""
 SELECT {_BUSY_COLS}
   FROM (
     SELECT 'RAW' AS SRC, e.ENV_SEQ AS SEQ, e.ZONE_SEQ, e.RAW_SEQ, NULL AS TEST_SEQ, e.MET_KEY, NULL AS PURPOSE,
-           {RAW_MEM_NAME} AS MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT
+           {RAW_MEM_NAME} AS MEM_NAME, e.TEST_S_DT AS S_DT, e.TEST_E_DT AS E_DT, {RAW_RS_YN} AS RS_YN
       FROM RAW_ENV_TB e
      WHERE e.MEM_ID = %s AND e.DEL_YN = 0 AND e.MIG_YN = 0 AND e.ZONE_SEQ IS NOT NULL AND e.TEST_S_DT IS NOT NULL
     UNION ALL
-    SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, x.TEST_SEQ, NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT
+    SELECT 'ETC', x.USE_SEQ, x.ZONE_SEQ, NULL, x.TEST_SEQ, NULL, x.PURPOSE, x.MEM_NAME, x.START_DT, x.END_DT,
+           {rs_zone_yn("x.ZONE_SEQ")}
       FROM CHAMBER_ETC_USE_TB x
      WHERE x.MEM_ID = %s AND x.DEL_YN = 0 AND x.USE_SEQ <> %s
        ) u {_BUSY_JOIN}
- WHERE u.S_DT < COALESCE(%s, '9999-12-31') AND (u.E_DT IS NULL OR u.E_DT > %s)
+ WHERE u.S_DT < COALESCE(%s, '9999-12-31') AND (u.E_DT IS NULL OR u.E_DT > %s) {"AND u.RS_YN = 0" if rs else ""}
  ORDER BY u.S_DT
  LIMIT 1""",
                 (mem_id, mem_id, use_seq, end_dt, start_dt),
@@ -428,6 +443,21 @@ _BUSY_JOIN = """
        LEFT JOIN TEST_TB t ON t.TEST_SEQ = COALESCE(r.TEST_SEQ, u.TEST_SEQ)"""
 
 
+# 같은 시험번호 · 같은 항목 확인에서 아직 보지 않는 시험방법 키 (RE 는 대역 RA·RB 와 RE1~3 이 달라 다음 단계)
+ITEM_SKIP_KEYS = ("RA", "RB", "RE1", "RE2", "RE3")
+
+
+def is_rs_zone(cur, zone_seq: int) -> bool:
+    cur.execute(f"SELECT {rs_zone_yn('%s')} AS RS_YN", (zone_seq,))
+    return bool(cur.fetchone()["RS_YN"])
+
+
+def zone_items(cur, zone_seq: int) -> List[str]:
+    """구역의 시험 항목 (시험방법 매핑). RE 는 아직 빼고 본다"""
+    cur.execute("SELECT MET_KEY FROM CHAMBER_ZONE_MET_TB WHERE ZONE_SEQ = %s ORDER BY MET_KEY", (zone_seq,))
+    return [r["MET_KEY"] for r in cur.fetchall() if r["MET_KEY"] not in ITEM_SKIP_KEYS]
+
+
 def occupied_zones(cur, zone_seq: int, link: bool, whole: bool) -> List[int]:
     """새 사용이 점유할 구역 (자신 포함, 번호 순). link = 시험번호 있는 시험(장비 이관), whole = 시험장 전체"""
     cur.execute(
@@ -501,14 +531,16 @@ SELECT {_BUSY_COLS}
                          else f"{busy['CHAMBER_NAME']} 시험과 장비·시험장을 함께 쓰고 있어 시작할 수 없습니다.", busy)
 
         # 1인 1시험: 같은 시험원이 진행 중인 측정 행·현황판 사용이 있으면 안 된다 (입회 시험은 시험원이 없다)
+        # RS 예외: 새 기록이 RS 구역이면 상대도 RS 인 건은 막지 않는다 (RS 끼리 동시 진행, RS 와 다른 시험은 서로 막음)
+        rs = is_rs_zone(cur, zone_seq)
         mine = None
         if mem_id:
             cur.execute(
                 f"""
-SELECT {_BUSY_COLS}
+SELECT {_BUSY_COLS}, u.RS_YN
   FROM ({ACTIVE_UNION}
        ) u {_BUSY_JOIN}
- WHERE u.MEM_ID = %s
+ WHERE u.MEM_ID = %s {"AND u.RS_YN = 0" if rs else ""}
  ORDER BY u.S_DT
  LIMIT 1""",
                 (mem_id,),
@@ -516,8 +548,39 @@ SELECT {_BUSY_COLS}
             mine = cur.fetchone()
         if mine:
             conn.rollback()
+            if rs or mine["RS_YN"]:
+                raise Reject(409, f"{mem_name} 님은 {mine['CHAMBER_NAME']}에서 진행 중인 시험이 있습니다. "
+                                  f"RS 시험과 다른 시험은 동시에 할 수 없습니다.", mine)
             raise Reject(409, f"{mem_name} 님은 {mine['CHAMBER_NAME']}에서 진행 중인 시험이 있습니다. "
-                              f"한 사람은 한 번에 한 시험만 할 수 있습니다.", mine)
+                              f"한 사람은 한 번에 한 시험만 할 수 있습니다. (RS 시험끼리는 동시 진행 가능)", mine)
+
+        # 시험번호 1개의 같은 항목은 한 곳에서만 (V-2 · R-6). 항목 = 측정 행 MET_KEY, 현황판 기록은 구역의 시험방법 매핑.
+        # RE(RA·RB · RE1~3)는 다음 단계라 아직 보지 않는다
+        if test_seq is not None:
+            items = zone_items(cur, zone_seq)
+            if items:
+                marks_i = ", ".join(["%s"] * len(items))
+                cur.execute(
+                    f"""
+SELECT {_BUSY_COLS},
+       (SELECT GROUP_CONCAT(im.MET_KEY) FROM CHAMBER_ZONE_MET_TB im WHERE im.ZONE_SEQ = u.ZONE_SEQ) AS ZONE_METS
+  FROM ({ACTIVE_UNION}
+       ) u {_BUSY_JOIN}
+ WHERE COALESCE(r.TEST_SEQ, u.TEST_SEQ) = %s
+   AND ((u.SRC = 'RAW' AND u.MET_KEY IN ({marks_i}))
+        OR (u.SRC = 'ETC' AND u.PURPOSE = 'TEST' AND EXISTS (
+              SELECT 1 FROM CHAMBER_ZONE_MET_TB im WHERE im.ZONE_SEQ = u.ZONE_SEQ AND im.MET_KEY IN ({marks_i}))))
+ ORDER BY u.S_DT
+ LIMIT 1""",
+                    [test_seq] + items + items,
+                )
+                dup = cur.fetchone()
+                if dup:
+                    conn.rollback()
+                    theirs = [dup["MET_KEY"]] if dup["SRC"] == "RAW" else (dup["ZONE_METS"] or "").split(",")
+                    same = ", ".join(k for k in items if k in theirs) or ", ".join(items)
+                    raise Reject(409, f"같은 시험번호의 {same} 시험이 {dup['CHAMBER_NAME']}에서 진행 중입니다. "
+                                      f"시험번호 하나의 같은 항목은 한 곳에서만 진행할 수 있습니다.", dup)
 
         cur.execute(
             f"""
@@ -671,14 +734,17 @@ def fetch_members() -> List[dict]:
                     (settings.emc_dept_seq,))
         members = list(cur.fetchall())
         cur.execute(f"""
-SELECT u.MEM_ID, MIN(uc.NAME) AS CHAMBER_NAME
+SELECT u.MEM_ID, GROUP_CONCAT(DISTINCT uc.NAME ORDER BY uc.NAME SEPARATOR ' · ') AS CHAMBER_NAME,
+       MIN(u.RS_YN) AS RS_ONLY
   FROM ({ACTIVE_UNION}
        ) u {_BUSY_JOIN}
  WHERE u.MEM_ID IS NOT NULL
  GROUP BY u.MEM_ID""")
-        busy = {r["MEM_ID"]: r["CHAMBER_NAME"] for r in cur.fetchall()}
+        busy = {r["MEM_ID"]: r for r in cur.fetchall()}
     for m in members:
-        m["BUSY"] = busy.get(m["ID"])
+        b = busy.get(m["ID"])
+        m["BUSY"] = b["CHAMBER_NAME"] if b else None
+        m["BUSY_RS_ONLY"] = bool(b and b["RS_ONLY"])   # 진행 중인 건이 모두 RS → RS 구역은 시작할 수 있다
     return members
 
 

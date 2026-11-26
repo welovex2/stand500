@@ -322,6 +322,26 @@ function linkHint(z, style) {
     : `<div class="mark lk" style="${style}">시작하면 ${esc(linkTitle(z.linkZoneSeq))} 시험장이 자동으로 [장비 이관] 상태가 되고, 종료하면 자동 해제됩니다</div>`;
 }
 
+// 1인 1시험 RS 예외 (2026-11-26): RS 구역끼리는 한 시험원이 동시에 진행할 수 있다. 서버가 최종 판단
+const ITEM_SKIP = ['RA', 'RB', 'RE1', 'RE2', 'RE3'];   // RE 는 같은 항목 확인을 다음 단계에서
+function startZone() { return S.whole ? S.c.zones[0] : S.zoneSeq ? ZONES.get(S.zoneSeq).z : null; }
+function startRs() { const z = startZone(); return !!(z && z.rsYn); }
+function canPick(m) { return !m.busy || (startRs() && m.busyRsOnly); }
+// 시험번호 하나의 같은 항목은 한 곳에서만 (V-2). 항목 = 구역의 시험방법 매핑 (측정 행은 시험방법)
+function dupOf() {
+  const z = startZone();
+  if (!S.test || S.noTest || S.whole || !z) return null;
+  const items = (z.mets || []).filter(k => !ITEM_SKIP.includes(k));
+  if (!items.length) return null;
+  for (const c of DATA.chambers) for (const x of c.zones) for (const u of x.uses) {
+    if (u.testSeq !== S.test.testSeq) continue;
+    const theirs = u.src === 'RAW' ? [u.metKey] : u.purpose === 'TEST' ? (x.mets || []) : [];
+    const same = items.filter(k => theirs.includes(k));
+    if (same.length) return { chamberName: c.chamberName + (c.zones.length > 1 && x.zoneName ? ' / ' + x.zoneName : ''), keys: same };
+  }
+  return null;
+}
+
 function openStart(zoneSeq, chamberSeq) {
   const c = DATA.chambers.find(x => x.chamberSeq === chamberSeq);
   if (!c) return;
@@ -341,7 +361,7 @@ function openStart(zoneSeq, chamberSeq) {
     api('api/members').then(d => {
       MEMBERS = d.members;
       // 기본값: 본인이 목록에 있고 시험 중이 아니면 본인
-      if (S && !S.memId && MEMBERS.some(m => m.memId === me.memId && !m.busy)) S.memId = me.memId;
+      if (S && !S.memId && MEMBERS.some(m => m.memId === me.memId && canPick(m))) S.memId = me.memId;
       drawTester();
     }).catch(e => { MEMBERS = []; const t = $('mTester'); if (t) t.innerHTML = `<div class="inp w100 ro">${esc(e.message)}</div>`; });
   }
@@ -366,6 +386,7 @@ function drawStart() {
 
   let testBox;
   const noRd = !!(z && z.noRd);
+  const dup = dupOf();
   if (noRd) {
     // 로데이터 연동 없는 시험 (CTI · 4-39): 시험번호 없이 바로 시작 (기획 SC-08)
     testBox = `<div><label class="lb">시험번호</label><div class="nordbox">${esc(z.zoneName)} 시험은 로데이터와 연결되지 않습니다. ` +
@@ -375,7 +396,9 @@ function drawStart() {
       `<button type="button" data-purpose="${esc(p.value)}" class="${S.purpose === p.value ? 'act' : ''}">${esc(p.label)}</button>`).join('')}</div></div>`;
   } else if (S.test) {
     testBox = `<div><label class="lb">시험번호</label><div class="picked"><div><b class="mono">${esc(S.test.testId)}</b>` +
-      `<span>${esc([S.test.cmpyName, S.test.prdctName].filter(Boolean).join(' · '))}</span></div><button type="button" class="ib x" id="mUnpick">✕ 삭제</button></div></div>`;
+      `<span>${esc([S.test.cmpyName, S.test.prdctName].filter(Boolean).join(' · '))}</span></div><button type="button" class="ib x" id="mUnpick">✕ 삭제</button></div>` +
+      (dup ? `<div class="lerr" style="margin-top:6px">같은 시험번호의 ${esc(dup.keys.join(', '))} 시험이 ${esc(dup.chamberName)}에서 진행 중입니다. ` +
+        '시험번호 하나의 같은 항목은 한 곳에서만 진행할 수 있습니다.</div>' : '') + '</div>';
   } else {
     testBox = `<div><label class="lb" for="mQ">시험번호</label><div class="srch">` +
       `<input class="inp w100 mono" id="mQ" placeholder="시험번호 · 업체명 · 제품명 입력" autocomplete="off" value="${esc(S.q)}">` +
@@ -397,10 +420,10 @@ function drawStart() {
       ${witness}
       <!-- 메모란: 잠시 숨김 (2026-11-24). 다시 쓰려면 hidden 만 지운다. 값은 그대로 서버로 간다 (빈 값) -->
       <div hidden><label class="lb" for="mMemo">메모 (업체명·내용, 200자)</label><input class="inp w100" id="mMemo" maxlength="200" autocomplete="off" value="${esc(S.memo || '')}"></div>
-      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다.</div>
+      <div class="mark">한 사람은 한 번에 한 시험만 진행할 수 있습니다. (RS 시험끼리는 동시 진행 가능)</div>
       <div class="lerr" id="mErr"></div>
     </div>
-    <div class="mf"><button class="btn sec" data-close>취소</button><button class="btn ok" id="mOk">사용 시작</button></div>`;
+    <div class="mf"><button class="btn sec" data-close>취소</button><button class="btn ok" id="mOk" ${dup ? 'disabled' : ''}>사용 시작</button></div>`;
   if (!noRd && !S.noTest && !S.test) { drawList(); $('mQ').focus(); }
 }
 
@@ -416,10 +439,13 @@ function testerHtml() {
   // 고른 시험의 담당자를 위로
   const mng = S.test ? S.test.mngrs.map(m => m.memId) : [];
   const list = [...MEMBERS].sort((a, b) => (mng.includes(b.memId) ? 1 : 0) - (mng.includes(a.memId) ? 1 : 0));
+  // RS 구역을 고르면 RS 만 진행 중인 시험원도 고를 수 있다. 구역을 바꿔 고를 수 없게 되면 선택을 푼다
+  if (S.memId && list.some(m => m.memId === S.memId && !canPick(m))) S.memId = '';
   return `<select class="inp w100" id="mMem"><option value="">시험원 선택</option>${list.map(m =>
-      `<option value="${esc(m.memId)}" ${m.memId === S.memId ? 'selected' : ''} ${m.busy ? 'disabled' : ''}>` +
-      `${esc(m.memName)}${mng.includes(m.memId) ? ' (담당)' : ''}${m.busy ? ` — ${esc(m.busy)} 시험 중` : ''}</option>`).join('')}</select>` +
-    '<div class="mark" style="margin-top:6px">다른 시험장에서 시험 중인 시험원은 고를 수 없습니다</div>';
+      `<option value="${esc(m.memId)}" ${m.memId === S.memId ? 'selected' : ''} ${canPick(m) ? '' : 'disabled'}>` +
+      `${esc(m.memName)}${mng.includes(m.memId) ? ' (담당)' : ''}${m.busy ? ` — ${esc(m.busy)} 시험 중` +
+        (canPick(m) ? ' (RS 동시 진행 가능)' : '') : ''}</option>`).join('')}</select>` +
+    `<div class="mark" style="margin-top:6px">다른 시험장에서 시험 중인 시험원은 고를 수 없습니다${startRs() ? ' · RS 시험만 진행 중이면 고를 수 있습니다' : ''}</div>`;
 }
 function drawTester() { const t = $('mTester'); if (t && S) t.innerHTML = testerHtml(); }
 
@@ -519,7 +545,7 @@ $('modal').addEventListener('click', (e) => {
     S.test = TESTS.find(t => t.testSeq === Number(si.dataset.test)) || null;
     // 기술책임자·관리자: 시험원이 비어 있으면 시험 중이 아닌 첫 담당자
     if (S.test && me.revYn && !S.memId && MEMBERS) {
-      const free = S.test.mngrs.find(m => MEMBERS.some(x => x.memId === m.memId && !x.busy));
+      const free = S.test.mngrs.find(m => MEMBERS.some(x => x.memId === m.memId && canPick(x)));
       if (free) S.memId = free.memId;
     }
     drawStart();

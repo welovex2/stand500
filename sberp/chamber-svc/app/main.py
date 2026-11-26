@@ -73,6 +73,8 @@ def _use(r: dict, session: Optional[dict] = None) -> dict:
         "startDt": _dt(r.get("S_DT")),
         "wholeYn": bool(r.get("WHOLE_YN")),      # 시험장 전체 점유 (시험번호 없이 · 항목 선택 안 함)
     }
+    if r.get("USE_TEST_SEQ"):
+        out["testSeq"] = r["USE_TEST_SEQ"]      # 시작 팝업: 같은 시험번호 · 같은 항목 진행 중 표시
     if r.get("WITNESS_NAME"):
         # 고객 입회 시험: 시험원 미지정, 입회자 표시
         out.update(witnessYn=True, witnessName=r["WITNESS_NAME"], memName="입회 · " + r["WITNESS_NAME"])
@@ -100,8 +102,10 @@ def _chambers(rows: List[dict], session: dict) -> List[dict]:
                              "floor": int(r["FLOOR"]), "soloYn": int(r.get("SOLO_YN") or 0), "zones": []})
         zones = chambers[-1]["zones"]
         if not zones or zones[-1]["zoneSeq"] != r["ZONE_SEQ"]:
+            mets = [k for k in (r.get("ZONE_METS") or "").split(",") if k]
             zones.append({"zoneSeq": r["ZONE_SEQ"], "zoneName": r["ZONE_NAME"],
                           "multiYn": int(r["MULTI_YN"]), "linkZoneSeq": r.get("LINK_ZONE_SEQ"),
+                          "mets": mets, "rsYn": "RS" in mets,   # 시험방법 매핑 · RS 구역 (1인 1시험 RS 예외)
                           "noRd": is_no_rd_zone(r["ZONE_NAME"]),   # CTI · 4-39: 시험번호 없이 시작
                           "uses": [], "linked": [], "held": False})
             by_zone[r["ZONE_SEQ"]] = zones[-1]
@@ -183,6 +187,7 @@ def zones(session: dict = Depends(auth.require_writer)) -> dict:
             out.append({
                 "zoneSeq": z["zoneSeq"], "chamberName": c["chamberName"], "zoneName": z["zoneName"],
                 "multiYn": z["multiYn"], "inUse": bool(z["uses"] or z["linked"]) and not z["multiYn"],
+                "rsYn": z["rsYn"],
             })
     return {"zones": out}
 
@@ -424,7 +429,8 @@ def tests(session: dict = Depends(auth.require_writer)) -> dict:
 @app.get("/api/members")
 def members(_: dict = Depends(auth.require_rev)) -> dict:
     """기술책임자·관리자가 시험원을 고를 목록: EMC 부서 재직자. busy = 진행 중인 시험장 (고를 수 없다)"""
-    return {"members": [{"memId": m["ID"], "memName": m["MEM_NAME"] or m["ID"], "busy": m["BUSY"] or ""}
+    return {"members": [{"memId": m["ID"], "memName": m["MEM_NAME"] or m["ID"], "busy": m["BUSY"] or "",
+                         "busyRsOnly": bool(m.get("BUSY_RS_ONLY"))}
                         for m in db.fetch_members()]}
 
 

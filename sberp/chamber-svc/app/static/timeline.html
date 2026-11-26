@@ -6,7 +6,7 @@
 <title>시험원 현황</title>
 <script>try { if (localStorage.getItem('chamberTheme') === 'dark') document.documentElement.classList.remove('light'); } catch (e) {}</script>
 <link rel="stylesheet" href="app.css">
-<link rel="stylesheet" href="timeline.css?v=20261124d">
+<link rel="stylesheet" href="timeline.css?v=20261126">
 </head>
 <body>
 <header>
@@ -74,6 +74,16 @@ const witKey = r => {
   const m = /\(([^()]+)\)\s*$/.exec(r.witnessName || '');
   return (m && m[1].trim()) || r.witnessName || '고객';
 };
+// 한 줄의 기록을 서로 겹치지 않는 줄로 나눈다. 진행 중인 기록은 끝나지 않은 것으로 본다.
+// 고객 입회(같은 업체가 두 곳)와 시험원의 RS 동시 진행(2026-11-26)에 쓴다. 기록이 없으면 빈 줄 하나
+function pack(rows) {
+  const subs = [];
+  for (const r of [...rows].sort((a, b) => (a.s - b.s) || (a.e - b.e))) {   // 같은 시각에 시작하면 먼저 끝나는 것부터
+    const sub = subs.find(x => { const p = x[x.length - 1]; return !p.running && p.e <= r.s; });
+    sub ? sub.push(r) : subs.push([r]);
+  }
+  return subs.length ? subs : [[]];
+}
 function lanes(rows) {
   const map = new Map(DATA.members.map(m => [m.memId, { id: m.memId, name: m.memName, rows: [] }]));
   const wits = new Map();
@@ -91,12 +101,7 @@ function lanes(rows) {
   out.forEach(l => l.rows.sort((a, b) => a.s - b.s));
   // 고객 입회: 업체(입회자)별 한 줄. 같은 업체가 같은 시간에 두 곳 이상이면 그 업체 줄을 겹치지 않게 나눈다
   for (const k of [...wits.keys()].sort((a, b) => a.localeCompare(b, 'ko'))) {
-    const subs = [];
-    for (const r of wits.get(k).sort((a, b) => a.s - b.s)) {
-      const sub = subs.find(x => { const p = x[x.length - 1]; return !p.running && p.e <= r.s; });   // 진행 중이면 끝나지 않은 것
-      sub ? sub.push(r) : subs.push([r]);
-    }
-    subs.forEach((rs, i) => out.push({ id: '@wit:' + k + ':' + i, name: '입회 · ' + k + (i ? ` (${i + 1})` : ''), wit: true, rows: rs }));
+    pack(wits.get(k)).forEach((rs, i) => out.push({ id: '@wit:' + k + ':' + i, name: '입회 · ' + k + (i ? ` (${i + 1})` : ''), wit: true, rows: rs }));
   }
   return out;
 }
@@ -133,7 +138,13 @@ async function view1() {
   const d0 = new Date(NOW); d0.setHours(0, 0, 0, 0);
   const all = lanes(DATA.rows);
   const state = l => {
-    const run = l.rows.find(r => r.running);
+    const runs = l.rows.filter(r => r.running), run = runs[0];
+    if (runs.length > 1) {
+      // RS 시험끼리 동시 진행 (1인 1시험 RS 예외)
+      const m = elapsed(run);
+      return { o: 0, on: true, chip: `사용 중 ${runs.length}건`, line: runs.map(place).join(' · ') + ' 동시 진행',
+        big: `<div class="we${m >= STALE_H * 60 ? ' w' : ''}">${minText(m)}</div>` };
+    }
     if (run) {
       const m = elapsed(run);
       return { o: 0, on: true, chip: '사용 중', line: `${l.wit ? run.witnessName + ' · ' : ''}${place(run)} · ${what(run)}`,
@@ -173,9 +184,13 @@ async function view1() {
     const chip = l.wit ? (st.on ? '진행 중' : '종료') : st.chip;
     const card = `<div class="wh"><span class="av">${esc(l.wit ? '입' : l.name[0])}</span><b title="${esc(l.name)}">${esc(l.name)}</b><span class="st">${chip}</span></div>` +
       `<div class="wl" title="${esc(st.line)}">${esc(st.line)}</div>${st.big}`;
-    html += `<div class="who${alt}${st.on ? ' on' : ''}">${card}</div>` +
-      `<div class="lane${alt}" style="${grid}">${l.rows.map(r => barHtml(r, lo, hi, '%')).join('')}` +
-      `<div class="future" style="left:${nowPct}%"></div><div class="nowline" style="left:${nowPct}%">${i === 0 ? `<b>${hm(NOW)}</b>` : ''}</div></div>`;
+    // 같은 시험원의 기록이 겹치면 (RS 동시 진행) 겹치는 기록만 아래 줄에 더 그린다
+    pack(l.rows.filter(r => r.e > lo)).forEach((rs, k) => {
+      html += (k ? `<div class="who sub${alt}${st.on ? ' on' : ''}"><div class="wl">↳ 동시 진행 (${k + 1})</div></div>`
+                 : `<div class="who${alt}${st.on ? ' on' : ''}">${card}</div>`) +
+        `<div class="lane${alt}${k ? ' sub' : ''}" style="${grid}">${rs.map(r => barHtml(r, lo, hi, '%')).join('')}` +
+        `<div class="future" style="left:${nowPct}%"></div><div class="nowline" style="left:${nowPct}%">${i === 0 && !k ? `<b>${hm(NOW)}</b>` : ''}</div></div>`;
+    });
   });
   html += '</div></div>';
   $('view').innerHTML = html;
@@ -196,8 +211,11 @@ async function view2() {
   }).sort((a, b) => (!!a.l.wit - !!b.l.wit) || (a.o - b.o) || a.l.name.localeCompare(b.l.name, 'ko'));
   let html = summary(ls) + '<div class="cards">';
   for (const x of info) {
-    const r = x.run;
-    const cur = r
+    const r = x.run, runs = x.l.rows.filter(q => q.running);
+    const cur = runs.length > 1
+      ? `<div class="t">${esc(runs.map(place).join(' · '))}</div><div class="s">${runs.length}건 동시 진행 · ${hm(r.s)} 시작</div>` +
+        `<div class="el${elapsed(r) >= STALE_H * 60 ? ' w' : ''}">${minText(elapsed(r))}</div>`
+      : r
       ? `<div class="t">${esc(place(r))}</div><div class="s">${esc(x.l.wit ? r.witnessName : what(r))}${!x.l.wit && r.cmpyName ? ' · ' + esc(r.cmpyName) : ''} · ${hm(r.s)} 시작</div>` +
         `<div class="el${elapsed(r) >= STALE_H * 60 ? ' w' : ''}">${minText(elapsed(r))}</div>`
       : x.last ? `<div class="t" style="color:var(--sub)">${x.l.wit ? '종료' : '대기 중'}</div><div class="s">마지막: ${esc(place(x.last))} · ${hm(x.last.e)} 종료 (${minText(Math.round((NOW - x.last.e) / 60000))} 전)</div>`
@@ -234,12 +252,14 @@ async function view3() {
   const ctl = `<div class="ctl">${[3, 7, 14].map(n => `<button type="button" class="chip${RANGE3 === n ? ' act' : ''}" data-r="${n}">${n}일</button>`).join('')}` +
     `<span class="div"></span><label class="mark">끝 날짜</label><input type="date" class="inp" id="end3" value="${dstr(end)}">` +
     `<button type="button" class="chip" data-r="today">오늘</button></div>`;
+  // 같은 시험원의 기록이 겹치면 (RS 동시 진행) 줄을 나눈다. 합계는 사람별이라 첫 줄에만
+  const rowsOf = ls.flatMap(l => pack(l.rows).map((rs, k) => ({ name: l.name + (k ? ` (${k + 1})` : ''), rows: rs, sub: k > 0, tot: k ? '' : minText(Math.round(tot(l))) })));
   $('view').innerHTML = ctl + `<div class="box lbox" style="padding:0;overflow:hidden"><div class="g3wrap">` +
-    `<div class="col"><div class="c h">시험원</div>${ls.map(l => `<div class="c">${esc(l.name)}</div>`).join('')}</div>` +
+    `<div class="col"><div class="c h">시험원</div>${rowsOf.map(x => `<div class="c${x.sub ? ' sub' : ''}">${esc(x.name)}</div>`).join('')}</div>` +
     `<div class="g3scroll" id="g3s"><div class="g3" style="width:${W}px"><div class="days">${days}</div>${bg}` +
-    ls.map(l => `<div class="lane">${l.rows.map(r => barHtml(r, lo, hi, px)).join('')}</div>`).join('') +
+    rowsOf.map(x => `<div class="lane">${x.rows.map(r => barHtml(r, lo, hi, px)).join('')}</div>`).join('') +
     (NOW >= lo && NOW <= hi ? `<div class="nowline" style="left:${nowX}px;top:46px"></div>` : '') + `</div></div>` +
-    `<div class="col r"><div class="c h">합계</div>${ls.map(l => `<div class="c">${minText(Math.round(tot(l)))}</div>`).join('')}</div></div></div>`;
+    `<div class="col r"><div class="c h">합계</div>${rowsOf.map(x => `<div class="c">${x.tot}</div>`).join('')}</div></div></div>`;
   const sc = $('g3s');
   sc.scrollLeft = Math.max(0, Math.min(nowX, W) - sc.clientWidth + 80);
 }
