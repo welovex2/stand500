@@ -95,9 +95,9 @@ public class RawEnvController {
     });
   }
 
-  @ApiOperation(value = "측정일·환경조건 행 수정·종료 처리 (기술책임자)",
-      notes = "기술책임자만. 종료된 행은 수정, 진행 중 행은 [종료] 누락 처리(시작·종료 일시 필수, 저장하면 종료됨 + 작성내역 기록)\n"
-          + "일시: testSDt·testEDt 둘 다 주면 수정(종료 ≥ 시작, 미래 불가), 종료된 행은 둘 다 비우면 그대로\n"
+  @ApiOperation(value = "측정일·환경조건 행 수정 (기술책임자)",
+      notes = "기술책임자만. 종료된 행만 수정할 수 있다 (진행 중 행은 오류)\n"
+          + "일시: testSDt·testEDt 둘 다 주면 수정(종료 ≥ 시작, 미래 불가), 둘 다 비우면 그대로\n"
           + "챔버: zoneSeq 를 주면 변경 (같은 챔버 시간 겹침 확인), 빈 값이면 그대로\n"
           + "기압은 ESD·RS·EFT·SURGE·CS·MF·VDIP 만 저장 (그 외는 무시). 서명 취소는 atchFileId 빈 값")
   @PostMapping(value = "/env/{envSeq}/update.do")

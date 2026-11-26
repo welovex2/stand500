@@ -287,12 +287,10 @@ public class RawEnvServiceImpl implements RawEnvService {
     lockRaw(env.getRawSeq());
     // 잠금 사이에 [종료]·[중단]됐을 수 있으니 다시 읽는다
     env = requireAlive(envSeq);
-    if (env.getTestSDt() == null) {
+    // 수정은 [종료]된 행만 (기획: 수정 가능 시점 = [시험종료] 이후). 진행 중 행은 시험원이 [종료]·[중단]
+    if (!env.isEnded()) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
     }
-    // 진행 중 행 = [종료] 누락 처리 : 시작·종료 일시 둘 다 필수, 저장하면 종료된 행이 된다
-    boolean closing = env.isInProgress();
-    LocalDateTime startedAt = env.getTestSDt();
 
     saveValues(env, req.getTemp(), req.getTempPlus(), req.getHmdt(), req.getHmdtPlus(),
         req.getBrmt(), req.getBrmtPlus(), req.getMemName(), req.getAtchFileId(), loginId);
@@ -311,9 +309,6 @@ public class RawEnvServiceImpl implements RawEnvService {
     // 일시: 둘 다 비우면 그대로, 하나만 주면 오류. 화면은 분 단위로 보낸다 → 같은 분이면 저장된 값(초) 유지
     boolean hasS = StringUtils.hasText(req.getTestSDt());
     boolean hasE = StringUtils.hasText(req.getTestEDt());
-    if (closing && !(hasS && hasE)) {
-      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_DATE);
-    }
     boolean datesChanged = false;
     if (hasS || hasE) {
       LocalDateTime s = sameMinuteOrNew(parseDateTime(req.getTestSDt()), env.getTestSDt());
@@ -339,14 +334,6 @@ public class RawEnvServiceImpl implements RawEnvService {
     checkOverlap(result);
     if (zoneChanged || datesChanged) {
       checkZoneConflict(result);
-    }
-
-    if (closing) {
-      int testSeq = rawSupport.resolveTestSeq(req.getTestSeq(), result.getRawSeq());
-      EnvMetKey key = EnvMetKey.of(result.getMetKey());
-      writeMemo(testSeq, String.format("[측정 종료 처리] %s %d행 (시작 %s → 종료 %s)",
-          key == null ? result.getMetKey() : key.getLabel(), result.getRowNo(),
-          startedAt.format(MEMO_DT), result.getTestEDt().format(MEMO_DT)), result, loginId);
     }
     return toRow(result, true, true, loginId);
   }
@@ -818,8 +805,8 @@ public class RawEnvServiceImpl implements RawEnvService {
     row.setCanEdit(editable && ((inProgress && mine) || migrated));
     row.setCanEnd(editable && inProgress && !migrated && mine);
     row.setCanStop(editable && inProgress && !migrated && mine);
-    // 진행 중 행도 기술책임자는 [수정]으로 종료 처리할 수 있다
-    row.setCanRevEdit(editable && rev && !migrated && (ended || inProgress));
+    // 기술책임자 [수정]은 종료된 행만
+    row.setCanRevEdit(editable && rev && !migrated && ended);
     row.setCanDelete(editable && rev);
     return row;
   }
