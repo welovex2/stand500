@@ -69,7 +69,7 @@ public class ResponseMessage {
     public static final String CHECK_ENV_AUTH = "기술책임자만 수정·삭제할 수 있습니다.";
     public static final String CHECK_ENV_REQUIRED = "시험종료 전에 온도·습도(·기압)와 시험자명, 서명을 입력하세요.";
     /** 같은 시험원의 다른 측정과 시간이 겹침. %s = 접수번호, 시험방법, 시작~종료 */
-    public static final String CHECK_ENV_OVERLAP = "같은 시험원의 다른 측정과 시간이 겹칩니다. (%s %s %s)";
+    public static final String CHECK_ENV_OVERLAP = "같은 시험원의 다른 시험과 시간이 겹칩니다. (%s)";
     public static final String CHECK_ENV_ACTION = "측정일 버튼 구분값이 올바르지 않습니다. (START, END 또는 빈 값)";
     // 측정 행 챔버(구역) — docs/design/chamber-erp.md
     public static final String CHECK_ENV_ZONE_REQUIRED = "시험할 챔버를 선택하세요.";

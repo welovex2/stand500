@@ -152,7 +152,7 @@ CREATE TABLE RAW_ENV_TB (
 처리 순서 (`applyFromMethod`, 방법 데이터·측정설비 저장 뒤)
 1. `envRows` 중 `envSeq > 0`: 이 로데이터·이 방법 표의 행이 아니면 거부. **진행 중 행만 값 저장**, 종료·삭제된 행은 무시 (과거 측정 행은 건드리지 않음).
    - 예외: **이관 행(`MIG_YN=1`)** 은 기존 로데이터 화면처럼 방법 [저장]으로 고친다 (2026-11-18). 온습도·이름·서명 덮어쓰기 + `msrmnDt`(분 단위)가 있으면 `TEST_S_DT = TEST_E_DT = msrmnDt`. 미래 불가, 성적서 발급일·측정설비 교정일 검증, 시험기간 재계산. 시간 겹침·챔버 검사 안 함, `MIG_YN`은 1 유지. 응답의 이관 행은 `canEdit=true`(로데이터 수정 가능 시), `canEnd/canStop/canRevEdit=false`.
-   - 기존 화면 새 행: 측정일이 비어 이관되지 않은 기존 로데이터는 `envAction` 빈 값 + `envSeq: 0` + `msrmnDt`(+ RE는 행의 `metKey`)로 보내면, 그 표에 살아있는 행이 없을 때만 `MIG_YN=2` 행을 만든다 (시작=종료=측정일, 검증은 위와 같음). 이후는 `envSeq`로 위와 같이 저장. `MIG_YN=2`는 이관 롤백(`MIG_YN=1` 삭제)에 지워지지 않고, 등록 이력 트리거는 기록한다 (`RAW_ENV_TB_legacy_trigger.sql`). 화면 분기(기존/새 화면)는 프론트가 날짜 기준으로 한다 (2026-11-18).
+   - 기존 화면 새 행: 측정일이 비어 이관되지 않은 기존 로데이터는 `envAction` 빈 값 + `envSeq: 0` + `msrmnDt`(+ RE는 행의 `metKey`)로 보내면, 그 표에 살아있는 행이 없을 때만 `MIG_YN=2` 행을 만든다 (시작=종료=측정일, 검증은 위와 같음). 이후는 `envSeq`로 위와 같이 저장. `MIG_YN=2`는 이관 롤백(`MIG_YN=1` 삭제)에 지워지지 않고, 등록 이력 트리거는 기록한다 (`RAW_ENV_TB_legacy_trigger.sql`). 화면 분기(기존/새 화면)는 프론트가 접수일 기준으로 한다 — 2026-11-17 접수 건부터 새 화면 (2026-11-18, 기준일 확정 2026-11-26).
 2. `START`: `envMetKey` 표에 새 행 + `TEST_S_DT=NOW()`, `MEM_ID`=로그인 사용자. `envSeq: 0` 행 값을 새 행에 저장.
 3. `END`: `envMetKey` 표의 진행 중 행에 `TEST_E_DT=NOW()`. 1번에서 저장된 값 기준으로 **온도·습도·시험자명·서명(THP는 기압도) 필수**. 이어서 같은 시험원 시간 겹침 확인 (§11).
 4. 시험기간 재계산.
@@ -201,7 +201,7 @@ CREATE TABLE RAW_ENV_TB (
 | 종료 안 된 행이 있으면 추가 불가 | START | `CHECK_ENV_NOT_ENDED` |
 | 진행 중 행이 없으면 종료 불가 | END | `CHECK_ENV_STATE` |
 | 온도·습도·시험자명·서명(·기압) 없으면 종료 불가 | END | `CHECK_ENV_REQUIRED` |
-| 같은 시험원(서명)의 다른 측정과 시간 겹침 (§11) | END, update | `CHECK_ENV_OVERLAP` (접수번호·시험방법·기간 표시) |
+| 같은 시험원(로그인 아이디)의 다른 측정·현황판 사용과 시간 겹침, RS 끼리는 허용 (§11) | END, update | `CHECK_ENV_OVERLAP` (상대 시험장·시험번호·시험원·기간 표시) |
 | 중단은 진행 중 행만 / 수정은 종료된 행만 | stop / update | `CHECK_ENV_STATE` |
 | 사유 공란(공백만 포함) 불가, 최대 200자 | stop, delete | `CHECK_ENV_REASON` |
 | 일시: 둘 다 입력, 시작 ≤ 종료, 미래 불가 | update | `CHECK_ENV_DATE` |
@@ -344,6 +344,19 @@ CREATE TABLE RAW_ENV_TB (
 - 범위: 다른 시험 + 같은 시험의 다른 시험방법. 제외: 자기 자신, `DEL_YN=1`, `MIG_YN=1`(시작=종료 순간값).
 - 서명이 없으면 비교할 수 없어 [종료] 필수값에 서명을 넣었다. 기술책임자 수정에서 서명을 비우면 확인을 건너뛴다.
 - 쿼리 `rawEnvMapper.selectOverlap`, 인덱스 `IDX_RAW_ENV_SIGN (SIGN_URL, TEST_S_DT)` — 기존 DB는 `RAW_ENV_TB_overlap_idx.sql` 실행.
+
+### 11.1-1 변경 (2026-11-25): 시험원 = 로그인 아이디, 현황판 기록 포함, RS 예외
+
+위 11.1 의 서명 기준을 아래로 바꿨다.
+
+- **같은 시험원 = `MEM_ID`** ([시작]을 누른 로그인 아이디). [시작] 때 1인 1시험(`selectMemBusy`)과 같은 기준이 됐다.
+  기술책임자가 대신 [시작]을 누르면 기술책임자가 시험 중이 된다 (사용자 결정). 서명은 성적서용 필수값으로만 남는다.
+- **비교 대상**: 측정 행 + 현황판 사용(`CHAMBER_ETC_USE_TB.MEM_ID`). 상대가 진행 중이면 끝이 없는 것으로 본다.
+- **제외**: 자기 자신, 삭제, 이관 행(`MIG_YN≠0`), 챔버 없는 측정 행(챔버 도입 전 — `selectMemBusy`·chamber-svc 와 같음), 입회 시험(시험원 없음).
+- **RS 예외**: 이 행이 RS 측정이면 상대도 RS 인 건은 겹쳐도 된다. RS = 시험방법 키 `RS` 인 측정 행,
+  또는 구역에 `RS` 매핑(`CHAMBER_ZONE_MET_TB`)이 있는 현황판 사용 (RS #2·#3·#4·RE (10m)/RS (#3실)). [시작]의 `selectMemBusy` 도 같은 규칙.
+- 쿼리 `selectOverlap` → `RawEnvZone` 반환 (`RawEnvOverlap` 삭제), 메시지는 `describeUse` 형식. 인덱스는 `IDX_RAW_ENV_MEM (MEM_ID, TEST_S_DT)`.
+- 현황판(chamber-svc) 쪽 같은 규칙 반영: `chamber-svc-rs-exception.md`.
 
 ### 11.2 추후: 일정 달력 (MEM_ID 기준)
 

@@ -22,7 +22,6 @@ import egovframework.raw.dto.EnvMetKey;
 import egovframework.raw.dto.RawEnvDTO;
 import egovframework.raw.service.RawEnv;
 import egovframework.raw.service.RawEnvMapper;
-import egovframework.raw.service.RawEnvOverlap;
 import egovframework.raw.service.RawEnvService;
 import egovframework.raw.service.RawEnvZone;
 import lombok.extern.slf4j.Slf4j;
@@ -438,7 +437,7 @@ public class RawEnvServiceImpl implements RawEnvService {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
     }
 
-    // 서명은 같은 시험원 시간 겹침 확인에 쓰므로 필수
+    // 서명은 성적서용 필수값 (시간 겹침 확인은 서명이 아니라 [시작]을 누른 로그인 아이디로 한다)
     if (!StringUtils.hasText(open.getTemp()) || !StringUtils.hasText(open.getHmdt())
         || !StringUtils.hasText(open.getMemName()) || !StringUtils.hasText(open.getSignUrl())
         || (key.hasBrmt() && !StringUtils.hasText(open.getBrmt()))) {
@@ -565,27 +564,23 @@ public class RawEnvServiceImpl implements RawEnvService {
   }
 
   /**
-   * 같은 시험원(서명)의 다른 측정과 시간이 겹치면 거부 (예외 → 방법 저장까지 롤백).
-   * 서명이 없거나 시작·종료가 비어 있으면 비교할 수 없어 넘어간다. 이관 행끼리는 비교하지 않는다.
-   * RS 측정끼리는 겹쳐도 된다 (1인 1시험 RS 예외와 같은 규칙).
+   * 같은 시험원의 다른 측정·현황판 사용과 시간이 겹치면 거부 (예외 → 방법 저장까지 롤백).
+   * 시험원 = 이 행의 MEM_ID ([시작]을 누른 로그인 아이디). [시작] 때 1인 1시험 확인(selectMemBusy)과 같은 기준.
+   * 시작·종료가 비어 있거나 이관 행·챔버 없는 행이면 넘어간다. RS 끼리는 겹쳐도 된다 (1인 1시험 RS 예외).
    */
   private void checkOverlap(RawEnv env) {
-    if (env == null || env.getMigYn() != 0 || !StringUtils.hasText(env.getSignUrl())
-        || env.getTestSDt() == null || env.getTestEDt() == null) {
+    if (env == null || env.getMigYn() != 0 || !StringUtils.hasText(env.getMemId())
+        || env.getZoneSeq() == null || env.getTestSDt() == null || env.getTestEDt() == null) {
       return;
     }
-    RawEnvOverlap hit = rawEnvMapper.selectOverlap(env.getEnvSeq(), env.getSignUrl().trim(),
+    RawEnvZone hit = rawEnvMapper.selectOverlap(env.getEnvSeq(), env.getMemId().trim(),
         env.getTestSDt(), env.getTestEDt(), EnvMetKey.of(env.getMetKey()) == EnvMetKey.RS);
     if (hit == null) {
       return;
     }
-    EnvMetKey key = EnvMetKey.of(hit.getMetKey());
-    String period = hit.getTestSDt().format(MEMO_DT) + " ~ "
-        + (hit.getTestEDt() == null ? "진행 중" : hit.getTestEDt().format(MEMO_DT));
-    log.info("측정 시간 겹침 - envSeq={}, 상대 envSeq={}", env.getEnvSeq(), hit.getEnvSeq());
-    throw new IllegalArgumentException(String.format(ResponseMessage.CHECK_ENV_OVERLAP,
-        hit.getRawId() == null ? "-" : hit.getRawId(),
-        key == null ? hit.getMetKey() : key.getLabel(), period));
+    log.info("시험원 시간 겹침 - envSeq={}, memId={}, 상대 {} {}", env.getEnvSeq(), env.getMemId(),
+        hit.getUseSrc(), hit.getUseSeq());
+    throw new IllegalArgumentException(String.format(ResponseMessage.CHECK_ENV_OVERLAP, describeUse(hit)));
   }
 
   private void writeMemo(int testSeq, String title, RawEnv env, String reason, String loginId) {
