@@ -1,6 +1,6 @@
 /* 모니터 모드 스킨 (1층 대형 화면 상시 표출용). index.html 에서만 읽는다.
    body.monitor 일 때만 적용된다: 모니터 계정은 항상, 그 밖의 계정은 [모니터용 확대] 버튼을 눌렀을 때.
-   다크·라이트는 따로 고른다 (화면 기능 정의서 SC-14). 다크 + 모니터일 때만 아래 어두운 색을 쓴다.
+   다크·라이트는 따로 고른다. 다크 + 모니터일 때만 아래 어두운 색을 쓴다.
    크기는 화면 비율 단위(--u)로 잡아 1920x1080 · 1680x960 · 4K 에서 같은 배치가 된다. */
 .sigT,.sigC,.pips{display:none}
 body.monitor{
@@ -9,7 +9,7 @@ body.monitor{
   --num:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;   /* 숫자도 같은 글꼴. 자리 폭은 tabular-nums 로 고정 */
   min-height:100vh; overflow:hidden; color:var(--text);
 }
-/* 다크 + 모니터 (SC-14: 다크·모니터는 따로 켜는 옵션. 라이트 + 모니터는 기본 라이트 색을 그대로 쓴다) */
+/* 다크 + 모니터 (다크·모니터는 따로 켜는 옵션. 라이트 + 모니터는 기본 라이트 색을 그대로 쓴다) */
 html:not(.light) body.monitor{
   --bg:#060a13; --hdr:transparent; --strip:transparent; --panel:#0d1424; --card:#0f1728; --sunk:#0a101c; --soft:#141d30; --hover:#121a28;
   --line:#1c2740; --line2:#2a3856; --text:#eef3ff; --sub:#b7c3da; --muted:#8a97b3; --dim:#56627f; --idle:#7683a0;
@@ -32,7 +32,7 @@ body.monitor>header{position:relative;height:calc(var(--u)*3.7);padding:0 calc(v
 body.monitor>header::after{content:"";position:absolute;left:calc(var(--u)*1.4);right:calc(var(--u)*1.4);bottom:0;height:1px;
   background:linear-gradient(90deg,var(--on),rgba(91,157,255,.6) 28%,var(--line) 60%,transparent)}
 body.monitor>header .logo{height:calc(var(--u)*1.55);padding:calc(var(--u)*.1) calc(var(--u)*.3);border-radius:calc(var(--u)*.3)}
-/* 테마·모니터 버튼과 계정 영역은 남긴다 (SC-02 ⑤⑥, SC-10). 표출 중에는 눈에 덜 띄게 */
+/* 테마·모니터 버튼과 계정 영역은 남긴다. 표출 중에는 눈에 덜 띄게 */
 body.monitor .hbtn{opacity:.35;border-color:transparent;width:calc(var(--u)*1.7);height:calc(var(--u)*1.6);font-size:calc(var(--u)*.8)}
 body.monitor .hbtn:hover{opacity:1;border-color:var(--line2)}
 body.monitor .acct{gap:calc(var(--u)*.45);padding-left:calc(var(--u)*.8);opacity:.7}
@@ -75,9 +75,9 @@ body.monitor #board .page{padding:calc(var(--u)*.45) calc(var(--u)*1.4) 0;
   background-image:linear-gradient(rgba(120,150,210,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(120,150,210,.045) 1px,transparent 1px);
   background-size:calc(var(--u)*2) calc(var(--u)*2)}
 body.monitor .floor{gap:calc(var(--u)*.65);grid-template-rows:auto calc(var(--u)*1.25) minmax(0,1fr) minmax(0,1fr)}
-/* 3층 탭은 1층 카드와 같은 크기 (SC-04) — 위 규칙이 덮어쓰지 않게 기본 시안의 행 높이를 다시 적는다 */
+/* 3층 탭은 1층 카드와 같은 크기 — 위 규칙이 덮어쓰지 않게 기본 시안의 행 높이를 다시 적는다 */
 body.monitor .floor.f3{grid-template-rows:clamp(230px,31vh,320px) clamp(230px,31vh,320px)}
-/* 계단·통로·출입구는 글자로만, 박스 없음 (SC-03 ①) */
+/* 계단·통로·출입구는 글자로만, 박스 없음 */
 body.monitor .mark{font-size:calc(var(--u)*.62);letter-spacing:.12em;color:var(--dim)}
 body.monitor .corridor{border-radius:calc(var(--u)*.3);padding:0 calc(var(--u)*.7)}
 body.monitor .fbadge{font-size:calc(var(--u)*.55);padding:calc(var(--u)*.05) calc(var(--u)*.3);letter-spacing:0}
@@ -199,7 +199,7 @@ body.monitor .card.chg::after{content:"";position:absolute;inset:0;border-radius
 @media (prefers-reduced-motion:reduce){body.monitor *{animation:none!important}}
 
 /* ---- chamber-svc 화면에 맞춘 부분 ---- */
-/* 모니터 모드는 상단 메뉴를 숨긴다 (SC-14 ①). 보기 전환 탭은 남긴다 */
+/* 모니터 모드는 상단 메뉴를 숨긴다. 보기 전환 탭은 남긴다 */
 body.monitor header nav{display:none}
 /* "대기" 는 위 ::after 로 한 번만 쓴다 (모니터 계정 화면이 그리는 글자는 숨김) */
 body.monitor .idle-body .wait,body.monitor .slot.idle .wait{display:none}

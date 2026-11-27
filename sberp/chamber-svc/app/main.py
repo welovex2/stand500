@@ -121,7 +121,7 @@ def _chambers(rows: List[dict], session: dict) -> List[dict]:
             if not target:
                 continue
             for u in z["uses"]:
-                # 장비 이관은 시험번호가 있는 시험만 (측정 행, 현황판 시험). 시험번호 없이 사용은 이관하지 않는다 (X-5)
+                # 장비 이관은 시험번호가 있는 시험만 (측정 행, 현황판 시험). 시험번호 없이 사용은 이관하지 않는다
                 if u["src"] != "RAW" and u["purpose"] != PURPOSE_TEST:
                     continue
                 # 연계 대상에서는 종료할 수 없다 (원래 시험을 종료하면 함께 풀린다)
@@ -209,7 +209,7 @@ def history(
     _: dict = Depends(auth.require_login),
     overlap: bool = False,
 ) -> dict:
-    """사용 이력 (기획 v7_1 SC-15). 기간은 시작 일시 기준이고 진행 중인 건도 나온다.
+    """사용 이력. 기간은 시작 일시 기준이고 진행 중인 건도 나온다.
     overlap=true 면 기간과 시간이 겹치는 기록 (시험원 현황 타임라인)
     chamberSeqs = 시험장 여러 개 (쉼표). deleted=true 이면 현황판에서 삭제한 건도 함께 (합계에서는 뺀다)"""
     date_to = date_to or date.today()
@@ -235,7 +235,7 @@ def history(
             endDt=_dt(r["E_DT"]), useMin=int(r["USE_MIN"] or 0), running=r["E_DT"] is None,
             stale=int(r["USE_MIN"] or 0) >= settings.stale_hours * 60,
             testSeq=r.get("TEST_SEQ"),
-            # 장비 이관받은 시험: "⇄ RE (Above) 장비 이관" (기획 v8: 장비를 보낸 시험장 이름만)
+            # 장비 이관받은 시험: "⇄ RE (Above) 장비 이관" (장비를 보낸 시험장 이름만)
             linkName=r.get("LINK_CHAMBER_NAME") or "",
             # 측정 행: 시험번호를 누르면 ERP 로데이터의 그 시험 항목 화면 (자동화 시험규격만 화면이 있다).
             # ERP 시험리스트의 RD 링크와 같은 형식: ?test=&&raw=&&type=RS&&rdEditYn=0&&sbkInsDt=26-10-16&dt=-
@@ -286,7 +286,7 @@ class XlsxIn(BaseModel):
 
 @app.post("/api/history/xlsx")
 def history_xlsx(body: XlsxIn, _: dict = Depends(auth.require_login)) -> Response:
-    """사용 이력 [엑셀 다운로드] (기획 SC-15 ⑥): 화면에서 지금 조건으로 거른 행을 받아 .xlsx 로 돌려준다"""
+    """사용 이력 [엑셀 다운로드]: 화면에서 지금 조건으로 거른 행을 받아 .xlsx 로 돌려준다"""
     cells = [[v if isinstance(v, (int, float)) and not isinstance(v, bool) else ("" if v is None else str(v)[:1000])
               for v in r[:len(body.head)]] for r in body.rows]
     data = xlsx.build([h[:100] for h in body.head], cells, "사용 이력")
@@ -296,7 +296,7 @@ def history_xlsx(body: XlsxIn, _: dict = Depends(auth.require_login)) -> Respons
                              "Cache-Control": "no-store"})
 
 
-# ---------------------------------------------------------------- 기록 수정 (기획 SC-16, P01·P02)
+# ---------------------------------------------------------------- 기록 수정 (P01·P02)
 
 class EtcEditIn(BaseModel):
     testSeq: Optional[int] = None      # 없으면 시험번호 없음
@@ -314,6 +314,13 @@ def _parse_dt(v: str, label: str) -> Optional[datetime]:
         return datetime.strptime(v.replace("T", " ")[:16], "%Y-%m-%d %H:%M")
     except ValueError:
         raise HTTPException(400, f"{label} 시각 형식이 올바르지 않습니다.")
+
+
+def _same_minute_or_new(v: Optional[datetime], saved: Optional[datetime]) -> Optional[datetime]:
+    """화면은 분 단위로 보낸다. 분이 저장값과 같으면 저장값(초 포함)을, 아니면 입력값을 쓴다 (ERP 측정 행 수정과 같은 규칙)"""
+    if v is not None and saved is not None and v == saved.replace(second=0, microsecond=0):
+        return saved
+    return v
 
 
 def _edit_text(test_id, mem, start, end) -> str:
@@ -354,8 +361,11 @@ def etc_edit(use_seq: int, body: EtcEditIn, session: dict = Depends(auth.require
     end = _parse_dt(body.endDt, "종료") if cur["END_DT"] is not None else None
     if cur["END_DT"] is not None and end is None:
         raise HTTPException(400, "종료 시각을 입력하세요.")
-    if end is not None and end <= start:
-        raise HTTPException(400, "종료 시각이 시작 시각보다 빠릅니다.")
+    start = _same_minute_or_new(start, cur["START_DT"])
+    end = _same_minute_or_new(end, cur["END_DT"])
+    # 0분(시작 = 종료)은 허용한다. 종료가 시작보다 앞설 때만 막는다 (ERP 측정 행 수정과 같은 규칙)
+    if end is not None and end < start:
+        raise HTTPException(400, "종료 시각이 시작 시각보다 빠를 수 없습니다.")
     if start > datetime.now() or (end and end > datetime.now()):
         raise HTTPException(400, "앞으로의 시각은 입력할 수 없습니다.")
 
@@ -459,7 +469,7 @@ def etc_start(body: EtcStartIn, session: dict = Depends(auth.require_writer)) ->
     if zone_name is None:
         raise HTTPException(400, "없는 시험 항목입니다.")
     if is_no_rd_zone(zone_name):
-        # 로데이터 연동 없는 시험 (기획 SC-08): 시험번호 없이 시작·종료 시간만 남긴다
+        # 로데이터 연동 없는 시험: 시험번호 없이 시작·종료 시간만 남긴다
         if body.testSeq is not None:
             raise HTTPException(400, f"{zone_name} 시험은 시험번호 없이 시작합니다.")
         purpose = PURPOSE_NO_RD
@@ -489,7 +499,7 @@ def etc_end(use_seq: int, session: dict = Depends(auth.require_writer)) -> dict:
 
 @app.post("/api/etc-use/{use_seq}/delete")
 def etc_delete(use_seq: int, body: EtcDeleteIn, session: dict = Depends(auth.require_p01)) -> dict:
-    """기록 삭제: 일단 관리자(P01·P02)만 (2026-11-25. 기획 v8 에는 없는 기능. 기록한 사람 · 기술책임자는 못 한다)"""
+    """기록 삭제: 일단 관리자(P01·P02)만 (2026-11-25. 기록한 사람 · 기술책임자는 못 한다)"""
     reason = body.reason.strip()
     if not reason:
         raise HTTPException(400, "삭제 사유를 입력하세요.")

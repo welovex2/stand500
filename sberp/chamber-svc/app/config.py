@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # 로그인 실패 한도. ERP(LoginController)와 같은 값이어야 한다 — 같은 MEMBER_TB.FAIL_PASS_CNT 를 센다
     login_fail_max: int = 10
 
-    stale_hours: int = 10           # 이 시간을 넘긴 사용 건은 현황판에서 강조 (기획 v7: 10시간)
+    stale_hours: int = 10           # 이 시간을 넘긴 사용 건은 현황판에서 강조 (10시간)
     history_limit: int = 500
 
     # 로그인할 수 있는 부서 (MEMBER_TB.DEPT_SEQ). EMC 부서 = 5.
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # 시험번호 목록에서 뺄 시험규격 (TEST_ITEM_TB.TEST_STNDR_SEQ). ERP 로데이터 화면이 있는(자동화된) 규격이라
     # 측정 기록을 ERP 로데이터에서 남긴다. 프론트 test.js 의 로데이터 화면 분기와 같은 목록. 쉼표로 구분
     rd_auto_stndr: str = "10,571,7,686,774,775,560,14"
-    # 로데이터 연동 없는 시험 항목 (기획 SC-08). 구역 이름(CHAMBER_ZONE_TB.NAME)이 이 중 하나면
+    # 로데이터 연동 없는 시험 항목. 구역 이름(CHAMBER_ZONE_TB.NAME)이 이 중 하나면
     # 시험번호 없이 현황판에서 시작·종료 시간만 기록한다. 쉼표로 구분
     no_rd_zones: str = "CTI,4-39"
     # 사용 이력에서 시험번호를 누르면 여는 ERP 로데이터 화면 (ERP 프론트 주소. 같은 도메인이면 "/")
@@ -68,7 +68,7 @@ REV_AUTH_CODE = "P04"               # EMC 부서 + P04 = 기술책임자
 # 현황판 사용 용도 (ERP 가 읽는 CHAMBER_ETC_USE_TB.PURPOSE 값. 바꿀 때는 ERP 쪽 라벨도 같이)
 # TEST = 시험번호를 골라 시작한 시험. 나머지는 "시험번호 없이 사용"의 사유
 PURPOSE_TEST = "TEST"
-# 사유는 기획 v7_1 SC-09 순서: 사전 점검 / 장비 점검 / 디버깅 / 기타 (2026-11-20)
+# 사유 순서: 사전 점검 / 장비 점검 / 디버깅 / 기타 (2026-11-20)
 PURPOSES = {
     PURPOSE_TEST: "시험",
     "PRE": "사전 점검",

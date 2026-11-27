@@ -119,10 +119,10 @@ ACTIVE_UNION = f"""
       FROM CHAMBER_ETC_USE_TB x
      WHERE {ETC_ACTIVE}"""
 
-# 사용 건 하나가 점유하는 구역 (ERP rawEnvMapper 와 같은 규칙, 기획 v7_1 SC-09 · X-2 · X-5).
+# 사용 건 하나가 점유하는 구역 (ERP rawEnvMapper 와 같은 규칙).
 #   1) 자기 구역
 #   2) 연계 구역 (CHAMBER_ZONE_TB.LINK_ZONE_SEQ) — 장비 이관. 예: RE (3m)/RE (Above) → RE (Above) 챔버.
-#      시험번호가 있는 시험만 (측정 행, 현황판 PURPOSE='TEST'). 시험번호 없이 사용은 이관하지 않는다 (X-5)
+#      시험번호가 있는 시험만 (측정 행, 현황판 PURPOSE='TEST'). 시험번호 없이 사용은 이관하지 않는다
 #   3) 단독 사용 챔버(CHAMBER_TB.SOLO_YN=1)의 다른 구역 — 예: RE (3m)는 RE (Below)·RE (Above) 중 하나만
 #   4) 시험장 전체 점유(CHAMBER_ETC_USE_TB.WHOLE_YN=1)면 그 챔버의 모든 구역 (시험번호 없이 항목 "선택 안 함")
 # 두 사용의 점유 구역이 하나라도 겹치면 함께 쓸 수 없다.
@@ -194,7 +194,7 @@ def fetch_chambers() -> List[dict]:
 
 def fetch_history(date_from: date, date_to: date, chamber_seqs: List[int],
                   include_deleted: bool = False, floor: Optional[int] = None, overlap: bool = False) -> List[dict]:
-    """사용 기록 (기획 v7_1 SC-15). 기간은 시작 일시 기준, 진행 중인 건도 포함. history_limit + 1 건까지 읽는다.
+    """사용 기록. 기간은 시작 일시 기준, 진행 중인 건도 포함. history_limit + 1 건까지 읽는다.
     include_deleted 이면 현황판에서 삭제한 사용도 함께. 측정 행(RAW_ENV_TB)의 삭제는 ERP 가 하므로 보여 주지 않는다.
     나머지 조건(시험 항목 · 시험원 · 상태 · 사용 구분 · 검색)은 화면에서 거른다.
     overlap 이면 시작 일시 기준이 아니라 기간과 시간이 겹치는 기록 (시험원 현황 타임라인: 전날 시작해 이어지는 시험 포함)"""
@@ -262,7 +262,7 @@ SELECT u.SRC, u.SEQ, u.RAW_SEQ, c.CHAMBER_SEQ, c.NAME AS CHAMBER_NAME, c.FLOOR, 
        ) u
        INNER JOIN CHAMBER_ZONE_TB z ON z.ZONE_SEQ = u.ZONE_SEQ
        INNER JOIN CHAMBER_TB c ON c.CHAMBER_SEQ = z.CHAMBER_SEQ
-       -- 장비 이관: 시험번호 있는 시험이 연계 구역이 있는 항목을 썼으면 (기획 SC-15 ⑦, X-5)
+       -- 장비 이관: 시험번호 있는 시험이 연계 구역이 있는 항목을 썼으면
        LEFT JOIN CHAMBER_ZONE_TB lz ON lz.ZONE_SEQ = z.LINK_ZONE_SEQ AND (u.SRC = 'RAW' OR u.PURPOSE = 'TEST')
        LEFT JOIN CHAMBER_TB lc ON lc.CHAMBER_SEQ = lz.CHAMBER_SEQ
        LEFT JOIN RAW_TB r ON r.RAW_SEQ = u.RAW_SEQ
@@ -295,9 +295,9 @@ SELECT h.HIS_SEQ, h.BEFORE_TXT, h.AFTER_TXT, h.REASON, h.INS_DT, COALESCE(m.MEM_
 def edit_etc_use(use_seq: int, test_seq: Optional[int], mem_id: Optional[str], mem_name: Optional[str],
                  witness_name: Optional[str], start_dt: datetime, end_dt: Optional[datetime],
                  reason: str, by: str, before_txt: str, after_txt: str) -> None:
-    """기록 수정 (기획 SC-16, P01·P02). 시험번호 · 시험원(입회면 입회자) · 시작 · 종료.
-    시간을 옮겨 같은 시험장(점유 구역)의 다른 기록과 겹치면 저장하지 않는다 (V-3, 입회 시험 포함).
-    시험원을 바꾸거나 시간을 옮겨 같은 시험원의 다른 기록과 시간이 겹치면 저장하지 않는다 (V-1).
+    """기록 수정 (P01·P02). 시험번호 · 시험원(입회면 입회자) · 시작 · 종료.
+    시간을 옮겨 같은 시험장(점유 구역)의 다른 기록과 겹치면 저장하지 않는다 (입회 시험 포함).
+    시험원을 바꾸거나 시간을 옮겨 같은 시험원의 다른 기록과 시간이 겹치면 저장하지 않는다.
     무엇을 바꿨는지는 CHAMBER_ETC_USE_HIS_TB 에 남긴다."""
     with connect() as conn, conn.cursor() as cur:
         cur.execute("SELECT x.USE_SEQ, x.ZONE_SEQ, x.WHOLE_YN, x.PURPOSE, x.END_DT, x.DEL_YN, z.MULTI_YN"
@@ -316,7 +316,7 @@ def edit_etc_use(use_seq: int, test_seq: Optional[int], mem_id: Optional[str], m
                 purpose = "ETC"            # 시험번호를 지우면 "시험번호 없이 사용 · 기타"
 
         # 시험장: 바꾼 시간에 이 기록이 점유하는 구역(장비 이관 · 단독 사용 · 전체 점유 포함)을 다른 기록이 쓰고 있으면
-        # 저장하지 않는다 (V-3, 시작과 같은 규칙). 시험원과 관계없이 본다 — 입회 시험도 여기서 걸린다
+        # 저장하지 않는다 (시작과 같은 규칙). 시험원과 관계없이 본다 — 입회 시험도 여기서 걸린다
         whole = bool(row["WHOLE_YN"])
         occ = occupied_zones(cur, int(row["ZONE_SEQ"]), link=purpose == "TEST", whole=whole)
         if whole:
@@ -554,7 +554,7 @@ SELECT {_BUSY_COLS}, u.RS_YN
             raise Reject(409, f"{mem_name} 님은 {mine['CHAMBER_NAME']}에서 진행 중인 시험이 있습니다. "
                               f"한 사람은 한 번에 한 시험만 할 수 있습니다. (RS 시험끼리는 동시 진행 가능)", mine)
 
-        # 시험번호 1개의 같은 항목은 한 곳에서만 (V-2 · R-6). 항목 = 측정 행 MET_KEY, 현황판 기록은 구역의 시험방법 매핑.
+        # 시험번호 1개의 같은 항목은 한 곳에서만. 항목 = 측정 행 MET_KEY, 현황판 기록은 구역의 시험방법 매핑.
         # RE(RA·RB · RE1~3)는 다음 단계라 아직 보지 않는다
         if test_seq is not None:
             items = zone_items(cur, zone_seq)

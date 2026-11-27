@@ -72,14 +72,14 @@ const isBusy = c => c.zones.some(zoneBusy);
 // 단독 사용 시험장(RE (3m)·RE (10m)): 구역(항목)이 여러 개여도 한 번에 하나만 → 카드 하나 + 항목 선택
 const isSolo = c => !!c.soloYn && c.zones.length > 1;
 const isMulti = c => !isSolo(c) && (c.zones.length > 1 || c.zones.some(z => z.multiYn));
-// 상단 요약·층 탭의 "사용 중 시험장": 항목(구역) 1개 = 시험장 1개, 단독 사용 시험장은 1개 (기획 v7 집계 기준).
+// 상단 요약·층 탭의 "사용 중 시험장": 항목(구역) 1개 = 시험장 1개, 단독 사용 시험장은 1개.
 // 장비 이관으로 점유된 시험장도 쓸 수 없으니 사용 중으로 센다
 const unitsIn = cs => cs.flatMap(c => isSolo(c) ? [isBusy(c)] : c.zones.map(zoneBusy));
 const busyText = (cs, sep) => { const u = unitsIn(cs); return `${u.filter(Boolean).length}${sep}${u.length}`; };
 const isRaw = u => u.src === 'RAW';
 const isTest = u => u.purpose === 'TEST';            // 현황판에서 시험번호를 골라 시작한 시험
 const hasTestNo = u => isRaw(u) || isTest(u);
-const isNoRd = u => u.purpose === 'NORD';            // 로데이터 연동 없는 시험 (CTI · 4-39, 기획 SC-08)
+const isNoRd = u => u.purpose === 'NORD';            // 로데이터 연동 없는 시험 (CTI · 4-39)
 // ERP EnvMetKey 표시 이름 (raw/dto/EnvMetKey.java)
 const MET_LABEL = { CE: 'CE', RE1: 'RE (1)', RE2: 'RE (2)', RE3: 'RE (3)', ESD: 'ESD', RS: 'RS', EFT: 'EFT/BURST',
   SURGE: 'SURGE', CS: 'CS', MF: 'M-Field', VDIP: 'V-Dip', CLK: 'CLICK', DP: 'DP', TEL: 'TEL' };
@@ -87,12 +87,12 @@ const itemOf = u => isRaw(u) ? (MET_LABEL[u.metKey] || u.metKey || '시험') : i
 // 시안 v7_2: 시험번호 · 업체 / 시험번호 없음 · 사유
 const subOf = u => hasTestNo(u)
   ? ([u.testId, u.cmpyName || u.prdctName].filter(Boolean).join(' · ') || '시험')
-  : isNoRd(u) ? ['로데이터 연동 없음 · 사용 기록만', u.memo].filter(Boolean).join(' · ')
+  : isNoRd(u) ? ['로데이터 연동 없음', u.memo].filter(Boolean).join(' · ')
   : ['시험번호 없음', u.purposeName, u.memo].filter(Boolean).join(' · ');
 const etcTag = () => '';
 const ZONES = new Map();         // zoneSeq → { c, z } (연계 대상 이름·사용 중 확인용)
 const zoneTitle = zs => { const h = ZONES.get(zs); return h ? h.c.chamberName + (h.z.zoneName ? ' / ' + h.z.zoneName : '') : ''; };
-// 장비를 보내는 시험장 이름 (기획 v8: "⇄ RS #3 장비 이관 받음", "RS #3 사용 중". 항목 이름은 붙이지 않는다)
+// 장비를 보내는 시험장 이름 ("⇄ RS #3 장비 이관 받음", "RS #3 사용 중". 항목 이름은 붙이지 않는다)
 const linkTitle = zs => { const h = ZONES.get(zs); return h ? h.c.chamberName : ''; };
 
 // 'YYYY-MM-DD HH:MM' → 오늘이면 'HH:MM', 어제면 '전일 HH:MM', 그 전이면 'MM-DD HH:MM'
@@ -314,7 +314,7 @@ function blockOf(zoneSeq, tested = true) {
   return '';
 }
 
-// 장비 이관 안내: 시험번호로 시작할 때만 (시험번호 없이 시작하면 이관하지 않는다, 기획 X-5)
+// 장비 이관 안내: 시험번호로 시작할 때만 (시험번호 없이 시작하면 이관하지 않는다)
 function linkHint(z, style) {
   if (!z || !z.linkZoneSeq) return '';
   return S.noTest
@@ -327,7 +327,7 @@ const ITEM_SKIP = ['RA', 'RB', 'RE1', 'RE2', 'RE3'];   // RE 는 같은 항목 �
 function startZone() { return S.whole ? S.c.zones[0] : S.zoneSeq ? ZONES.get(S.zoneSeq).z : null; }
 function startRs() { const z = startZone(); return !!(z && z.rsYn); }
 function canPick(m) { return !m.busy || (startRs() && m.busyRsOnly); }
-// 시험번호 하나의 같은 항목은 한 곳에서만 (V-2). 항목 = 구역의 시험방법 매핑 (측정 행은 시험방법)
+// 시험번호 하나의 같은 항목은 한 곳에서만. 항목 = 구역의 시험방법 매핑 (측정 행은 시험방법)
 function dupOf() {
   const z = startZone();
   if (!S.test || S.noTest || S.whole || !z) return null;
@@ -388,7 +388,7 @@ function drawStart() {
   const noRd = !!(z && z.noRd);
   const dup = dupOf();
   if (noRd) {
-    // 로데이터 연동 없는 시험 (CTI · 4-39): 시험번호 없이 바로 시작 (기획 SC-08)
+    // 로데이터 연동 없는 시험 (CTI · 4-39): 시험번호 없이 바로 시작
     testBox = `<div><label class="lb">시험번호</label><div class="nordbox">${esc(z.zoneName)} 시험은 로데이터와 연결되지 않습니다. ` +
       `현황판에서 시작·종료 시간만 기록됩니다.</div></div>`;
   } else if (S.noTest) {
@@ -408,7 +408,7 @@ function drawStart() {
   }
   const noTestChk = noRd ? '' : `<label class="chk"><input type="checkbox" id="mNoTest" ${S.noTest ? 'checked' : ''}> 시험번호 없이 시작 (점검·디버깅 등)</label>`;
 
-  // 시험원 + 고객 입회 (기획 SC-06·07): 입회를 체크하면 시험원 칸은 잠기고 입회자 입력란이 나온다
+  // 시험원 + 고객 입회: 입회를 체크하면 시험원 칸은 잠기고 입회자 입력란이 나온다
   const witness = `<div class="two"><div><label class="lb">시험원</label><div id="mTester">${testerHtml()}</div></div>` +
     `<div><label class="lb">&nbsp;</label><label class="chk wit"><input type="checkbox" id="mWit" ${S.witness ? 'checked' : ''}> 고객 입회</label></div></div>` +
     (S.witness ? `<div><label class="lb" for="mWname">입회자</label><input class="inp w100" id="mWname" maxlength="100" autocomplete="off"` +

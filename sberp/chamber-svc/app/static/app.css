@@ -340,7 +340,7 @@ dialog .btns button.primary { background: var(--accent); border-color: var(--acc
 .lcard .inp { width: 100%; padding: 12px 14px; font-size: 14px; margin-bottom: 10px; }
 .lbtn { width: 100%; padding: 13px; font-size: 15px; margin-top: 6px; }
 .lfoot { text-align: center; color: var(--dim); font-size: 12px; margin-top: 20px; }
-/* 로그인 화면 → 모니터링 화면 (모니터로 등록된 PC 에만 보인다, 기획 v8 시안) */
+/* 로그인 화면 → 모니터링 화면 (모니터로 등록된 PC 에만 보인다) */
 .vdiv { display: flex; align-items: center; gap: 10px; color: var(--dim); font-size: 12px; margin: 18px 0 12px; }
 .vdiv::before, .vdiv::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .vbtn { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; padding: 11px 12px; border-radius: 10px;
@@ -436,16 +436,16 @@ body.monitor #monBtn .ic-max { --ic: url("data:image/svg+xml,%3Csvg xmlns='http:
 html:not(.light) .lnote.erp b { color: #2a1c02; }
 .slot .lnote { grid-column: 1 / -1; margin: 0; }
 
-/* 로데이터 연동 없는 시험 (CTI · 4-39, 기획 SC-08) */
+/* 로데이터 연동 없는 시험 (CTI · 4-39) */
 .nordbox { background: var(--sunk); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; color: var(--sub); font-size: 13px; line-height: 1.5; }
 .tno.nord { color: var(--muted); }
 
-/* 시험장 점유 (시험번호 없이 · 항목 선택 안 함, 기획 SC-09): 회색 이름표 */
+/* 시험장 점유 (시험번호 없이 · 항목 선택 안 함): 회색 이름표 */
 .itm.hold, .warn .itm.hold { color: var(--sub); border-color: var(--line2); background: var(--sunk); }
 .lb .opt { font-weight: 500; color: var(--muted); font-size: 11.5px; margin-left: 6px; }
 .noi { color: var(--sub); background: var(--sunk); border: 1px solid var(--line2); border-radius: 6px; padding: 1px 7px; font-size: 12px; font-weight: 700; }
 
-/* ---- 시험장 사용 이력 (기획 v7_1 SC-15 · SC-16, 2026-11-20) ---- */
+/* ---- 시험장 사용 이력 · 기록 수정 ---- */
 .cg { font-size: 11px; font-weight: 800; color: var(--muted); margin: 0 2px 0 6px; }
 .cg:first-of-type { margin-left: 0; }
 .htable td .xh { display: block; color: var(--onTxt); font-size: 11.5px; margin-top: 2px; font-weight: 600; }
