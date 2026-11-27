@@ -74,7 +74,7 @@ public class RawEnvDTO {
     @ApiModelProperty(value = "시험 고유번호 (성적서 발급일 등 시험 기준 검증용, 없으면 로데이터의 시험)", example = "15")
     private int testSeq;
 
-    @ApiModelProperty(value = "시작일시 yyyy-MM-dd HH:mm[:ss]. 종료된 행은 시작·종료 둘 다 비우면 그대로, 진행 중 행(종료 처리)은 둘 다 필수",
+    @ApiModelProperty(value = "시작일시 yyyy-MM-dd HH:mm[:ss]. 종료된 행만 수정 가능. 시작·종료 둘 다 비우면 그대로",
         example = "2026-11-04 09:10")
     private String testSDt;
     @ApiModelProperty(value = "종료일시 yyyy-MM-dd HH:mm[:ss]", example = "2026-11-04 11:40")

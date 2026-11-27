@@ -349,6 +349,12 @@ public class RawEnvServiceImpl implements RawEnvService {
     RawEnv env = requireAlive(envSeq);
     rawSupport.assertRawEditable(req.getTestSeq(), env.getRawSeq());
     lockRaw(env.getRawSeq());
+    // 잠금 사이에 [종료]·[중단]됐을 수 있으니 다시 읽는다
+    env = requireAlive(envSeq);
+    // 진행 중 행은 [중단]으로 정리한다 (삭제는 종료된 행만. 2026-11-27)
+    if (env.isInProgress()) {
+      throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
+    }
 
     if (rawEnvMapper.softDelete(envSeq, reason, loginId) == 0) {
       throw new IllegalArgumentException(ResponseMessage.CHECK_ENV_STATE);
@@ -807,7 +813,8 @@ public class RawEnvServiceImpl implements RawEnvService {
     row.setCanStop(editable && inProgress && !migrated && mine);
     // 기술책임자 [수정]은 종료된 행만
     row.setCanRevEdit(editable && rev && !migrated && ended);
-    row.setCanDelete(editable && rev);
+    // 기술책임자 [삭제]는 진행 중이 아닌 행만 (진행 중 행은 [중단])
+    row.setCanDelete(editable && rev && !inProgress);
     return row;
   }
 

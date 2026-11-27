@@ -114,7 +114,7 @@ public class RawEnvController {
   }
 
   @ApiOperation(value = "측정일·환경조건 행 삭제",
-      notes = "기술책임자만. 사유 필수(200자) → 시험 작성내역에 기록")
+      notes = "기술책임자만. 진행 중 행은 삭제할 수 없다 ([중단] 사용). 사유 필수(200자) → 시험 작성내역에 기록")
   @PostMapping(value = "/env/{envSeq}/delete.do")
   public BasicResponse delete(
       @ApiParam(value = "행 고유번호", required = true, example = "1") @PathVariable(

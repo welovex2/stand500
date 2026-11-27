@@ -32,7 +32,7 @@ detail.do 의 data.envList 사용. 데이터 없음(NO_DATA)이어도 envList는
 | canEnd | [종료] 표시 (시작한 시험원·기술책임자만) |
 | canStop | [중단] 표시 (시작한 시험원·기술책임자만) |
 | canRevEdit | [수정] 표시 (기술책임자, 종료된 행만) |
-| canDelete | [삭제] 표시 (기술책임자) |
+| canDelete | [삭제] 표시 (기술책임자, 진행 중 행은 false → [중단] 사용) |
 
 ### 측정장소(챔버) 목록
 GET /raw/env/zones.do?metKey=ESD (RE는 표마다 대역 RA·RB로 조회, RE1·RE2·RE3로 보내면 거부)
