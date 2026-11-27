@@ -4,6 +4,8 @@ import java.util.List;
 
 import javax.persistence.Column;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import egovframework.raw.service.MethodImg;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
@@ -30,4 +32,8 @@ public class ImgDTO extends MethodImg {
   @ApiModelProperty(value = "이미지 리스트", example = "")
   @Column
   List<PicDTO> imgList;
+
+  @ApiModelProperty(value = "로데이터 수정 가능 여부 (1 가능, 0 프로젝트완료 등으로 잠김. 잠금 예외 사용자는 1). 상세 조회(pic/{picId}/detail.do) 응답에만 채움, 그 외 응답에는 없음", example = "1")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  Integer editYn;
 }

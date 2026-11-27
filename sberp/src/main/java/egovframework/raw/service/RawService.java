@@ -50,6 +50,9 @@ public interface RawService {
   /** 로데이터 수정여부 (1=수정가능, 0=불가) */
   int selectEditYn(int testSeq);
 
+  /** 로데이터 기준 수정 가능 여부 (1 가능, 0 잠김). 연결된 시험의 selectEditYn, 시험이 없으면 1 */
+  int selectEditYnByRawSeq(int rawSeq);
+
   /** TEST_SEQ → 원본 RAW_SEQ (재발행 포함) */
   int selectRawSeqByTestSeq(int testSeq);
 

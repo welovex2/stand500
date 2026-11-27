@@ -2091,7 +2091,8 @@ public class RawController {
     } else {
 
       if (img != null) {
-
+        // [저장] 표시용 (#26-8). 방법별 detail.do 와 같은 기준
+        img.setEditYn(rawService.selectEditYnByRawSeq(rawSeq));
       } else {
         result = false;
         msg = ResponseMessage.NO_DATA;
@@ -2144,6 +2145,11 @@ public class RawController {
     if (req.getRawSeq() == 0 && req.getTestSeq() == 0) {
       result = false;
       msg = ResponseMessage.CHECK_DATA;
+    } else if ((req.getTestSeq() > 0 ? rawService.selectEditYn(req.getTestSeq())
+        : rawService.selectEditYnByRawSeq(req.getRawSeq())) == 0) {
+      // 프로젝트완료 등으로 로데이터 수정 불가 (잠금 예외 사용자는 통과). 파일 처리 전에 막는다 (#26-8)
+      result = false;
+      msg = ResponseMessage.CHECK_RAW_EDIT;
     } else {
 
       if (isAuthenticated) {

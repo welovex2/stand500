@@ -457,6 +457,11 @@ public class RawServiceImpl implements RawService {
   }
 
   @Override
+  public int selectEditYnByRawSeq(int rawSeq) {
+    return rawSupport.isRawEditable(0, rawSeq) ? 1 : 0;
+  }
+
+  @Override
   public int selectRawSeqByTestSeq(int testSeq) {
     if (testSeq == 0) {
       return 0;

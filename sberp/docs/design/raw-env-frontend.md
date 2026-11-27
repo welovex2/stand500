@@ -168,6 +168,6 @@ POST /raw/env/{envSeq}/update.do
 ### 버튼 표시 기준 (2026-11-27)
 서버가 잠금(프로젝트완료)·예외 사용자(공통코드 RU)·권한·행 상태를 모두 계산해서 내려 준다. 프론트는 아래 값만 본다.
 1. 측정일 표 : canAdd·canEdit·canEnd·canStop·canRevEdit·canDelete 만으로 버튼·입력칸 표시. `isLocked()`(rdEditYn)·권한 코드(P04)·`MANAGER_LIST_ONLY` 는 쓰지 않음
-2. 로데이터 [저장] (기본정보·방법 화면) : 그 화면 detail.do 의 `data.editYn` (1 표시, 0 숨김) 권장. URL `rdEditYn`(기본정보 editYn 을 넘겨받은 값)을 써도 서버가 저장을 막으므로 문제는 없지만, URL 에 값이 없거나(기본값 1) 화면을 연 뒤 잠기면 버튼이 남는다
+2. 로데이터 [저장] (기본정보·방법 화면, 시험장면사진 `/raw/{rawSeq}/pic/{picId}/detail.do` 포함) : 그 화면 detail.do 의 `data.editYn` (1 표시, 0 숨김) 권장. 사진은 등록된 사진이 없으면(NO_DATA) data 가 null 이라 editYn 도 없다. 잠긴 로데이터면 `pic/insert.do` 도 서버가 거부한다 (CHECK_RAW_EDIT, 2026-11-27). 첨부파일 `file/insert.do`·`file/delete.do` 는 잠금과 관계없이 저장된다. URL `rdEditYn`(기본정보 editYn 을 넘겨받은 값)을 써도 서버가 저장을 막으므로 문제는 없지만, URL 에 값이 없거나(기본값 1) 화면을 연 뒤 잠기면 버튼이 남는다
 3. 예외 사용자 목록 `EDIT_EXCEPT_USERS`(300_project.js), `EXCEPT_USERS_FALLBACK`(new_file.js)은 삭제. 서버 editYn 에 이미 반영됨
 4. 기술책임자 판단은 서버도 권한 코드 P04 (2026-11-27, 예전 REV_YN). 프론트 `isManagerUser()` 와 기준이 같아졌지만, 버튼은 서버 플래그만 보면 된다
