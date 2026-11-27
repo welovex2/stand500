@@ -199,8 +199,9 @@
 		   AND DEL_YN = 0
 	</update>
 
+	<!-- 측정일 기술책임자 판단 : 권한 코드 P04 (2026-11-27, 현황판 chamber-svc 와 같은 기준. 예전에는 REV_YN) -->
 	<select id="selectRevYn" resultType="java.lang.Integer">
-		SELECT REV_YN
+		SELECT IF(UPPER(TRIM(AUTH_CODE)) = 'P04', 1, 0)
 		  FROM MEMBER_TB
 		 WHERE ID = #{memId}
 	</select>
