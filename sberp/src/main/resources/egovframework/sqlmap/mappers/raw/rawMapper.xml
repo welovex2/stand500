@@ -1214,15 +1214,14 @@
 	<!-- 프로젝트완료 후에도 로데이터 수정 허용 로그인 ID : 공통코드 RU (TYPE_NAME = 로그인 아이디, USE_YN = 1) -->
 	<select id="selectEditYn" parameterType="int" resultType="int">
 		<bind name="rawEditUser" value="@org.springframework.web.context.request.RequestContextHolder@getRequestAttributes() == null ? null : (@egovframework.cmm.util.EgovUserDetailsHelper@getAuthenticatedUser() == null ? null : @egovframework.cmm.util.EgovUserDetailsHelper@getAuthenticatedUser().id)"/>
-		SELECT IF(EXISTS (SELECT 1 FROM COMCODE_TB rcu WHERE rcu.TOP_CD = 'RU' AND rcu.USE_YN = 1 AND rcu.TYPE_NAME = #{rawEditUser}), 1, IFNULL(RAW_EDIT_YN, 1))
-		FROM TEST_TB
-		WHERE TEST_SEQ = #{testSeq}
+		/* 시험이 없어도 1행 (1 = 수정 가능) */
+		SELECT IF(EXISTS (SELECT 1 FROM COMCODE_TB rcu WHERE rcu.TOP_CD = 'RU' AND rcu.USE_YN = 1 AND rcu.TYPE_NAME = #{rawEditUser}), 1,
+		          IFNULL((SELECT RAW_EDIT_YN FROM TEST_TB WHERE TEST_SEQ = #{testSeq}), 1))
 	</select>
 
+	<!-- 로데이터가 없으면 0 (int 반환이라 행이 없으면 오류가 나던 것을 막는다) -->
 	<select id="selectTestSeqByRawSeq" parameterType="int" resultType="int">
-		SELECT TEST_SEQ
-		FROM RAW_TB
-		WHERE RAW_SEQ = #{rawSeq}
+		SELECT IFNULL((SELECT TEST_SEQ FROM RAW_TB WHERE RAW_SEQ = #{rawSeq}), 0)
 	</select>
 
 	<!-- 본시험·재발행 TEST_SEQ → 원본 RAW_SEQ (detail 조인과 동일) -->

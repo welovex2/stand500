@@ -565,6 +565,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.ceDetail(rawSeq);
       if (detail == null) {
@@ -572,6 +573,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new CeDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "CE"));
       } else {
         detail.setTestSeq(testSeq);
@@ -687,6 +689,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.reDetail(rawSeq);
       if (detail == null) {
@@ -694,6 +697,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new ReDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "RE1", "RE2", "RE3"));
       } else {
         detail.setTestSeq(testSeq);
@@ -835,6 +839,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.esdDetail(rawSeq);
       if (detail == null) {
@@ -842,6 +847,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new EsdDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "ESD"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1032,6 +1038,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.rsDetail(rawSeq);
       if (detail == null) {
@@ -1039,6 +1046,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new RsDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "RS"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1144,6 +1152,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.eftDetail(rawSeq);
       if (detail == null) {
@@ -1151,6 +1160,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new EftDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "EFT"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1261,6 +1271,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.surgeDetail(rawSeq);
       if (detail == null) {
@@ -1268,6 +1279,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new SurgeDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "SURGE"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1378,6 +1390,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.csDetail(rawSeq);
       if (detail == null) {
@@ -1385,6 +1398,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new CsDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "CS"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1494,6 +1508,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.mfDetail(rawSeq);
       if (detail == null) {
@@ -1501,6 +1516,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new MfDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "MF"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1611,6 +1627,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.vdipDetail(rawSeq);
       if (detail == null) {
@@ -1618,6 +1635,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new VdipDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "VDIP"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1801,6 +1819,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.clkDetail(rawSeq);
       if (detail == null) {
@@ -1808,6 +1827,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new ClkDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "CLK"));
       } else {
         detail.setTestSeq(testSeq);
@@ -1914,6 +1934,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.dpDetail(rawSeq);
       if (detail == null) {
@@ -1921,6 +1942,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new DpDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "DP"));
       } else {
         detail.setTestSeq(testSeq);
@@ -2022,6 +2044,7 @@ public class RawController {
     if (rawSeq == 0) {
       result = false;
       msg = ResponseMessage.NO_DATA;
+      detail.setEditYn(rawService.selectEditYn(testSeq)); // 로데이터가 없어도 [저장] 표시 기준 (#26-8)
     } else {
       detail = rawService.telDetail(rawSeq);
       if (detail == null) {
@@ -2029,6 +2052,7 @@ public class RawController {
         msg = ResponseMessage.NO_DATA;
         // 방법 데이터가 없어도 측정일 표(빈 표, canAdd)는 보낸다 (#26-8)
         detail = new TelDTO();
+        detail.setEditYn(rawService.selectEditYn(testSeq));
         detail.setEnvList(envTables(rawSeq, testSeq, "TEL"));
       } else {
         detail.setTestSeq(testSeq);
@@ -2074,7 +2098,9 @@ public class RawController {
       @ApiParam(value = "로데이터 고유번호", required = true,
           example = "7") @PathVariable(name = "rawSeq") int rawSeq,
       @ApiParam(value = "사진 순번", required = true,
-          example = "1") @PathVariable(name = "picId") String picId)
+          example = "1") @PathVariable(name = "picId") String picId,
+      @ApiParam(value = "시험 고유번호 (재발행 등 로데이터를 같이 쓰는 시험이면 필수. editYn 을 이 시험 기준으로 판단)",
+          example = "15") @RequestParam(value = "testSeq", required = false, defaultValue = "0") int testSeq)
       throws Exception {
     boolean result = true;
     String msg = "";
@@ -2090,12 +2116,18 @@ public class RawController {
       msg = ResponseMessage.CHECK_DATA;
     } else {
 
+      // [저장] 표시용 (#26-8). 방법별 detail.do 와 같은 기준. testSeq 가 있으면 그 시험, 없으면 로데이터에 연결된 시험
+      int editYn = testSeq > 0 ? rawService.selectEditYn(testSeq) : rawService.selectEditYnByRawSeq(rawSeq);
       if (img != null) {
-        // [저장] 표시용 (#26-8). 방법별 detail.do 와 같은 기준
-        img.setEditYn(rawService.selectEditYnByRawSeq(rawSeq));
+        img.setEditYn(editYn);
       } else {
         result = false;
         msg = ResponseMessage.NO_DATA;
+        // 사진이 없어도 [저장] 표시 기준은 보낸다
+        img = new ImgDTO();
+        img.setRawSeq(rawSeq);
+        img.setPicId(picId);
+        img.setEditYn(editYn);
       }
     }
 
