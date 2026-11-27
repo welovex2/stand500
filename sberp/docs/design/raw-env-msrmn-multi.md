@@ -319,6 +319,7 @@ CREATE TABLE RAW_ENV_TB (
 2. 프론트와 같이 배포. 백엔드만 먼저 올리면 기존 화면의 측정일·온습도·서명 입력이 저장 안 됨. [종료] 시 서명(atchFileId) 필수라 새 화면도 서명을 보내야 함
 3. 운영 DB 계정에 트리거 생성 권한 있는지 확인
 4. 챔버 사용 관리(`chamber-erp.md`): `CHAMBER_TB.sql`을 `RAW_ENV_TB.sql`보다 먼저 실행(`ZONE_SEQ` 포함), chamber-svc 계정 GRANT, 챔버 목록 입력. 목록이 없으면 [시작]이 전부 거부됨
+5. 로데이터 잠금 예외 사용자(2026-11-27): `COMCODE_TB_RU_raw_edit_user.sql`(공통코드 RU, 12명)을 **서버 배포 전에** 실행. 하드코딩 목록이 빠졌으므로 먼저 안 넣으면 그사이 12명도 잠긴 로데이터를 저장하지 못함
 
 반영 순서
 1. DDL : RAW_ENV_TB.sql (테이블·이력 트리거·IDX_RAW_ENV_SIGN 포함). 운영은 RAW_ENV_TB_overlap_idx.sql 실행 불필요
